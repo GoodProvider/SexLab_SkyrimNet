@@ -24,8 +24,8 @@ Function Setup()
 EndFunction
 
 Event MenuOpen(Form target_form)
-    if target_form != None 
-        Actor target = target_form as Actor 
+    Actor target = target_form as Actor 
+    if target != None 
         if udng_groups != None
             Trace("UpdateDevices","Updating devices for target: "+target.GetDisplayName())
             udng_groups.UpdateDevices(target) 
