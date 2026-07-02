@@ -156,6 +156,7 @@ The following and depedancies:
     - Pandora Output (recommended to store Pandora's output)
     - [XP32 Maximum Skeleton Special Extended (XPMSSE)](https://www.nexusmods.com/skyrimspecialedition/mods/1988)
     - [SL Animation Loader](https://www.loverslab.com/files/file/5328-sexlab-animation-loader-sse/)
+    - [Hug kill move fix for USSEP](https://www.nexusmods.com/skyrimspecialedition/mods/139572?tab=description)
 - **Animation** 
     - [Ace Animations](https://www.nexusmods.com/skyrimspecialedition/mods/81928) (cuddle/spooning animations)
  
