@@ -1,4 +1,3 @@
-{% if is_narration_enabled() %}
 {% if not isTimePaused %}
      {% set sexlab = sexlab_get_threads(npc.UUID) -%}
      {% set sexlab.source = "sexlab_get_threads" %} 
@@ -10,19 +9,24 @@
      {% set sexlab = read_json("SkyrimNet_SexLab/threads.json") %} 
      {% set sexlab.source = "file" %}
 {% endif %}
-{% set speaker = {"speaking_modifiers":[], "victim":false, "notice_level":"nothing"} %}
-{% if existsIn(sexlab,"threads") and length(sexlab.threads) > 0 %}
-     {% for thread in sexlab.threads %}
-         --- {{npc.name}} = {{thread.actors}}
-          {% if existsIn(thread.actors, npc.name) %} 
-               {% set speaker = at(thread.actors,npc.name) %} 
-               {% set speaker.notice_level = "active" %} 
-          {% endif %}
-    {% endfor %}
+{% if not sexlab.actors %} 
+     {% set sexlab.actors = {} %} 
 {% endif %} 
+{% if existsIn(sexlab.actors, npc.name) %} 
+     {% set speaker = at(sexlab.actors,npc.name) %} 
+{% else %} 
+     {% set speaker = {"speaking_modifiers":[], "victim":false, "notice_level":"nothing", "arousal":0} %}
+{% endif %}
+{% if is_narration_enabled() %}
 {% if speaker.notice_level == "active" %}
    {% if contains(speaker.speaking_modifiers,"pleasure") or contains(speaker.speaking_modifiers, "pain") %} 
 Include a strong emotional and physical narration with each response.
    {% endif %} 
+{% else if speaker.arousal > 99 %}
+You mind is awash in hormones and neurotransmitters, a painful itch that only sexual release will scratch.
+{% else if speaker.arousal > 95 %}
+You mind is awash in hormones and neurotransmitters, your mind is filled with sexual fantasies.
+{% else if speaker.arousal > 90 %}
+You mind is awash in hormones and neurotransmitters, your mind keeps turn towards sexual fantasies.
 {% endif %}
 {% endif %}

@@ -90,9 +90,9 @@ Make narration emotional, raw, immedinate, and sensual.
 - Your mind is overwelmed by physical {% if contains(speaker.speaking_modifiers, "pleasure") %} pleasure {% endif %} {% if contains(speaker.speaking_modifiers,"pain") %} pain {% endif %} 
                {% endif %} 
                {% if contains(speaker.speaking_modifiers,"gagged") %} 
-- Your mouth is blocked, you can only communictate non-verbally ah, oh, uh, etc 
+- Your mouth is blocked, you can only communictate non-verbally hah, hoh, huh, etc
                {% else if contains(speaker.speaking_modifiers,"pleasure") or contains(speaker.speaking_modifiers, "pain") %}
-- Your dialog must contain between 1 to 3 vocalizations: ahh!, ohh, aah!, uh!, ooohh, or similar 
+- Your dialog must contain between 1 to 3 vocalizations: hahh!, hohh, haah!, huh!, hooohh, etc 
 - You are distracted, you can only speak 8 words or less (vocalizations don't count).
                {% else if contains(speaker.speaking_modifiers, "kissing") %} 
 - Your mouth is busy kissing, rephrase spoken words down to 5 words or less!

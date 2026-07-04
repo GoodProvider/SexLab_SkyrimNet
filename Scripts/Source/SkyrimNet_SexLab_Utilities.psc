@@ -544,3 +544,68 @@ Actor[] Function EnsureActorsLargeEnough(Actor[] actors_current, int total) glob
 
     return _actors 
 EndFunction 
+
+String Function ReplaceWord(String asSource, String asToFind, String asReplacement) global
+    ; Early out if either string is empty to avoid errors
+    If asSource == "" || asToFind == ""
+        Return asSource
+    EndIf
+
+    int iTargetLen = StringUtil.GetLength(asToFind)
+    int iPos = StringUtil.Find(asSource, asToFind)
+    
+    ; Loop to handle the global flag (/g) for multiple occurrences
+    While iPos >= 0
+        bool bIsWordMatch = false
+        int iSourceLen = StringUtil.GetLength(asSource)
+        
+        ; 1. Exact Match (Whole string is just the target)
+        If iSourceLen == iTargetLen
+            bIsWordMatch = true
+            
+        ; 2. Front (Index = 0, equivalent to /^target /)
+        ElseIf iPos == 0
+            ; Check if the character AFTER the word is a space
+            If StringUtil.Substring(asSource, iTargetLen, 1) == " "
+                bIsWordMatch = true
+            EndIf
+            
+        ; 3. End (Index = Length - TargetLength, equivalent to / target$/)
+        ElseIf iPos == (iSourceLen - iTargetLen)
+            ; Check if the character BEFORE the word is a space
+            If StringUtil.Substring(asSource, iPos - 1, 1) == " "
+                bIsWordMatch = true
+            EndIf
+            
+        ; 4. Middle (Anything else, requires spaces on both sides)
+        Else
+            ; Check if surrounded by spaces (like / target /)
+            If StringUtil.Substring(asSource, iPos - 1, 1) == " " && StringUtil.Substring(asSource, iPos + iTargetLen, 1) == " "
+                bIsWordMatch = true
+            EndIf
+        EndIf
+        
+        ; Execute Replacement if boundaries matched
+        If bIsWordMatch
+            String sBefore = ""
+            If iPos > 0
+                sBefore = StringUtil.Substring(asSource, 0, iPos)
+            EndIf
+            
+            String sAfter = ""
+            If (iPos + iTargetLen) < iSourceLen
+                sAfter = StringUtil.Substring(asSource, iPos + iTargetLen, 0)
+            EndIf
+            
+            asSource = sBefore + asReplacement + sAfter
+            
+            ; Advance past the newly inserted word to prevent infinite loops
+            iPos = StringUtil.Find(asSource, asToFind, iPos + StringUtil.GetLength(asReplacement))
+        Else
+            ; Not a standalone word; advance past the current match to keep looking
+            iPos = StringUtil.Find(asSource, asToFind, iPos + 1)
+        EndIf
+    EndWhile
+    
+    Return asSource
+EndFunction

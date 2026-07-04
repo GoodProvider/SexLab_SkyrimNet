@@ -21,3 +21,7 @@ EndFunction
 Bool Function Orgasm_Desired(Actor akActor)
     return false 
 EndFunction
+
+bool Function StartScene_Consensual_Two(String intent, Actor speaker, Actor Superior, Actor target, string style="", string method="", String direction="", String setting_name="")
+    return false
+EndFunction

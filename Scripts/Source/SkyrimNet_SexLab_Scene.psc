@@ -542,6 +542,7 @@ Function OrgasmCombined()
             no_orgasm_everyone = false
             Trace("Orgasm_Combined",i+" "+name+" | someone_ejaculated: "+someone_ejaculated+" | narration: "+narration)
         else 
+            narration += thread.positions[i].GetDisplayName()+" did not orgasm. "
             Trace("CombinedOrgasm","i:"+i+" "+GetDisplayName(thread.positions[i])+" shouldn't orgasm")
         endif 
         i += 1
