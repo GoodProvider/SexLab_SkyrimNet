@@ -160,17 +160,16 @@ Function Target_Menu_Selection(Actor target, Actor player)
             actions.StartScene_Consensual_Two("showing affection",player, target=target, style="gently", method=method,setting_name=setting_name)
         endif 
     elseif button == sex
-        ; If the target is a dom slave, we hand off to SkyrimNet_DOM
-        if main.handler_dom.StartScene_Consensual_Two("sexual activities", target, player, target=target)
+        if main.handler_dom.IsDOMSlave(target) && main.handler_dom.Target_Menu_Selection(target, player)
             return 
         endif 
 
         actions.StartScene_Consensual_Two("sexual activities", player, target=target)
 
     elseif button == rapes_player
-        actions.StartScene_Nonconsensual_Two("raping", player,target, speaker_victim=True)
+        actions.StartScene_Nonconsensual_Two("sexual assault", player,target, speaker_victim=True)
     elseif button == raped_by_player
-        actions.StartScene_Nonconsensual_Two("raping",player, target)
+        actions.StartScene_Nonconsensual_Two("sexual assault",player, target)
     elseif button == clothing
         if clothing_string == "undress"
             clothing_string = "take off"
@@ -204,7 +203,7 @@ Function Target_Menu_Selection(Actor target, Actor player)
         ;--------------------------------------------------
         ; Now do the action 
         Trace("Target_Menu_Selection","style:"+style+" clothing_string:"+clothing_string)
-        actions.Change_Outfit(player, target, style, clothing_string+"es", narration)
+        actions.Change_Outfit(player, target, style, clothing_string, narration)
 
     elseif button == bondage 
         EventSend_UDNG("MenuOpen", target)
@@ -384,7 +383,7 @@ Function MutliTarget_Menu_Selection(Actor player)
             String[] buttons = new String[4] 
             buttons[0] = "showing affection"
             buttons[1] = "sexual activities"
-            buttons[2] = "raping"
+            buttons[2] = "sexual assault"
             buttons[3] = "custom"
 
             String msg_intent = "What is the intent?"
@@ -460,13 +459,29 @@ Function MutliTarget_Menu_Selection(Actor player)
         setting_name = "nonsexual_male_position_1"
     endif 
 
-    if intent == "raping"
+    if intent == "sexual assault"
         SkyrimNet_SexLab_Scene_Creator creator = manager.CreateCreator(intent, actors_selected, speaker, target, setting_name="")
-        creator.SetVictim(actors_selected[0])
-        Creator.StartScene() 
+        if creator == None 
+            Trace("MultiTarget_Menu_Selection", "CreateCreator returned None, aborting")
+            return 
+        endif 
+        if creator.LockAllActorLock()
+            creator.SetVictim(actors_selected[0])
+            Creator.StartScene() 
+        else 
+            creator.Release()
+        endif 
     else 
         SkyrimNet_SexLab_Scene_Creator creator = manager.CreateCreator(intent, actors_selected, speaker, target, method=method, setting_name=setting_name)
-        Creator.StartScene() 
+        if creator == None 
+            Trace("MultiTarget_Menu_Selection", "CreateCreator returned None, aborting")
+            return 
+        endif 
+        if creator.LockAllActorLock()
+            Creator.StartScene() 
+        else 
+            creator.Release()
+        endif 
     endif 
 EndFunction
 

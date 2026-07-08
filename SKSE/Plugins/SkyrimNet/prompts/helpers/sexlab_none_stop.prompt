@@ -1,7 +1,7 @@
-{%- set sexlab = sexlab_activity(npc.UUID) %} 
+{%- set sexlab = sexlab_activities(npc.UUID) %} 
 {% if existsIn(sexlab, "activity") %} 
     {% set activity = sexlab.activity %}
 {% else %} 
     {% set activity = "sexual activities" %} 
 {% endif -%} 
-[style] stop {{activity}} 
+[style] stop {{activity}}

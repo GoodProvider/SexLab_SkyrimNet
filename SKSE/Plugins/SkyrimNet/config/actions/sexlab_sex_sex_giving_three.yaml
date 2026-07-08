@@ -29,4 +29,4 @@ parameterMapping:
     value: ""
   - type: dynamic
     name: participate
-    value: third participating actor 
+    description: third participating actor 

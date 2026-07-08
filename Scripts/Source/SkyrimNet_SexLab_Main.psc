@@ -89,7 +89,7 @@ int Property counter Auto
 Function Setup()
     Trace("Setup","")
 
-    if Game.GetModByName("Data/SexLab.esm") != 255
+    if Game.GetModByName("SexLab.esm") == 255
         Trace("Setup","Data/SexLab.esm does not exist") 
         Trace("Setup", "Can't find Data/SexLab.esm | SkyrimNet_SexLab will not work.", true)
         return 
@@ -108,8 +108,8 @@ Function Setup()
     ; DOM Handler
     ; --------------------------------
     handler_dom = None 
-    bool skyrimnet_dom_found = Game.GetModByName("Data/SkyrimNet_DOM.esp") != 255
-    bool skyrimnet_sexlab_handler_dom_found = Game.GetModByName("Data/SkyrimNet_SexLab_Handler_DOM.esp") != 255
+    bool skyrimnet_dom_found = Game.GetModByName("SkyrimNet_DOM.esp") != 255
+    bool skyrimnet_sexlab_handler_dom_found = Game.GetModByName("SkyrimNet_SexLab_Handler_DOM.esp") != 255
     if skyrimnet_dom_found && skyrimnet_sexlab_handler_dom_found
         handler_dom = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab_Handler_DOM.esp") as SkyrimNet_SexLab_Handler_DOM_Interface
         if handler_dom == None
@@ -150,7 +150,7 @@ Function Setup()
     ; --------------------------------
     ; Decorators
     ; --------------------------------
-    if Game.GetModByName("Data/TT_OStimNet.esp")  != 255
+    if Game.GetModByName("TT_OStimNet.esp")  != 255
         ostimnet_found = True 
         Trace("Setup","Found TT_OstimNet.esp found")
     endif 

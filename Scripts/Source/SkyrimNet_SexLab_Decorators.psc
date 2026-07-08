@@ -23,6 +23,7 @@ Function RegisterDecorators() global
     SkyrimNetApi.RegisterDecorator("sexlab_get_player_los_distance", "SkyrimNet_SexLab_Decorators", "Player_LOS_Distance")
     SkyrimNetApi.RegisterDecorator("sexlab_outfit_options", "SkyrimNet_SexLab_Decorators", "Outfit_Options")
     SkyrimNetApi.RegisterDecorator("sexlab_intent", "SkyrimNet_SexLab_Decorators", "Intent")
+    SkyrimNetApi.RegisterDecorator("sexlab_activities", "SkyrimNet_SexLab_Decorators", "Activities")
     ;SkyrimNetApi.RegisterDecorator("sexlab_nudity", "SkyrimNet_SexLab_Decorators", "Is_Nudity")
     ;SkyrimNetApi.RegisterDecorator("sexlab_speaker_info", "SkyrimNet_SexLab_Decorators", "Speaker_Info")
 EndFunction
@@ -60,7 +61,11 @@ EndFunction
 
 String Function Intent(Actor speaker) global 
     SkyrimNet_SexLab_Scene_Manager manager = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Scene_Manager
- 
+    if manager == None 
+        Trace("Intent","manager is None, aborting")
+        return "{}" 
+    endif 
+
     SkyrimNet_SexLab_Scene sl_scene = manager.GetSceneByActor(speaker) 
     if sl_scene != None 
         int obj = JMap.object()
@@ -71,6 +76,22 @@ String Function Intent(Actor speaker) global
     endif 
     return "{}"
 EndFunction 
+
+String Function Activities(Actor akActor) global
+    SkyrimNet_SexLab_Scene_Manager manager = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Scene_Manager
+    int obj = JMap.object()
+    String activity = ""
+    if manager != None 
+        SkyrimNet_SexLab_Scene sl_scene = manager.GetSceneByActor(akActor)
+        if sl_scene != None && sl_scene.GetThread() != None
+            activity = sl_scene.GetDescription()
+        endif 
+    endif 
+    JMap.setStr(obj, "activity", activity)
+    String json = JValue.toJsonString(obj)
+    JValue.release(obj)
+    return json
+EndFunction
 
 
 String Function Player_LOS_Distance(Actor akActor) global 

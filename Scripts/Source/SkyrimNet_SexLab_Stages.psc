@@ -64,7 +64,7 @@ Function Setup()
     newline = StringUtil.AsChar(10)
 
     ; Devious Devices
-    ;if Game.GetModByName("Data/Devious Devices - Assets.esm") != 255
+    ;if Game.GetModByName("Devious Devices - Assets.esm") != 255
         ;devices_found = true
         ;zad_DeviousBelt = Game.GetFormFromFile(0x00F624, "Devious Devices -Assets.esm") as Keyword
         ;if zad_DeviousBelt == None 
@@ -141,17 +141,29 @@ String Function AddActorDescriptionActors(String version, Actor[] actors, String
         if version != VERSION_2_0
             Trace("AddActorDescriptionActors","Unknown version "+version)
         endif 
+        ;;int size = actors.length
+        ;int actors_obj = JArray.objectWithSize(size)
+        ;int i = 0 
+        ;while i < size 
+            ;JArray.setStr(actors_obj, i, actors[i].GetDisplayName()) 
+            ;i += 1 
+        ;endwhile 
+        ;int obj = JMap.object() 
+        ;JMap.setObj(obj, "actors", actors_obj) 
+        ;String json = JValue.toJsonString(obj) 
+        ;JValue.release(obj) 
         int size = actors.length
-        int actors_obj = JArray.objectWithSize(size)
+        String actors_json = "" 
         int i = 0 
         while i < size 
-            JArray.setStr(obj, i, actors[i].GetDisplayName()) 
+            if i > 0 
+                actors_json += ","
+            endif 
+            actors_json += "\""+actors[i].GetDisplayName()+"\""
             i += 1 
         endwhile 
-        int obj = JMap.object() 
-        JMap.setObj(obj, "sl", actors_obj) 
-        String json = JValue.toJsonString(obj) 
-        JValue.release(obj) 
+        String json = "{\"actors\":["+actors_json+"]}"
+        Trace("AddActorDescriptionActors","--- json: "+json)
         result = SkyrimNetApi.ParseString(desc, "sl", json)
         Trace("AddActorDescriptionActors","json: "+json+" desc: "+desc+" result: "+result)
     endif 
@@ -172,7 +184,7 @@ Function EditDescriptions(sslThreadController thread)
     Trace("EditDecriptions","-- b")
     SkyrimNet_SexLab_Scene sl_scene = manager.GetSceneByThread(thread)
     if sl_scene == None 
-        Trace("EditDescriptions","scene is None")
+        Trace("EditDescriptions","sl_scene is None")
         return 
     endif 
     Trace("EditDecriptions","-- c")
@@ -290,7 +302,7 @@ Function EditDescriptions(sslThreadController thread)
     Trace("EditDecriptions","-- j")
     String style_end = sl_scene.style
     if style_start != style_end 
-        DirectNarration(thread.positions[0].getDisplayName()+"'s sl_scene changed from '"+style_start+"' to '"+style_end+"'")
+        DirectNarration(thread.positions[0].getDisplayName()+"'s scene changed from '"+style_start+"' to '"+style_end+"'")
     endif 
     Trace("EditDecriptions","-- k")
 
@@ -481,7 +493,7 @@ EndFunction
 Function SetOrgasmExpected(sslThreadController thread)
     SkyrimNet_SexLab_Scene sl_scene = manager.GetSceneByThread(thread)
     if sl_scene == None 
-        Trace("SetOrgasmExpected","scene is None")
+        Trace("SetOrgasmExpected","sl_scene is None")
         return 
     endif 
 

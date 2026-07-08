@@ -7,7 +7,7 @@ SkyrimNet_SexLab_Stages Property stages Auto
 SkyrimNet_SexLab_Scene_Manager Property manager Auto 
 
 ; --------------------------------------------
-; Scene id == index in scenes
+; Scene id == index in sl_scenes
 ; --------------------------------------------
 int Property sid = 0 Auto 
 

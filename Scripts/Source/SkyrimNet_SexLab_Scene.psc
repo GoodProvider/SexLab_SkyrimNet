@@ -56,6 +56,27 @@ Function Trace(String func, String msg="", Bool notification=False)
     endif 
 EndFunction
 
+Function DbgEnter(String func)
+    Trace(func, "--- enter")
+EndFunction
+
+Function DbgReturn(String func, String reason="")
+    if reason != ""
+        Trace(func, "--- return "+reason)
+    else
+        Trace(func, "--- return")
+    endif
+EndFunction
+
+Function DbgEnd(String func)
+    Trace(func, "--- end")
+EndFunction
+
+Function DbgMsg(String func, String msg)
+    Trace(func, "--- "+msg)
+EndFunction
+
+
 String Function GetString() 
     return " actors: ["+actor_names+"]"\
           +" victims: ["+victim_names+"]"\
@@ -64,6 +85,7 @@ String Function GetString()
 EndFunction 
 
 Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager) 
+    DbgEnter("Initialize")
     parent.Initialize(_sid,_manager) 
     EnsureActorArraysLargeEnough(2)
     num_actors = 0 
@@ -75,17 +97,22 @@ Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager)
     is_generic = false
     StorageUtil.ClearAllPrefix(storage_prefix)
     CreateThreadJson() 
+    DbgEnd("Initialize")
 EndFunction 
 
 ; -----------------------------
 
 Function Setup(SkyrimNet_SexLab_Scene_Creator creator=None)
+    DbgEnter("Setup")
+    Trace("Setup","--- creator: ")
     if thread == None 
         Trace("Setup","thread is none, aborting")
+        DbgReturn("Setup", "void")
         return 
     endif 
 
     Actor[] positions = thread.positions
+    DbgMsg("Setup", "thread.positions count="+positions.length)
     EnsureActorArraysLargeEnough(positions.length) 
 
     num_actors = positions.length
@@ -129,7 +156,9 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator=None)
     Trace("Setup", "--- b num_actors: "+num_actors)
 
     if num_actors > 1
+        DbgMsg("Setup", "thread.GetVictim()")
         Actor victim = thread.GetVictim() 
+        DbgMsg("Setup", "thread.GetVictim() returned "+victim)
         if victim != None && sender == victim 
             sender = receiver 
             receiver = victim
@@ -141,6 +170,7 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator=None)
     int i = 0 
     num_victims = 0 
     while i < num_actors
+        DbgMsg("Setup", "thread.IsVictim "+actors[i].GetDisplayName())
         if thread.IsVictim(actors[i]) 
             num_victims += 1 
             actors[i].AddToFaction(SkyrimNet_SexLab_Faction_Victim)
@@ -162,9 +192,11 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator=None)
     SetNames()
     Trace("Setup", "--- f num_actors: "+num_actors)
     TraceScene() 
+    DbgEnd("Setup")
 EndFunction 
 
 Function TraceScene() 
+    DbgEnter("TraceScene")
     Trace("TraceScene", "--- num_actors: "+num_actors)
     Trace("TraceScene", "--- actors: "+JoinActors(actors,num_actors))
     Trace("TraceScene", "--- victims: "+victim_names)
@@ -172,9 +204,11 @@ Function TraceScene()
     Trace("TraceScene", "--- hermaphrodiate: "+hermaphrodiate_names)
     Trace("TraceScene", "--- strapon: "+strapon_names)
     Trace("TraceScene", "--- creature_descriptions: "+creature_descriptions)
+    DbgEnd("TraceScene")
 EndFunction 
 
 Function Release()
+    DbgEnter("Release")
     int i = 0
     while i < num_actors
         if actors[i] != None
@@ -213,10 +247,13 @@ Function Release()
         endif 
     endif 
     parent.Release()
+    DbgEnd("Release")
 EndFunction
 
 Function EnsureActorArraysLargeEnough(int size) 
+    DbgEnter("EnsureActorArraysLargeEnough")
     if actors && position_objs && size <= actors.length && size <= position_objs.length
+        DbgReturn("EnsureActorArraysLargeEnough", "void")
         return 
     endif 
     actors = EnsureActorsLargeEnough(actors, size) 
@@ -229,6 +266,7 @@ Function EnsureActorArraysLargeEnough(int size)
         endif 
         i += 1 
     endwhile 
+    DbgEnd("EnsureActorArraysLargeEnough")
 EndFunction
 
 ; ----------------------------------------
@@ -236,6 +274,7 @@ EndFunction
 ; -----------------------------------------
 
 Function SetPosition(int i, Actor akActor, int no_orgasm, String speaking_modifiers) 
+    DbgEnter("SetPosition")
     Trace("SetPosition", "--- a i: "+i+" akActor: "+akActor.GetDisplayName()+" no_orgasm: "+no_orgasm+" speaking_modifiers: "+speaking_modifiers)
     EnsureActorArraysLargeEnough(i + 1)
     int obj = position_objs[i]
@@ -264,11 +303,14 @@ Function SetPosition(int i, Actor akActor, int no_orgasm, String speaking_modifi
     endwhile 
     SetActor(i, akActor)
     Trace("SetPosition", "name: "+actors[i].GetDisplayName()+" no_orgasm: "+JMap.getInt(obj, "no_orgasm")+" speaking_modifiers: "+JMap.getStr(obj, "speaking_modifiers"))
+    DbgEnd("SetPosition")
 Endfunction 
 
 bool Function SetActor(int i, Actor akActor)
+    DbgEnter("SetActor")
     if akActor == None 
         Trace("SetActor","actors["+i+"] == None ")
+        DbgReturn("SetActor", "False")
         return False 
     endif  
     actors[i] = akActor
@@ -280,7 +322,9 @@ bool Function SetActor(int i, Actor akActor)
     JMap.setStr(obj, "name", actors[i].GetDisplayName())
 
     int gender = actors[i].GetLeveledActorBase().GetSex() ; actorLib.GetGender(actors[i])
+    DbgMsg("SetActor", "sexlab.GetGender "+akActor.GetDisplayName())
     int gender_sexlab = main.sexlab.GetGender(actors[i]) 
+    DbgMsg("SetActor", "sexlab.GetGender returned "+gender_sexlab)
     int has_penis = 0
     if gender != 1 || (gender_sexlab != 1 && gender_sexlab != 3)
         has_penis = 1
@@ -298,8 +342,12 @@ bool Function SetActor(int i, Actor akActor)
     JMap.setInt(obj, "hermaphrodiate", hermaphrodiate)
 
     JMap.setStr(obj,"notice_level","nothing")
+    if status == STATUS_ACTIVE
+        JMap.setStr(obj,"notice_level","active")
+    endif
     JMap.setInt(obj,"total_orgasm",0)
     JMap.setInt(obj,"arousal", -1) 
+    DbgMsg("SetActor", "thread.IsVictim "+akActor.GetDisplayName())
     if thread.IsVictim(akActor) 
         JMap.setInt(obj, "victim", 1) 
         JMap.setInt(obj, "assailant", 0) 
@@ -308,33 +356,50 @@ bool Function SetActor(int i, Actor akActor)
         JMap.setInt(obj, "assailant", 1) 
     endif 
 
+    DbgMsg("SetActor", "thread.ActorAlias "+akActor.GetDisplayName())
     sslActorAlias actorAlias = thread.ActorAlias(akActor) 
-    ;if Game.GetModByName("Data/SLSO.esp") != 255
+    ;if Game.GetModByName("SLSO.esp") != 255
         ;enjoyment = actorAlias.Getfull_enjoyment() 
     ;else 
         int enjoyment = actorAlias.GetEnjoyment() 
     ;endif 
     JMap.setInt(obj, "enjoyment", enjoyment)
 
+    if main.handler_dom.IsDOMSlave(akActor)
+        JMap.setInt(obj, "is_dom_slave", 1)
+    else
+        JMap.setInt(obj, "is_dom_slave", 0)
+    endif
+
+    DbgReturn("SetActor", "obj")
     return obj
 EndFunction
 
 int Function GetObjFromActor(Actor akActor) 
+    DbgEnter("GetObjFromActor")
+    DbgReturn("GetObjFromActor", "StorageUtil.GetIntValue(akActor, storage_obj_key, 0)")
     return StorageUtil.GetIntValue(akActor, storage_obj_key, 0) 
 EndFunction 
 
 bool Function UpdateActor(int i , Actor akActor) 
+    DbgEnter("UpdateActor")
     bool changed = False 
     if actors[i] != akActor 
         SetActor(i, akActor) 
         changed = True 
         int total_orgasms = StorageUtil.GetIntValue(akActor, storage_total_orgasms_key, 0) 
         SetTotalOrgasms(akActor, total_orgasms)
+    elseif status == STATUS_ACTIVE
+        int obj = position_objs[i]
+        JMap.setStr(obj, "notice_level", "active")
     endif 
+    DbgReturn("UpdateActor", "changed")
     return changed 
 EndFunction 
 
 Function AlignActors() 
+    DbgEnter("AlignActors")
+    DbgMsg("AlignActors", "thread.positions.length")
     int size = thread.positions.length 
     EnsureActorArraysLargeEnough(size) 
     int i = 0 
@@ -357,9 +422,11 @@ Function AlignActors()
         SetNames()
     endif 
     UpdateActorsObj() 
+    DbgEnd("AlignActors")
 EndFunction 
 
 Function AddActorsToMap(int map) 
+    DbgEnter("AddActorsToMap")
     int i = 0 
     while i < num_actors 
         int obj = position_objs[i]
@@ -369,6 +436,7 @@ Function AddActorsToMap(int map)
         endif 
         i += 1 
     endwhile 
+    DbgEnd("AddActorsToMap")
 EndFunction 
 
 ; ------------------------------------
@@ -376,15 +444,19 @@ EndFunction
 ; ------------------------------------
 
 Function SetNames() 
+    DbgEnter("SetNames")
+    DbgMsg("SetNames", "thread.positions")
     actor_names = JoinActors(thread.positions)
     victim_names = GetNames("victim")
     assailant_names = GetNames("assailant")
     hermaphrodiate_names = GetNames("hermaphrodiate") 
     strapon_names = GetNames("strapon")
     creature_descriptions = GetCreatureDescriptions()
+    DbgEnd("SetNames")
 EndFunction 
 
 String Function GetNames(String key_) 
+    DbgEnter("GetNames")
     String names = ""
     int matched = 0
     int i = 0 
@@ -411,10 +483,12 @@ String Function GetNames(String key_)
         endif 
         i += 1 
     endwhile 
+    DbgReturn("GetNames", "names")
     return names 
 EndFunction
 
 String Function GetCreatureDescriptions() 
+    DbgEnter("GetCreatureDescriptions")
     String desc = "" 
     int i = 0
     while i < num_actors
@@ -437,6 +511,7 @@ String Function GetCreatureDescriptions()
         endif 
         i += 1
     endwhile
+    DbgReturn("GetCreatureDescriptions", "desc")
     return desc 
 EndFunction
 
@@ -445,12 +520,16 @@ EndFunction
 ; --------------------------------------------
 
 int Function GetTotalOrgasms(Actor akActor)
+    DbgEnter("GetTotalOrgasms")
+    DbgReturn("GetTotalOrgasms", "StorageUtil.GetIntValue(akActor, storage_total_orgasms_key, 0)")
     return StorageUtil.GetIntValue(akActor, storage_total_orgasms_key, 0) 
 EndFunction 
 
 Function SetTotalOrgasms(Actor akActor, int total_orgasms)
+    DbgEnter("SetTotalOrgasms")
     if akActor == None 
         Trace("SetTotalOrgasms","akActor is None")
+        DbgReturn("SetTotalOrgasms", "void")
         return 
     endif 
     StorageUtil.SetIntValue(akActor, storage_total_orgasms_key, total_orgasms) 
@@ -458,22 +537,31 @@ Function SetTotalOrgasms(Actor akActor, int total_orgasms)
     if obj > 0
         JMap.setInt(obj, "total_orgasm", total_orgasms)
     endif 
+    DbgEnd("SetTotalOrgasms")
 EndFunction 
 
 Function SetThread(sslThreadController _thread) 
+    DbgEnter("SetThread")
     thread = _thread
+    DbgEnd("SetThread")
 EndFunction 
 sslThreadController Function GetThread()
+    DbgEnter("GetThread")
     if thread == None 
         Trace("GetThread","Thread is None | "+GetString())
     endif 
+    DbgReturn("GetThread", "thread")
     return thread
 EndFunction
 
 Function SetGeneric() 
+    DbgEnter("SetGeneric")
     is_generic = True 
+    DbgEnd("SetGeneric")
 EndFunction 
 bool Function IsGeneric() 
+    DbgEnter("IsGeneric")
+    DbgReturn("IsGeneric", "is_generic")
     return is_generic
 EndFunction 
 
@@ -481,6 +569,7 @@ EndFunction
 ; Get a Status message for the sl_scene (start, are, finished) 
 ; --------------------------------------------
 String Function GetIntentMessage(int intent_stage = -1) 
+    DbgEnter("GetIntentMessage")
     String msg = "are "+intent 
     if intent_stage == INTENT_STAGE_START 
         msg = "start "+intent
@@ -488,20 +577,28 @@ String Function GetIntentMessage(int intent_stage = -1)
         msg = "finished "+intent
     endif 
     if num_victims > 0
+        DbgReturn("GetIntentMessage", "with victims")
         return assailant_names+" "+msg+" "+victim_names+"."
     endif 
+    DbgReturn("GetIntentMessage", "actors only")
     return actor_names+" "+msg+"."
 EndFunction 
     
 bool Function GetThreadActive() 
+    DbgEnter("GetThreadActive")
     if thread == None 
+        DbgReturn("GetThreadActive", "false")
         return false 
     endif 
+    DbgMsg("GetThreadActive", "thread.GetState()")
     String s = (thread as sslThreadModel).GetState() 
+    DbgMsg("GetThreadActive", "thread.GetState() returned "+s)
     if s != "animating" && s != "prepare"
         Trace("GetThreadActive", "thread is not animating or prepare `"+s+"'")
+        DbgReturn("GetThreadActive", "false")
         return false 
     endif 
+    DbgReturn("GetThreadActive", "true")
     return true 
 EndFunction
 
@@ -509,21 +606,26 @@ EndFunction
 ; Animation Event Handlers 
 ; --------------------------------------------
 Function AnimationStart()
+    DbgEnter("AnimationStart")
     AlignActors() 
     manager.SaveThreadsJson() 
     String msg = GetIntentMessage(INTENT_STAGE_START)
     RegisterEvent("sexlab update", msg, sender, receiver) 
+    DbgEnd("AnimationStart")
 EndFunction
 
 Function StageStart() 
+    DbgEnter("StageStart")
     AlignActors() 
     manager.SaveThreadsJson() 
     if SexLab == None 
         Trace("StageStart","sexlab is None | actors:"+JoinActors(actors,num_actors))
+        DbgReturn("StageStart", "void")
         return 
     endif
     if thread == None 
         Trace("StageStart","thread is None | actors:"+JoinActors(actors,num_actors))
+        DbgReturn("StageStart", "void")
         return 
     endif
 
@@ -533,24 +635,20 @@ Function StageStart()
     if status != STATUS_ACTIVE
         status = STATUS_ACTIVE
 
-        ; -----------------------------------
-        ; Registers who started the activites 
-        ; -----------------------------------
-        if num_actors > 1 
-            desc = sender.GetDisplayName()+" initiates, "+ GetIntentMessage(INTENT_STAGE_START)+desc
-        endif 
+        desc = GetIntentMessage(INTENT_STAGE_START)+desc
 
         if desc == "" 
-            ContinueActivity(sender, receiver)
+            ContinueActivity(sender, receiver, True)
         else 
             DirectNarration(desc, sender, receiver) 
         endif 
     elseif thread.stage != thread.animation.StageCount()
+        DbgMsg("StageStart", "thread.stage="+thread.stage+" StageCount="+thread.animation.StageCount())
         bool use_continue = True 
         if desc != "" && thread.stage > 1
             String desc_last = stages.GetStageDescription(thread, thread.stage - 1)
             if desc != desc_last
-                desc = actors[0].GetDisplayName()+"'s sl_scene changes to "+desc
+                desc = actors[0].GetDisplayName()+"'s scene changes to "+desc
                 use_continue = False 
             endif 
         endif 
@@ -576,9 +674,11 @@ Function StageStart()
         endif
         Debug.Notification("stage "+thread.stage+" of "+ thread.animation.StageCount()+" "+msg)
     endif  
+    DbgEnd("StageStart")
 EndFunction
 
 Function AnimationEnd(Actor speaker=None, String style="silently") 
+    DbgEnter("AnimationEnd")
     AlignActors() 
     manager.SaveThreadsJson()
 
@@ -587,10 +687,13 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
         Trace("AnimationEnd","SexLab or thread is None for sl_scene with actors "+actor_names)
         RegisterEvent("sexlab update", msg, sender, receiver) 
         Release()
+        DbgReturn("AnimationEnd", "void")
         return 
     endif 
     Trace("AnimationEnd","thread id:"+thread.tid+" status:"+thread.GetState())
+    DbgMsg("AnimationEnd", "thread.GetState()="+thread.GetState())
     ; Handle Separate Orgasms
+    DbgMsg("AnimationEnd", "SexLab as sslSystemConfig")
     sslSystemConfig config = (SexLab as Quest) as sslSystemConfig
 
     String narration = ""
@@ -599,6 +702,7 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
     endif
     bool has_tentacles = False 
 
+    DbgMsg("AnimationEnd", "thread.Animation.HasTag tentacles")
     if  thread.Animation.HasTag("tentacles")
         has_tentacles = True 
         narration = "The tentacles orgasm flooding cum both inside and outside. "
@@ -639,6 +743,7 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
     if ThreadSlots == None
         Trace("AnimationEnd","ThreadSlots is None", true)
         Release()
+        DbgReturn("AnimationEnd", "void")
         return
     endif
     sslThreadController[] threads = ThreadSlots.Threads
@@ -660,12 +765,14 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
 
     style = STYLE_NORMALLY
     Release() 
+    DbgEnd("AnimationEnd")
 EndFunction 
 
 ; --------------------------------------------
 ; Orgasm Handlers
 ; --------------------------------------------
 Function OrgasmCombined()
+    DbgEnter("OrgasmCombined")
     AlignActors() 
     int[] orgasm_expected = stages.GetOrgasmExpected(thread)
     bool someone_ejaculated = False 
@@ -725,12 +832,15 @@ Function OrgasmCombined()
             DirectNarration_optional("orgasm", narration, sender, receiver)
         endif 
     endif 
+    DbgEnd("OrgasmCombined")
 EndFunction
 
 ; Used for SLSO.esp orgasm handling
 Event OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
+    DbgEnter("OrgasmIndividual")
     if akActor == None 
         Trace("OrgasmIndividual","akActor is None") 
+        DbgReturn("OrgasmIndividual", "void")
         return 
     endif 
 
@@ -739,6 +849,7 @@ Event OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
     if obj > 0 
         if JMap.getInt(obj, "no_orgasm") == 1 
             Trace("OrgasmIndividual",name+" shouldn't orgasm")
+            DbgReturn("OrgasmIndividual", "void")
             return 
         endif 
         JMap.SetInt(obj, "enjoyment", full_enjoyment) 
@@ -754,20 +865,25 @@ Event OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
     endif 
 
     OrgasmHelper(akActor, msg)
+    DbgEnd("OrgasmIndividual")
 EndEvent
 
 Function OrgasmCustom(Actor akActor, String msg)
+    DbgEnter("OrgasmCustom")
     SetTotalOrgasms(akActor, GetTotalOrgasms(akActor) + 1) 
     OrgasmHelper(akActor, msg)
+    DbgEnd("OrgasmCustom")
 EndFunction
 
 Function OrgasmHelper(Actor akActor, String msg)
+    DbgEnter("OrgasmHelper")
     Trace("OrgasmHelper","akActor:"+akActor.GetDisplayName()+" msg:"+msg)
     AlignActors()
     Actor cum_catcher = None
     String cum_catcher_name = "(None)"
 
     int gender = sexlab.GetGender(akActor) 
+    DbgMsg("OrgasmHelper", "sexlab.GetGender returned "+gender)
     bool has_penis = gender == 0 || gender == 2
     if has_penis 
         ; Generate the orgasm message
@@ -788,6 +904,7 @@ Function OrgasmHelper(Actor akActor, String msg)
     else 
         DirectNarration_Optional("orgasm", msg, akActor, cum_catcher) 
     endif 
+    DbgEnd("OrgasmHelper")
 EndFunction
 
 ;----------------------------------------------------
@@ -795,7 +912,10 @@ EndFunction
 ;----------------------------------------------------
 String Function AddCum(int position, Actor akActor, String name)
     ; Add cum overlay 
+    DbgEnter("AddCum")
+    DbgMsg("AddCum", "thread.Animation")
     sslBaseAnimation anim = thread.Animation
+    DbgMsg("AddCum", "anim.GetCumId position="+position+" stage="+thread.stage)
     int CumId = anim.GetCumId(position, thread.stage)
 
     ; -1 - no gender 
@@ -806,7 +926,9 @@ String Function AddCum(int position, Actor akActor, String name)
     ; 1 - female 
     ; 2 - male creature 
     ; 3 - female creature 
+    DbgMsg("AddCum", "sexlab.GetGender "+akActor.GetDisplayName())
     int gender_sexlab = sexlab.GetGender(akActor)
+    DbgMsg("AddCum", "sexlab.GetGender returned "+gender_sexlab)
     bool has_pussy = gender == 1 || gender_sexlab == 1 || gender_sexlab == 3
     String genital = "" 
     if has_pussy
@@ -847,25 +969,31 @@ String Function AddCum(int position, Actor akActor, String name)
     endif 
 
     if places != ""
+        DbgReturn("AddCum", "cum message")
         return name+"'s "+places+" is dripping with warm sticky cum. "
     endif 
+    DbgReturn("AddCum", "empty")
     return "" 
 EndFunction  
 
 ; --------------------------------------------
 ; --------------------------------------------
 String Function GetDescription()
+    DbgEnter("GetDescription")
     if thread == None 
+        DbgReturn("GetDescription", "thread None")
         return ""
     endif 
     int intent_stage = INTENT_STAGE_ONGOING
     if status != STATUS_ACTIVE
         intent_stage = INTENT_STAGE_START
     endif 
+    DbgReturn("GetDescription", "description")
     return GetIntentMessage(intent_stage)+" "+stages.GetStageDescription(thread)
 EndFunction
 
 Function CreateThreadJson() 
+    DbgEnter("CreateThreadJson")
     if !thread_obj
         thread_obj = JMap.object() 
         JValue.retain(thread_obj)
@@ -874,15 +1002,19 @@ Function CreateThreadJson()
         JValue.retain(actors_obj)
         JMap.setObj(thread_obj, "actors", actors_obj) 
     endif 
+    DbgEnd("CreateThreadJson")
 EndFunction
 
 String Function GetJson(Actor speaker) 
+    DbgEnter("GetJson")
     int obj = GetObj(speaker) 
     String json = JValue.toJsonString(obj) 
+    DbgReturn("GetJson", "json")
     return json 
 EndFunction 
 
 int Function GetObj(Actor speaker)
+    DbgEnter("GetObj")
     AlignActors()
 
     Float distance = 0.0
@@ -917,10 +1049,28 @@ int Function GetObj(Actor speaker)
     JMap.setStr(thread_obj, "style", style)
     JMap.setFlt(thread_obj, "speaker_distance", distance)
     JMap.setInt(thread_obj, "speaker_los", los as int)
+
+    int names_arr = JArray.object()
+    int victims_arr = JArray.object()
+    i = 0
+    while i < num_actors
+        JArray.addStr(names_arr, actors[i].GetDisplayName())
+        DbgMsg("GetObj", "thread.IsVictim "+actors[i].GetDisplayName())
+        if thread.IsVictim(actors[i])
+            JArray.addStr(victims_arr, actors[i].GetDisplayName())
+        endif
+        i += 1
+    endwhile
+    JMap.setObj(thread_obj, "names", names_arr)
+    JMap.setObj(thread_obj, "victims", victims_arr)
+    JMap.setStr(thread_obj, "location", GetLocation())
+
+    DbgReturn("GetObj", "thread_obj")
     return thread_obj
 EndFunction
 
 int Function GetVictimsNamesJsonObj()
+    DbgEnter("GetVictimsNamesJsonObj")
     int victimNamesMap = JMap.object()
     int i = 0
     while i < num_actors
@@ -930,10 +1080,12 @@ int Function GetVictimsNamesJsonObj()
         i += 1
     endwhile
 
+    DbgReturn("GetVictimsNamesJsonObj", "victimNamesMap")
     return victimNamesMap
 EndFunction
 
 int Function UpdateActorsObj()
+    DbgEnter("UpdateActorsObj")
     int actors_map = JMap.getObj(thread_obj, "actors")
     int i = 0
     JMap.clear(actors_map) 
@@ -943,11 +1095,14 @@ int Function UpdateActorsObj()
         JMap.setObj(actors_map,name,obj)
         i += 1 
     endwhile
+    DbgReturn("UpdateActorsObj", "actors_map")
     return actors_map
 EndFunction
 
 String Function GetLocation()
 
+    DbgEnter("GetLocation")
+    DbgMsg("GetLocation", "thread.BedTypeId")
     int bed = thread.BedTypeId
 
     String loc = "the floor"
@@ -983,6 +1138,7 @@ String Function GetLocation()
     on_furniture[20] = "Stockade"
     ; Add more if needed
 
+    DbgMsg("GetLocation", "thread.Animation")
     sslBaseAnimation anim = thread.Animation
     int i = 0
     bool found = false
@@ -1010,26 +1166,33 @@ String Function GetLocation()
         endif
     endif 
 
+    DbgReturn("GetLocation", "loc")
     return loc+" "
 EndFunction 
 
 
 bool Function SexLab_Thread_LOS(Actor akActor)
+    DbgEnter("SexLab_Thread_LOS")
     if thread == None 
+        DbgReturn("SexLab_Thread_LOS", "True")
         return True 
     endif 
     int i = 0
     while i < num_actors 
         if akActor == thread.positions[i] || akActor.HasLOS(thread.positions[i])
+            DbgReturn("SexLab_Thread_LOS", "true")
             return true
         endif 
         i += 1
     endwhile 
+    DbgReturn("SexLab_Thread_LOS", "false")
     return false
 endFunction 
 
 String Function GetTagsString(sslBaseAnimation anim) global
     String[] _tags = anim.GetRawTags()
+    SkyrimNet_SexLab_Scene sl_scene = Game.GetFormFromFile(0x8000,"SkyrimNet_SexLab.esp") AS SkyrimNet_SexLab_Scene
+    sl_scene.DbgEnter("GetTagsString")
     int num_tags = _tags.length 
     int obj = JArray.objectWithSize(num_tags) 
     int i = 0 

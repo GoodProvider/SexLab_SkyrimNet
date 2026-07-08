@@ -1,4 +1,4 @@
-customCategory: sexlab_sex
+customCategory: sexlab_nonsexual
 name: SexLab_Start_Nonsexual_Three
 description: "[direction] [style] [method] with [Target] and [participate]"
 questEditorId: SkyrimNet_SexLab
@@ -29,4 +29,4 @@ parameterMapping:
     value: "nonsexual_male_position_2"
   - type: dynamic
     name: participate 
-    value: third participating actor 
+    description: third participating actor 

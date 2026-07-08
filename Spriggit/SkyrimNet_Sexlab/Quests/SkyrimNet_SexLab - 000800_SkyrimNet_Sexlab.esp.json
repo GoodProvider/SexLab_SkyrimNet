@@ -67,7 +67,7 @@
         "Properties": [
           {
             "MutagenObjectType": "ScriptObjectListProperty",
-            "Name": "scenes",
+            "Name": "sl_scenes",
             "Objects": [
               {
                 "Name": "",
@@ -189,7 +189,7 @@
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "scene_generic",
+            "Name": "sl_scene_generic",
             "Object": "002869:SkyrimNet_Sexlab.esp"
           }
         ]

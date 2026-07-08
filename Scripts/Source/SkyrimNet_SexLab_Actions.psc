@@ -22,7 +22,7 @@ EndFunction
 ; Setup
 ; -------------------------------------------------
 Function Setup()
-    if Game.GetModByName("Data/Ostim.esp") != 255
+    if Game.GetModByName("Ostim.esp") != 255
         OStimActorCountFaction = Game.GetFormFromFile(0xECA, "Ostim.esp") as Faction
         Trace("Setup","Found Ostim.esp, OStimActorCountFaction set to "+OStimActorCountFaction)
     else 
@@ -200,11 +200,12 @@ Function StartScene_Event(String intent, Actor speaker, Actor target=None, Actor
         endif 
     endif 
 
-    Trace("StartScene_Event","intent:"+intent+" speaker:"+speaker_name+" target:"+target_name+" victim:"+victim_name\
+    String event_name = "SkyrimNet_SexLab_Action_Start"
+    Trace("StartScene_Event","event_name:"+event_name+" intent:"+intent+" speaker:"+speaker_name+" target:"+target_name+" victim:"+victim_name\
         +" style:"+style+" speaker_position:"+speaker_position+" method:"+method+" event_hook:"+event_hook+" setting_name:"+setting_name\
         +" participate_3_name:"+participate_3_name)
 
-    int handle = ModEvent.Create("SkyrimNet_SexLab_Action_Start")
+    int handle = ModEvent.Create(event_name)
     ModEvent.PushString(handle, intent)
     ModEvent.PushForm(handle, speaker)
     ModEvent.PushForm(handle, target)
@@ -239,7 +240,7 @@ Function Change_Outfit(Actor stripper, Actor stripped, String style, String how,
     endif 
 
     bool success = False
-    if how == "put on"
+    if how == "dress"
         Form[] forms = main.UnStoreStrippedItems(Stripped)
         if forms.length > 0
             sexlab.UnStripActor(Stripped, forms, false)

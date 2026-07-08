@@ -16,6 +16,8 @@
      {% set sexlab.source = "file" %}
 {% endif %}
 
+sexlab: {{sexlab}} 
+
 {% set speaker = {"speaking_modifiers":[], "victim":0, "notice_level":"nothing"} %}
 
 {% if existsIn(sexlab,"threads") and length(sexlab.threads) > 0 %}
@@ -25,7 +27,7 @@
                {% set speaker.notice_level = "active" %} 
                - {% if thread.location != "" %} On {{thread.location}},{% endif %} {{ thread.description }}
           {% else %}
-               {% set can_seen_desc = "can not see what is happening." %} 
+               {% set can_see_desc = "can not see what is happening." %} 
                {% if thread.speaker_los %}
                     {% if thread.speaker_distance > 36 %}
                          {% set can_notice_level = 0 %}
@@ -37,7 +39,7 @@
                          {% set can_see_desc = "can see who is having sex, but not specifically what they are doing." %} 
                     {% else %}
                          {% set can_notice_level = 2 %}
-                         {% set can_seen_desc = "" %} 
+                         {% set can_see_desc = "" %} 
                     {% endif %}
                {% endif %} 
                
@@ -46,13 +48,13 @@
                     {% set can_notice_level = 0 %}
                {% else if thread.speaker_distance > 256 %} {# 12 feet far enough to see, but details vague #}
                     {% set can_notice_level = 1 %}
-                    {% set can_heard_desc = "can hear muffled sounds that might be sex." %} 
+                    {% set can_hear_desc = "can hear muffled sounds that might be sex." %} 
                {% else if thread.speaker_distance > 128 %} {# 6 feet clearly can hear its sex #}
                     {% set can_notice_level = 2 %}
-                    {% set can_heard_desc = "can clearly hear that someone is having sex." %} 
+                    {% set can_hear_desc = "can clearly hear that someone is having sex." %} 
                {% else %}
                     {% set can_notice_level = 2 %}
-                    {% set can_heard_desc = "can clearly hear that someone is having sex and might be able to tell who." %} 
+                    {% set can_hear_desc = "can clearly hear that someone is having sex and might be able to tell who." %} 
                {% endif %}
 
                {% if can_notice_level > 0 %}

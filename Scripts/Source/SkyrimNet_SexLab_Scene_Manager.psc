@@ -9,8 +9,8 @@ SexLabFramework Property sexlab Auto
 sslThreadSlots Property threadSlots Auto
 sslActorLibrary Property actorLib Auto
 
-; the scene_generic is returned when there re no more scenes available
-; If a scene is not found, the scene_generic is returned
+; sl_scene_generic is returned when there are no more sl_scenes available
+; If a sl_scene is not found, sl_scene_generic is returned
 ; to make sure a description is always possible
 SkyrimNet_SexLab_Scene Property sl_scene_generic = None Auto
 SkyrimNet_SexLab_Scene[] Property sl_scenes Auto
@@ -119,12 +119,14 @@ EndFunction
 ; These will get a sl_scene if they can find it or return sl_scene_generic 
 ; --------------------------------------
 SkyrimNet_SexLab_Scene Function GetSceneByThread(sslThreadController thread, Bool any_state=False)
+    Trace("GetSceneByThread","--- thread: "+thread.tid)
     if !any_state
         String s = (thread as sslThreadModel).GetState()
         if s != "animating" && s != "prepare"
             return None 
         endif 
     endif 
+    Trace("GetSceneByThread","--- any_state: "+any_state)
 
     int tid = thread.tid
     if tid < thread_scene.length && thread_scene[tid] != None 
@@ -136,7 +138,8 @@ SkyrimNet_SexLab_Scene Function GetSceneByThread(sslThreadController thread, Boo
         thread_scene[tid] = None
         sl_scene.Release() 
     endif 
-    
+
+    Trace("GetSceneByThread","--- getting inactive scene")
     SkyrimNet_SexLab_Scene sl_scene = GetSceneInactive(thread)
     sl_scene.Setup()
     return sl_scene
@@ -171,6 +174,8 @@ SkyrimNet_SexLab_Scene Function GetSceneInactive(sslThreadController thread)
         i += 1 
     endwhile 
     Trace("GetSceneInactive","Failed to find inactive sl_scene using generic")
+    EnsureThreadSceneLargeEnough(thread.tid)
+    thread_scene[thread.tid] = sl_scene_generic
     sl_scene_generic.SetThread(thread) 
     return sl_scene_generic
 EndFunction 
@@ -284,6 +289,8 @@ endFunction
 ;----------------------------------------------------------------------------------------------------
 Function RegisterEventsActions() 
     Trace("RegisterEventsActions","")
+    UnRegisterForModEvent("SkyrimNet_SexLab_Action_Stop")
+    UnRegisterForModEvent("SkyrimNet_SexLab_Action_Start")
     RegisterForModEvent("SkyrimNet_SexLab_Action_Stop", "Action_Stop")
     RegisterForModEvent("SkyrimNet_SexLab_Action_Start", "Action_Start")
 EndFunction 
@@ -297,6 +304,10 @@ Event Action_Stop(Form f_speaker,Form f_target, String style)
     endif 
     if f_target == None 
         Trace("Action_Stop", "f_target is none, aborting")
+        return 
+    endif 
+    if target == None 
+        Trace("Action_Stop", "target is none, aborting")
         return 
     endif 
 
@@ -344,16 +355,18 @@ Event Action_Stop(Form f_speaker,Form f_target, String style)
                 return
             endif 
         endif 
-
-        sl_scene.AnimationEnd(speaker,style)
     endif 
-    threadSlots.StopThread(sl_scene.GetThread())
+
+    sslThreadController cachedThread = sl_scene.GetThread()
+    sl_scene.AnimationEnd(speaker,style)
+    threadSlots.StopThread(cachedThread)
 EndEvent 
 
 Event Action_Start(String intent, Form f_speaker, Form f_target, Form f_victim, \
     string style, string method, int speaker_position,\ 
     String event_hook, String setting_name,\ 
     Form f_participate_3)
+    Trace("Action_Start","intent:"+intent)
     Actor speaker = f_speaker as Actor 
     Actor target = f_target as Actor 
     Actor victim = f_victim as Actor 
@@ -396,6 +409,10 @@ Event Action_Start(String intent, Form f_speaker, Form f_target, Form f_victim, 
     endif 
 
     SkyrimNet_SexLab_Scene_Creator creator = CreateCreator(intent, actors, speaker, target, method, setting_name)
+    if creator == None 
+        Trace("Action_Start", "CreateCreator returned None, aborting")
+        return 
+    endif 
     if creator.LockAllActorLock()
         ; Can't be set by setting
         if victim != None 
@@ -410,6 +427,8 @@ Event Action_Start(String intent, Form f_speaker, Form f_target, Form f_victim, 
         endif 
 
         Creator.StartScene() 
+    else 
+        creator.Release()
     endif 
 EndEvent 
 
@@ -470,7 +489,7 @@ event AnimationEnd(int ThreadID, bool HasPlayer)
 EndEvent 
 
 ; Function AllowedDeniedOnlyIncrease(Actor[] actors, sslThreadController thread, String status)
-    ; if !Game.GetModByName("Data/SexLabAroused.esm")  != 255
+    ; if !Game.GetModByName("SexLabAroused.esm")  != 255
         ; return
     ; endif
     ; Store orgasm denied actor's arousal level before sex, It is not allowed to lower 
@@ -608,7 +627,6 @@ String Function GetThreadsJson(Actor speaker = None)
     String json = JValue.toJsonString(obj) 
     
     Trace("getThreadsJson",json)
-    JValue.release(actors_map)
     JValue.release(obj) 
     Miscutil.WriteToFile(threads_filename, json, append=False)
     return json

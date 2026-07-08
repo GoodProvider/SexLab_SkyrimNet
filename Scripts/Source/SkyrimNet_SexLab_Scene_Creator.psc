@@ -72,6 +72,27 @@ Function Trace(String func, String msg="", Bool notification=False)
     endif 
 EndFunction
 
+Function DbgEnter(String func)
+    Trace(func, "--- enter")
+EndFunction
+
+Function DbgReturn(String func, String reason="")
+    if reason != ""
+        Trace(func, "--- return "+reason)
+    else
+        Trace(func, "--- return")
+    endif
+EndFunction
+
+Function DbgEnd(String func)
+    Trace(func, "--- end")
+EndFunction
+
+Function DbgMsg(String func, String msg)
+    Trace(func, "--- "+msg)
+EndFunction
+
+
 String Function GetString() 
     String tags_string = JoinStrings(tags,num_tags)
     String tags_suppress_string = JoinStrings(tags_suppress, num_tags_suppress)
@@ -88,6 +109,7 @@ String Function GetString()
 EndFunction 
 
 Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager) 
+    DbgEnter("Initialize")
     parent.Initialize(_sid, _manager) 
     sexlab = manager.sexlab
     EnsureActorsArraysLargeEnough(2) 
@@ -95,6 +117,7 @@ Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager)
         tags = new String[10]
         tags_suppress = new String[10]
     endif 
+    DbgEnd("Initialize")
 EndFunction 
 
 ; -------------------------------------------------------
@@ -102,6 +125,7 @@ EndFunction
 ; -------------------------------------------------------
 
 Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, String _method="", String setting_name="")
+    DbgEnter("Setup")
     Trace("Setup","intent: "+_intent+" actors: ["+JoinActors(_actors)+"] speaker:"+GetDisplayName(_speaker)+" target:"+GetDisplayName(_target)+" method: "+_method)
     intent = _intent
     speaker = _speaker
@@ -154,6 +178,7 @@ Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, S
     SetMethod(_method)
     AddTag(_method) 
     SetNames() 
+    DbgEnd("Setup")
 EndFunction 
 
 
@@ -161,34 +186,42 @@ EndFunction
 ; Release 
 ; --------------------------------------------
 Function Release()
+    DbgEnter("Release")
     UnlockAllActorLock() 
     num_tags = 0
     num_tags_suppress = 0 
     event_hook = None 
     parent.Release() 
+    DbgEnd("Release")
 EndFunction
 
 ; --------------------------------------------
 ; Start with Thread
 ; --------------------------------------------
 SkyrimNet_SexLab_Scene Function StartScene() 
+    DbgEnter("StartScene")
     SetNames() 
 
-    Trace("Start",GetString()) 
+    Trace("StartScene",GetString()) 
 
+    DbgMsg("StartScene", "sexlab.NewThread()")
     sslThreadModel model = sexlab.NewThread()
+    DbgMsg("StartScene", "sexlab.NewThread() returned model="+model)
     if model == None
-        Trace("Start","Failed to create model")
+        Trace("StartScene","Failed to create model")
         Release()
+        DbgReturn("StartScene", "None")
         return None 
     endif
 
     sslBaseAnimation[] animations = SelectAnimations() 
     if animations == empty
-        Trace("Start","SelectAnimations returned empty")
+        Trace("StartScene","SelectAnimations returned empty")
         Release() 
+        DbgReturn("StartScene", "None")
         return None
-    endif 
+    endif
+    DbgMsg("StartScene", "model.SetAnimations count="+animations.length)
     model.SetAnimations(animations) 
 
     ; -----------------------------------------
@@ -197,16 +230,19 @@ SkyrimNet_SexLab_Scene Function StartScene()
     int i = 0 
     bool failed = False 
     while i < num_actors && !failed 
+        DbgMsg("StartScene", "model.AddActor "+actors[i].GetDisplayName())
         if model.AddActor(actors[i]) < 0 
-            Trace("Start","AddActor failed on actor:"+actors[i].GetDisplayName())
+            Trace("StartScene","AddActor failed on actor:"+actors[i].GetDisplayName())
             failed = True 
         else 
             if no_orgasm_mask[i] == 1 
-                Trace("Start","no orgasm for "+actors[i].GetDisplayname())
+                Trace("StartScene","no orgasm for "+actors[i].GetDisplayname())
+                DbgMsg("StartScene", "model.DisableOrgasm "+actors[i].GetDisplayname())
                 model.DisableOrgasm(actors[i], true) 
             endif 
             if no_stripping_mask[i] == 1 
-                Trace("Start","no stripping for "+actors[i].GetDisplayname())
+                Trace("StartScene","no stripping for "+actors[i].GetDisplayname())
+                DbgMsg("StartScene", "model.SetNoStripping "+actors[i].GetDisplayname())
                 model.SetNoStripping(actors[i])
             endif 
         endif 
@@ -215,17 +251,20 @@ SkyrimNet_SexLab_Scene Function StartScene()
 
     i = 0 
     while i < num_victims && !failed
+        DbgMsg("StartScene", "model.SetVictim "+victims[i].GetDisplayName())
         model.SetVictim(victims[i])
         i += 1 
     endwhile 
 
     if failed 
         Release() 
+        DbgReturn("StartScene", "None")
         return  None 
     endif 
 
     ; Reset the masks, in case the names moves things around 
     i = 0
+    DbgMsg("StartScene", "model.positions.length")
     num_actors = model.positions.length
     while i < num_actors 
         actors[i] = model.positions[i]
@@ -251,7 +290,9 @@ SkyrimNet_SexLab_Scene Function StartScene()
     endwhile 
 
     if num_actors == 1
+        DbgMsg("StartScene", "sexlab.GetGender "+actors[0].GetDisplayName())
         int gender = sexlab.GetGender(actors[0])
+        DbgMsg("StartScene", "sexlab.GetGender returned "+gender)
         bool has_penis = (gender != 1 && gender != 3)
         if has_penis 
             addTag("M")
@@ -261,12 +302,13 @@ SkyrimNet_SexLab_Scene Function StartScene()
     endif 
 
     if event_hook != "" 
+        DbgMsg("StartScene", "model.SetHook "+event_hook)
         model.SetHook(event_hook)
     endif 
 
     String tags_string = JoinStrings(tags, num_tags)
     String tags_suppress_string = JoinStrings(tags_suppress, num_tags_suppress)
-    Trace("Start","intent:"+intent\
+    Trace("StartScene","intent:"+intent\
         +" actors: ["+actor_names+"]"\
         +" victims: ["+victim_names+"]"\
         +" assailants: ["+assailant_names+"]"\
@@ -277,15 +319,22 @@ SkyrimNet_SexLab_Scene Function StartScene()
         +" style:"+style\
         +" event_hook:"+event_hook)
 
+    Trace("StartScene","--- starting thread")
+    DbgMsg("StartScene", "model.StartThread()")
     sslThreadController thread = model.StartThread() 
+    DbgMsg("StartScene", "model.StartThread() returned thread="+thread)
     if thread == None 
         Trace("Start","StartThread returned None, releasing sl_scene.sid")
         Release() 
+        DbgReturn("StartScene", "None")
         return None 
     endif 
-    Release() 
 
-    return manager.CreateSceneByCreator(self, thread) 
+    Trace("StartScene","--- CreateSceneByCreator")
+    SkyrimNet_SexLab_Scene sl_scene = manager.CreateSceneByCreator(self, thread) 
+    Release() 
+    DbgReturn("StartScene", "sl_scene")
+    return sl_scene 
 EndFunction
 
 ; --------------------------------------------
@@ -293,19 +342,23 @@ EndFunction
 ; --------------------------------------------
 
 Function EnsureActorsArraysLargeEnough(int size) 
+    DbgEnter("EnsureActorsArraysLargeEnough")
     actors = EnsureActorsLargeEnough(actors, size) 
     victim_mask = EnsureIntsLargeEnough(victim_mask, size) 
     assailant_mask = EnsureIntsLargeEnough(assailant_mask, size) 
     no_orgasm_mask = EnsureIntsLargeEnough(no_orgasm_mask, size, no_orgasm_default_current) 
     no_stripping_mask = EnsureIntsLargeEnough(no_stripping_mask, size, no_stripping_default_current) 
     speaking_modifiers = EnsureStringsLargeEnough(speaking_modifiers, size, speaking_modifiers_default_current) 
+    DbgEnd("EnsureActorsArraysLargeEnough")
 EndFunction
 
 ; ---------------------------------
 ; Set Up Names 
 ; ---------------------------------
 Function ShiftActorsLeft() 
+    DbgEnter("ShiftActorsLeft")
     if num_actors < 2
+        DbgReturn("ShiftActorsLeft", "void")
         return 
     endif 
     
@@ -318,9 +371,11 @@ Function ShiftActorsLeft()
     endwhile 
     actors[i] = temp 
     SetNames() 
+    DbgEnd("ShiftActorsLeft")
 EndFunction
 
 Function SetMasks()
+    DbgEnter("SetMasks")
     int i = 0 
     while i < num_actors 
 
@@ -342,9 +397,11 @@ Function SetMasks()
         endif 
         i += 1 
     endwhile 
+    DbgEnd("SetMasks")
 EndFunction 
 
 Function SetNames() 
+    DbgEnter("SetNames")
     SetMasks()
     actor_names = JoinActors(actors, num_actors)
     actor_names_json = JoinActorsToJson(actors, num_actors)
@@ -359,6 +416,7 @@ Function SetNames()
 ;        " hermaphrodiate_names:"+hermaphrodiate_names+" strapon_names:"+strapon_names+\
 ;        " victim_names:"+victim_names+" victim_names_json:"+victim_names_json+\
 ;        " assailant_names:"+assailant_names)
+    DbgEnd("SetNames")
 EndFunction 
 
 ; -------------------------------------------------
@@ -366,12 +424,14 @@ EndFunction
 ; -------------------------------------------------
 
 Function SetVictim(Actor victim) 
+    DbgEnter("SetVictim")
     if !victims 
         victims = PapyrusUtil.ActorArray(10)
     endif 
     num_victims = 0 
     if victim == None 
         Trace("SetVictim","victim is None")
+        DbgReturn("SetVictim", "void")
         return
     endif 
 
@@ -379,9 +439,11 @@ Function SetVictim(Actor victim)
     num_victims = 1 
     Trace("SetVictim",GetDisplayName(victim))
     SetNames() 
+    DbgEnd("SetVictim")
 EndFunction 
 
 Function SetVictims(Actor[] _victims) 
+    DbgEnter("SetVictims")
     num_victims = 0 
     Actor player = Game.GetPlayer() 
     player_is_victim = False
@@ -415,37 +477,47 @@ Function SetVictims(Actor[] _victims)
         Trace("SetVictim",JoinActorsToJson(victims))
     endif 
     SetNames() 
+    DbgEnd("SetVictims")
 EndFunction 
 
 Function SetMethod(String _method) 
+    DbgEnter("SetMethod")
     method = _method
     if method == "oral" || method == "vaginal" || method == "anal"
         method += " sex"
     elseif method == "whip"
         method =  "whipping"
     endif 
+    DbgEnd("SetMethod")
 EndFunction
 
 ; -------------------------
 ; Tag Functions 
 ; -------------------------
 function SetTag(String tag) 
+    DbgEnter("SetTag")
     num_tags = 0
     AddTag(tag)
+    DbgEnd("SetTag")
 EndFunction 
 
 function SetTagSuppress(String tag) 
+    DbgEnter("SetTagSuppress")
     num_tags_suppress = 0 
     AddTagSuppress(tag)
+    DbgEnd("SetTagSuppress")
 EndFunction 
 
 function AddTag(String tag) 
+    DbgEnter("AddTag")
     if tag == "" 
+        DbgReturn("AddTag", "void")
         return 
     endif 
     int i = 0 
     while i < num_tags 
         if tags[i] == tag 
+            DbgReturn("AddTag", "void")
             return 
         endif 
         i += 1 
@@ -453,14 +525,18 @@ function AddTag(String tag)
     tags = EnsureStringsLargeEnough(tags, num_tags + 1) 
     tags[num_tags] = tag
     num_tags += 1 
+    DbgEnd("AddTag")
 EndFunction 
 function AddTagSuppress(String tag) 
+    DbgEnter("AddTagSuppress")
     if tag == "" 
+        DbgReturn("AddTagSuppress", "void")
         return 
     endif 
     int i = 0 
     while i < num_tags_suppress
         if tags_suppress[i] == tag 
+            DbgReturn("AddTagSuppress", "void")
             return 
         endif 
         i += 1 
@@ -468,19 +544,25 @@ function AddTagSuppress(String tag)
     tags_suppress = EnsureStringsLargeEnough(tags_suppress, num_tags_suppress + 1) 
     tags_suppress[num_tags_suppress] = tag
     num_tags_suppress += 1 
+    DbgEnd("AddTagSuppress")
 EndFunction 
 
 ; --------------------------------------------
 ; --------------------------------------------
 function SetTags(String[] _tags) 
+    DbgEnter("SetTags")
     SetTags_Helper(True,_tags) 
+    DbgEnd("SetTags")
 endfunction
 
 function SetTagsSuppress(String[] _tags_suppress) 
+    DbgEnter("SetTagsSuppress")
     SetTags_Helper(False,_tags_suppress) 
+    DbgEnd("SetTagsSuppress")
 endfunction
 
 Function SetTags_Helper(bool is_tags, String[] _tags)
+    DbgEnter("SetTags_Helper")
     int number = 0 
     int i = 0
     int _num_tags = _tags.length
@@ -516,20 +598,25 @@ Function SetTags_Helper(bool is_tags, String[] _tags)
         num_tags_suppress = number
         tags_suppress = ts
     endif 
+    DbgEnd("SetTags_Helper")
 EndFunction 
 
 ; ------------------------------------------------------
 ; Set Style 
 ; ------------------------------------------------------
 Function SetStyle(String _style) 
-    style = _style
+    DbgEnter("SetStyle")
+    parent.SetStyle(_style)
+    DbgEnd("SetStyle")
 EndFunction 
 String Function GetStyle() 
     return style
 EndFunction
 
 Function SetEventHook(String _event_hook) 
+    DbgEnter("SetEventHook")
     event_hook = _event_hook 
+    DbgEnd("SetEventHook")
 EndFunction
 
 ; -------------------------------------------------------------------------------
@@ -537,10 +624,14 @@ EndFunction
 ; -------------------------------------------------------------------------------
 
 Actor Function GetSpeaker() 
+    DbgEnter("GetSpeaker")
+    DbgReturn("GetSpeaker", "speaker")
     return speaker 
 EndFunction 
 
 Actor Function GetTarget() 
+    DbgEnter("GetTarget")
+    DbgReturn("GetTarget", "target")
     return target 
 EndFunction
 
@@ -548,19 +639,23 @@ EndFunction
 ; Load Scene Setting from File 
 ; -------------------------------------------------------------------------------------
 Function LoadSetting(String setting_name) 
+    DbgEnter("LoadSetting")
     if setting_name == "" 
         Trace("LoadSetting", "setting_name is '', aborting")
+        DbgReturn("LoadSetting", "void")
         return 
     endif 
     String filename = manager.GetSceneSettingFilename(setting_name)
     if !MiscUtil.FileExists(filename) 
         Trace("LoadSetting",filename+" doesn't exit, aborting")
+        DbgReturn("LoadSetting", "void")
         return 
     endif  
 
     int setting_id = JValue.readFromFile(filename)
     if setting_id < 0 
         Trace("LoadSetting",filename+" couldn't be parsed, aborting")
+        DbgReturn("LoadSetting", "void")
         return 
     endif  
     Trace("LoadSetting","loading "+setting_name)
@@ -575,8 +670,10 @@ Function LoadSetting(String setting_name)
             if position == 0 
                 other = 1 
             endif 
+            DbgMsg("LoadSetting", "sexlab.GetGender position "+actors[position].GetDisplayName())
             int gender = sexlab.GetGender(actors[position])
             bool position_male = gender == 0 || gender == 2 
+            DbgMsg("LoadSetting", "sexlab.GetGender other "+actors[other].GetDisplayName())
             gender = sexlab.GetGender(actors[other])
             bool other_male = gender == 0 || gender == 2 
             ; position is not a male
@@ -735,6 +832,7 @@ Function LoadSetting(String setting_name)
         Trace("LoadSetting"," no_stripping:"+no_stripping_json+" no_orgasm:"+no_orgasm_json\
             +" tags:["+tags_string+"] suppress:["+tags_suppress_string+"]"+" speaking_modifiers:["+speaking_modifiers+"]")
     endif 
+    DbgEnd("LoadSetting")
 EndFunction 
 
 ; -------------------------------------------------------------------------------------
@@ -742,7 +840,9 @@ EndFunction
 ; -------------------------------------------------------------------------------------
 
 bool Function LockAllActorLock() 
+    DbgEnter("LockAllActorLock")
     if !actors
+        DbgReturn("LockAllActorLock", "False")
         return False
     endif 
     int i = 0 
@@ -752,13 +852,17 @@ bool Function LockAllActorLock()
 
     if i < num_actors 
         UnlockAllActorLock()
+        DbgReturn("LockAllActorLock", "False")
         return False 
     endif 
+    DbgReturn("LockAllActorLock", "True")
     return True 
 EndFunction 
 
 Function UnLockAllActorLock() 
+    DbgEnter("UnLockAllActorLock")
     if !actors 
+        DbgReturn("UnLockAllActorLock", "void")
         return 
     endif 
     int i = 0
@@ -766,24 +870,32 @@ Function UnLockAllActorLock()
         UnlockActorLock(actors[i]) 
         i += 1 
     endwhile 
+    DbgEnd("UnLockAllActorLock")
 EndFunction 
 
 Bool Function IsActorLocked(Actor akActor) 
+    DbgEnter("IsActorLocked")
+    DbgReturn("IsActorLocked", "StorageUtil.HasIntValue(akActor, storage_actor_lock_key)")
     return StorageUtil.HasIntValue(akActor, storage_actor_lock_key) 
 EndFunction 
 
 bool Function LockActorLock(Actor akActor) 
+    DbgEnter("LockActorLock")
     if StorageUtil.HasIntValue(akActor, storage_actor_lock_key) 
+        DbgReturn("LockActorLock", "False")
         return False 
     endif 
     Trace("LockActorLock",akActor.GetDisplayName())
     StorageUtil.SetIntValue(akActor, storage_actor_lock_key, 1) 
+    DbgReturn("LockActorLock", "True")
     return True 
 EndFunction 
 
 Function UnlockActorLock(Actor akActor) 
+    DbgEnter("UnlockActorLock")
     StorageUtil.UnsetIntValue(akActor, storage_actor_lock_key) 
     Trace("UnlockActorLock",akActor.GetDisplayName())
+    DbgEnd("UnlockActorLock")
 EndFunction
 
 ;---------------------------------------------------------------------------------------------------------------------
@@ -797,6 +909,7 @@ EndFunction
 ; 4 NO, tell the LLM 
 int function YesNoDialog()
     
+    DbgEnter("YesNoDialog")
     Actor player = Game.GetPlayer() 
     String player_name = player.GetDisplayName()
 
@@ -841,12 +954,17 @@ int function YesNoDialog()
         endif 
     endif 
     
+    DbgMsg("YesNoDialog", "SkyMessage.ShowArray question="+question)
     int button = SkyMessage.ShowArray(question, buttons, getIndex = true) as int  
+    DbgMsg("YesNoDialog", "SkyMessage.ShowArray returned button="+button)
+    Trace("YesNoDialog","--- question: "+question+" buttons: "+JoinStrings(buttons, buttons.length)+" button: "+button)
     if button == BUTTON_NO || button == BUTTON_NO_SILENT
         if button == BUTTON_NO 
             DirectNarration(rejection, player, actors[0])
         endif 
     endif 
+    Trace("YesNoDialog","--- returning button: "+button)
+    DbgReturn("YesNoDialog", "button")
     return button
 EndFunction
 
@@ -855,6 +973,7 @@ EndFunction
 ; ------------------------------------------------------------------------
 
 sslBaseAnimation[] Function SelectAnimations()
+    DbgEnter("SelectAnimations")
     if num_victims > 0
         Trace("SelectAnimations"," assailants:"+assailant_names+" victims:"+victim_names)
     else 
@@ -864,24 +983,46 @@ sslBaseAnimation[] Function SelectAnimations()
     int button = BUTTON_YES
     if has_player
         button = YesNoDialog()
+        Trace("SelectAnimations","--- button: "+button)
         if button == BUTTON_NO || button == BUTTON_NO_SILENT
+            DbgReturn("SelectAnimations", "empty")
             return empty 
         endif 
     endif  
 
+    Trace("SelectAnimations","--- a button: "+button)
     if button != BUTTON_YES_RANDOM
         if (main.sex_edit_tags_player && has_player) || (main.sex_edit_tags_nonplayer && !has_player)
             animations = SelectAnimationsDialog()
         else 
             String tags_string = JoinStrings(tags, num_tags)
             String tags_suppress_string = JoinStrings(tags_suppress, num_tags_suppress)
-            animations = sexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, true)
+            bool require = false 
+            if num_tags > 0 || num_tags_suppress > 0
+                require = true 
+            endif 
+            DbgMsg("SelectAnimations", "sexlab.GetAnimationsByTags actors="+num_actors+" tags="+tags_string+" suppress="+tags_suppress_string+" require="+require)
+            animations = sexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, require)
+            DbgMsg("SelectAnimations", "sexlab.GetAnimationsByTags returned count="+animations.length)
         endif 
     else
+        Trace("SelectAnimations","--- b button: "+button)
         String tags_string = JoinStrings(tags, num_tags)
+        Trace("SelectAnimations","--- c tags_string: "+tags_string)
         String tags_suppress_string = JoinStrings(tags_suppress, num_tags_suppress)
-        animations =  sexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, true)
+        Trace("SelectAnimations","--- d tags_suppress_string: "+tags_suppress_string)
+        bool require = false 
+        if num_tags > 0 || num_tags_suppress > 0
+            require = true 
+        endif 
+        Trace("SelectAnimations","--- e sexlab: "+sexlab)
+        DbgMsg("SelectAnimations", "sexlab.GetAnimationsByTags actors="+num_actors+" tags="+tags_string+" suppress="+tags_suppress_string+" require="+require)
+        animations =  sexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, require)
+        DbgMsg("SelectAnimations", "sexlab.GetAnimationsByTags returned count="+animations.length)
+        Trace("SelectAnimations","--- e animations: "+animations.length)
     endif 
+    Trace("SelectAnimations","--- f animations: "+animations.length)
+    DbgReturn("SelectAnimations", "animations")
     return animations  
 EndFunction 
 
@@ -896,6 +1037,7 @@ EndFunction
 ;   endif 
 ; ----------------------------------------
 sslBaseAnimation[] Function SelectAnimationsDialog() 
+    DbgEnter("SelectAnimationsDialog")
     if num_victims > 0
         Trace("SelectAnimationsDialog"," assailants:"+assailant_names+" victims:"+victim_names)
     else 
@@ -904,13 +1046,16 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
 
     if (has_player && !main.sex_edit_tags_player) || (!has_player && !main.sex_edit_tags_nonplayer)
         Trace("SelectAnimationsDialog", "Returning empty | sex_edit_tags_player:"+main.sex_edit_tags_player+" sex_edit_tags_nonplayer:"+main.sex_edit_tags_nonplayer)
+        DbgReturn("SelectAnimationsDialog", "empty")
         return empty 
     endif 
 
     String tags_string = JoinStrings(tags, num_tags)
     String tags_suppress_string = JoinStrings(tags_suppress, num_tags_suppress)
     if num_tags > 0 || num_tags_suppress > 0
+        DbgMsg("SelectAnimationsDialog", "sexlab.GetAnimationsByTags probe tags="+tags_string)
         sslBaseAnimation[] anims =  SexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, true)
+        DbgMsg("SelectAnimationsDialog", "sexlab.GetAnimationsByTags probe returned count="+anims.length)
         if anims.length == 0
             Trace("SelectAnimationsDialog", "No animations found, dropping initial tag: ["+tags_string+"] tags_suppress:["+tags_suppress_string+"]")
             num_tags = 0 
@@ -924,6 +1069,7 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
     int group_tags = JMap.getObj(manager.group_info,"group_tags",0)
     if group_tags == 0 
         Trace("SelectAnimationsDialog", "group_tags not found in group_tags.json")
+        DbgReturn("SelectAnimationsDialog", "empty")
         return empty
     endif 
     Trace("SelectAnimationDialog e")
@@ -995,6 +1141,7 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
                 ShiftActorsLeft() 
             elseif button == "<cancel>"
                 JValue.release(groups)
+                DbgReturn("SelectAnimationsDialog", "empty")
                 return empty
             elseif button == "<remove"
                 num_tags -= 1
@@ -1005,9 +1152,12 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
             endif 
         endwhile 
 
+        DbgMsg("SelectAnimationsDialog", "sexlab.GetAnimationsByTags final tags="+tags_string)
         sslBaseAnimation[] anims =  SexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, true)
+        DbgMsg("SelectAnimationsDialog", "sexlab.GetAnimationsByTags final returned count="+anims.length)
         if anims.length > 0
             JValue.release(groups)
+            DbgReturn("SelectAnimationsDialog", "anims")
             return anims 
         else
             Trace("SelectAnimationsDialog","No animations found for: "+tags_string, True )
@@ -1017,11 +1167,14 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
         endif 
     endwhile 
     JValue.release(groups)
+    DbgReturn("SelectAnimationsDialog", "empty")
     return empty
 EndFunction
 
 Function AddGroupTags(uilistMenu listMenu, int group_tags, String group) global
     int tags_obj = JMap.getObj(group_tags, group, 0)
+    SkyrimNet_SexLab_Scene_Creator creator = Game.GetFormFromFile(0x8000,"SkyrimNet_SexLab_Scene_Creator.psc") AS SkyrimNet_SexLab_Scene_Creator
+    creator.DbgEnter("AddGroupTags")
     if tags_obj != 0 
         int i = 0
         int count = JArray.count(tags_obj)
@@ -1033,9 +1186,11 @@ Function AddGroupTags(uilistMenu listMenu, int group_tags, String group) global
             i += 1
         endwhile 
     endif 
+    creator.DbgEnd("AddGroupTags")
 EndFunction
 
 String Function GroupDialog(int group_tags, String group)
+    DbgEnter("GroupDialog")
     uilistMenu listMenu = uiextensions.GetMenu("UIlistMenu") AS uilistMenu
     listMenu.ResetMenu()
     listMenu.AddEntryItem("<back")
@@ -1046,5 +1201,6 @@ String Function GroupDialog(int group_tags, String group)
         button = "-continue-"
     endif 
     Trace("GroupDialog","button:"+button)
+    DbgReturn("GroupDialog", "button")
     return button
 EndFunction 

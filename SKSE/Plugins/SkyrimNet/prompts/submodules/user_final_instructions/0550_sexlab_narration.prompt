@@ -14,6 +14,9 @@
 {% endif %} 
 {% if existsIn(sexlab.actors, npc.name) %} 
      {% set speaker = at(sexlab.actors,npc.name) %} 
+     {% if get_faction_rank(npc.UUID, "SexLabAnimatingFaction") == 1 %}
+          {% set speaker.notice_level = "active" %}
+     {% endif %}
 {% else %} 
      {% set speaker = {"speaking_modifiers":[], "victim":false, "notice_level":"nothing", "arousal":0} %}
 {% endif %}

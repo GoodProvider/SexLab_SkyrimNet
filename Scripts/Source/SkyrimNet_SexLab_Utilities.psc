@@ -363,7 +363,7 @@ EndFunction
 ; Narration Wrappers 
 ; ------------------------------------------------------------
 
-Function ContinueActivity(Actor source=None, Actor target=None, bool optional=False) global 
+Function ContinueActivity(Actor source=None, Actor target=None, bool optional_is_dropped=False) global 
     String msg = ""
     If source != None 
         if target != None 
@@ -374,13 +374,14 @@ Function ContinueActivity(Actor source=None, Actor target=None, bool optional=Fa
     else 
         msg = "continue activity"
     endif
-    DirectNarration_Optional("continue activity", msg, source, target, optional)
+    DirectNarration_Optional("continue activity", msg, source, target, optional_is_dropped)
 EndFunction 
 
-Function DirectNarration_Optional(String event_type, String msg, Actor source=None, Actor target=None, bool optional=False) global
-    msg = CheckDuplicate("DirectNarration_Optional", source, msg)
-
+Bool Function NarrationCoolOffAllows(Actor source, Actor target) global
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
+    if main == None 
+        return False 
+    endif 
 
     float unit_meter = 0.01465
     float distance = (unit_meter*main.direct_narration_max_distance) + 1 
@@ -391,24 +392,34 @@ Function DirectNarration_Optional(String event_type, String msg, Actor source=No
         else
             distance = unit_meter*player.GetDistance(source) 
         endif 
-
     endif 
 
-    String type = "" 
     int queue_size = SkyrimNetAPI.GetSpeechQueueSize()
     int last_audio = SkyrimNetAPI.GetTimeSinceLastAudioEnded()/1000 
     float time_current = Utility.GetCurrentRealTime() 
     float time_delta = time_current - main.direct_narration_last_time 
-    if time_delta > main.direct_narration_cool_off && queue_size == 0 && (last_audio >= main.direct_narration_cool_off && distance <= main.direct_narration_max_distance)
+    return time_delta > main.direct_narration_cool_off && queue_size == 0 && (last_audio >= main.direct_narration_cool_off && distance <= main.direct_narration_max_distance)
+EndFunction
+
+Function DirectNarration_Optional(String event_type, String msg, Actor source=None, Actor target=None, bool optional_is_dropped=False) global
+    msg = CheckDuplicate("DirectNarration_Optional", source, msg, False, target)
+    if msg == ""
+        return 
+    endif 
+
+    SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
+
+    String type = "" 
+    if NarrationCoolOffAllows(source, target)
         SkyrimNetApi.DirectNarration(msg, source, target)
-        main.direct_narration_last_time = time_current
+        main.direct_narration_last_time = Utility.GetCurrentRealTime() 
         type = "direct"
     else 
-        if !optional && msg != ""
-             SkyrimNetApi.RegisterEvent(event_type, msg, source, target)
+        if optional_is_dropped || msg == ""
+            type = "dropped"
+        else
+            SkyrimNetApi.RegisterEvent(event_type, msg, source, target)
             type = "event"
-        else 
-            type = "skipped"
         endif 
     endif 
 
@@ -418,12 +429,15 @@ Function DirectNarration_Optional(String event_type, String msg, Actor source=No
     if target != None 
         msg += " target:"+target.GetDisplayName()
     endif
-    Trace("DirectNarration_Optional","type:"+type+" narration_delta:"+time_delta+" queue_size:"+queue_size+" last_audio_secs:"+last_audio+">?"+main.direct_narration_cool_off+" distance:"+distance+"<?"+main.direct_narration_max_distance+" msg:"+msg)
+    Trace("DirectNarration_Optional","type:"+type+" msg:"+msg)
 EndFunction
 
 Function DirectNarration(String msg, Actor source=None, Actor target=None, bool purge_dialogue=False) global
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
-    msg = CheckDuplicate("DirectNarration", source, msg)
+    msg = CheckDuplicate("DirectNarration", source, msg, False, target)
+    if msg == ""
+        return 
+    endif 
 
     if purge_dialogue
           SkyrimNetApi.PurgeDialogue(True)
@@ -441,31 +455,47 @@ EndFunction
 
 
 Function RegisterEvent(String event_name, String msg, Actor source=None, Actor target=None) global
-    if msg != "" 
-        msg = CheckDuplicate("RegisterEvent", source, msg)
-        SkyrimNetApi.RegisterEvent(event_name, msg, source, target)
-
-        if source != None 
-            msg += " source:"+source.GetDisplayName()
-        endif 
-        if target != None 
-            msg += " target:"+target.GetDisplayName()
-        endif
-        Trace("RegisterEvent", "event_name:"+event_name+" msg:"+msg)
+    if msg == ""
+        return 
     endif 
+    msg = CheckDuplicate("RegisterEvent", source, msg, False, target)
+    if msg == ""
+        return 
+    endif 
+    SkyrimNetApi.RegisterEvent(event_name, msg, source, target)
+
+    if source != None 
+        msg += " source:"+source.GetDisplayName()
+    endif 
+    if target != None 
+        msg += " target:"+target.GetDisplayName()
+    endif
+    Trace("RegisterEvent", "event_name:"+event_name+" msg:"+msg)
 EndFunction
 
-String Function CheckDuplicate(String func, Actor source, String msg) global
+String Function CheckDuplicate(String func, Actor source, String msg, Bool allow_continue_fallback=True, Actor target=None) global
     if msg == ""
         return msg
     endif 
+    if source == None && target == None 
+        return "" 
+    endif 
+
+    Actor storage_actor = source 
+    if storage_actor == None 
+        storage_actor = Game.GetPlayer() 
+    endif 
+
     String storage_key = "sexlab_narration_last_msg"
-    String old = StorageUtil.GetStringValue(source, storage_key, "")
+    String old = StorageUtil.GetStringValue(storage_actor, storage_key, "")
     if old == msg
         Trace(func+".CheckDuplicate", "changing duplicate `"+msg+"' to ''")
+        if allow_continue_fallback && NarrationCoolOffAllows(source, target)
+            ContinueActivity(source, target, True)
+        endif 
         return "" 
     else 
-        StorageUtil.SetStringValue(source, storage_key, msg)
+        StorageUtil.SetStringValue(storage_actor, storage_key, msg)
         return msg
     endif
 EndFunction
