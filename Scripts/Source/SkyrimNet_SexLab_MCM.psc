@@ -62,23 +62,30 @@ Function Trace(String func, String msg, Bool notification=False) global
 EndFunction
 
 Function Setup() 
-    if sexlab_ostim_options.length == 0
+    if !sexlab_ostim_options
        sexlab_ostim_options = new String[2]
        sexlab_ostim_options[0] = "SexLab"
        sexlab_ostim_options[1] = "Ostim" 
     endif 
 
-    if MiscUtil.FileExists("Data/SkyrimNetUDNG.esp") 
+    if Game.GetModByName("Data/SkyrimNetUDNG.esp")  != 255
         udng_found = True
     else 
         udng_found = False 
     endif 
+
+    if !menu
+        menu = (self as Quest) as SkyrimNet_SexLab_Menu
+        if !menu
+            Trace("Setup", "ERROR: SkyrimNet_SexLab_Menu not found on quest", true)
+        endif
+    endif
+    Trace("Setup", "complete")
 EndFunction 
 
 Event OnConfigOpen()
-    Pages = new String[2]
+    Pages = new String[1]
     pages[0] = page_options
-    pages[1] = page_actors
 EndEvent
 
 ;-----------------------------------------------------------------
@@ -86,11 +93,7 @@ EndEvent
 ;-----------------------------------------------------------------
 
 Event OnPageReset(string page)
-    if page == page_actors
-        PageActors()
-    else
-        PageOptions()
-    endif 
+    PageOptions()
 EndEvent 
 
 Function PageOptions() 
@@ -139,24 +142,6 @@ Function PageOptions()
         ostimnet_player_menu = AddMenuOption("sex framework:", label)
     endif 
 EndFunction 
-
-Function PageActors() 
-    AddHeaderOption("Undressed Actors")
-    AddHeaderOption("")
-
-    int count = StorageUtil.FormListCount(None, main.storage_items_key)
-    int i = 0
-    while i < count
-        Actor akActor = StorageUtil.FormListGet(None, main.storage_items_key, i) as Actor
-        if akActor != None
-            int num_items = StorageUtil.FormListCount(akActor, main.storage_items_key)
-            if num_items > 0
-                AddTextOption(akActor.GetDisplayName(), num_items+" items")
-            endif
-        endif
-        i += 1
-    Endwhile
-EndFunction
 
 ;-----------------------------------------------------------------
 ; Prompt Toggles 
@@ -268,7 +253,7 @@ State SexEditKeySet
         if conflictControl != "" 
             String msg = None 
             if (conflictName != "")
-                msg = "This key is already mapped to:"+"'"+ conflictControl+"'"+ newline\
+                msg = "This key is already mapped to:'"+ conflictControl+"'"+ newline\
                     +"(" + conflictName + ")"+newline+newline\
                     +"Are you sure you want to continue?"
             else
@@ -347,8 +332,8 @@ EndState
 ;-----------------------------------------------------------------
 Event OnOptionMenuOpen(int menu_id)
     Trace("OnOptionMenuOpen","menu_id: "+menu_id+" options: "+sexlab_ostim_options)
-    SetMenuDialogOptions(sexlab_ostim_options)
     if menu_id == ostimnet_player_menu
+        SetMenuDialogOptions(sexlab_ostim_options)
         SetMenuDialogStartIndex(sexlab_ostim_player)
     endif
     SetMenuDialogDefaultIndex(0)
@@ -368,10 +353,15 @@ endEvent
 ; --------------------------------------------
 
 Event OnKeyDown(int key_code)
+    Trace("OnKeyDown", "key_code: "+key_code)
     if UI.IsTextInputEnabled()
         return 
     endif 
     if sex_edit_key == key_code
+        if !menu
+            Trace("OnKeyDown", "menu is None; hotkey ignored", true)
+            return
+        endif
         menu.ProcessHotkey(key_code)
     endif 
 EndEvent

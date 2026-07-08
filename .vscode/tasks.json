@@ -54,6 +54,27 @@
         },
         {
             "label": "compile: pyro",
+            "type": "shell",
+            "command": "c:/Users/bhuff/.vscode/extensions/joelday.papyrus-lang-vscode-2024.578.1412/pyro/pyro.exe",
+            "args": [
+                "${workspaceFolder}/skyrimse.ppj",
+                "--game-path",
+                "C:\\Skyrim\\dev\\skyrim"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": "$PapyrusCompiler"
+        },
+        {
+            "label": "compile: pyro (vs code)",
             "type": "pyro",
             "projectFile": "skyrimse.ppj",
             "gamePath": "C:\\Skyrim\\dev\\skyrim",

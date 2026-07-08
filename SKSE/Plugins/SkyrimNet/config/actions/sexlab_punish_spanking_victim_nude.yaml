@@ -3,7 +3,7 @@ name: SexLab_Punish_Spanking_Victim_Nude
 description: "punish by [direction] stripping nude and [style] spanking"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
-executionFunctionName: StartScene_Consensual_Two
+executionFunctionName: StartScene_Punish_Two
 defaultPriority: 8
 parameterMapping:
   - type: static 
@@ -27,6 +27,3 @@ parameterMapping:
   - type: static 
     name: setting_name
     value: punishing_spanking_victim_nude 
-  - type: static 
-    name: setting_name
-    value: ""

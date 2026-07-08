@@ -18,7 +18,7 @@ parameterMapping:
     description: "put on|take off"
   - type: static
     name: narration
-    value: false
+    value: silent
 enabled: true
 eligibilityRules:
   - conditions:

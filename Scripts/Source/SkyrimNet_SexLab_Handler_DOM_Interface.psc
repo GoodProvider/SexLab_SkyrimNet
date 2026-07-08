@@ -1,5 +1,8 @@
 Scriptname SkyrimNet_SexLab_Handler_DOM_Interface extends Quest 
 
+Bool Function Setup() 
+    return true 
+EndFunction 
 
 ; Checks if the actor is a dom slave 
 Bool Function IsDOMSlave(Actor akActor)

@@ -16,7 +16,7 @@
      {% set sexlab.source = "file" %}
 {% endif %}
 
-{% set speaker = {"speaking_modifiers":[], "victim":false, "notice_level":"nothing"} %}
+{% set speaker = {"speaking_modifiers":[], "victim":0, "notice_level":"nothing"} %}
 
 {% if existsIn(sexlab,"threads") and length(sexlab.threads) > 0 %}
      {% for thread in sexlab.threads %}

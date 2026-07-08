@@ -81,9 +81,9 @@ Function Trace(String func, String msg="", Bool notification=False)
 EndFunction
 
 String Function GetString() 
-    return " actors: "+'"'+actor_names+'"'\
-          +" victims: "+'"'+victim_names+'"'\
-          +" assailants: "+'"'+assailant_names+'"'\
+    return " actors: ["+actor_names+"]"\
+          +" victims: ["+victim_names+"]"\
+          +" assailants: ["+assailant_names+"]"\
           +" style:"+style
 EndFunction 
 
@@ -121,11 +121,8 @@ String Function GetStyle()
     return style
 EndFunction
 
-String Function IsActive() 
-    return status == STATUS_ACTIVE 
-EndFunction
-String Function IsInactive() 
-    return status == STATUS_INACTIVE 
+bool Function IsActive() 
+    return status != STATUS_INACTIVE 
 EndFunction
 
 ; Selects the style of sex 

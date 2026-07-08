@@ -1,8 +1,6 @@
 Scriptname SkyrimNet_SexLab_Utilities
 
 Function Trace(String func, String msg, Bool notification=False) global
-
-    ;msg = GetTimeStamp()+" [SkyrimNet_SexLab_Utilities."+func+"] "+msg
     msg = "[SkyrimNet_SexLab_Utilities."+func+"] "+msg
     Debug.Trace(msg)
     if notification
@@ -19,6 +17,7 @@ EndFunction
 
 ; ------------------------------------------------------------
 ; Timestamps
+; A reasonable timestamp is acceptable. 
 ; ------------------------------------------------------------
 String Function GetTimestamp() global
     int ts = Utility.GetCurrentRealTime() as int
@@ -131,6 +130,7 @@ String Function JoinActorsMasked(Actor[] actors, int[] mask, int num_actors = -1
     if !actors 
         return "none"
     endif 
+
     if num_actors < 0 
         num_actors = actors.length
     endif 
@@ -157,7 +157,6 @@ String Function JoinActorsMasked(Actor[] actors, int[] mask, int num_actors = -1
     endwhile 
     return joined
 EndFunction 
-
 
 String Function JoinNouns(String[] strings, int num_nouns = -1, bool add_is_are=false) global 
     if !strings 
@@ -235,95 +234,92 @@ String Function JoinIsAre(String joined, int total, bool add_is_are) global
     return joined 
 EndFunction 
 
+; ------------------------------------------------------------
+; JContainers Refactored JSON Implementations
+; ------------------------------------------------------------
+
 String Function JoinStringsToJson(String[] strings, int num_strings=-1) global 
     if !strings 
-        return "none"
+        return "none"  
     endif 
     if num_strings == -1 
-        num_strings = strings.length 
+        num_strings = strings.length  
     endif 
-    String json = "" 
+    
+    int obj = JArray.object() 
     int i = 0
-    while i < num_strings 
-        if json != "" 
-            json += ", "
-        endif 
-        json += '"'+strings[i]+'"'
+    while i < num_strings
+        JArray.addStr(obj, strings[i])  
         i += 1
     endwhile
-    json = "["+json+"]"
-    return json
+    
+    return JValue.toJsonString(JValue.zeroLifetime(obj))  
 EndFunction 
 
 String Function JoinStringsToJsonMasked(String[] strings, int[] mask=None, int num_strings=-1) global 
     if !strings 
-        return "none"
+        return "none"  
     endif 
     if num_strings == -1 
-        num_strings = strings.length 
+        num_strings = strings.length  
     endif 
-    String json = "" 
+    
+    int obj = JArray.object() 
     int i = 0
     while i < num_strings 
-        if mask == None || mask[i] == 1
-            if json != "" 
-                json += ", "
-            endif 
-            json += '"'+strings[i]+'"'
+        if mask == None || mask[i] == 1  
+            JArray.addStr(obj, strings[i])  
         endif 
-        i += 1
+        i += 1  
     endwhile
-    json = "["+json+"]"
-    return json
+    
+    return JValue.toJsonString(JValue.zeroLifetime(obj))  
 EndFunction 
 
 String Function JoinActorsToJson(Actor[] actors, int num_actors=-1) global
     if !actors 
-        return "none"
+        return "none"  
     endif 
     if num_actors == -1 
-        num_actors = actors.length 
+        num_actors = actors.length  
     endif 
-    String json = ""
+    
+    int obj = JArray.object() 
     int i = 0
     while i < num_actors 
-        if json != ""
-            json += ", "
-        endif 
-        String name = "none" 
-        if actors[i] != None 
-            name = actors[i].GetDisplayName()
+        String name = "none"  
+        if actors[i] != None  
+            name = actors[i].GetDisplayName()  
         endif
-        json += '"'+name+'"'
-        i += 1
+        JArray.addStr(obj, name)  
+        i += 1  
     endwhile 
-    return "["+json+"]"
+    
+    return JValue.toJsonString(JValue.zeroLifetime(obj))  
 EndFunction 
 
 String Function JoinActorsToJsonMasked(Actor[] actors, int[] mask, int num_actors=-1) global
     if !actors 
-        return "none"
+        return "none"  
     endif 
     if num_actors == -1 
-        num_actors = actors.length 
+        num_actors = actors.length  
     endif 
-    String json = ""
+    
+    int obj = JArray.object() 
     int i = 0
     while i < num_actors 
-        if mask[i] == 1 
-            if json != ""
-                json += ","
-            endif 
-
-            String name = "none" 
-            if actors[i] != None 
-                name = actors[i].GetDisplayName()
+        if mask[i] == 1  
+            String name = "none"  
+            if actors[i] != None  
+                name = actors[i].GetDisplayName()  
             endif
-            json += '"'+name+'"'
+            JArray.addStr(obj, name)  
         endif 
-        i += 1
+        i += 1  
     endwhile 
-    return "["+json+"]"
+    
+    return JValue.toJsonString(JValue.zeroLifetime(obj))  
 EndFunction 
 
 String Function JoinStrings(String[] strings, int num_strings=-1) global
@@ -347,22 +343,20 @@ EndFunction
 
 String Function JoinIntsToJson(int[] ints, int num_ints=-1) global 
     if !ints 
-        return "none"
+        return "none"  
     endif 
     if num_ints == -1 
-        num_ints = ints.length 
+        num_ints = ints.length  
     endif 
-    String json = "" 
+    
+    int obj = JArray.object() 
     int i = 0
-    while i < num_ints 
-        if json != "" 
-            json += ", "
-        endif 
-        json += ints[i]
-        i += 1
+    while i < num_ints
+        JArray.addInt(obj, ints[i])  
+        i += 1  
     endwhile
-    json = "["+json+"]"
-    return json
+    
+    return JValue.toJsonString(JValue.zeroLifetime(obj))  
 EndFunction 
 
 ; ------------------------------------------------------------
@@ -378,14 +372,13 @@ Function ContinueActivity(Actor source=None, Actor target=None, bool optional=Fa
             msg = "continue activity that includes "+source.GetDisplayName()
         endif 
     else 
-            msg = "continue activity"
+        msg = "continue activity"
     endif
     DirectNarration_Optional("continue activity", msg, source, target, optional)
 EndFunction 
 
 Function DirectNarration_Optional(String event_type, String msg, Actor source=None, Actor target=None, bool optional=False) global
-    ;Trace("DirectNarration_OPtional","event_type: "+event_type+" source: "+GetDisplayName(source)+" target: "+GetDisplayName(target)+" optional: "+optional+" msg: "+msg)
-;    msg = CheckDuplicate("DirectNarration_Optional", source, msg)
+    msg = CheckDuplicate("DirectNarration_Optional", source, msg)
 
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
 
@@ -398,21 +391,21 @@ Function DirectNarration_Optional(String event_type, String msg, Actor source=No
         else
             distance = unit_meter*player.GetDistance(source) 
         endif 
+
     endif 
 
     String type = "" 
     int queue_size = SkyrimNetAPI.GetSpeechQueueSize()
-    int last_audio = SkyrimNetAPI.GetTimeSinceLastAudioEnded()/1000 ; in seconds
+    int last_audio = SkyrimNetAPI.GetTimeSinceLastAudioEnded()/1000 
     float time_current = Utility.GetCurrentRealTime() 
     float time_delta = time_current - main.direct_narration_last_time 
     if time_delta > main.direct_narration_cool_off && queue_size == 0 && (last_audio >= main.direct_narration_cool_off && distance <= main.direct_narration_max_distance)
         SkyrimNetApi.DirectNarration(msg, source, target)
         main.direct_narration_last_time = time_current
-        ;SkyrimNetApi.RegisterEvent(event_type, msg, source, target)
         type = "direct"
     else 
         if !optional && msg != ""
-            SkyrimNetApi.RegisterEvent(event_type, msg, source, target)
+             SkyrimNetApi.RegisterEvent(event_type, msg, source, target)
             type = "event"
         else 
             type = "skipped"
@@ -428,13 +421,15 @@ Function DirectNarration_Optional(String event_type, String msg, Actor source=No
     Trace("DirectNarration_Optional","type:"+type+" narration_delta:"+time_delta+" queue_size:"+queue_size+" last_audio_secs:"+last_audio+">?"+main.direct_narration_cool_off+" distance:"+distance+"<?"+main.direct_narration_max_distance+" msg:"+msg)
 EndFunction
 
-Function DirectNarration(String msg, Actor source=None, Actor target=None) global
+Function DirectNarration(String msg, Actor source=None, Actor target=None, bool purge_dialogue=False) global
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
-    ; msg = CheckDuplicate("DirectNarration", source, msg)
+    msg = CheckDuplicate("DirectNarration", source, msg)
 
+    if purge_dialogue
+          SkyrimNetApi.PurgeDialogue(True)
+    endif 
     SkyrimNetApi.DirectNarration(msg, source, target)
     main.direct_narration_last_time = Utility.GetCurrentRealTime() 
-    ;SkyrimNetApi.RegisterEvent("sexlab_event", msg, source, target)
     if source != None 
         msg += " source:"+source.GetDisplayName()
     endif 
@@ -448,10 +443,8 @@ EndFunction
 Function RegisterEvent(String event_name, String msg, Actor source=None, Actor target=None) global
     if msg != "" 
         msg = CheckDuplicate("RegisterEvent", source, msg)
-
         SkyrimNetApi.RegisterEvent(event_name, msg, source, target)
 
-        ; Sets up the log message
         if source != None 
             msg += " source:"+source.GetDisplayName()
         endif 
@@ -468,7 +461,6 @@ String Function CheckDuplicate(String func, Actor source, String msg) global
     endif 
     String storage_key = "sexlab_narration_last_msg"
     String old = StorageUtil.GetStringValue(source, storage_key, "")
-    Bool old_equals_new = old == msg
     if old == msg
         Trace(func+".CheckDuplicate", "changing duplicate `"+msg+"' to ''")
         return "" 
@@ -485,9 +477,9 @@ String Function JsonBool(bool value) global
     return ":false"
 EndFunction
 
-; --------------------------------------
+; ------------------------------------------------------------
 ; Ensure Functions 
-; --------------------------------------
+; ------------------------------------------------------------
 int[] Function EnsureIntsLargeEnough(int[] ints, int total, int default=0) global 
     if !ints 
         return Utility.CreateIntArray(total, default) 
@@ -546,7 +538,6 @@ Actor[] Function EnsureActorsLargeEnough(Actor[] actors_current, int total) glob
 EndFunction 
 
 String Function ReplaceWord(String asSource, String asToFind, String asReplacement) global
-    ; Early out if either string is empty to avoid errors
     If asSource == "" || asToFind == ""
         Return asSource
     EndIf
@@ -554,38 +545,29 @@ String Function ReplaceWord(String asSource, String asToFind, String asReplaceme
     int iTargetLen = StringUtil.GetLength(asToFind)
     int iPos = StringUtil.Find(asSource, asToFind)
     
-    ; Loop to handle the global flag (/g) for multiple occurrences
     While iPos >= 0
         bool bIsWordMatch = false
         int iSourceLen = StringUtil.GetLength(asSource)
         
-        ; 1. Exact Match (Whole string is just the target)
         If iSourceLen == iTargetLen
             bIsWordMatch = true
             
-        ; 2. Front (Index = 0, equivalent to /^target /)
         ElseIf iPos == 0
-            ; Check if the character AFTER the word is a space
             If StringUtil.Substring(asSource, iTargetLen, 1) == " "
                 bIsWordMatch = true
             EndIf
             
-        ; 3. End (Index = Length - TargetLength, equivalent to / target$/)
         ElseIf iPos == (iSourceLen - iTargetLen)
-            ; Check if the character BEFORE the word is a space
             If StringUtil.Substring(asSource, iPos - 1, 1) == " "
                 bIsWordMatch = true
             EndIf
             
-        ; 4. Middle (Anything else, requires spaces on both sides)
         Else
-            ; Check if surrounded by spaces (like / target /)
             If StringUtil.Substring(asSource, iPos - 1, 1) == " " && StringUtil.Substring(asSource, iPos + iTargetLen, 1) == " "
                 bIsWordMatch = true
             EndIf
         EndIf
         
-        ; Execute Replacement if boundaries matched
         If bIsWordMatch
             String sBefore = ""
             If iPos > 0
@@ -599,10 +581,8 @@ String Function ReplaceWord(String asSource, String asToFind, String asReplaceme
             
             asSource = sBefore + asReplacement + sAfter
             
-            ; Advance past the newly inserted word to prevent infinite loops
             iPos = StringUtil.Find(asSource, asToFind, iPos + StringUtil.GetLength(asReplacement))
         Else
-            ; Not a standalone word; advance past the current match to keep looking
             iPos = StringUtil.Find(asSource, asToFind, iPos + 1)
         EndIf
     EndWhile

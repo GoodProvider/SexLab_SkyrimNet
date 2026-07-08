@@ -8,7 +8,7 @@ SexLabFramework Property sexlab Auto
 ; ----------------------------------
 ; Actors and Victims 
 ; ----------------------------------
-int num_actors = 0 
+int Property num_actors = 0 Auto
 Actor[] Property actors Auto
 
 Actor[] Property victims Auto 
@@ -61,8 +61,8 @@ String[] tags_suppress = None
 ; Actor Locks 
 ; -------------------------------------
 String storage_actor_lock_key = "skyrimnet_sexlab_scene_actor_lock"
-int actorLock = 0 Auto 
-float actorLockTimeout = 0.00069444444 Auto ;  1 day / (24 hours  * 60 minutes )  
+int actorLock = 0
+float actorLockTimeout = 0.00069444444 ;  1 day / (24 hours  * 60 minutes )  
 
 Function Trace(String func, String msg="", Bool notification=False)
     msg = "[SkyrimNet_SexLab_Scene_Creator."+func+"] sid:"+sid+" "+msg
@@ -76,11 +76,11 @@ String Function GetString()
     String tags_string = JoinStrings(tags,num_tags)
     String tags_suppress_string = JoinStrings(tags_suppress, num_tags_suppress)
     return "intent: "+intent\
-          +" actors: "+'"'+actor_names+'"'\
-          +" victims: "+'"'+victim_names+'"'\
-          +" assailants: "+'"'+assailant_names+'"'\
-          +" no_orgasm: "+'"'+no_orgasm_names+'"'\
-          +" no_stripping: "+'"'+no_stripping_names+'"'\
+          +" actors: ["+actor_names+"]"\
+          +" victims: ["+victim_names+"]"\
+          +" assailants: ["+assailant_names+"]"\
+          +" no_orgasm: ["+no_orgasm_names+"]"\
+          +" no_stripping: ["+no_stripping_names+"]"\
           +" tags:"+tags_string\
           +" suppress_tags:"+tags_suppress_string\
           +" style:"+style\
@@ -171,7 +171,7 @@ EndFunction
 ; --------------------------------------------
 ; Start with Thread
 ; --------------------------------------------
-SkyrimNet_SexLab_Scene Function Start() 
+SkyrimNet_SexLab_Scene Function StartScene() 
     SetNames() 
 
     Trace("Start",GetString()) 
@@ -221,7 +221,7 @@ SkyrimNet_SexLab_Scene Function Start()
 
     if failed 
         Release() 
-        return 
+        return  None 
     endif 
 
     ; Reset the masks, in case the names moves things around 
@@ -260,18 +260,18 @@ SkyrimNet_SexLab_Scene Function Start()
         endif 
     endif 
 
-    if event_hook != None && event_hook != "" 
+    if event_hook != "" 
         model.SetHook(event_hook)
     endif 
 
     String tags_string = JoinStrings(tags, num_tags)
     String tags_suppress_string = JoinStrings(tags_suppress, num_tags_suppress)
     Trace("Start","intent:"+intent\
-        +" actors: "+'"'+actor_names+'"'\
-        +" victims: "+'"'+victim_names+'"'\
-        +" assailants: "+'"'+assailant_names+'"'\
-        +" no_orgasm: "+'"'+no_orgasm_names+'"'\
-        +" no_stripping: "+'"'+no_stripping_names+'"'\
+        +" actors: ["+actor_names+"]"\
+        +" victims: ["+victim_names+"]"\
+        +" assailants: ["+assailant_names+"]"\
+        +" no_orgasm: ["+no_orgasm_names+"]"\
+        +" no_stripping: ["+no_stripping_names+"]"\
         +" tag:"+tags_string\
         +" suppressed:"+tags_suppress_string\
         +" style:"+style\
@@ -279,7 +279,7 @@ SkyrimNet_SexLab_Scene Function Start()
 
     sslThreadController thread = model.StartThread() 
     if thread == None 
-        Trace("Start","StartThread returned None, releasing scene.sid")
+        Trace("Start","StartThread returned None, releasing sl_scene.sid")
         Release() 
         return None 
     endif 
@@ -440,7 +440,7 @@ function SetTagSuppress(String tag)
 EndFunction 
 
 function AddTag(String tag) 
-    if tag == None || tag == "" 
+    if tag == "" 
         return 
     endif 
     int i = 0 
@@ -455,7 +455,7 @@ function AddTag(String tag)
     num_tags += 1 
 EndFunction 
 function AddTagSuppress(String tag) 
-    if tag == None || tag == "" 
+    if tag == "" 
         return 
     endif 
     int i = 0 
@@ -485,7 +485,7 @@ Function SetTags_Helper(bool is_tags, String[] _tags)
     int i = 0
     int _num_tags = _tags.length
     while i < _num_tags 
-        if _tags[i] != None && _tags[i] != "" 
+        if _tags[i] != "" 
             number += 1 
         endif 
         i += 1 
@@ -501,7 +501,7 @@ Function SetTags_Helper(bool is_tags, String[] _tags)
         int j = 0 
         int count = _tags.length
         while i < count
-            if _tags[i] != None && _tags[i] != "" 
+            if _tags[i] != "" 
                 ts[j] = _tags[i]
                 j += 1 
             endif 
@@ -548,8 +548,8 @@ EndFunction
 ; Load Scene Setting from File 
 ; -------------------------------------------------------------------------------------
 Function LoadSetting(String setting_name) 
-    if setting_name == None 
-        Trace("LoadSetting", "setting_name is None, aborting")
+    if setting_name == "" 
+        Trace("LoadSetting", "setting_name is '', aborting")
         return 
     endif 
     String filename = manager.GetSceneSettingFilename(setting_name)
@@ -1021,12 +1021,12 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
 EndFunction
 
 Function AddGroupTags(uilistMenu listMenu, int group_tags, String group) global
-    int tags = JMap.getObj(group_tags, group, 0)
-    if tags != 0 
+    int tags_obj = JMap.getObj(group_tags, group, 0)
+    if tags_obj != 0 
         int i = 0
-        int count = JArray.count(tags)
+        int count = JArray.count(tags_obj)
         while i < count
-            String tag = JArray.getStr(tags, i, "")
+            String tag = JArray.getStr(tags_obj, i, "")
             if tag != ""
                 listMenu.AddEntryItem(tag)
             endif

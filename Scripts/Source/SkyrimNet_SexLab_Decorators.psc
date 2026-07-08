@@ -31,33 +31,43 @@ String Function Get_Threads(Actor speaker) global
     SkyrimNet_SexLab_Scene_Manager manager = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Scene_Manager
     if manager == None 
         Trace("Get_Threads","manger is None, aborting")
-        return '{"threads":[]}' 
+        return "{}" 
     endif 
     String json = manager.GetThreadsJson(speaker) 
     Trace("Get_Threads",json) 
+
     return json 
 EndFunction 
 
 String Function Outfit_Options(Actor speaker) global 
-    SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
-       if main == None
-        Trace("Outfit_Options", "ERROR: Failed to get SkyrimNet_SexLab_Main form", True)
-        return '{"option":"undresses"}'
-    endif
+    int obj = JMap.object() 
     String options = "undresses"
-    ; Check if the actor has undressed items, they could put on 
-    if main.HasStrippedItems(speaker) 
-        options = "dresses"
-    endif 
-    Trace("Outfit_Options",speaker.GetDisplayName()+" has options:"+options)
-    return "{"+'"'+"option"+'"'+":"+'"'+options+'"'+"}"
+    SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
+    if main == None
+        Trace("Outfit_Options", "ERROR: Failed to get SkyrimNet_SexLab_Main form", True)
+    else
+        ; Check if the actor has undressed items, they could put on 
+        if main.HasStrippedItems(speaker) 
+            options = "dresses"
+        endif 
+        Trace("Outfit_Options",speaker.GetDisplayName()+" has options:"+options)
+    endif
+    JMap.setStr(obj, "options", options) 
+    String json = JValue.toJsonString(obj) 
+    JValue.release(obj) 
+    return json 
 EndFunction
 
 String Function Intent(Actor speaker) global 
     SkyrimNet_SexLab_Scene_Manager manager = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Scene_Manager
-    SkyrimNet_SexLab_Scene scene = manager.GetSceneByActor(speaker) 
-    if scene != None 
-        return '{"intent":"'+scene.intent+'"}'
+ 
+    SkyrimNet_SexLab_Scene sl_scene = manager.GetSceneByActor(speaker) 
+    if sl_scene != None 
+        int obj = JMap.object()
+        JMap.setStr(obj, "intent", sl_scene.intent)
+        String json = JValue.toJsonString(obj)
+        JValue.release(obj)
+        return json
     endif 
     return "{}"
 EndFunction 
@@ -66,8 +76,20 @@ EndFunction
 String Function Player_LOS_Distance(Actor akActor) global 
     Actor player = Game.GetPlayer() 
     float distance = player.GetDistance(akActor) 
-    bool los = player.hasLOS(akActor) 
-    return "{"+'"'+"distance"+'"'+":"+distance+","+'"'+"los"+'"'+":"+los+"}"
+    int los 
+    if player.hasLOS(akActor) 
+        los = 1
+    else 
+        los = 0
+    endif 
+
+  
+    int obj = JMap.object() 
+    JMap.setFlt(obj,"distance",distance)
+    JMap.setInt(obj,"los",los) 
+    String json = JValue.toJsonString(obj) 
+    JValue.release(obj)
+    return json 
 EndFunction 
 
 String Function Is_Nudity(Actor akActor) global
@@ -80,63 +102,18 @@ String Function Is_Nudity(Actor akActor) global
         Form pelvis_primary = akActor.GetEquippedArmorInSlot(52)
         Form pelvis_secondary = akActor.GetEquippedArmorInSlot(49)
 
-
         if body == None 
-            topless = true 
+            topless = true  
         endif 
-        if pelvis_primary == None && pelvis_secondary == None
+        if pelvis_primary == None && pelvis_secondary == None && body == None 
             bottomless = true 
         endif
     endif 
-    return "{"+'"'+"topless"+'"'+":"+topless+","+'"'+"bottomless"+'"'+":"+bottomless+"}"
+    
+    int obj = JMap.object()
+    JMap.setInt(obj, "topless", topless as Int)
+    JMap.setInt(obj, "bottomless", bottomless as Int)
+    String json = JValue.toJsonString(obj)
+    JValue.release(obj)
+    return json
 EndFunction
-
-; animal & ActorTypeCreature & ActorTypeFamiliar 
-; skyrim.13798 & skyrim.13795 & skyrim.10ED7  
-; 
-; Bethesda-Used Body Slots
-; 30 - Head: This is the general head slot, often used for full helmets that cover the entire head and hair.
-; 31 - Hair: Used for hair, but also for items that replace or cover the hair, like some hoods or flight caps.
-; 32 - Body: The main body slot for chest armor, cuirasses, and full outfits.
-; 33 - Hands: The slot for gloves and gauntlets.
-; 34 - Forearms: Often used in conjunction with the hands slot for gloves or armor that extends up the forearm.
-; 35 - Amulet: The slot for necklaces and amulets.
-; 36 - Ring: The slot for rings.
-; 37 - Feet: The slot for boots and shoes.
-; 38 - Calves: Often used with the feet slot for boots or leg armor that extends up the calf.
-; 39 - Shield: The slot for shields.
-; 40 - Tail: For races with tails, such as Argonians or Khajiit.
-; 41 - Long Hair: A slot for longer hairstyles.
-; 42 - Circlet: The slot for circlets and headbands.
-; 43 - Ears: The slot for ear jewelry or other ear-related accessories.
-;
-; Additional, Commonly Used Slots (often for custom mods)
-; Mod authors frequently use these "unnamed" slots to create items that can be worn alongside vanilla armor without causing conflicts. This allows for things like capes, backpacks, or layered clothing. The specific numbers and their agreed-upon uses are a community standard, not a hard-coded Bethesda rule.
-; 
-; 44 - Face/Mouth: For masks, goggles, etc.
-; 45 - Neck: For scarves, shawls, and capes.
-; 46 - Chest Primary / Outergarment: For chest pieces that can be worn over another armor.
-; 47 - Back: A very popular slot for backpacks, wings, or other items worn on the back.
-; 48 - Misc/FX: A general-purpose slot for anything that doesn't fit elsewhere.
-; 49 - Pelvis Primary / Outergarment: For skirts, kilts, or other items worn around the waist.
-; 52 - Pelvis Secondary / Undergarment: Used for underwear or items meant to be worn beneath other clothing.
-; 55 - Face Alternate / Jewelry: For jewelry or other face accessories that don't fit in the other slots.
-;
-; NoModestyTop
-; slot: 26, 16, 18, 29 : NoModesy 
-;   
-;                    Clothingbody , ArmorCuirass
-; slot: 2,19 : Modesty, skyrim.A8657 , Skyrim.6C0EC
-;
-; slot: 19 NoBody
-; slot: 
-;bool Function IsActorNude(Actor akActor) global
-    ;if akActor.GetEquippedArmorInSlot(32) != None
-        ;return false ; Wearing main armor body layer
-    ;endif
-    ;; Check if clothing items exist unequipped within the local container list
-    ;if akActor.GetItemCount(Game.GetFormFromFile(0x00012E49, "Skyrim.esm")) > 0 ; Clothing Body Keyword match check
-        ;return true ; Is currently nude, but has clothes available
-    ;endif
-    ;return true
-;EndFunction

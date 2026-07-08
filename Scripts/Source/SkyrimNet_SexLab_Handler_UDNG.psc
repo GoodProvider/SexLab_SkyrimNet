@@ -13,11 +13,11 @@ EndFunction
 
 Function Setup()
     String file = "SkyrimNetUDNG.esp"
-    String key = "SkyrimNet_SexLab_UDNG_MenuOpen"
-    UnRegisterForModEvent(key)
+    String key_ = "SkyrimNet_SexLab_UDNG_MenuOpen"
+    UnRegisterForModEvent(key_)
     if udng_groups != None 
-        RegisterForModEvent(key, "MenuOpen")
-        Trace("Setup",file+" found registering for "+key) 
+        RegisterForModEvent(key_, "MenuOpen")
+        Trace("Setup",file+" found registering for "+key_) 
     else 
         Trace("Setup",file+" not found")
     endif 

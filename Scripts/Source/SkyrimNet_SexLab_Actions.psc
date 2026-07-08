@@ -22,17 +22,13 @@ EndFunction
 ; Setup
 ; -------------------------------------------------
 Function Setup()
-    if MiscUtil.FileExists("Data/Ostim.esp") 
+    if Game.GetModByName("Data/Ostim.esp") != 255
         OStimActorCountFaction = Game.GetFormFromFile(0xECA, "Ostim.esp") as Faction
         Trace("Setup","Found Ostim.esp, OStimActorCountFaction set to "+OStimActorCountFaction)
     else 
         OStimActorCountFaction = None 
     endif 
 EndFunction 
-
-;--------------------------------------------------------------------------------------
-; Scene Start and Stop
-;--------------------------------------------------------------------------------------
 
 ;-------------------------------------------
 ; One
@@ -44,7 +40,7 @@ Function StartScene_Consensual_One(String intent, Actor speaker, string style=""
 EndFunction
 
 Function StartScene_Nonconsensual_One(String intent, Actor speaker, string style="", String method="", String setting_name="")
-    Trace("StartScene_Consensual_One",intent+" "+speaker.GetDisplayName()+" style: "+style+" method: "+method)
+    Trace("StartScene_Nonconsensual_One",intent+" "+speaker.GetDisplayName()+" style: "+style+" method: "+method)
     StartScene_Event(intent, speaker, victim=speaker, style=style, method=method, setting_name=setting_name) 
 EndFunction
 
@@ -54,6 +50,8 @@ EndFunction
 
 Function StartScene_Consensual_Two(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="")
     Trace("StartScene_Consensual_Two","intent:"+intent+" speaker:"+speaker.GetDisplayName()+" + "+target.GetDisplayName()+" style: "+style+" direction: "+direction+" intent: "+intent+" method:"+method+" setting_name:"+setting_name)
+
+    ; Hug idle is bi-directional, so is ignored 
     if method == "hug" || method == "single hug"
         target.playIdleWithTarget(pa_HugA, speaker) 
         Actor sender = speaker 
@@ -64,7 +62,7 @@ Function StartScene_Consensual_Two(String intent, Actor speaker, Actor target, s
         endif 
         String msg = sender.GetDisplayName()+" hugs "+receiver.GetDisplayName()+"."
         DirectNarration(msg, speaker, target)
-        return None 
+        return
     endif 
     StartScene_Event(intent, speaker, target, None, style, method, direction, setting_name=setting_name) 
 EndFunction
@@ -95,12 +93,12 @@ EndFunction
 
 Function StartScene_Consensual_Three(String intent, Actor speaker, Actor target, string style, string direction, string method, String setting_name="", Actor participate)
     Trace("StartScene_Consensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style+" direction: "+direction+" method: "+method+" participate:"+participate.GetDisplayName()+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
-    StartScene_Event(intent, speaker, target, None, style, direction, method, setting_name=setting_name, participate_3=participate) 
+    StartScene_Event(intent, speaker, target, None, style, method, direction, setting_name=setting_name, participate_3=participate)
 EndFunction
 
 
-Function StartScene_Rape_Three(String intent, Actor speaker, Actor target, string style, string method, string direction, bool speaker_victim, String setting_name="", Actor participate)
-    Trace("StartScene_Consensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style+" direction: "+direction+" method: "+method+" speaker_victim:"+speaker_victim+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
+Function StartScene_Nonconsensual_Three(String intent, Actor speaker, Actor target, string style, string method, string direction, bool speaker_victim, String setting_name="", Actor participate)
+    Trace("StartScene_Nonconsensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style+" direction: "+direction+" method: "+method+" speaker_victim:"+speaker_victim+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
     Actor victim = target
     if speaker_victim 
         victim = speaker
@@ -133,7 +131,7 @@ Function StartScene_Refused_Two(String intent, Actor speaker, Actor target, stri
     if style == "normal" || style == "normally"
         style = "" 
     endif 
-    String msg = target_name+" "+style+" refused to allow"+intent+" by "
+    String msg = target_name+" "+style+" refused to allow "+intent+" by "
     if direction == "" || direction == "getting" 
         msg += direction+" "+method+" from "+speaker.GetDisplayName() 
     else 
@@ -170,9 +168,6 @@ Function StartScene_Event(String intent, Actor speaker, Actor target=None, Actor
     String target_name = GetDisplayName(target) 
     String victim_name = GetDisplayName(victim) 
     String participate_3_name = GetDisplayName(participate_3) 
-    Trace("StartScene_Event","intent:"+intent+" speaker:"+speaker_name+" target:"+target_name+" victim:"+victim_name\
-        +" style:"+style+" speaker_position:"+speaker_position+" method:"+method+" event_hook:"+event_hook+" setting_name:"+setting_name\
-        +" participate_3_name:"+participate_3_name)
     
     if method == "pussy"
         method = "vaginal"
@@ -204,6 +199,10 @@ Function StartScene_Event(String intent, Actor speaker, Actor target=None, Actor
             speaker_position = 1 
         endif 
     endif 
+
+    Trace("StartScene_Event","intent:"+intent+" speaker:"+speaker_name+" target:"+target_name+" victim:"+victim_name\
+        +" style:"+style+" speaker_position:"+speaker_position+" method:"+method+" event_hook:"+event_hook+" setting_name:"+setting_name\
+        +" participate_3_name:"+participate_3_name)
 
     int handle = ModEvent.Create("SkyrimNet_SexLab_Action_Start")
     ModEvent.PushString(handle, intent)
@@ -266,6 +265,7 @@ Function Change_Outfit(Actor stripper, Actor stripped, String style, String how,
         endif 
         Form[] forms = sexlab.StripActor(stripped, victim, do_animate, false) 
         main.StoreStrippedItems(stripped, forms)
+        success = True 
     endif
 
     if success
@@ -288,15 +288,12 @@ EndFunction
 ; -------------------------------------------------
 
 bool Function BodyAnimation_IsEligible(Actor akActor, string contextJson, string paramsJson)
-    float start = Utility.GetCurrentRealTime()
     if akActor == None 
         Trace("BodyAnimation_IsEligible","akActor is None")
         return false
     endif
 
     String name = akActor.GetDisplayName()
-    float current = Utility.GetCurrentRealTime() - start 
-    Trace("BodyAnimation_IsEligible",current+" "+name+" contextJson: "+contextJson+" paramsJson: "+paramsJson)
     if akActor.IsDead() || akActor.IsInCombat() 
         Trace("BodyAnimation_IsEligible", akActor.GetDisplayName()+" is dead or in combat")
         return false 

@@ -35,7 +35,7 @@ Function Store_Races() global
             int info = JMap.object() 
             JMap.setStr(info, "name", race_name) 
             JMap.setForm(info, "form", r)
-            JMap.setObj(races,race_name,info) 
+            JMap.setObj(races,race_name,info)  ; adding the race to the higher level to be saved with it later
         endif 
         i -= 1 
     endwhile

@@ -148,6 +148,8 @@ The following and depedancies:
 - [Primsa UI](https://www.nexusmods.com/skyrimspecialedition/mods/148718)
     - [Media Keys Fix](https://www.nexusmods.com/skyrimspecialedition/mods/92948)
 - [Dragonborn voice over 2](https://www.nexusmods.com/skyrimspecialedition/mods/84329)
+- [JContainer v4.2.13.1+](https://github.com/ryobg/JContainers/releases/tag/v4.2.13.1)
+    - Used to build the JSON output.
 - SkyrimNet (Beta7 or later)
    - You must have narration enabled
 - SkryimNet_SexLab (this mod)

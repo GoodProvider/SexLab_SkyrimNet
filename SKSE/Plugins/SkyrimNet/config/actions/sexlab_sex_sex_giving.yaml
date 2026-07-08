@@ -18,12 +18,12 @@ parameterMapping:
   - type: dynamic
     name: style
     description: forceful|normal|gentle
-  - type: dynamic 
-    name: direction 
-    description: giving|getting
   - type: dynamic
     name: type
     description: oral|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob
+  - type: dynamic 
+    name: direction 
+    description: giving|getting
   - type: static 
     name: setting_name
     value: ""

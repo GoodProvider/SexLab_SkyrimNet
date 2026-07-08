@@ -14,6 +14,17 @@ Function Trace(String func, String msg, Bool notification=False) global
     endif 
 EndFunction
 
+Function Setup()
+    mcm = (self as Quest) as SkyrimNet_SexLab_MCM
+    main = (self as Quest) as SkyrimNet_SexLab_Main
+    stages = (self as Quest) as SkyrimNet_SexLab_Stages
+    manager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
+    actions = (self as Quest) as SkyrimNet_SexLab_Actions
+    if !mcm || !main || !stages || !manager || !actions
+        Trace("Setup", "ERROR: one or more sibling scripts not found on quest", true)
+    endif
+EndFunction
+
 Function ProcessHotkey(int key_code)
     ; Both players need to be in the crosshair to have SkyrimNet load them into the cache
     ; so the parseJsonActor works
@@ -126,10 +137,10 @@ Function Target_Menu_Selection(Actor target, Actor player)
         string setting_name= "punishing_spanking"
         if method == "spanking nude"
             method = "spanking"
-            string setting_name= "punishing_spanking_victim_nude"
+            setting_name= "punishing_spanking_victim_nude"
         elseif method == "whipping"  || method == "whip"
             method = "whip"
-            string setting_name= "punishing_whipping_oral"
+            setting_name= "punishing_whipping_oral"
         endif 
         actions.StartScene_Nonconsensual_Two("punishing", player, target=target, method=method, direction="giving", setting_name=setting_name) 
     elseif button == affection
@@ -452,10 +463,10 @@ Function MutliTarget_Menu_Selection(Actor player)
     if intent == "raping"
         SkyrimNet_SexLab_Scene_Creator creator = manager.CreateCreator(intent, actors_selected, speaker, target, setting_name="")
         creator.SetVictim(actors_selected[0])
-        creator.Start() 
+        Creator.StartScene() 
     else 
         SkyrimNet_SexLab_Scene_Creator creator = manager.CreateCreator(intent, actors_selected, speaker, target, method=method, setting_name=setting_name)
-        creator.Start() 
+        Creator.StartScene() 
     endif 
 EndFunction
 

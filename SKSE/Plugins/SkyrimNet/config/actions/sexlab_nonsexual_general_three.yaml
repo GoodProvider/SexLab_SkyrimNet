@@ -19,11 +19,11 @@ parameterMapping:
     name: style
     description: forcefully|normally|gently
   - type: dynamic
-    name: method
-    description: single hug|hugging|kissing|cuddle
-  - type: dynamic
     name: direction
     description: "giving|getting"
+  - type: dynamic
+    name: method
+    description: single hug|hugging|kissing|cuddle
   - type: static
     name: setting_name
     value: "nonsexual_male_position_2"

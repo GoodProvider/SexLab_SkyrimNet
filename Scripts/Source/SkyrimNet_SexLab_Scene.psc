@@ -2,6 +2,7 @@ Scriptname SkyrimNet_SexLab_Scene extends SkyrimNet_SexLab_Scene_Interface
 
 Import SkyrimNet_SexLab_Utilities
 import SkyrimNet_SexLab_Scene_Interface
+Import JContainers
 
 SexLabFramework Property sexlab Auto
 sslThreadSlots Property threadSlots Auto
@@ -9,17 +10,15 @@ sslActorLibrary Property actorLib Auto
 
 Faction Property SkyrimNet_SexLab_Faction_Victim Auto
 
-int[] victim_mask
-int[] assailant_mask
-int[] hermaphrodiate_mask
-int[] strapon_mask
-int[] no_orgasm_mask
+int num_actors = 0 
+; all arrays should be Handled by EnsureArraysLargeEnough
+Actor[] actors 
+int[] position_objs
 
-String[] speaking_modifiers
-String[] speaking_modifiers_json
-
-String creature_descriptions = "" 
-String no_orgasm_names = ""
+String storage_prefix = "skyrimnet_sexlab_scene"
+String storage_obj_key = "skyrimnet_sexlab_scene_actor_position_obj"
+String storage_total_orgasms_key = "skyrimnet_sexlab_scene_total_orgasms"
+int thread_obj = 0 ; Thread_obj will be reused 
 
 ; -------------------------------------------
 ; Intent
@@ -33,8 +32,6 @@ int Property INTENT_STAGE_END = 2 AutoReadOnly
 ; -------------------------------------------
 Actor sender = None 
 Actor receiver = None 
-
-int[] total_orgasms = None 
 
 ; --------------------------------------------
 ; Track Scene
@@ -60,54 +57,67 @@ Function Trace(String func, String msg="", Bool notification=False)
 EndFunction
 
 String Function GetString() 
-    return " actors: "+'"'+actor_names+'"'\
-          +" victims: "+'"'+victim_names+'"'\
-          +" assailants: "+'"'+assailant_names+'"'\
+    return " actors: ["+actor_names+"]"\
+          +" victims: ["+victim_names+"]"\
+          +" assailants: ["+assailant_names+"]"\
           +" style:"+style
 EndFunction 
 
 Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager) 
     parent.Initialize(_sid,_manager) 
-    EnsureActorsArraysLargeEnough(2)
+    EnsureActorArraysLargeEnough(2)
+    num_actors = 0 
+
     sexlab = manager.sexlab
     threadSlots = manager.threadSlots
     actorLib = manager.actorLib
     SkyrimNet_SexLab_Faction_Victim = manager.SkyrimNet_SexLab_Faction_Victim
     is_generic = false
-    if !total_orgasms 
-        total_orgasms = new Int[2] 
-    endif 
+    StorageUtil.ClearAllPrefix(storage_prefix)
+    CreateThreadJson() 
 EndFunction 
+
+; -----------------------------
 
 Function Setup(SkyrimNet_SexLab_Scene_Creator creator=None)
     if thread == None 
         Trace("Setup","thread is none, aborting")
         return 
     endif 
-    Actor[] actors = thread.positions
-    int num_actors = thread.positions.length
 
-    EnsureActorsArraysLargeEnough(num_actors) 
+    Actor[] positions = thread.positions
+    EnsureActorArraysLargeEnough(positions.length) 
+
+    num_actors = positions.length
+    Trace("Setup", "--- a num_actors: "+num_actors+" actors.length: "+actors.length)
     if creator != None 
+        has_player = creator.has_player
         intent = creator.intent 
         style = creator.style
         sender = creator.GetSpeaker()
         receiver = creator.GetTarget() 
         int i = 0 
-        while i < num_actors
-            speaking_modifiers[i] = creator.speaking_modifiers[i]
-            String[] strings = StringUtil.Split(speaking_modifiers[i],",")
-            String json = "[]" 
-            if strings 
-                json = JoinStringsToJson(strings) 
+        while i < num_actors 
+            if i < creator.num_actors
+                SetPosition(i, creator.actors[i], creator.no_orgasm_mask[i], creator.speaking_modifiers[i]) 
+            else 
+                SetPosition(i, thread.positions[i], 0, "")
             endif 
-            speaking_modifiers_json[i] = json
-            no_orgasm_mask[i] = creator.no_orgasm_mask[i]
             i += 1 
         endwhile 
     else 
         intent = INTENT_DEFAULT
         style = STYLE_DEFAULT
+        int i = 0 
+        has_player = false
+        Actor player = Game.GetPlayer()
+        while i < num_actors
+            SetPosition(i, thread.positions[i], 0, "")
+            if thread.positions[i] == player
+                has_player = true
+            endif
+            i += 1 
+        endwhile 
         if num_actors == 1 
             sender = actors[0]
             receiver = None 
@@ -115,13 +125,8 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator=None)
             sender = actors[1] 
             receiver = actors[0] 
         endif 
-        int i = 0 
-        while i < num_actors
-            speaking_modifiers[i] = speaking_modifiers_DEFAULT
-            speaking_modifiers_json[i] = "[]"
-            i += 1 
-        endwhile 
     endif 
+    Trace("Setup", "--- b num_actors: "+num_actors)
 
     if num_actors > 1
         Actor victim = thread.GetVictim() 
@@ -132,10 +137,10 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator=None)
     endif 
 
 
-    bool failed = False 
-    num_victims = 0 
+    Trace("Setup", "--- c num_actors: "+num_actors)
     int i = 0 
-    while i < num_actors && !failed 
+    num_victims = 0 
+    while i < num_actors
         if thread.IsVictim(actors[i]) 
             num_victims += 1 
             actors[i].AddToFaction(SkyrimNet_SexLab_Faction_Victim)
@@ -147,109 +152,271 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator=None)
         i += 1 
     endwhile 
             
+    Trace("Setup", "--- d num_actors: "+num_actors)
     if !is_generic
         status = STATUS_SETUP
     else 
         status = STATUS_ACTIVE 
     endif 
+    Trace("Setup", "--- e num_actors: "+num_actors)
+    SetNames()
+    Trace("Setup", "--- f num_actors: "+num_actors)
+    TraceScene() 
+EndFunction 
+
+Function TraceScene() 
+    Trace("TraceScene", "--- num_actors: "+num_actors)
+    Trace("TraceScene", "--- actors: "+JoinActors(actors,num_actors))
+    Trace("TraceScene", "--- victims: "+victim_names)
+    Trace("TraceScene", "--- assailants: "+assailant_names)
+    Trace("TraceScene", "--- hermaphrodiate: "+hermaphrodiate_names)
+    Trace("TraceScene", "--- strapon: "+strapon_names)
+    Trace("TraceScene", "--- creature_descriptions: "+creature_descriptions)
 EndFunction 
 
 Function Release()
-    if thread == None 
-        Trace("Release","Thread is None, aborting") 
-        return 
-    endif 
-
-    status = STATUS_INACTIVE 
     int i = 0
-    Actor[] actors = thread.positions
-    int num_actors = actors.length
     while i < num_actors
-        if actors[i] != None && actors[i].IsInFaction(SkyrimNet_SexLab_Faction_Victim)
-            actors[i].RemoveFromFaction(SkyrimNet_SexLab_Faction_Victim)
+        if actors[i] != None
+            if actors[i].IsInFaction(SkyrimNet_SexLab_Faction_Victim)
+                actors[i].RemoveFromFaction(SkyrimNet_SexLab_Faction_Victim)
+            endif 
+            StorageUtil.UnsetIntValue(actors[i], storage_obj_key)
+            StorageUtil.UnsetIntValue(actors[i], storage_total_orgasms_key)
+        endif 
+        actors[i] = None 
+        if position_objs && i < position_objs.length && position_objs[i] > 0
+            int speaking_obj = JMap.getObj(position_objs[i], "speaking_modifiers")
+            if speaking_obj > 0
+                JValue.release(speaking_obj)
+            endif 
+            JMap.clear(position_objs[i])
         endif 
         i += 1
     endwhile
-    num_actors = 0 
+    num_actors = 0
+    sender = None 
+    receiver = None 
 
-    if !is_generic
-        manager.UnsetThread_scene(thread.tid)
+    if thread != None
+        if !is_generic
+            manager.UnsetThread_scene(thread.tid)
+        endif 
+        thread = None 
+    else 
+        Trace("Release","Thread is None, continuing cleanup") 
     endif 
-    thread = None 
-    Release() 
+    if thread_obj > 0
+        int actors_map = JMap.getObj(thread_obj, "actors")
+        if actors_map > 0
+            JMap.clear(actors_map)
+        endif 
+    endif 
+    parent.Release()
 EndFunction
 
-Function EnsureActorsArraysLargeEnough(int size) 
-    victim_mask = EnsureIntsLargeEnough(victim_mask, size) 
-    assailant_mask = EnsureIntsLargeEnough(assailant_mask, size) 
-    hermaphrodiate_mask = EnsureIntsLargeEnough(hermaphrodiate_mask, size) 
-    strapon_mask = EnsureIntsLargeEnough(strapon_mask, size) 
-    no_orgasm_mask = EnsureIntsLargeEnough(no_orgasm_mask, size) 
-    total_orgasms = EnsureIntsLargeEnough(total_orgasms, size) 
-    speaking_modifiers = EnsureStringsLargeEnough(speaking_modifiers, size) 
-    speaking_modifiers_json = EnsureStringsLargeEnough(speaking_modifiers_json, size) 
-EndFunction
-
-Function SetMasks()
-    If thread == None 
-        Trace("SetMasks","thread is None")
+Function EnsureActorArraysLargeEnough(int size) 
+    if actors && position_objs && size <= actors.length && size <= position_objs.length
         return 
     endif 
-    int num_actors = thread.positions.length
-    EnsureActorsArraysLargeEnough(num_actors) 
+    actors = EnsureActorsLargeEnough(actors, size) 
+    position_objs = EnsureIntsLargeEnough(position_objs, size, 0 ) 
+    int i = 0
+    while i < size 
+        if position_objs[i] < 1
+            position_objs[i] = JMap.object() 
+            JValue.retain(position_objs[i])
+        endif 
+        i += 1 
+    endwhile 
+EndFunction
 
+; ----------------------------------------
+; actor_objs Functions 
+; -----------------------------------------
+
+Function SetPosition(int i, Actor akActor, int no_orgasm, String speaking_modifiers) 
+    Trace("SetPosition", "--- a i: "+i+" akActor: "+akActor.GetDisplayName()+" no_orgasm: "+no_orgasm+" speaking_modifiers: "+speaking_modifiers)
+    EnsureActorArraysLargeEnough(i + 1)
+    int obj = position_objs[i]
+    JMap.setInt(obj, "no_orgasm", no_orgasm) 
+    Trace("SetPosition", "--- b obj: "+obj)
+
+    ; Split up speaking modifiers 
+    String[] strings = StringUtil.Split(speaking_modifiers,",")
+    int num_strings = strings.length 
+    Trace("SetPosition", "--- c num_strings: "+num_strings)
+    int speaking_obj = JMap.GetObj(obj, "speaking_modifiers") 
+    if speaking_obj < 1 || JArray.count(speaking_obj) != num_strings 
+        if speaking_obj > 0 
+            JValue.release(speaking_obj) 
+        endif 
+        speaking_obj = JArray.objectWithSize(num_strings) 
+        JValue.retain(speaking_obj)
+        JMap.setObj(obj, "speaking_modifiers",speaking_obj) 
+    endif 
+    Trace("SetPosition", "--- d speaking_obj: "+speaking_obj)
+    int j = 0 
+    while j < num_strings 
+        Jarray.setStr(speaking_obj, j, strings[j]) 
+        Trace("SetPosition", "--- e j: "+j+" string: "+strings[j]+" speaking_obj: "+speaking_obj)
+        j += 1 
+    endwhile 
+    SetActor(i, akActor)
+    Trace("SetPosition", "name: "+actors[i].GetDisplayName()+" no_orgasm: "+JMap.getInt(obj, "no_orgasm")+" speaking_modifiers: "+JMap.getStr(obj, "speaking_modifiers"))
+Endfunction 
+
+bool Function SetActor(int i, Actor akActor)
+    if akActor == None 
+        Trace("SetActor","actors["+i+"] == None ")
+        return False 
+    endif  
+    actors[i] = akActor
+    
+    int obj = position_objs[i]
+    StorageUtil.SetIntValue(akActor, storage_obj_key, obj) 
+    StorageUtil.SetIntValue(akActor, storage_total_orgasms_key, 0)
+    JMap.setForm(obj, "actor", actors[i])
+    JMap.setStr(obj, "name", actors[i].GetDisplayName())
+
+    int gender = actors[i].GetLeveledActorBase().GetSex() ; actorLib.GetGender(actors[i])
+    int gender_sexlab = main.sexlab.GetGender(actors[i]) 
+    int has_penis = 0
+    if gender != 1 || (gender_sexlab != 1 && gender_sexlab != 3)
+        has_penis = 1
+    endif
+    int has_pussy = 0
+    if gender == 1 || gender_sexlab == 1 || gender_sexlab == 3
+        has_pussy = 1
+    endif
+    int hermaphrodiate = 0
+    if has_penis == 1 && has_pussy == 1
+        hermaphrodiate = 1
+    endif
+    JMap.setInt(obj, "has_penis", has_penis)
+    JMap.setInt(obj, "has_pussy", has_pussy)
+    JMap.setInt(obj, "hermaphrodiate", hermaphrodiate)
+
+    JMap.setStr(obj,"notice_level","nothing")
+    JMap.setInt(obj,"total_orgasm",0)
+    JMap.setInt(obj,"arousal", -1) 
+    if thread.IsVictim(akActor) 
+        JMap.setInt(obj, "victim", 1) 
+        JMap.setInt(obj, "assailant", 0) 
+    else 
+        JMap.setInt(obj, "victim", 0) 
+        JMap.setInt(obj, "assailant", 1) 
+    endif 
+
+    sslActorAlias actorAlias = thread.ActorAlias(akActor) 
+    ;if Game.GetModByName("Data/SLSO.esp") != 255
+        ;enjoyment = actorAlias.Getfull_enjoyment() 
+    ;else 
+        int enjoyment = actorAlias.GetEnjoyment() 
+    ;endif 
+    JMap.setInt(obj, "enjoyment", enjoyment)
+
+    return obj
+EndFunction
+
+int Function GetObjFromActor(Actor akActor) 
+    return StorageUtil.GetIntValue(akActor, storage_obj_key, 0) 
+EndFunction 
+
+bool Function UpdateActor(int i , Actor akActor) 
+    bool changed = False 
+    if actors[i] != akActor 
+        SetActor(i, akActor) 
+        changed = True 
+        int total_orgasms = StorageUtil.GetIntValue(akActor, storage_total_orgasms_key, 0) 
+        SetTotalOrgasms(akActor, total_orgasms)
+    endif 
+    return changed 
+EndFunction 
+
+Function AlignActors() 
+    int size = thread.positions.length 
+    EnsureActorArraysLargeEnough(size) 
+    int i = 0 
+    bool changed = False 
+    while i < size
+        if UpdateActor(i, thread.positions[i]) 
+            changed = True 
+        endif 
+        i += 1 
+    endwhile 
+    while i < num_actors 
+        StorageUtil.UnsetIntValue(actors[i], storage_obj_key)
+        StorageUtil.UnsetIntValue(actors[i], storage_total_orgasms_key)
+        i += 1 
+        changed = True 
+    endwhile 
+    num_actors = size 
+
+    if changed 
+        SetNames()
+    endif 
+    UpdateActorsObj() 
+EndFunction 
+
+Function AddActorsToMap(int map) 
     int i = 0 
     while i < num_actors 
-        ; Victim and Assailant 
-        if thread.IsVictim(thread.positions[i]) 
-            victim_mask[i] = 1 
-            assailant_mask[i] = 0 
-        else 
-            victim_mask[i] = 0 
-            assailant_mask[i] = 1
-        endif 
-
-        ; Futa / Hermaphrodiate
-        if actorLib.GetTrans(thread.positions[i]) == 0 
-            hermaphrodiate_mask[i] = 1 
-        else 
-            hermaphrodiate_mask[i] = 0 
-        endif 
-        if thread != None && thread.IsUsingStrapon(thread.positions[i])
-            strapon_mask[i] = 1
-        else
-            strapon_mask[i] = 0
+        int obj = position_objs[i]
+        String name = JMap.getStr(obj, "name")
+        if name != "" 
+            JMap.setObj(map, name, obj) 
         endif 
         i += 1 
     endwhile 
 EndFunction 
 
+; ------------------------------------
+; Get Names 
+; ------------------------------------
+
 Function SetNames() 
-    SetMasks()
     actor_names = JoinActors(thread.positions)
-    actor_names_json = JoinActorsToJson(thread.positions)
-
-    hermaphrodiate_names = JoinActorsMasked(thread.positions, hermaphrodiate_mask)
-    strapon_names = JoinActorsMasked(thread.positions, strapon_mask)
-    no_orgasm_names = JoinActorsMasked(thread.positions, no_orgasm_mask)
-
-    victim_names = JoinActorsMasked(thread.positions, victim_mask)
-    victim_names_json = JoinActorsToJsonMasked(thread.positions, victim_mask)
-
-    assailant_names = JoinActorsMasked(thread.positions, assailant_mask)
-
-;    Trace("SexNames",sid+" actors:"+JoinActors(actors,num_actors)+" num_actors:"+num_actors+\
-;        " actor_names:"+actor_names+" actor_names_json:"+actor_names_json+\
-;        " hermaphrodiate_names:"+hermaphrodiate_names+" strapon_names:"+strapon_names+\
-;        " victim_names:"+victim_names+" victim_names_json:"+victim_names_json+\
-;        " assailant_names:"+assailant_names)
+    victim_names = GetNames("victim")
+    assailant_names = GetNames("assailant")
+    hermaphrodiate_names = GetNames("hermaphrodiate") 
+    strapon_names = GetNames("strapon")
+    creature_descriptions = GetCreatureDescriptions()
 EndFunction 
 
-Function SetCreatureDescriptions() 
+String Function GetNames(String key_) 
+    String names = ""
+    int matched = 0
+    int i = 0 
+    while i < num_actors 
+        if JMap.getInt(position_objs[i], key_, 0) == 1 
+            matched += 1
+        endif 
+        i += 1 
+    endwhile 
+
+    i = 0 
+    int seen = 0
+    while i < num_actors 
+        if JMap.getInt(position_objs[i], key_, 0) == 1 
+            if seen > 0 
+                if seen + 1 == matched
+                    names += " and "
+                else 
+                    names += ", "
+                endif 
+            endif 
+            names += JMap.getStr(position_objs[i], "name") 
+            seen += 1
+        endif 
+        i += 1 
+    endwhile 
+    return names 
+EndFunction
+
+String Function GetCreatureDescriptions() 
     String desc = "" 
     int i = 0
-    Actor[] actors = thread.positions
-    int num_actors = actors.length
     while i < num_actors
         Race r = actors[i].GetRace() 
         if sslCreatureAnimationSlots.HasRaceType(r) 
@@ -270,25 +437,28 @@ Function SetCreatureDescriptions()
         endif 
         i += 1
     endwhile
-    creature_descriptions = desc
+    return desc 
 EndFunction
 
 ; --------------------------------------------
 ; Get Functions 
 ; --------------------------------------------
 
-int Function GetNumberOfOrgasms(Actor akActor)
-    int i = 0
-    int num_actors = thread.positions.length
-    while i < num_actors && thread.positions[i] != akActor
-        i += 1 
-    endwhile 
-    if i < num_actors
-        return total_orgasms[i] 
-    endif 
-    return 0
-EndFunction
+int Function GetTotalOrgasms(Actor akActor)
+    return StorageUtil.GetIntValue(akActor, storage_total_orgasms_key, 0) 
+EndFunction 
 
+Function SetTotalOrgasms(Actor akActor, int total_orgasms)
+    if akActor == None 
+        Trace("SetTotalOrgasms","akActor is None")
+        return 
+    endif 
+    StorageUtil.SetIntValue(akActor, storage_total_orgasms_key, total_orgasms) 
+    int obj = GetObjFromActor(akActor)
+    if obj > 0
+        JMap.setInt(obj, "total_orgasm", total_orgasms)
+    endif 
+EndFunction 
 
 Function SetThread(sslThreadController _thread) 
     thread = _thread
@@ -308,19 +478,19 @@ bool Function IsGeneric()
 EndFunction 
 
 ; --------------------------------------------
-; Get a Status message for the scene (start, are, finished) 
+; Get a Status message for the sl_scene (start, are, finished) 
 ; --------------------------------------------
 String Function GetIntentMessage(int intent_stage = -1) 
-    String message = "are "+intent 
+    String msg = "are "+intent 
     if intent_stage == INTENT_STAGE_START 
-        message = "start "+intent
+        msg = "start "+intent
     elseif intent_stage == INTENT_STAGE_END 
-        message = "finished "+intent
+        msg = "finished "+intent
     endif 
     if num_victims > 0
-        return assailant_names+" "+message+" "+victim_names+"."
+        return assailant_names+" "+msg+" "+victim_names+"."
     endif 
-    return actor_names+" "+message+"."
+    return actor_names+" "+msg+"."
 EndFunction 
     
 bool Function GetThreadActive() 
@@ -329,7 +499,7 @@ bool Function GetThreadActive()
     endif 
     String s = (thread as sslThreadModel).GetState() 
     if s != "animating" && s != "prepare"
-        Release() 
+        Trace("GetThreadActive", "thread is not animating or prepare `"+s+"'")
         return false 
     endif 
     return true 
@@ -339,16 +509,15 @@ EndFunction
 ; Animation Event Handlers 
 ; --------------------------------------------
 Function AnimationStart()
-    SetNames() 
+    AlignActors() 
+    manager.SaveThreadsJson() 
     String msg = GetIntentMessage(INTENT_STAGE_START)
     RegisterEvent("sexlab update", msg, sender, receiver) 
-    manager.SaveThreadsJson() 
 EndFunction
 
 Function StageStart() 
-    SetNames() 
-    Actor[] actors = thread.positions
-    int num_actors = actors.length
+    AlignActors() 
+    manager.SaveThreadsJson() 
     if SexLab == None 
         Trace("StageStart","sexlab is None | actors:"+JoinActors(actors,num_actors))
         return 
@@ -381,7 +550,7 @@ Function StageStart()
         if desc != "" && thread.stage > 1
             String desc_last = stages.GetStageDescription(thread, thread.stage - 1)
             if desc != desc_last
-                desc = actors[0].GetDisplayName()+"'s scene changes to "+desc
+                desc = actors[0].GetDisplayName()+"'s sl_scene changes to "+desc
                 use_continue = False 
             endif 
         endif 
@@ -407,18 +576,17 @@ Function StageStart()
         endif
         Debug.Notification("stage "+thread.stage+" of "+ thread.animation.StageCount()+" "+msg)
     endif  
-    manager.SaveThreadsJson() 
 EndFunction
 
 Function AnimationEnd(Actor speaker=None, String style="silently") 
-    SetNames() 
-    int num_actors = thread.positions.length 
+    AlignActors() 
+    manager.SaveThreadsJson()
 
     String msg = GetIntentMessage(INTENT_STAGE_END)
-    manager.SaveThreadsJson()
     if SexLab == None || thread == None 
-        Trace("AnimationEnd","SexLab or thread is None for scene with actors "+actor_names)
+        Trace("AnimationEnd","SexLab or thread is None for sl_scene with actors "+actor_names)
         RegisterEvent("sexlab update", msg, sender, receiver) 
+        Release()
         return 
     endif 
     Trace("AnimationEnd","thread id:"+thread.tid+" status:"+thread.GetState())
@@ -437,49 +605,40 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
     endif
 
     bool orgasm_denied = false
-    Actor target = None
     if config.SeparateOrgasms
         String after = "" 
-        if num_actors >= 2 && thread.positions[0] != thread.positions[1]
-            target = thread.positions[1]
-        endif 
         int[] orgasm_expected = stages.GetOrgasmExpected(thread)
         int j = num_actors - 1 
         while 0 <= j 
-            String name = thread.positions[j].GetDisplayName()
-            if total_orgasms[j] < 1
+            String name = JMap.getStr(position_objs[j], "name") 
+            int total_orgasms = JMap.getInt(position_objs[j], "total_orgasm")
+            if total_orgasms < 1 
                 if orgasm_expected.length > j && orgasm_expected[j] == 1
                     after += name+" failed to orgasm. "
-                    target = thread.positions[j]
                     orgasm_denied = true
                 endif
-            elseif total_orgasms[j] < 2
+            elseif total_orgasms < 2
                 after += name+"'s body glows in post orgasm. "
             else 
-                after += name+"'s body is recovering from "+total_orgasms[j]+" orgasms. "
+                after += name+"'s body is recovering from "+total_orgasms+" orgasms. "
             endif 
             j -= 1 
         endwhile ;
-        if target != None
-            narration += " "+after
-        endif 
+        narration += after
     endif 
 
-    if target == None && num_actors >= 2 && thread.positions[0] != thread.positions[1]
-        target = thread.positions[1]
-    endif 
-
-    narration += msg +"."
+    narration += msg
     if speaker != None || has_tentacles
         DirectNarration(narration, sender, receiver)
     elseif orgasm_denied
-        DirectNarration_Optional(narration, sender, receiver)
+        DirectNarration_Optional(intent+" ends", narration, sender, receiver)
     else
-        RegisterEvent("sex_activites", narration, sender, receiver)
+        RegisterEvent(intent+" ends", narration, sender, receiver)
     endif 
 
     if ThreadSlots == None
         Trace("AnimationEnd","ThreadSlots is None", true)
+        Release()
         return
     endif
     sslThreadController[] threads = ThreadSlots.Threads
@@ -507,27 +666,29 @@ EndFunction
 ; Orgasm Handlers
 ; --------------------------------------------
 Function OrgasmCombined()
+    AlignActors() 
     int[] orgasm_expected = stages.GetOrgasmExpected(thread)
     bool someone_ejaculated = False 
     String narration = "" 
     Trace("Orgasm_Combined","ThreadID:"+thread.tid+" has_player:"+has_player+" orgasm_expected:"+orgasm_expected)
     int i = 0
-    int num_actors = thread.positions.length 
     bool no_orgasm_everyone = true
     while i < num_actors
-        if no_orgasm_mask[i] == 0 
-            String name = thread.positions[i].GetDisplayName()
-            int gender = thread.positions[i].GetLeveledActorBase().GetSex() ; actorLib.GetGender(thread.positions[i])
-            int gender_sexlab = sexlab.GetGender(thread.positions[i]) 
-            bool has_penis = gender != 1 || (gender_sexlab != 1 && gender_sexlab != 3)
-            if main.handler_dom.IsDomSlave(thread.positions[i])
+        int obj = position_objs[i] 
+        String name = JMap.getStr(obj, "name")
+        int no_orgasm = JMap.getInt(obj, "no_orgasm")
+        if no_orgasm == 0 
+            int has_penis = JMap.getInt(obj, "has_penis")
+            int total_orgasms = GetTotalOrgasms(actors[i]) 
+            int is_dom_slave = JMap.getInt(obj,"is_dom_slave")
+            if is_dom_slave == 1 
                 if orgasm_expected[i] == 1
-                    if total_orgasms[i] > 0
+                    if total_orgasms > 0
                         if has_penis
                             someone_ejaculated = True 
                         endif 
                     else 
-                        narration += main.handler_dom.HandleOrgasmDenied(thread.positions[i])
+                        narration += main.handler_dom.HandleOrgasmDenied(actors[i])
                     endif 
                 endif 
                 Trace("Orgasm_Combined",i+" "+name+" | someone_ejaculated: "+someone_ejaculated+" | DOMSlave:true | narration: "+narration)
@@ -540,10 +701,9 @@ Function OrgasmCombined()
                 endif 
             endif 
             no_orgasm_everyone = false
-            Trace("Orgasm_Combined",i+" "+name+" | someone_ejaculated: "+someone_ejaculated+" | narration: "+narration)
+            Trace("Orgasm_Combined","--- i:"+i+" "+name+" | someone_ejaculated: "+someone_ejaculated+" | narration: "+narration)
         else 
-            narration += thread.positions[i].GetDisplayName()+" did not orgasm. "
-            Trace("CombinedOrgasm","i:"+i+" "+GetDisplayName(thread.positions[i])+" shouldn't orgasm")
+            narration += name+" did not orgasm. "
         endif 
         i += 1
     endwhile
@@ -552,30 +712,38 @@ Function OrgasmCombined()
     i = 0
     while i < num_actors 
         if someone_ejaculated
-            narration += AddCum(i, thread.positions[i], thread.positions[i].GetDisplayName())
+            narration += AddCum(i, actors[i], actors[i].GetDisplayName())
         endif 
-        Trace("Orgasm_Combined",i+" "+thread.positions[i].GetDisplayName()+"| adding cum | narration: "+narration)
+        Trace("Orgasm_Combined","--- "+i+" "+thread.positions[i].GetDisplayName()+"| adding cum | narration: "+narration)
         i += 1 
     endwhile 
 
     if !no_orgasm_everyone
-        SkyrimNetApi.PurgeDialogue(True)
-        DirectNarration(narration, sender, receiver)
+        if has_player
+            DirectNarration(narration, sender, receiver, purge_dialogue=True)
+        else 
+            DirectNarration_optional("orgasm", narration, sender, receiver)
+        endif 
     endif 
 EndFunction
 
 ; Used for SLSO.esp orgasm handling
 Event OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
-    ; Setup number of orgasms
-    int i = 0
-    int num_actors = thread.positions.length
-    while i < num_actors && thread.positions[i] != akActor
-        i += 1 
-    endwhile 
-
-    if i < num_actors && no_orgasm_mask[i] == 1
-        Trace("OrgasmIndividual","i:"+i+" "+GetDisplayName(thread.positions[i])+" shouldn't orgasm")
+    if akActor == None 
+        Trace("OrgasmIndividual","akActor is None") 
         return 
+    endif 
+
+    String name = GetDisplayName(akActor) 
+    int obj = GetObjFromActor(akActor) 
+    if obj > 0 
+        if JMap.getInt(obj, "no_orgasm") == 1 
+            Trace("OrgasmIndividual",name+" shouldn't orgasm")
+            return 
+        endif 
+        JMap.SetInt(obj, "enjoyment", full_enjoyment) 
+
+        SetTotalOrgasms(akActor, num_orgasms)
     endif 
 
     String msg = ""
@@ -585,39 +753,26 @@ Event OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
         msg += akActor.GetDisplayName()+" orgasmed again."
     endif 
 
-
-    if i < thread.positions.length 
-        total_orgasms[i] = num_orgasms
-    endif 
     OrgasmHelper(akActor, msg)
 EndEvent
 
 Function OrgasmCustom(Actor akActor, String msg)
-    int number_orgasms = 0 
-    int i = 0
-    int num_actors = thread.positions.length
-    while i < num_actors && thread.positions[i] != akActor
-        i += 1 
-    endwhile 
-
-    if i < thread.positions.length
-        total_orgasms[i] += 1
-    endif 
+    SetTotalOrgasms(akActor, GetTotalOrgasms(akActor) + 1) 
     OrgasmHelper(akActor, msg)
 EndFunction
 
 Function OrgasmHelper(Actor akActor, String msg)
     Trace("OrgasmHelper","akActor:"+akActor.GetDisplayName()+" msg:"+msg)
+    AlignActors()
     Actor cum_catcher = None
     String cum_catcher_name = "(None)"
 
     int gender = sexlab.GetGender(akActor) 
-    bool male = gender == 0 || gender == 2
-    if male 
+    bool has_penis = gender == 0 || gender == 2
+    if has_penis 
         ; Generate the orgasm message
-        int num_actors = thread.positions.length
         int i = 0
-        while i <= num_actors
+        while i < num_actors
             if thread.positions[i] != akActor && cum_catcher == None
                 cum_catcher = thread.positions[i]
                 cum_catcher_name = cum_catcher.GetDisplayName()
@@ -627,9 +782,12 @@ Function OrgasmHelper(Actor akActor, String msg)
         endwhile 
     endif 
 
-    Trace("OrgasmHelper"," male:"+male+" cum_catcher:"+cum_catcher_name+" msg:"+msg)
-    SkyrimNetApi.PurgeDialogue(True)
-    DirectNarration(msg, akActor, cum_catcher)
+    Trace("OrgasmHelper"," has_penis:"+has_penis+" cum_catcher:"+cum_catcher_name+" msg:"+msg)
+    if has_player 
+        DirectNarration(msg, akActor, cum_catcher, purge_dialogue=true)
+    else 
+        DirectNarration_Optional("orgasm", msg, akActor, cum_catcher) 
+    endif 
 EndFunction
 
 ;----------------------------------------------------
@@ -700,92 +858,93 @@ String Function GetDescription()
     if thread == None 
         return ""
     endif 
-    return GetIntentMessage()+" "+stages.GetStageDescription(thread)
+    int intent_stage = INTENT_STAGE_ONGOING
+    if status != STATUS_ACTIVE
+        intent_stage = INTENT_STAGE_START
+    endif 
+    return GetIntentMessage(intent_stage)+" "+stages.GetStageDescription(thread)
 EndFunction
 
-String Function GetJson(Actor speaker)
-    if !GetThreadActive()
-        return ""
+Function CreateThreadJson() 
+    if !thread_obj
+        thread_obj = JMap.object() 
+        JValue.retain(thread_obj)
+
+        int actors_obj = JMap.object() 
+        JValue.retain(actors_obj)
+        JMap.setObj(thread_obj, "actors", actors_obj) 
     endif 
-    SetNames()
-    int num_actors = thread.positions.length
+EndFunction
 
-    if speaker == None 
-        Trace("GetJson","speaker is None")
-        return "{}"
+String Function GetJson(Actor speaker) 
+    int obj = GetObj(speaker) 
+    String json = JValue.toJsonString(obj) 
+    return json 
+EndFunction 
+
+int Function GetObj(Actor speaker)
+    AlignActors()
+
+    Float distance = 0.0
+    bool los = True 
+    if speaker != None 
+        los = False 
     endif 
 
-    if SexLab == None 
-        Trace("GetJson","SexLab is None")
-        return "{}"
-    endif 
-
-    String description = GetDescription()
-
-    String json = "{"+'"'+"description"+'"'+":"+'"'+description+'"'
-    
-    bool los = False 
-    int[] orgasm_expected = stages.GetOrgasmExpected(thread)
-    String orgasm_expected_json = JoinActorsToJsonMasked(thread.positions, orgasm_expected, thread.positions.length)
     int i = 0
+    bool actor_changed = False 
     while i < num_actors 
-        if thread.positions[i] == speaker 
+        if speaker != None && thread.positions[i] == speaker 
             los = True 
+        endif 
+        if UpdateActor(i, thread.positions[i]) 
+            actor_changed = True 
         endif 
         i += 1 
     endwhile 
+    if actor_changed
+        SetNames() 
+    endif 
 
-    Float distance = 0
     if !los
-        distance = speaker.GetDistance(thread.positions[0]) ;
+        distance = speaker.GetDistance(thread.positions[0])
         los = speaker.HasLOS(thread.positions[0]) 
     endif 
 
-    json += ',"actors":'+GetActorsJson() 
-    json += ',"victim_names":'+victim_names_json
-    json += ',"actor_names_string":"'+actor_names+'"'
-    json += ',"hermaphrodiate_names_string":"'+hermaphrodiate_names+'"'
-    json += ',"strapon_names_string":"'+strapon_names+'"'
-    json += ',"speaker_distance":'+distance
-    json += ',"speaker_los"'+JsonBool(los)
-    json += ',"location":"'+GetLocation()+'"'
-    json += ',"style":"'+style+'"'
-    json += "}"
-    return json
+    JMap.setInt(thread_obj, "active", GetThreadActive() as int ) 
+    JMap.setStr(thread_obj, "status",status) 
+    JMap.setStr(thread_obj, "description", GetDescription())
+    JMap.setStr(thread_obj, "style", style)
+    JMap.setFlt(thread_obj, "speaker_distance", distance)
+    JMap.setInt(thread_obj, "speaker_los", los as int)
+    return thread_obj
 EndFunction
 
-String Function GetActorsJson() 
-    String json = "" 
-    int i = 0 
-    Actor[] actors = thread.positions 
-    int num_actors = actors.length
+int Function GetVictimsNamesJsonObj()
+    int victimNamesMap = JMap.object()
+    int i = 0
     while i < num_actors
-        String info = '"speaking_modifiers":'+speaking_modifiers_json[i]
-        info += ',"name":"'+actors[i].GetDisplayName()+'"'
-        info += ',"notice_level":"active"'
-        if thread.IsVictim(actors[i]) 
-            info += ',"victim":true'
-        else 
-            info += ',"victim":false'
-        endif 
+        if thread.IsVictim(actors[i])
+            JMap.setStr(victimNamesMap, actors[i].GetDisplayName(), actors[i].GetDisplayName())
+        endif
+        i += 1
+    endwhile
 
-        int enjoyment = 0
-        sslActorAlias actorAlias = thread.ActorAlias(actors[i]) 
-        ;if MiscUtil.FileExists("Data/SLSO.esp")
-            ;enjoyment = actorAlias.Getfull_enjoyment() 
-        ;else 
-            enjoyment = actorAlias.GetEnjoyment() 
-        ;endif 
-        info += ',"enjoyment":'+enjoyment
+    return victimNamesMap
+EndFunction
 
-        if json  != "" 
-            json += ","
-        endif 
-        json += '"'+actors[i].GetDisplayName()+'":{'+info+'}'
+int Function UpdateActorsObj()
+    int actors_map = JMap.getObj(thread_obj, "actors")
+    int i = 0
+    JMap.clear(actors_map) 
+    while i < num_actors
+        int obj = position_objs[i]
+        String name = JMap.getStr(obj,"name")
+        JMap.setObj(actors_map,name,obj)
         i += 1 
-    endwhile 
-    return "{"+json+"}"
-EndFunction 
+    endwhile
+    return actors_map
+EndFunction
 
 String Function GetLocation()
 
@@ -854,30 +1013,12 @@ String Function GetLocation()
     return loc+" "
 EndFunction 
 
-String Function GetEnjoyments()
-    String str = ""
-    int i = 0
-    int num_actors = thread.positions.length
-    while i < num_actors 
-        if str != "" 
-            str += ", "
-        endif 
-        int enjoyment = 0
-        sslActorAlias actorAlias = thread.ActorAlias(thread.positions[i]) 
-        ;if MiscUtil.FileExists("Data/SLSO.esp")
-            ;enjoyment = actorAlias.Getfull_enjoyment() 
-        ;else 
-            enjoyment = actorAlias.GetEnjoyment() 
-        ;endif 
-        str += '"'+thread.positions[i].GetDisplayName()+'"'+": "+enjoyment
-        i += 1  
-    endwhile 
-    return "{"+str+"}"
-EndFunction 
 
 bool Function SexLab_Thread_LOS(Actor akActor)
+    if thread == None 
+        return True 
+    endif 
     int i = 0
-    int num_actors = thread.positions.length
     while i < num_actors 
         if akActor == thread.positions[i] || akActor.HasLOS(thread.positions[i])
             return true
@@ -888,17 +1029,15 @@ bool Function SexLab_Thread_LOS(Actor akActor)
 endFunction 
 
 String Function GetTagsString(sslBaseAnimation anim) global
-    String tags_str = ""
     String[] _tags = anim.GetRawTags()
+    int num_tags = _tags.length 
+    int obj = JArray.objectWithSize(num_tags) 
     int i = 0 
-    while i < _tags.Length
-        if _tags[i] != "" 
-            if tags_str != ""
-                tags_str += ", "
-            endif 
-            tags_str += '"'+_tags[i]+'"'
-        endif
+    while i < num_tags
+        JArray.setStr(obj, i, _tags[i])
         i += 1
     endwhile
-    return tags_str 
+    String json = JValue.toJsonString(obj)
+    JValue.release(obj) 
+    return json
 EndFunction 

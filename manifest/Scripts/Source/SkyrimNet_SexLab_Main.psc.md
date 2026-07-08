@@ -18,7 +18,7 @@
     ## Core Responsibilities
     * **Integration Validation**: Performs verification passes across external script layers (`ostimnet_found`) to toggle corresponding sub-features safely.
     * **Animation Interception**: Updates global state monitors (`skyrimnet_sexlab_active_sex`) to temporarily pause non-essential engine tasks during scenes.
-    * **Inventory Safeguarding**: Employs `StorageUtil` lists to index items unequipped during scene actions, ensuring they are safely restored to characters upon scene completion.
+    * **Inventory Safeguarding**: Employs `StorageUtil` lists to index items unequipped during sl_scene actions, ensuring they are safely restored to characters upon sl_scene completion.
   </context>
 
   <critical_issues>

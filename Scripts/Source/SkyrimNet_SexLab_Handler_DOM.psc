@@ -11,26 +11,27 @@ Function Trace(String func, String msg, Bool notification=False)
     endif 
 EndFunction
 
-Function Setup()
+bool Function Setup()
     manager = Game.GetFormFromFile(0x000800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Scene_Manager
     if manager == None 
         Trace("Setup","manager is None, aborting")
-        return 
+        return  False
     endif 
 
     actions = Game.GetFormFromFile(0x000800, "SkyrimNet_DOM.esp") as SkyrimNet_DOM_Actions
     if actions == None 
         Trace("Setup","actions is None, aborting")
-        return
+        return False
     endif
 
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x000800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
     if main == None
         Trace("Setup", "main is None, aborting")
-        return
+        return False
     endif
     main.handler_dom = self
     Trace("Setup", "Success")
+    return True 
 endFunction
 
 ; Checks if the actor is a dom slave 
@@ -67,15 +68,3 @@ Bool Function Orgasm_Desired(Actor akActor)
     DOM_Actor slave = SkyrimNet_DOM_API.GetSlave("SkyrimNet_SexLab_Main", "Orgasm_Combined", akActor) as Dom_Actor
     return slave != None && slave.mind.is_aroused_for > 0
 EndFunction
-
-bool Function StartScene_Consensual_Two(String intent, Actor speaker, Actor Superior, Actor target, string style="", string method="", String direction="", String setting_name="")
-    Trace("StartScene_Consensual_Two","intent: "+intent+" speaker: "+GetDisplayName(speaker)+" Superior: "+GetDisplayName(Superior)+" target: "+GetDisplayName(target)+" style: "+style+" method: "+method+" direction: "+direction+" setting_name: "+setting_name)
-    if SkyrimNet_DOM_API.IsDOMSlave(target)
-        actions.StartScene_Consensual_Two(intent, speaker, Superior, target, style, method, direction, setting_name)
-        return true 
-    else 
-        return false
-    endif
-EndFunction
-
-

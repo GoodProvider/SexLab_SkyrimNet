@@ -20,8 +20,8 @@
         <Import>.\Headers_Source</Import>
         <Import>.\Headers_Source\OstimNet</Import>
         <Import>.\Headers_Source\Ostim</Import>
-        <Import>.\Headers_Source\SkyrimNet_DOM</Import>
-            <Import>.\Headers_Source\PAH Diary of Mine</Import>
+        <Import>@ModsFolder\SkyrimNet_DOM\scripts\Source</Import>
+            <Import>@ModsFolder\SkyrimNet_DOM\Headers_Source\DOM</Import>
 
         <Import>@ModsFolder\SKSE64\Scripts\Source</Import>
         <Import>@ModsFolder\SkyrimNet\Source\Scripts</Import>
@@ -47,7 +47,6 @@
         <Import>@ModsFolder\SexLab Separate Orgasm\Scripts\Source</Import>
         <Import>@ModsFolder\SexLabFrameworkAE_v166b\scripts\Source</Import>
 
-        <Import>@ModsFolder\SkyrimNet_DOM\scripts\Source</Import>
         <!--
         <Import>@ModsFolder\SkyrimNet_DOM\scripts\Source</Import>
         <Import>.\Headers\SLO Aroused NG</Import>

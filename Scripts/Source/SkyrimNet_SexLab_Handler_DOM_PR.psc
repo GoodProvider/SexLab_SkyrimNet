@@ -15,6 +15,6 @@ Event OnInit()
 EndEvent 
 
 Event OnPlayerLoadGame()
-    handler.Setup()
+;    handler.Setup()
 EndEvent
 

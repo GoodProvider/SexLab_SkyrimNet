@@ -89,7 +89,7 @@ int Property counter Auto
 Function Setup()
     Trace("Setup","")
 
-    if !MiscUtil.FileExists("Data/SexLab.esm")
+    if Game.GetModByName("Data/SexLab.esm") != 255
         Trace("Setup","Data/SexLab.esm does not exist") 
         Trace("Setup", "Can't find Data/SexLab.esm | SkyrimNet_SexLab will not work.", true)
         return 
@@ -100,23 +100,27 @@ Function Setup()
     SkyrimNet_SexLab_Decorators.RegisterDecorators() 
     ((self as Quest) as SkyrimNet_SexLab_Actions).Setup()
     ((self as Quest) as SkyrimNet_SexLab_MCM).Setup()
+    ((self as Quest) as SkyrimNet_SexLab_Menu).Setup()
     ((self as Quest) as SkyrimNet_SexLab_Stages).Setup()
     ((self as Quest) as SkyrimNet_SexLab_Scene_Manager).Setup()
 
     ; --------------------------------
     ; DOM Handler
     ; --------------------------------
-    bool skyrimnet_dom_found = MiscUtil.FileExists("Data/SkyrimNet_DOM.esp")
-    bool skyrimnet_sexlab_handler_dom_found = MiscUtil.FileExists("Data/SkyrimNet_SexLab_Handler_DOM.esp")
+    handler_dom = None 
+    bool skyrimnet_dom_found = Game.GetModByName("Data/SkyrimNet_DOM.esp") != 255
+    bool skyrimnet_sexlab_handler_dom_found = Game.GetModByName("Data/SkyrimNet_SexLab_Handler_DOM.esp") != 255
     if skyrimnet_dom_found && skyrimnet_sexlab_handler_dom_found
         handler_dom = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab_Handler_DOM.esp") as SkyrimNet_SexLab_Handler_DOM_Interface
         if handler_dom == None
             handler_dom = (self as Quest) as SkyrimNet_SexLab_Handler_DOM_Interface
             Trace("Setup", "ERROR: Failed to get external handler DOM. Using fallback.", true)
-        else 
-            Trace("Setup","SkyrimNet_DOM found setting main.handler_dom to SkyrimNet_SexLab_Handler_DOM")
+        elseif !handler_dom.Setup() 
+            handler_dom = None 
+            Trace("Setup","SkyrimNet_SexLab_Handler_DOM Setup failed")
         endif      
-    else 
+    endif 
+    if handler_dom == None 
         handler_dom = (self as Quest) as SkyrimNet_SexLab_Handler_DOM_Interface
         Trace("Setup","SkyrimNet_SexLab_Handler_DOM found:"+skyrimnet_sexlab_handler_dom_found+", SkyrimNet_DOM found :"+skyrimnet_dom_found)
     endif 
@@ -146,7 +150,7 @@ Function Setup()
     ; --------------------------------
     ; Decorators
     ; --------------------------------
-    if MiscUtil.FileExists("Data/TT_OStimNet.esp") 
+    if Game.GetModByName("Data/TT_OStimNet.esp")  != 255
         ostimnet_found = True 
         Trace("Setup","Found TT_OstimNet.esp found")
     endif 
