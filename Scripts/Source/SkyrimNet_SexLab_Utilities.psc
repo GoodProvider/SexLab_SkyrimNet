@@ -15,6 +15,19 @@ String Function GetDisplayName(Actor akActor) global
     return akActor.GetDisplayName()
 EndFunction 
 
+String Function IntToHex(int value) global
+    if value == 0
+        return "0"
+    endif
+    String s = ""
+    while value > 0
+        int nibble = Math.LogicalAnd(value, 0xF)
+        s = StringUtil.GetNthChar("0123456789abcdef", nibble) + s
+        value = Math.RightShift(value, 4)
+    endwhile
+    return s
+EndFunction
+
 ; ------------------------------------------------------------
 ; Timestamps
 ; A reasonable timestamp is acceptable. 

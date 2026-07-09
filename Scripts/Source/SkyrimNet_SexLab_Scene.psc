@@ -155,6 +155,15 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator=None)
     endif 
     Trace("Setup", "--- b num_actors: "+num_actors)
 
+    int actors_map = JMap.object()
+    i = 0 
+    while i < num_actors
+        JMap.setObj(actors_map, actors[i].GetDisplayName(), position_objs[i])
+        i += 1
+    endwhile 
+    JMap.setObj(thread_obj, "actors", actors_map)
+    JValue.retain(actors_map)
+
     if num_actors > 1
         DbgMsg("Setup", "thread.GetVictim()")
         Actor victim = thread.GetVictim() 
@@ -318,12 +327,14 @@ bool Function SetActor(int i, Actor akActor)
     int obj = position_objs[i]
     StorageUtil.SetIntValue(akActor, storage_obj_key, obj) 
     StorageUtil.SetIntValue(akActor, storage_total_orgasms_key, 0)
-    JMap.setForm(obj, "actor", actors[i])
-    JMap.setStr(obj, "name", actors[i].GetDisplayName())
+    JMap.setForm(obj, "actor", AkActor)
+    JMap.setStr(obj, "uuid", GetUUID(akActor))
+    JMap.setInt(obj, "formid", akActor.GetFormID())
+    JMap.setStr(obj, "name", akActor.GetDisplayName())
 
-    int gender = actors[i].GetLeveledActorBase().GetSex() ; actorLib.GetGender(actors[i])
+    int gender = akActor.GetLeveledActorBase().GetSex() ; actorLib.GetGender(actors[i])
     DbgMsg("SetActor", "sexlab.GetGender "+akActor.GetDisplayName())
-    int gender_sexlab = main.sexlab.GetGender(actors[i]) 
+    int gender_sexlab = main.sexlab.GetGender(akActor) 
     DbgMsg("SetActor", "sexlab.GetGender returned "+gender_sexlab)
     int has_penis = 0
     if gender != 1 || (gender_sexlab != 1 && gender_sexlab != 3)
@@ -333,13 +344,22 @@ bool Function SetActor(int i, Actor akActor)
     if gender == 1 || gender_sexlab == 1 || gender_sexlab == 3
         has_pussy = 1
     endif
-    int hermaphrodiate = 0
-    if has_penis == 1 && has_pussy == 1
-        hermaphrodiate = 1
-    endif
+
+    int is_hermaphrodiate = 0
+    if actorLib.GetTrans(akActor) == 0 
+        is_hermaphrodiate = 1
+    endif 
+
+    int wearing_strapon = 0
+    if thread.IsUsingStrapon(akActor)
+        wearing_strapon = 1
+    endif 
+
     JMap.setInt(obj, "has_penis", has_penis)
     JMap.setInt(obj, "has_pussy", has_pussy)
-    JMap.setInt(obj, "hermaphrodiate", hermaphrodiate)
+    JMap.setInt(obj, "is_hermaphrodiate", is_hermaphrodiate)
+    JMap.setInt(obj, "wearing_strapon", wearing_strapon)
+    JMap.setStr(obj, "creature_description", GetCreatureDescriptions(akActor))
 
     JMap.setStr(obj,"notice_level","nothing")
     if status == STATUS_ACTIVE
@@ -373,6 +393,18 @@ bool Function SetActor(int i, Actor akActor)
 
     DbgReturn("SetActor", "obj")
     return obj
+EndFunction
+
+String Function GetUUID(Actor akActor)
+    DbgEnter("GetUUID")
+    if akActor == None
+        DbgReturn("GetUUID", "")
+        return ""
+    endif
+    int localId = Math.LogicalAnd(akActor.GetFormID(), 0xFFFFFF)
+    String uuid = "0x" + IntToHex(localId)
+    DbgReturn("GetUUID", uuid)
+    return uuid
 EndFunction
 
 int Function GetObjFromActor(Actor akActor) 
@@ -421,7 +453,6 @@ Function AlignActors()
     if changed 
         SetNames()
     endif 
-    UpdateActorsObj() 
     DbgEnd("AlignActors")
 EndFunction 
 
@@ -451,7 +482,6 @@ Function SetNames()
     assailant_names = GetNames("assailant")
     hermaphrodiate_names = GetNames("hermaphrodiate") 
     strapon_names = GetNames("strapon")
-    creature_descriptions = GetCreatureDescriptions()
     DbgEnd("SetNames")
 EndFunction 
 
@@ -487,31 +517,27 @@ String Function GetNames(String key_)
     return names 
 EndFunction
 
-String Function GetCreatureDescriptions() 
+String Function GetCreatureDescriptions(Actor akActor) 
     DbgEnter("GetCreatureDescriptions")
     String desc = "" 
-    int i = 0
-    while i < num_actors
-        Race r = actors[i].GetRace() 
-        if sslCreatureAnimationSlots.HasRaceType(r) 
-            String name = actors[i].GetDisplayName()
-            String race_name = r.GetName() 
-            desc += name+" is a "+race_name+". "
-            int j = JArray.count(main.race_to_description) - 1 
-            while 0 <= j 
-                int creature = Jarray.getObj(main.race_to_description, j) 
-                Race creature_race = JMap.getForm(creature,"form_") as Race 
-                if creature_race == r 
-                    desc += JMap.getStr(creature, "description_")
-                    j = -1 
-                else 
-                    j -= 1 
-                endif 
-            endwhile 
-        endif 
-        i += 1
-    endwhile
-    DbgReturn("GetCreatureDescriptions", "desc")
+    Race r = akActor.GetRace() 
+    if sslCreatureAnimationSlots.HasRaceType(r) 
+        String name = akActor.GetDisplayName()
+        String race_name = r.GetName() 
+        desc += name+" is a "+race_name+". "
+        int j = JArray.count(main.race_to_description) - 1 
+        while 0 <= j 
+            int creature = Jarray.getObj(main.race_to_description, j) 
+            Race creature_race = JMap.getForm(creature,"form_") as Race 
+            if creature_race == r 
+                desc += JMap.getStr(creature, "description_")
+                j = -1 
+            else 
+                j -= 1 
+            endif 
+        endwhile 
+    endif 
+    DbgReturn("GetCreatureDescriptions", "desc:"+desc)
     return desc 
 EndFunction
 
@@ -997,10 +1023,6 @@ Function CreateThreadJson()
     if !thread_obj
         thread_obj = JMap.object() 
         JValue.retain(thread_obj)
-
-        int actors_obj = JMap.object() 
-        JValue.retain(actors_obj)
-        JMap.setObj(thread_obj, "actors", actors_obj) 
     endif 
     DbgEnd("CreateThreadJson")
 EndFunction
@@ -1082,21 +1104,6 @@ int Function GetVictimsNamesJsonObj()
 
     DbgReturn("GetVictimsNamesJsonObj", "victimNamesMap")
     return victimNamesMap
-EndFunction
-
-int Function UpdateActorsObj()
-    DbgEnter("UpdateActorsObj")
-    int actors_map = JMap.getObj(thread_obj, "actors")
-    int i = 0
-    JMap.clear(actors_map) 
-    while i < num_actors
-        int obj = position_objs[i]
-        String name = JMap.getStr(obj,"name")
-        JMap.setObj(actors_map,name,obj)
-        i += 1 
-    endwhile
-    DbgReturn("UpdateActorsObj", "actors_map")
-    return actors_map
 EndFunction
 
 String Function GetLocation()
@@ -1194,13 +1201,24 @@ String Function GetTagsString(sslBaseAnimation anim) global
     SkyrimNet_SexLab_Scene sl_scene = Game.GetFormFromFile(0x8000,"SkyrimNet_SexLab.esp") AS SkyrimNet_SexLab_Scene
     sl_scene.DbgEnter("GetTagsString")
     int num_tags = _tags.length 
-    int obj = JArray.objectWithSize(num_tags) 
     int i = 0 
+    String tags_string = ""
     while i < num_tags
-        JArray.setStr(obj, i, _tags[i])
+        tags_string += _tags[i]
+        if i < num_tags - 1
+            tags_string += ", "
+        endif 
         i += 1
-    endwhile
-    String json = JValue.toJsonString(obj)
-    JValue.release(obj) 
-    return json
+    endwhile 
+    return tags_string
+
+    ;int obj = JArray.objectWithSize(num_tags) 
+    ;int i = 0 
+    ;while i < num_tags
+        ;JArray.setStr(obj, i, _tags[i])
+        ;i += 1
+    ;endwhile
+    ;String json = JValue.toJsonString(obj)
+    ;JValue.release(obj) 
+    ;return json
 EndFunction 
