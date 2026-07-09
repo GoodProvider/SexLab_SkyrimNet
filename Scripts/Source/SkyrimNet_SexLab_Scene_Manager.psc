@@ -606,23 +606,22 @@ String Function GetThreadsJson(Actor speaker = None)
     thread_counter += 1 
 
 
-    int actors_map = JMap.object() 
-    int array = JArray.object() 
+    int actors_array = JArray.object() 
+    int threads_array = JArray.object() 
     int i = 0
     String threads_str = ""
     while i < threads.length
         SkyrimNet_SexLab_Scene sl_scene = GetSceneByThread(threads[i])
         if sl_scene != None 
             if sl_scene.GetThreadActive() 
-                sl_scene.AddActorsToMap(actors_map) 
-                int thread_obj = sl_scene.GetObj(speaker) 
-                JArray.addObj(array, thread_obj) 
+                sl_scene.AddActorsToArray(actors_array) 
+                JArray.addObj(threads_array, sl_scene.GetObj(speaker))
             endif 
         endif 
         i += 1
     endwhile
-    JMap.setObj(obj, "actors", actors_map)
-    JMap.setObj(obj, "threads", array) 
+    JMap.setObj(obj, "actors", actors_array)
+    JMap.setObj(obj, "threads", threads_array) 
 
     String json = JValue.toJsonString(obj) 
     

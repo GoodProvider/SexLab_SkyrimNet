@@ -37,19 +37,19 @@
 
 {# speaker having sex #} 
 {% set actor_having_sex = false %} 
-{% set sexlab.threads = [] %}
+{% set sexlab.Threads = [] %}
 {% set sexlab.undressed_clothing = [] %} 
 {% if get_global_value("skyrimnet_sexlab_active_sex") == 1.0 %}
   {% if not isTimePaused %}
       {% set sexlab = sexlab_get_threads(actorUUID) -%}
-      {% if not sexlab.threads %}
+      {% if not sexlab.Threads %}
         {% set sexlab = read_json("SkyrimNet_SexLab/threads.json") %} 
       {% endif %}
   {% else %} 
       {% set sexlab = read_json("SkyrimNet_SexLab/threads.json") %} 
   {% endif %}
-  {% for thread in sexlab.threads %}
-        {% if contains(thread.victims, decnpc(actorUUID).name) %} 
+  {% for thread in sexlab.Threads %}
+        {% if contains(thread.Victims, decnpc(actorUUID).name) %} 
             {% set actor_rape_victim = true %} 
       {% endif %} 
       {% if contains(thread.names, decnpc(actorUUID).name) %} 

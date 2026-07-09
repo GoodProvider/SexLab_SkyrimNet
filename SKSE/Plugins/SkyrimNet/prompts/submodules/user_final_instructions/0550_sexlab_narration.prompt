@@ -1,7 +1,7 @@
 {% if not isTimePaused %}
      {% set sexlab = sexlab_get_threads(npc.UUID) -%}
      {% set sexlab.source = "sexlab_get_threads" %} 
-     {% if not sexlab.threads %}
+     {% if not sexlab.Threads %}
           {% set sexlab = read_json("SkyrimNet_SexLab/threads.json") %} 
           {% set sexlab.source = "file" %} 
      {% endif %}
@@ -9,20 +9,20 @@
      {% set sexlab = read_json("SkyrimNet_SexLab/threads.json") %} 
      {% set sexlab.source = "file" %}
 {% endif %}
-{% if not sexlab.actors %} 
-     {% set sexlab.actors = {} %} 
+{% if not sexlab.Actors %} 
+     {% set sexlab.Actors = {} %} 
 {% endif %} 
-{% if existsIn(sexlab.actors, npc.name) %} 
-     {% set speaker = at(sexlab.actors,npc.name) %} 
+{% if existsIn(sexlab.Actors, npc.name) %} 
+     {% set speaker = at(sexlab.Actors,npc.name) %} 
      {% if get_faction_rank(npc.UUID, "SexLabAnimatingFaction") == 1 %}
           {% set speaker.notice_level = "active" %}
      {% endif %}
 {% else %} 
-     {% set speaker = {"speaking_modifiers":[], "victim":false, "notice_level":"nothing", "arousal":0} %}
+     {% set speaker = {"speaking_modifiers":[], "Victim":0, "notice_level":"nothing", "arousal":0} %}
 {% endif %}
 {% if is_narration_enabled() %}
 {% if speaker.notice_level == "active" %}
-   {% if contains(speaker.speaking_modifiers,"pleasure") or contains(speaker.speaking_modifiers, "pain") %} 
+   {% if contains(speaker.speaking_modifiers,"Pleasure") or contains(speaker.speaking_modifiers, "Pain") %} 
 Include a strong emotional and physical narration with each response.
    {% endif %} 
 {% else if speaker.arousal > 99 %}

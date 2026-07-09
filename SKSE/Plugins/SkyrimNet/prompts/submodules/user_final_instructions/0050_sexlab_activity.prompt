@@ -16,8 +16,6 @@
      {% set sexlab.source = "file" %}
 {% endif %}
 
-sexlab: {{sexlab}} 
-
 {% set speaker = {"speaking_modifiers":[], "Victim":0, "notice_level":"nothing"} %}
 
 {% if existsIn(sexlab,"Threads") and length(sexlab.Threads) > 0 %}
@@ -66,28 +64,23 @@ sexlab: {{sexlab}}
                     {% set speaker.notice_level = "nothing" %}
                {% endif %}
           {% endif %}
-     {%- endfor %}
-
-          {% if existsIn(sexlab.Actors, npc.name) %}
-               {% set actor_record = at(sexlab.Actors, npc.name) %}
-               {% if lower(actor_record.uuid) == lower(npc.UUID) %}
-                    {% set prev_notice = speaker.notice_level %}
-                    {% set speaker = actor_record %}
-                    {% if prev_notice != "nothing" %}
-                         {% set speaker.notice_level = prev_notice %}
-                    {% endif %}
-                    {% if actor_record.is_hermaphrodiate %} {{ actor_record.name }} is a hermaphrodiate. {% endif %}
-                    {% if actor_record.creature_description != "" %} {{ actor_record.creature_description }} {% endif %}
-                    {% if actor_record.wearing_strapon %} {{ actor_record.name }} is wearing a strap on dildo. {% endif %}
-               {% endif %}
-          {% endif %} 
+     {%- endfor -%}
+     
+     {%- for actor_record in sexlab.Actors %} 
+     {{actor_record.uuid}} , {{npc.UUID}} 
+     {% set equal = to_number(actor_record.uuid) == npc.UUID %} {{equal}} 
+     {% 
+          if to_number(actor_record.uuid) == npc.UUID %}
+               {% set speaker = actor_record %} {% endif %} {%
+          if actor_record.is_hermaphrodiate %} {{ actor.name }} is a hermaphrodiate. {% endif %} {% 
+          if actor_record.creature_description != "" %} {{ actor_record.creature_description }} {% endif %} {% 
+          if actor_record.wearing_strapon %} {{ actor.name }} is wearing a strap on dildo. {% endif %}
+     {% endfor %} 
        
 {% endif %} 
 
-speaker: {{speaker}} 
-
 {% if speaker.notice_level != "nothing" %} 
-**Your reaction must evolve—don't loop on the same observation.**
+**Reaction must evolve—don't loop on the same observation.**
      {% if speaker.notice_level == "active" %} 
           {% if contains(speaker.speaking_modifiers,"Pleasure") or contains(speaker.speaking_modifiers,"Pain") %}
                {% if speaker.Victim == 1 %} 

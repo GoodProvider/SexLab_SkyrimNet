@@ -329,8 +329,9 @@ bool Function SetActor(int i, Actor akActor)
     StorageUtil.SetIntValue(akActor, storage_total_orgasms_key, 0)
     JMap.setForm(obj, "actor", AkActor)
     JMap.setStr(obj, "uuid", GetUUID(akActor))
-    JMap.setInt(obj, "formid", akActor.GetFormID())
+    JMap.setStr(obj, "formid", akActor.GetFormID())
     JMap.setStr(obj, "name", akActor.GetDisplayName())
+    Trace("SetActor", "--- formid: "+akActor.GetFormID()+" "+JMap.getStr(obj, "formid"), True)
 
     int gender = akActor.GetLeveledActorBase().GetSex() ; actorLib.GetGender(actors[i])
     DbgMsg("SetActor", "sexlab.GetGender "+akActor.GetDisplayName())
@@ -401,8 +402,7 @@ String Function GetUUID(Actor akActor)
         DbgReturn("GetUUID", "")
         return ""
     endif
-    int localId = Math.LogicalAnd(akActor.GetFormID(), 0xFFFFFF)
-    String uuid = "0x" + IntToHex(localId)
+    String uuid = UuidToDecimalString(SkyrimNetApi.GetEntityUUID(akActor))
     DbgReturn("GetUUID", uuid)
     return uuid
 EndFunction
@@ -456,18 +456,14 @@ Function AlignActors()
     DbgEnd("AlignActors")
 EndFunction 
 
-Function AddActorsToMap(int map) 
-    DbgEnter("AddActorsToMap")
+Function AddActorsToArray(int array) 
+    DbgEnter("AddActorsToArray")
     int i = 0 
     while i < num_actors 
-        int obj = position_objs[i]
-        String name = JMap.getStr(obj, "name")
-        if name != "" 
-            JMap.setObj(map, name, obj) 
-        endif 
+        JArray.addObj(array, position_objs[i])
         i += 1 
     endwhile 
-    DbgEnd("AddActorsToMap")
+    DbgEnd("AddActorsToArray")
 EndFunction 
 
 ; ------------------------------------
@@ -1015,7 +1011,11 @@ String Function GetDescription()
         intent_stage = INTENT_STAGE_START
     endif 
     DbgReturn("GetDescription", "description")
-    return GetIntentMessage(intent_stage)+" "+stages.GetStageDescription(thread)
+    String desc = stages.GetStageDescription(thread)
+    if desc == "" 
+        desc = GetDescriptionFromTags()
+    endif 
+    return GetIntentMessage(intent_stage)+" "+desc 
 EndFunction
 
 Function CreateThreadJson() 
@@ -1222,3 +1222,97 @@ String Function GetTagsString(sslBaseAnimation anim) global
     ;JValue.release(obj) 
     ;return json
 EndFunction 
+
+
+String Function GetDescriptionFromTags()
+    ; Get the thread that triggered this event via the thread id
+    sslBaseAnimation anim = thread.Animation
+    ; Get our list of actors that were in this animation thread.
+    String sub_name = actors[0].GetDisplayName()
+    String dom_name = actors[1].GetDisplayName()
+
+    Debug.Trace("[SexLab_SkyrimNet] sub: "+sub_name+" dom: "+dom_name+" count: "+actors.Length)
+    String buffer
+
+    If anim.HasTag("aggressive")
+        buffer = dom_name + " is sexually assaulting " + sub_name + ". "
+    Else
+        buffer = ""
+    EndIf
+    buffer += sub_name + " is"
+
+    If anim.HasTag("rough")
+        buffer += " roughly"
+    ElseIf anim.HasTag("loving")
+        buffer += " lovingly"
+    EndIf
+
+    If anim.HasTag("cowgirl")
+        buffer += ", cowgirl position,"
+    ElseIf anim.HasTag("missionary")
+        buffer += ", missionary position,"
+    ElseIf anim.HasTag("kneeling")
+        buffer += ", kneeling position,"
+    ElseIf anim.HasTag("standing")
+        buffer += ", standing position,"
+    EndIf
+
+    If anim.HasTag("anal")
+        buffer += " having anal sex with"
+    ElseIf anim.HasTag("assjob")
+        buffer += " having a assjob by"
+    ElseIf anim.HasTag("boobjob")
+        buffer += " giving a blowjob to"
+    ElseIf anim.HasTag("thighjob")
+        buffer += " givingt a thighjob to"
+    ElseIf anim.HasTag("vaginal")
+        buffer += " having vaginal sex with"
+    ElseIf anim.HasTag("fisting")
+        buffer += " having having her pussy fisted by"
+    ElseIf anim.HasTag("oral") || anim.HasTag("blowjob") || anim.HasTag("cunnilingus")
+        buffer += " giving a blowjob to"
+    ElseIf anim.HasTag("spanking")
+        buffer += " being spanked by"
+    ElseIf anim.HasTag("masturbation")
+        buffer += " masturbating furiously"
+    ElseIf anim.HasTag("fingering")
+        buffer += " being fingered by"
+    ElseIf anim.HasTag("footjob")
+        buffer += " giving a footjob to"
+    ElseIf anim.HasTag("handjob")
+        buffer += " giving a handjob to"
+    ElseIf anim.HasTag("kissing")
+        buffer += " kissing with"
+    ElseIf anim.HasTag("headpat")
+        buffer += " having head patted by"
+    ElseIf anim.HasTag("hugging")
+        buffer += " hugging"
+    Else
+        buffer += " having sex with"
+        Debug.Trace("no match!!!!!!!!!!!!!!")
+    EndIf
+
+    If actors.Length > 1
+        buffer += " " + dom_name
+    EndIf
+    buffer += "."
+    ;buffer += ". Therefor both "+ pantingDec +" will include at least one of these words when they speak: 'oh','ah', and 'uh'. "
+    ;if anim.HasTag("aggressive")
+    ;    buffer += sub_name + " will also include 'please', 'stop', 'please stop' and 'no' in what they say."
+    ;endif 
+
+    ;buffer += "This sex can be described as: "
+    ;int i = 0
+    ;String[] tags = anim.GetRawTags()
+    ;while i < tags.Length
+    ;    if tags[i] != "Billyy"
+    ;        if i != 0
+    ;            buffer += ", "
+    ;        endif 
+    ;        buffer += tags[i]
+    ;        i += 1
+    ;    endif 
+    ;endwhile
+    buffer += ".\n\n"
+    return buffer
+endFunction

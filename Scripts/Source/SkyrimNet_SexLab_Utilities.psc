@@ -28,6 +28,80 @@ String Function IntToHex(int value) global
     return s
 EndFunction
 
+int Function HexCharToInt(String c) global
+    int i = StringUtil.Find("0123456789abcdef", c)
+    if i < 0
+        i = StringUtil.Find("0123456789ABCDEF", c)
+    endif
+    return i
+EndFunction
+
+String Function DecimalStringMultiplyAdd(String decimal, int multiplier, int addend) global
+    int carry = addend
+    String result = ""
+    int i = StringUtil.GetLength(decimal) - 1
+    while i >= 0
+        int digit = StringUtil.AsOrd(StringUtil.GetNthChar(decimal, i)) - 48
+        int value = digit * multiplier + carry
+        result = StringUtil.GetNthChar("0123456789", value % 10) + result
+        carry = value / 10
+        i -= 1
+    endwhile
+    while carry > 0
+        result = StringUtil.GetNthChar("0123456789", carry % 10) + result
+        carry = carry / 10
+    endwhile
+    if result == ""
+        return "0"
+    endif
+    return result
+EndFunction
+
+String Function HexToDecimalString(String hex) global
+    if hex == ""
+        return ""
+    endif
+    if StringUtil.GetLength(hex) >= 2
+        String prefix = StringUtil.Substring(hex, 0, 2)
+        if prefix == "0x" || prefix == "0X"
+            hex = StringUtil.Substring(hex, 2, StringUtil.GetLength(hex) - 2)
+        endif
+    endif
+    String result = "0"
+    int i = 0
+    int len = StringUtil.GetLength(hex)
+    while i < len
+        int digit = HexCharToInt(StringUtil.GetNthChar(hex, i))
+        if digit >= 0
+            result = DecimalStringMultiplyAdd(result, 16, digit)
+        endif
+        i += 1
+    endwhile
+    return result
+EndFunction
+
+bool Function IsHexUuid(String entityUuid) global
+    int i = 0
+    while i < StringUtil.GetLength(entityUuid)
+        int o = StringUtil.AsOrd(StringUtil.GetNthChar(entityUuid, i))
+        if (o >= 65 && o <= 70) || (o >= 97 && o <= 102)
+            return true
+        endif
+        i += 1
+    endwhile
+    return false
+EndFunction
+
+String Function UuidToDecimalString(String entityUuid) global
+    if entityUuid == ""
+        return ""
+    endif
+    if IsHexUuid(entityUuid)
+        return HexToDecimalString(entityUuid)
+    endif
+    return entityUuid
+EndFunction
+
 ; ------------------------------------------------------------
 ; Timestamps
 ; A reasonable timestamp is acceptable. 
