@@ -75,6 +75,10 @@
   </locked_decisions>
 
   <pass_history note="Newest first. Detailed findings are in the linked review docs.">
+    <pass date="2026-07-16" scope="Deferred-backlog fix pass (M7, hide_help, victim_faction, trace_labels, dom_pr, S11)" status="applied" compile="clean">
+      <review_doc>reviews/2026-07-16-03.review.md</review_doc>
+      <headline>M7 GetAnim_Info retain + caller-release (Stages, no caching: animation+stage change between calls); hide_help gates EditDescriptions help; victim_faction tracked via retained JArray of forms reconciled in Setup/AlignActors and cleared in Release (Scene); trace-label fixes (Manager 168/217/745, Creator 327/525); dom_pr dead commented Setup removed; S11 furniture natural phrasing. L-E dropped: direction must stay type:dynamic (giving|getting sets speaker-vs-target victim role).</headline>
+    </pass>
     <pass date="2026-07-16" scope="Follow-up review scoped to Scripts/Source only (per user request)" status="applied" compile="clean">
       <review_doc>reviews/2026-07-16-02.review.md</review_doc>
       <headline>All in Menu.psc: N-1 (high) MutliTarget selection OOB when list full (remove branch hit with stale indexes[]==-1; prior M-D guarded only add); N-2/N-3 (med) punish/affection sub-menu cancel ("" from getIndex=false) still started scene; N-4 (low) setting picker off-by-one excluded idx 0.</headline>
@@ -93,23 +97,21 @@
     </pass>
   </pass_history>
 
-  <open_backlog note="Deferred / not yet scheduled. No known regressions.">
-    <deferred id="M7">GetAnim_Info JContainers leak — Stages.psc.</deferred>
-    <deferred id="M8">orgasm_expected vs description-walk mismatch.</deferred>
-    <deferred id="M9-M16">orgasm editor, MCM hide_help, OStim affection path, victim faction, DOM PR, trace labels.</deferred>
+  <open_backlog note="Deferred / not yet scheduled. No known regressions. M7, hide_help, victim faction, trace labels, DOM PR (Handler_DOM_PR), and S11 were applied in the 2026-07-16 (03) pass.">
+    <deferred id="M8">orgasm_expected vs description-walk mismatch (confirm per-stage vs per-animation semantics with author before changing).</deferred>
+    <deferred id="M9-M16">Remaining: orgasm editor UX polish; OStim affection path (Menu affection branch is a no-op notification under OStim).</deferred>
     <deferred id="S10b">Convert always-on Trace scaffolding to debug_mode-gated DbgMsg (Scene.psc).</deferred>
-    <deferred id="S11">GetLocation furniture branch returns raw tags without article/preposition.</deferred>
-    <deferred id="Handler_DOM_PR">handler.Setup() commented out in the DOM player alias (harmless; Main owns DOM setup).</deferred>
     <informational id="L-D">Registered-but-unconsumed decorators: Intent (_intent), Player_LOS_Distance (_distance/_los).</informational>
-    <informational id="L-E">punish_* action YAMLs declare type: dynamic but supply value: (cosmetic; dispatch is correct).</informational>
+    <informational id="L-E">punish_* action YAMLs: direction stays type: dynamic with value: giving|getting — intentionally NOT changed to description:, because giving|getting decides the speaker-vs-target victim role and must remain LLM-chosen. Do not re-report.</informational>
   </open_backlog>
 
   <current_status>
-    <state>All applied fixes are in source and compile clean via pyro (2026-07-16 02: Menu.psc recompiled, exit 0).</state>
+    <state>All applied fixes are in source and compile clean via pyro (2026-07-16 03: deferred-backlog pass; pyro exit 0, scripts up to date).</state>
     <pending>
-      <item>In-game smoke tests for the 2026-07-16 (02) pass: multitarget 6-actor selection (N-1), punish/affection sub-menu cancel (N-2/N-3), first setting-file selectable (N-4). See post_fix_verification in review-execution-plan.xml.</item>
+      <item>In-game smoke tests for the 2026-07-16 (03) pass: M7 multi-stage JContainers, hide_help MCM toggle, victim_faction mid-scene departure, S11 furniture _location phrasing. See post_fix_verification in review-execution-plan.xml.</item>
+      <item>In-game smoke tests for the 2026-07-16 (02) pass: multitarget 6-actor selection (N-1), punish/affection sub-menu cancel (N-2/N-3), first setting-file selectable (N-4).</item>
       <item>In-game smoke tests for the 2026-07-16 (01) pass still outstanding.</item>
-      <item>Schedule the deferred backlog above when desired.</item>
+      <item>Schedule the deferred backlog above when desired (M8, remaining M9-M16, S10b).</item>
     </pending>
   </current_status>
 

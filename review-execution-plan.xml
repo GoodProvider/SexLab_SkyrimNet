@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SkyrimNet_SexLab — fix-pass execution plan for AI agent.
+  Pass: 2026-07-16 (03) deferred-backlog fix pass.
+  Sources: review-guide.xml, review-checkpoint.xml, review-summary.md.
+  Line numbers include commented lines. Prior passes (2026-07-16 01/02) confirmed
+  applied and not re-reported. L-E intentionally dropped (direction must stay
+  type: dynamic — giving|getting sets speaker-vs-target victim role).
+-->
+<execution_plan>
+  <metadata>
+    <project_name>SkyrimNet_SexLab</project_name>
+    <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
+    <created>2026-07-16</created>
+    <phase>fix_pass</phase>
+    <status>applied</status>
+    <supersedes>2026-07-16 (02) Menu.psc fix pass (applied; see reviews/2026-07-16-02.review.md)</supersedes>
+    <sources>
+      <file>review-guide.xml</file>
+      <file>review-checkpoint.xml</file>
+      <file>review-summary.md</file>
+    </sources>
+    <directories>
+      <code>Scripts/Source</code>
+    </directories>
+    <compiler>pyro / skyrimse.ppj (VS Code task: compile: pyro)</compiler>
+    <scope>Deferred backlog: M7, hide_help, victim_faction, trace_labels, dom_pr, S11. S10b left deferred. L-E dropped by design.</scope>
+    <exclude_from_review>
+      <file>Scripts/Source/SkyrimNet_Sexlab_Creatures.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_WebUI.psc</file>
+      <pattern>z-*</pattern>
+      <element>PagedActors</element>
+      <element>Trace("---...")</element>
+    </exclude_from_review>
+  </metadata>
+
+  <role>
+    Senior Skyrim modding expert. Apply patches in implementation_order. Compile after Papyrus changes.
+    Do not report compile errors or case mismatches. GetFormFromFile is intentional. DOM handler is optional
+    (Interface stub or SkyrimNet_SexLab_Handler_DOM.esp).
+  </role>
+
+  <architecture>
+    GetAnim_Info rebuilds a fresh JMap each call (animation and stage can change between calls), so
+    caching is not viable; callers must release the retained return. Scene tracks victim-faction grants
+    in a retained JArray of forms (not a parallel Actor[]) so departed actors can still be cleared.
+    Main.Setup owns DOM handler wiring; Handler_DOM_PR player-alias is an intentional no-op.
+  </architecture>
+
+  <implementation_order>
+    <step id="1" priority="1">
+      <files>Scripts/Source/SkyrimNet_SexLab_Stages.psc</files>
+      <findings>M7</findings>
+      <summary>Retain anim_info in GetAnim_Info; release in all 5 callers.</summary>
+    </step>
+    <step id="2" priority="2">
+      <files>Scripts/Source/SkyrimNet_SexLab_Stages.psc</files>
+      <findings>hide_help</findings>
+      <summary>Gate EditDescriptions help text behind !hide_help.</summary>
+    </step>
+    <step id="3" priority="1">
+      <files>Scripts/Source/SkyrimNet_SexLab_Scene.psc</files>
+      <findings>victim_faction</findings>
+      <summary>Track victim-faction grants in retained JArray; ReconcileVictimFactions in Setup/AlignActors; clear in Release.</summary>
+    </step>
+    <step id="4" priority="3">
+      <files>Scripts/Source/SkyrimNet_SexLab_Scene_Manager.psc, Scripts/Source/SkyrimNet_SexLab_Scene_Creator.psc</files>
+      <findings>trace_labels</findings>
+      <summary>Correct mislabeled Trace function tags.</summary>
+    </step>
+    <step id="5" priority="3">
+      <files>Scripts/Source/SkyrimNet_SexLab_Handler_DOM_PR.psc</files>
+      <findings>dom_pr</findings>
+      <summary>Remove dead commented handler.Setup(); document Main.Setup as owner.</summary>
+    </step>
+    <step id="6" priority="2">
+      <files>Scripts/Source/SkyrimNet_SexLab_Scene.psc</files>
+      <findings>S11</findings>
+      <summary>Map furniture tags to natural preposition-led phrases in GetLocation.</summary>
+    </step>
+    <step id="7" priority="3">
+      <action>Compile Scripts/Source via compile: pyro task — zero errors expected (done: exit 0, scripts already up to date)</action>
+    </step>
+    <step id="8" priority="3">
+      <action>Write reviews/2026-07-16-03.review.md (done)</action>
+      <action>Refresh review-checkpoint.xml with this pass (done)</action>
+    </step>
+  </implementation_order>
+
+  <findings>
+    <!-- MEDIUM -->
+    <finding id="M7" severity="medium" status="applied">
+      <directory>Scripts/Source</directory>
+      <file>Scripts/Source/SkyrimNet_SexLab_Stages.psc</file>
+      <line>616</line>
+      <line_end>665</line_end>
+      <problem>GetAnim_Info builds a fresh JMap.object() every call and returned it un-retained; callers never freed it. Animation and stage can both change between calls, so caching is not viable — this was JContainers churn on every stage tick.</problem>
+      <fix>JValue.retain(anim_info) before return; JValue.release(anim_info) in GetStageDescription, GetOrgasmExpected, SetOrgasmExpected, GetHasDescriptionOrgasmExpected, and EditDescriptions once values are read. Do not release per-file info objects (children re-parented into anim_info).</fix>
+      <confidence>85</confidence>
+    </finding>
+
+    <finding id="hide_help" severity="medium" status="applied">
+      <directory>Scripts/Source</directory>
+      <file>Scripts/Source/SkyrimNet_SexLab_Stages.psc</file>
+      <line>244</line>
+      <line_end>250</line_end>
+      <problem>EditDescriptions showed the "You may enter a description..." help whenever desc == "", ignoring stages.hide_help. MCM SexEditHelpToggle was wired but had no effect.</problem>
+      <fix>Gate help/example behind if !hide_help; when hidden show minimal "Stage N: (no description)" line.</fix>
+      <confidence>95</confidence>
+    </finding>
+
+    <finding id="victim_faction" severity="medium" status="applied">
+      <directory>Scripts/Source</directory>
+      <file>Scripts/Source/SkyrimNet_SexLab_Scene.psc</file>
+      <line>17</line>
+      <line_end>20</line_end>
+      <problem>Setup added SkyrimNet_SexLab_Faction_Victim to current victims; Release cleared it only for current thread.positions; AlignActors did not clean actors who left mid-scene, so departed victims kept the faction.</problem>
+      <fix>Track grants in retained JArray victim_faction_forms (not a parallel Actor[]). ReconcileVictimFactions() adds/removes/drops departed; call from Setup and AlignActors; Release clears every tracked form then JArray.clear.</fix>
+      <confidence>80</confidence>
+    </finding>
+
+    <!-- LOW -->
+    <finding id="trace_labels" severity="low" status="applied">
+      <directory>Scripts/Source</directory>
+      <file>Scripts/Source/SkyrimNet_SexLab_Scene_Manager.psc</file>
+      <line>168</line>
+      <problem>Trace function-name labels did not match enclosing functions (CreateSceneByThread vs CreateSceneWithoutCreator; OrgasmCombined vs OrgasmIndividual; Start vs StartScene; SexVictims vs SetVictims), making log filtering misleading.</problem>
+      <fix>Correct each Trace label/message to the actual function name. Also fix GetSceneByThread message "CreateSceneWithoutCreator returned None" -> "CreateSceneByCreator returned None".</fix>
+      <confidence>95</confidence>
+    </finding>
+
+    <finding id="dom_pr" severity="low" status="applied">
+      <directory>Scripts/Source</directory>
+      <file>Scripts/Source/SkyrimNet_SexLab_Handler_DOM_PR.psc</file>
+      <line>17</line>
+      <line_end>20</line_end>
+      <problem>OnPlayerLoadGame held a dead commented handler.Setup(). Harmless because Main.Setup owns DOM wiring, but the alias looked like a broken setup path.</problem>
+      <fix>Remove the commented call; document that the alias is an intentional no-op and Main.Setup owns DOM init. Keep the script/property for CK alias binding.</fix>
+      <confidence>95</confidence>
+    </finding>
+
+    <finding id="S11" severity="low" status="applied">
+      <directory>Scripts/Source</directory>
+      <file>Scripts/Source/SkyrimNet_SexLab_Scene.psc</file>
+      <line>1416</line>
+      <line_end>1448</line_end>
+      <problem>GetLocation furniture branch assigned the raw tag (e.g. "Table", "WoodenPony") with no article/preposition, so _location read as a bare noun in narration.</problem>
+      <fix>Parallel on_furniture_phrase[] with natural phrases (e.g. "on a table", "on a wooden pony", "in a cage"); set loc = on_furniture_phrase[i] when found.</fix>
+      <confidence>90</confidence>
+    </finding>
+  </findings>
+
+  <not_a_bug>
+    <item id="L-E">punish_* direction stays type: dynamic with value: giving|getting — intentionally NOT changed to description:. giving|getting decides speaker-vs-target victim role and must remain LLM-chosen. Do not re-report.</item>
+    <item id="H9">Manager OrgasmIndividual Dom early-return — SkyrimNet_DOM calls DOMSlave_Orgasmed externally.</item>
+    <item>WebUI.psc — future SKSE anchor.</item>
+    <item>GetFormFromFile property wiring — intentional.</item>
+    <item>PagedActors — ignore per review-guide.</item>
+    <item>SkyrimNet_Sexlab_Creatures.psc — ignore per review-guide.</item>
+  </not_a_bug>
+
+  <deferred>
+    <item id="M8">orgasm_expected vs description walk mismatch (confirm per-stage vs per-animation semantics before changing)</item>
+    <item id="M9-M16">Remaining: orgasm editor UX polish; OStim affection path</item>
+    <item id="S10b">Broad Trace scaffolding -> DbgMsg conversion in Scene.psc</item>
+    <item id="L-D">Registered-but-unconsumed decorators Intent / Player_LOS_Distance (informational)</item>
+  </deferred>
+
+  <post_fix_verification>
+    <check>Compile Scripts/Source via compile: pyro — zero errors (done: exit 0)</check>
+    <check>Long multi-stage scene — stage descriptions/orgasm-expected still resolve; no JContainers errors (M7)</check>
+    <check>MCM "Hide Edit Stage Description Help" ON — editor shows minimal line, not help/example (hide_help)</check>
+    <check>Victim leaves mid-run — departed actor not in SkyrimNet_SexLab_Faction_Victim; current victims still tagged; scene end clears all (victim_faction)</check>
+    <check>Furniture animation (table / wooden pony / cage) — _location reads as a natural phrase (S11)</check>
+  </post_fix_verification>
+</execution_plan>
