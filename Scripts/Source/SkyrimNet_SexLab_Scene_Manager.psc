@@ -40,6 +40,18 @@ int Property group_info = 0 Auto
 ; ---------------------------------------
 String SCENES_FOLDER = "Data/SKSE/Plugins/SkyrimNet_SexLab/scenes/"
 
+; ---------------------------------------
+; speaker_last is used when save is called 
+; ---------------------------------------
+Actor speaker_last = None
+
+; --------------------------------------------
+; Since returning a None array cause an error
+; we set the empty
+; --------------------------------------------
+sslBaseAnimation[] Property empty = None Auto
+sslBaseAnimation[] Property cancel = None Auto
+
 Function Trace(String func, String msg="", Bool notification=False)
 
     msg = "[SkyrimNet_SexLab_Scene_Manager."+func+"] "+msg
@@ -50,23 +62,52 @@ Function Trace(String func, String msg="", Bool notification=False)
 EndFunction
 
 Function Setup() 
-    if SexLab == None
-        Trace("Setup","SexLab is None")
-        return  
+    Bool links_ok = Setup_CheckLinks()
+    if !links_ok
+        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
+        return
     endif
 
     Trace("Setup","")
-    sl_scene_generic.Initialize(-1, self) 
-    sl_scene_generic.SetGeneric() 
+    ; Auto fills bake into saves. Renaming scenes→sl_scenes / scene_generic→
+    ; sl_scene_generic leaves the new names empty on old saves while creators
+    ; (unchanged) still work — rebuild every Setup from known FormIDs.
+    if !RebuildScenePool()
+        Trace("Setup","RebuildScenePool failed, aborting", true)
+        return
+    endif
+
+    if !cancel 
+        cancel = new sslBaseAnimation[1]
+        cancel[0] = None 
+    endif 
+    if !empty 
+        empty = new sslBaseAnimation[2]
+        empty[0] = None 
+        empty[1] = None 
+    endif 
+    bool empty_equals_cancel = empty == cancel
+    Trace("Initialize", "empty == cancel: "+empty_equals_cancel)
+
+    ; is_generic=true permanently marks the fallback Scene when the pool is exhausted
+    sl_scene_generic.Initialize(-1, self, true) 
 
     int i = sl_scenes.length - 1
     while 0 <= i 
-        sl_scenes[i].Initialize(i, self)
+        if sl_scenes[i] == None
+            Trace("Setup","sl_scenes["+i+"] is None, aborting", true)
+            return
+        endif
+        sl_scenes[i].Initialize(i, self, false)
         i -= 1 
     endwhile  
 
     i = creators.length - 1 
     while 0 <= i 
+        if creators[i] == None
+            Trace("Setup","creators["+i+"] is None, aborting", true)
+            return
+        endif
         creators[i].Initialize(i, self) 
         i -= 1 
     endwhile 
@@ -89,11 +130,42 @@ Function Setup()
     RegisterEventsSexLab()
 EndFunction 
 
+Bool Function Setup_CheckLinks()
+    Bool links_ok = true
+
+    if main == None
+        Trace("Setup_CheckLinks", "--- main is None", true)
+        links_ok = false
+    endif
+
+    if stages == None
+        Trace("Setup_CheckLinks", "--- stages is None", true)
+        links_ok = false
+    endif
+
+    if SexLab == None
+        Trace("Setup_CheckLinks", "--- SexLab is None", true)
+        links_ok = false
+    endif
+
+    if threadSlots == None
+        Trace("Setup_CheckLinks", "--- threadSlots is None", true)
+        links_ok = false
+    endif
+
+    if actorLib == None
+        Trace("Setup_CheckLinks", "--- actorLib is None", true)
+        links_ok = false
+    endif
+
+    return links_ok
+EndFunction
+
 ; --------------------------------------------------------------------
 ; Create Creator 
 ; --------------------------------------------------------------------
 SkyrimNet_SexLab_Scene_Creator Function CreateCreator(String intent, Actor[] actors, Actor speaker, Actor target, String method="", String setting_name="")
-    Trace("CreateCreator","intent: "+intent+" actors: "+JoinActorsToJson(actors)+" "+GetDisplayName(speaker)+" : "+GetDisplayName(target)+" method: "+method+" setting_name: "+setting_name)
+    Trace("CreateCreator","intent: "+intent+" actors: "+JoinActorsToJson(actors)+" speaker: "+GetDisplayName(speaker)+" target: "+GetDisplayName(target)+" method: "+method+" setting_name: "+setting_name)
     int i = 0
     int num_creators = creators.length 
     while i < num_creators
@@ -110,23 +182,44 @@ EndFunction
 ; Get Scene 
 ; --------------------------------------------------------------------
 SkyrimNet_SexLab_Scene Function CreateSceneByCreator(SkyrimNet_SexLab_Scene_Creator creator, sslThreadController thread) 
-    SkyrimNet_SexLab_Scene  sl_scene  = GetSceneInactive(thread)
-     sl_scene.Setup(creator)
-    return  sl_scene 
+    if creator == None || thread == None
+        Trace("CreateSceneByCreator", "creator or thread is None, aborting")
+        return None
+    endif
+    SkyrimNet_SexLab_Scene sl_scene = GetSceneInactive(thread)
+    if sl_scene == None
+        Trace("CreateSceneByCreator", "GetSceneInactive returned None, aborting")
+        return None
+    endif
+    sl_scene.Setup(creator)
+    return sl_scene 
+EndFunction 
+
+SkyrimNet_SexLab_Scene Function CreateSceneWithoutCreator(sslThreadController thread) 
+    if thread == None
+        Trace("CreateSceneWithoutCreator", "thread is None, aborting")
+        return None
+    endif
+    SkyrimNet_SexLab_Scene_Creator creator = CreateCreator("", thread.Positions, None, None, "", "")
+    SkyrimNet_SexLab_Scene sl_scene = CreateSceneByCreator(creator, thread)
+    ; Setup copied all values out of the creator; free the pool slot so it is not leaked.
+    if creator != None
+        creator.Release()
+    endif
+    return sl_scene
 EndFunction 
 
 ; --------------------------------------
 ; These will get a sl_scene if they can find it or return sl_scene_generic 
+; create_if_missing=False: read-only lookup (no allocate/Setup/Release) for JSON/decorators
 ; --------------------------------------
-SkyrimNet_SexLab_Scene Function GetSceneByThread(sslThreadController thread, Bool any_state=False)
-    Trace("GetSceneByThread","--- thread: "+thread.tid)
+SkyrimNet_SexLab_Scene Function GetSceneByThread(sslThreadController thread, Bool any_state=False, Bool create_if_missing=True)
     if !any_state
         String s = (thread as sslThreadModel).GetState()
         if s != "animating" && s != "prepare"
             return None 
         endif 
     endif 
-    Trace("GetSceneByThread","--- any_state: "+any_state)
 
     int tid = thread.tid
     if tid < thread_scene.length && thread_scene[tid] != None 
@@ -135,13 +228,27 @@ SkyrimNet_SexLab_Scene Function GetSceneByThread(sslThreadController thread, Boo
         if sl_scene.GetThread() == thread && sl_scene.IsActive()
             return sl_scene
         endif 
+        if !create_if_missing
+            return None
+        endif
         thread_scene[tid] = None
         sl_scene.Release() 
     endif 
 
-    Trace("GetSceneByThread","--- getting inactive scene")
-    SkyrimNet_SexLab_Scene sl_scene = GetSceneInactive(thread)
-    sl_scene.Setup()
+    if !create_if_missing
+        return None
+    endif
+
+    SkyrimNet_SexLab_Scene_Creator creator = CreateCreator("", thread.Positions, None, None, "", "")
+    SkyrimNet_SexLab_Scene sl_scene = CreateSceneByCreator(creator, thread)
+    ; Setup copied all values out of the creator; free the pool slot so it is not leaked.
+    if creator != None
+        creator.Release()
+    endif
+    if sl_scene == None 
+        Trace("GetSceneByThread", "CreateSceneByCreator returned None, aborting")
+        return None
+    endif
     return sl_scene
 EndFunction
 
@@ -160,20 +267,134 @@ SkyrimNet_SexLab_Scene Function GetSceneByThreadId(int tid, bool any_state=False
 EndFunction 
 
 ; ----------------------------------------
+; Rebuild pool/creator refs from plugin FormIDs. Required after property renames
+; (scenes→sl_scenes, scene_generic→sl_scene_generic): Auto fills bake into saves,
+; so old saves keep empty new-name properties while creators still work.
+bool Function RebuildScenePool()
+    String plugin = "SkyrimNet_SexLab.esp"
+    ; Scene_00..09 local IDs (matches ESP / Spriggit fill order)
+    int[] scene_ids = new int[10]
+    scene_ids[0] = 0x80C
+    scene_ids[1] = 0x802
+    scene_ids[2] = 0x809
+    scene_ids[3] = 0x80A
+    scene_ids[4] = 0x80B
+    scene_ids[5] = 0x80D
+    scene_ids[6] = 0x80E
+    scene_ids[7] = 0x80F
+    scene_ids[8] = 0x810
+    scene_ids[9] = 0x811
+
+    Trace("RebuildScenePool", "rebuilding sl_scenes from GetFormFromFile")
+    sl_scenes = new SkyrimNet_SexLab_Scene[10]
+    int i = 0
+    while i < 10
+        sl_scenes[i] = Game.GetFormFromFile(scene_ids[i], plugin) as SkyrimNet_SexLab_Scene
+        if sl_scenes[i] == None
+            Trace("RebuildScenePool", "scene FormID "+scene_ids[i]+" is None", true)
+            return false
+        endif
+        i += 1
+    endwhile
+
+    Trace("RebuildScenePool", "rebuilding sl_scene_generic from GetFormFromFile")
+    sl_scene_generic = Game.GetFormFromFile(0x812, plugin) as SkyrimNet_SexLab_Scene
+    if sl_scene_generic == None
+        Trace("RebuildScenePool", "sl_scene_generic FormID 0x812 is None", true)
+        return false
+    endif
+
+    bool need_creators = !creators || creators.length != 10
+    if !need_creators
+        i = 0
+        while i < 10 && !need_creators
+            if creators[i] == None
+                need_creators = true
+            endif
+            i += 1
+        endwhile
+    endif
+    if need_creators
+        Trace("RebuildScenePool", "rebuilding creators from GetFormFromFile")
+        creators = new SkyrimNet_SexLab_Scene_Creator[10]
+        i = 0
+        while i < 10
+            creators[i] = Game.GetFormFromFile(0x813 + i, plugin) as SkyrimNet_SexLab_Scene_Creator
+            if creators[i] == None
+                Trace("RebuildScenePool", "creator FormID "+(0x813 + i)+" is None", true)
+                return false
+            endif
+            i += 1
+        endwhile
+    endif
+    return true
+EndFunction
+
+; Resolve sl_scene_generic from the property, or FormID 0x812 if still missing.
+bool Function ResolveSceneGeneric()
+    if sl_scene_generic != None
+        return true
+    endif
+    sl_scene_generic = Game.GetFormFromFile(0x812, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Scene
+    if sl_scene_generic == None
+        Trace("ResolveSceneGeneric", "GetFormFromFile(0x812) returned None")
+        return false
+    endif
+    Trace("ResolveSceneGeneric", "recovered sl_scene_generic via GetFormFromFile")
+    return true
+EndFunction
+
+; Claim an inactive pool scene, reclaiming orphans (IsActive but no live thread).
+; Falls back to sl_scene_generic; returns None only if generic cannot be resolved.
 SkyrimNet_SexLab_Scene Function GetSceneInactive(sslThreadController thread) 
+    if thread == None
+        Trace("GetSceneInactive", "thread is None, aborting")
+        return None
+    endif
+    ; Old saves may still have empty sl_scenes if Setup has not rebuilt yet this session.
+    if !sl_scenes || sl_scenes.length == 0
+        Trace("GetSceneInactive", "sl_scenes empty — RebuildScenePool")
+        if !RebuildScenePool()
+            Trace("GetSceneInactive", "RebuildScenePool failed", true)
+            return None
+        endif
+        int j = 0
+        while j < sl_scenes.length
+            sl_scenes[j].Initialize(j, self, false)
+            j += 1
+        endwhile
+        if sl_scene_generic != None
+            sl_scene_generic.Initialize(-1, self, true)
+        endif
+    endif
     int i = 0 
     int num_scenes = sl_scenes.length 
-    SkyrimNet_SexLab_Scene sl_scene = None 
-    while i < num_scenes && sl_scene == None 
-        if !sl_scenes[i].IsActive() 
-            EnsureThreadSceneLargeEnough(thread.tid) 
-            thread_scene[thread.tid] = sl_scenes[i]
-            sl_scenes[i].SetThread(thread)
-            return sl_scenes[i]
-        endif 
-        i += 1 
-    endwhile 
+    while i < num_scenes
+        SkyrimNet_SexLab_Scene candidate = sl_scenes[i]
+        if candidate != None
+            ; Busy only if a live SexLab thread is attached — status alone is not enough
+            ; when saves leave all slots ACTIVE with no animations running.
+            if candidate.GetThreadActive()
+                i += 1
+            else
+                if candidate.IsActive()
+                    Trace("GetSceneInactive", "reclaiming orphan sl_scenes["+i+"] sid:"+candidate.sid)
+                    candidate.Release()
+                endif
+                EnsureThreadSceneLargeEnough(thread.tid) 
+                thread_scene[thread.tid] = candidate
+                candidate.SetThread(thread)
+                return candidate
+            endif
+        else
+            i += 1 
+        endif
+    endwhile
     Trace("GetSceneInactive","Failed to find inactive sl_scene using generic")
+    if !ResolveSceneGeneric()
+        Trace("GetSceneInactive", "sl_scene_generic is None, aborting")
+        return None
+    endif
     EnsureThreadSceneLargeEnough(thread.tid)
     thread_scene[thread.tid] = sl_scene_generic
     sl_scene_generic.SetThread(thread) 
@@ -553,7 +774,7 @@ Event OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
 
     SkyrimNet_SexLab_Scene sl_scene = GetSceneByActor(akActor)
     if sl_scene == None
-        Trace("OrgasmCombined","Scene is none for actor: "+akActor.GetDisplayName())
+        Trace("OrgasmIndividual","Scene is none for actor: "+akActor.GetDisplayName())
         return
     endif
     sl_scene.OrgasmIndividual(akActor, full_enjoyment, num_orgasms) 
@@ -572,7 +793,7 @@ Function OrgasmCustom(Actor akActor, String msg)
     if sl_scene == None 
         return 
     endif 
-    sl_scene.OrgasmCustom(akActor, msg)
+    sl_scene.OrgasmCustom(akActor, msg + ". "+GetDisplayName(akActor)+" is orgasming.")
 EndFunction
 
 
@@ -586,7 +807,13 @@ EndFunction
 
 String Function GetThreadsJson(Actor speaker = None)
     if speaker == None 
-        speaker = Game.GetPlayer()
+        if speaker_last != None 
+            speaker = speaker_last
+        else 
+            speaker = Game.GetPlayer()
+        endif 
+    else 
+        speaker_last = None
     endif 
 
     if main == None
@@ -602,26 +829,24 @@ String Function GetThreadsJson(Actor speaker = None)
     endif 
 
     int obj = JMap.object() 
-    JMap.setStr(obj, "counter", thread_counter)
+    JMap.setStr(obj, "_counter", thread_counter)
     thread_counter += 1 
 
 
-    int actors_array = JArray.object() 
     int threads_array = JArray.object() 
     int i = 0
     String threads_str = ""
     while i < threads.length
-        SkyrimNet_SexLab_Scene sl_scene = GetSceneByThread(threads[i])
+        ; Read-only: do not allocate/Setup scenes while dumping JSON
+        SkyrimNet_SexLab_Scene sl_scene = GetSceneByThread(threads[i], False, False)
         if sl_scene != None 
             if sl_scene.GetThreadActive() 
-                sl_scene.AddActorsToArray(actors_array) 
-                JArray.addObj(threads_array, sl_scene.GetObj(speaker))
+                JArray.addObj(threads_array, sl_scene.GetThreadObj(speaker))
             endif 
         endif 
         i += 1
     endwhile
-    JMap.setObj(obj, "actors", actors_array)
-    JMap.setObj(obj, "threads", threads_array) 
+    JMap.setObj(obj, "_threads", threads_array) 
 
     String json = JValue.toJsonString(obj) 
     

@@ -12,6 +12,12 @@ Function Trace(String func, String msg, Bool notification=False) global
 EndFunction
 
 Function Setup()
+    Bool links_ok = Setup_CheckLinks()
+    if !links_ok
+        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
+        return
+    endif
+
     String file = "SkyrimNetUDNG.esp"
     String key_ = "SkyrimNet_SexLab_UDNG_MenuOpen"
     UnRegisterForModEvent(key_)
@@ -21,6 +27,11 @@ Function Setup()
     else 
         Trace("Setup",file+" not found")
     endif 
+EndFunction
+
+Bool Function Setup_CheckLinks()
+    ; udng_groups is optional; missing integration is a no-op, not a hard failure.
+    return true
 EndFunction
 
 Event MenuOpen(Form target_form)

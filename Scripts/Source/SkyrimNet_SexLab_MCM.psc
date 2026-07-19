@@ -62,6 +62,12 @@ Function Trace(String func, String msg, Bool notification=False) global
 EndFunction
 
 Function Setup() 
+    Bool links_ok = Setup_CheckLinks()
+    if !links_ok
+        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
+        return
+    endif
+
     if !sexlab_ostim_options
        sexlab_ostim_options = new String[2]
        sexlab_ostim_options[0] = "SexLab"
@@ -74,14 +80,54 @@ Function Setup()
         udng_found = False 
     endif 
 
-    if !menu
-        menu = (self as Quest) as SkyrimNet_SexLab_Menu
-        if !menu
-            Trace("Setup", "ERROR: SkyrimNet_SexLab_Menu not found on quest", true)
-        endif
-    endif
     Trace("Setup", "complete")
 EndFunction 
+
+Bool Function Setup_CheckLinks()
+    Bool links_ok = true
+
+    if main == None
+        main = (self as Quest) as SkyrimNet_SexLab_Main
+        if main == None
+            Trace("Setup_CheckLinks", "--- main is None", true)
+            links_ok = false
+        endif
+    endif
+
+    if stages == None
+        stages = (self as Quest) as SkyrimNet_SexLab_Stages
+        if stages == None
+            Trace("Setup_CheckLinks", "--- stages is None", true)
+            links_ok = false
+        endif
+    endif
+
+    if manager == None
+        manager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
+        if manager == None
+            Trace("Setup_CheckLinks", "--- manager is None", true)
+            links_ok = false
+        endif
+    endif
+
+    if actions == None
+        actions = (self as Quest) as SkyrimNet_SexLab_Actions
+        if actions == None
+            Trace("Setup_CheckLinks", "--- actions is None", true)
+            links_ok = false
+        endif
+    endif
+
+    if menu == None
+        menu = (self as Quest) as SkyrimNet_SexLab_Menu
+        if menu == None
+            Trace("Setup_CheckLinks", "--- menu is None", true)
+            links_ok = false
+        endif
+    endif
+
+    return links_ok
+EndFunction
 
 Event OnConfigOpen()
     Pages = new String[1]

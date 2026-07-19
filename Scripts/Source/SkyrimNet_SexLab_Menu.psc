@@ -15,14 +15,47 @@ Function Trace(String func, String msg, Bool notification=False) global
 EndFunction
 
 Function Setup()
-    mcm = (self as Quest) as SkyrimNet_SexLab_MCM
-    main = (self as Quest) as SkyrimNet_SexLab_Main
-    stages = (self as Quest) as SkyrimNet_SexLab_Stages
-    manager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
-    actions = (self as Quest) as SkyrimNet_SexLab_Actions
-    if !mcm || !main || !stages || !manager || !actions
-        Trace("Setup", "ERROR: one or more sibling scripts not found on quest", true)
+    Bool links_ok = Setup_CheckLinks()
+    if !links_ok
+        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
+        return
     endif
+EndFunction
+
+Bool Function Setup_CheckLinks()
+    Bool links_ok = true
+
+    mcm = (self as Quest) as SkyrimNet_SexLab_MCM
+    if mcm == None
+        Trace("Setup_CheckLinks", "--- mcm is None", true)
+        links_ok = false
+    endif
+
+    main = (self as Quest) as SkyrimNet_SexLab_Main
+    if main == None
+        Trace("Setup_CheckLinks", "--- main is None", true)
+        links_ok = false
+    endif
+
+    stages = (self as Quest) as SkyrimNet_SexLab_Stages
+    if stages == None
+        Trace("Setup_CheckLinks", "--- stages is None", true)
+        links_ok = false
+    endif
+
+    manager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
+    if manager == None
+        Trace("Setup_CheckLinks", "--- manager is None", true)
+        links_ok = false
+    endif
+
+    actions = (self as Quest) as SkyrimNet_SexLab_Actions
+    if actions == None
+        Trace("Setup_CheckLinks", "--- actions is None", true)
+        links_ok = false
+    endif
+
+    return links_ok
 EndFunction
 
 Function ProcessHotkey(int key_code)
@@ -114,11 +147,13 @@ Function Target_Menu_Selection(Actor target, Actor player)
     
     if button == masturbate
         if mcm.sexlab_ostim_player == 0 || !main.ostimnet_found
-            actions.StartScene_Consensual_one("sexual activities", target, "normal", "")
-        else 
             EventSend_OStimNet("SexStart", target, None, "")
+        elseif main.handler_dom.IsDOMSlave(target) 
+            main.handler_dom.Start_Masturbate("sexual training", target, player)
+        else 
+            actions.StartScene_Consensual_one("sexual activities", target, "normal", "")
         endif 
-    elseif button == sexlab_ostim 
+    elseif sexlab_ostim != -1 && button == sexlab_ostim 
         String choice = ""
         if mcm.sexlab_ostim_player == 0
             mcm.sexlab_ostim_player = 1
@@ -129,20 +164,32 @@ Function Target_Menu_Selection(Actor target, Actor player)
         endif 
         Debug.Notification("Switched to "+choice)
     elseif button == punish 
-        String[] bs = new String[3] 
+        String[] bs = new String[4] 
         bs[0] = "spanking"
         bs[1] = "spanking nude"
         bs[2] = "whip"
+        bs[2] = "rape"
         String method = SkyMessage.ShowArray("How would you like to show affection?", bs, getIndex = false) as string  
-        string setting_name= "punishing_spanking"
+        if method == ""
+            Trace("Target_Menu_Selection","cancelled punish method selection")
+            return
+        endif
+        string setting_name= "punish_spanking"
         if method == "spanking nude"
             method = "spanking"
-            setting_name= "punishing_spanking_victim_nude"
+            setting_name= "punish_spanking_victim_nude"
         elseif method == "whipping"  || method == "whip"
             method = "whip"
-            setting_name= "punishing_whipping_oral"
+            setting_name= "punish_whipping_oral"
+        elseif method == "rape"
+            method = ""
+            setting_name= "punish_pleasure_pain_rape"
         endif 
-        actions.StartScene_Nonconsensual_Two("punishing", player, target=target, method=method, direction="giving", setting_name=setting_name) 
+        if main.handler_dom.IsDOMSlave(target) 
+            main.handler_dom.StartScene_Nonconsensual_Two_SpeakerVictim("sexual assault", target, player, player)
+        else
+            actions.StartScene_Nonconsensual_Two_TargetVictim("sexual assault", player, target)
+        endif 
     elseif button == affection
         if mcm.sexlab_ostim_player == 0 || !main.ostimnet_found    
             String[] bs = new String[6] 
@@ -153,23 +200,37 @@ Function Target_Menu_Selection(Actor target, Actor player)
             bs[4] = "kissing"
             bs[5] = "headpat"
             String method = SkyMessage.ShowArray("How would you like to show affection?", bs, getIndex = false) as string  
+            if method == ""
+                Trace("Target_Menu_Selection","cancelled affection method selection")
+                return
+            endif
             string setting_name = "nonsexual_male_position_1"
             if method == "kissing" 
                 setting_name = "nonsexual_kissing"
             endif 
             actions.StartScene_Consensual_Two("showing affection",player, target=target, style="gently", method=method,setting_name=setting_name)
+        else
+            Debug.Notification("Affection is not available while OStim is the active framework.")
         endif 
     elseif button == sex
-        if main.handler_dom.IsDOMSlave(target) && main.handler_dom.Target_Menu_Selection(target, player)
-            return 
+        if main.handler_dom.IsDOMSlave(target) 
+            main.handler_dom.StartScene_Consensual_Two("sexual activities", target, player, player)
+        else
+            actions.StartScene_Consensual_Two("sexual activities", player, target)
         endif 
-
-        actions.StartScene_Consensual_Two("sexual activities", player, target=target)
-
     elseif button == rapes_player
-        actions.StartScene_Nonconsensual_Two("sexual assault", player,target, speaker_victim=True)
+        if main.handler_dom.IsDOMSlave(target) 
+            ; slave (speaker) assaults player (target); speaker is not the victim
+            main.handler_dom.StartScene_Nonconsensual_Two_TargetVictim("sexual assault", target, player, player)
+        else
+            actions.StartScene_Nonconsensual_Two_SpeakerVictim("sexual assault", player, target)
+        endif 
     elseif button == raped_by_player
-        actions.StartScene_Nonconsensual_Two("sexual assault",player, target)
+        if main.handler_dom.IsDOMSlave(target) 
+            main.handler_dom.StartScene_Nonconsensual_Two_SpeakerVictim("sexual assault", target, player, player)
+        else
+            actions.StartScene_Nonconsensual_Two_TargetVictim("sexual assault",player, target)
+        endif 
     elseif button == clothing
         if clothing_string == "undress"
             clothing_string = "take off"
@@ -190,6 +251,10 @@ Function Target_Menu_Selection(Actor target, Actor player)
         buttons[silently] = "( Silently )"
 
         button = SkyMessage.ShowArray(msg, buttons, getIndex = true) as int 
+        if button < 0
+            Trace("Target_Menu_Selection","cancelled clothing appearance selection")
+            return
+        endif
         String narration = "direct"
         String style = "" 
         if button == gently
@@ -393,8 +458,6 @@ Function MutliTarget_Menu_Selection(Actor player)
                 UIExtensions.OpenMenu("UITextEntryMenu")
                 intent = UIExtensions.GetMenuResultString("UITextEntryMenu")
                 Trace("MultiTarget_Menu_Selection","custom intent: " + intent)                
-            elseif intent == "affection"
-                setting_name = "nonsexual_male_position_1"
             else 
                 setting_name = ""
             endif 
@@ -409,7 +472,7 @@ Function MutliTarget_Menu_Selection(Actor player)
             endwhile 
             listMenu.OpenMenu()
             idx = listMenu.GetResultInt()
-            if 0 < idx && idx < setting_names.length 
+            if 0 <= idx && idx < setting_names.length 
                 setting_name = setting_names[idx]
             else 
                 setting_name = "" 
@@ -417,16 +480,21 @@ Function MutliTarget_Menu_Selection(Actor player)
 
         elseif index < num_actors + 3
             index -= 3
-            if indexes[index] == -1 
-                selected[next] = index
-                next += 1
-            else
+            ; Remove only a currently-selected actor; add only when there is free
+            ; capacity. When the list is full (next == selected.length) the render loop
+            ; stops refreshing indexes[] for unselected rows, leaving a stale -1; without
+            ; this guard clicking such a row fell into the remove branch with j = -1 and
+            ; wrote selected[-1] / wrongly decremented next.
+            if indexes[index] != -1
                 j = indexes[index]
                 while j < next - 1 
                     selected[j] = selected[j+1]
                     j += 1
                 endwhile
                 next -= 1
+            elseif next < selected.length
+                selected[next] = index
+                next += 1
             endif
             if next > 0
                 Trace("MultiTarget_Menu_Selection","after next:"+next+" selected[index]:"+selected[next - 1])

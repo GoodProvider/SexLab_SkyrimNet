@@ -58,8 +58,11 @@ EndFunction
 
 Function Setup()
     String temp = "sl" ; attempt to set the capitalization of sl 
-    main = (self as Quest) as SkyrimNet_SexLab_Main
-    actions = (self as Quest) as SkyrimNet_SexLab_Actions
+    Bool links_ok = Setup_CheckLinks()
+    if !links_ok
+        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
+        return
+    endif
 
     newline = StringUtil.AsChar(10)
 
@@ -89,6 +92,32 @@ Function Setup()
     endif 
 EndFunction
 
+Bool Function Setup_CheckLinks()
+    Bool links_ok = true
+
+    main = (self as Quest) as SkyrimNet_SexLab_Main
+    if main == None
+        Trace("Setup_CheckLinks", "--- main is None", true)
+        links_ok = false
+    endif
+
+    actions = (self as Quest) as SkyrimNet_SexLab_Actions
+    if actions == None
+        Trace("Setup_CheckLinks", "--- actions is None", true)
+        links_ok = false
+    endif
+
+    if manager == None
+        manager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
+        if manager == None
+            Trace("Setup_CheckLinks", "--- manager is None", true)
+            links_ok = false
+        endif
+    endif
+
+    return links_ok
+EndFunction
+
 String Function GetStageDescription(sslThreadController thread, int stage_override = -1 )
     if thread == None 
         Trace("GetStageDescription: thread is None", true)
@@ -99,20 +128,24 @@ String Function GetStageDescription(sslThreadController thread, int stage_overri
         stage = stage_override 
     endif 
     int anim_info = GetAnim_Info(thread)
+    String result = ""
     if anim_info != 0
-        while 0 <= stage 
+        bool found = false
+        while 0 <= stage && !found
             String stage_id = "stage "+stage
             int desc_info = JMap.getObj(anim_info, stage_id)
             if desc_info != 0 
                 Actor[] actors = thread.Positions
                 String desc = JMap.getStr(desc_info, "description")
                 String version = JMap.getStr(desc_info, "version")
-                return AddActorDescriptionActors(version, actors, desc)
+                result = AddActorDescriptionActors(version, actors, desc)
+                found = true
             endif 
             stage -= 1
         endwhile 
+        JValue.release(anim_info)
     endif 
-    return ""
+    return result
 EndFunction 
 
 String Function AddActorDescriptionActors(String version, Actor[] actors, String desc)
@@ -141,17 +174,6 @@ String Function AddActorDescriptionActors(String version, Actor[] actors, String
         if version != VERSION_2_0
             Trace("AddActorDescriptionActors","Unknown version "+version)
         endif 
-        ;;int size = actors.length
-        ;int actors_obj = JArray.objectWithSize(size)
-        ;int i = 0 
-        ;while i < size 
-            ;JArray.setStr(actors_obj, i, actors[i].GetDisplayName()) 
-            ;i += 1 
-        ;endwhile 
-        ;int obj = JMap.object() 
-        ;JMap.setObj(obj, "actors", actors_obj) 
-        ;String json = JValue.toJsonString(obj) 
-        ;JValue.release(obj) 
         int size = actors.length
         String actors_json = "" 
         int i = 0 
@@ -217,7 +239,6 @@ Function EditDescriptions(sslThreadController thread)
     int button = desc_prev
 
     Trace("EditDecriptions","-- e")
-    String style_start = sl_scene.GetStyle()
     while button != done 
         String source = "" 
         String desc = "" 
@@ -235,6 +256,9 @@ Function EditDescriptions(sslThreadController thread)
                 desc = AddActorDescriptionActors(version, actors, desc_inja)
             endif 
         endwhile 
+        if anim_info != 0
+            JValue.release(anim_info)
+        endif 
 
     Trace("EditDecriptions","-- g")
         if sl_scene.tracking
@@ -246,8 +270,12 @@ Function EditDescriptions(sslThreadController thread)
         String msg = "name:"+thread.animation.name+newline\
                +"tags:"+SkyrimNet_SexLab_Scene.GetTagsString(thread.animation)+newline
         if desc == "" 
-            msg += "You may enter a description for stage "+thread.stage+"."+newline
-            msg += "ex: " + BuildExample(actors)
+            if !hide_help
+                msg += "You may enter a description for stage "+thread.stage+"."+newline
+                msg += "ex: " + BuildExample(actors)
+            else 
+                msg += "Stage "+thread.stage+": (no description)"+newline
+            endif 
         else 
             if desc_stage != thread.stage
                 buttons[desc_edit] = "add for stage "+thread.stage
@@ -275,7 +303,7 @@ Function EditDescriptions(sslThreadController thread)
         endif 
         button = SkyMessage.ShowArray(msg, buttons, getIndex = true) as int  
 
-    Trace("EditDecriptions","-- h")
+    Trace("EditDecriptions","-- h button: "+ buttons[button] )
         if button == desc_prev
             if thread.stage > 1 
                 thread.GoToStage(thread.stage - 1)
@@ -291,6 +319,7 @@ Function EditDescriptions(sslThreadController thread)
         elseif button == tracking 
             sl_scene.tracking = !sl_scene.tracking
         elseif button == style_edit 
+            ; Live Scene only: one DN per style change. Scene_Creator / SetStyleDialog stay silent.
             sl_scene.SetStyleDialog() 
         elseif button == stop 
             String style = SkyrimNet_SexLab_Scene_Manager.GetStyleDialog("How will you stop it?")
@@ -299,11 +328,6 @@ Function EditDescriptions(sslThreadController thread)
         endif 
     endwhile 
 
-    Trace("EditDecriptions","-- j")
-    String style_end = sl_scene.style
-    if style_start != style_end 
-        DirectNarration(thread.positions[0].getDisplayName()+"'s scene changed from '"+style_start+"' to '"+style_end+"'")
-    endif 
     Trace("EditDecriptions","-- k")
 
 EndFunction 
@@ -424,11 +448,13 @@ int[] Function GetOrgasmExpected(sslThreadController thread)
     if count == actors.length
         int[] orgasm_expected = JArray.asIntArray(id)
         Trace("GetOrgasmExpected","values found in file orgasm_expected: "+orgasm_expected)
-        return JArray.asIntArray(id)
+        JValue.release(anim_info)
+        return orgasm_expected
     endif 
 
     if actors.length > 2
         Trace("GetOrgasmExpected","more than 2 actors, all orgasm expected")
+        JValue.release(anim_info)
         return Utility.CreateIntArray(actors.length, 1)
     endif
 
@@ -487,6 +513,7 @@ int[] Function GetOrgasmExpected(sslThreadController thread)
         i -= 1
     endwhile
     Trace("GetOrgasmExpected","    orgasm_expected: "+orgasm_expected)
+    JValue.release(anim_info)
     return orgasm_expected
 EndFunction
 
@@ -513,6 +540,9 @@ Function SetOrgasmExpected(sslThreadController thread)
         endif 
         i -= 1
     endwhile
+    if anim_info != 0
+        JValue.release(anim_info)
+    endif 
 
     String[] buttons = Utility.CreateStringArray(num_actors + 2)
     int go_back = 0
@@ -577,6 +607,7 @@ bool[] Function GetHasDescriptionOrgasmExpected(sslThreadController thread)
     if orgasm_expected != 0
         desc_orgasmExpected[1] = true
     endif 
+    JValue.release(anim_info)
     return desc_orgasmExpected
 EndFunction
 
@@ -652,6 +683,9 @@ int Function GetAnim_Info(sslThreadController thread, Bool force_load=False)
     endwhile 
     ; setAnimCache(thread, anim_info) 
     JValue.writeToFile(anim_info, animations_folder+"/anim_info.json")
+    ; Retain the returned object so it is not auto-GC'd while a caller reads it;
+    ; every caller must JValue.release(anim_info) once done (rebuilt fresh each call).
+    JValue.retain(anim_info)
     return anim_info
 EndFunction 
 

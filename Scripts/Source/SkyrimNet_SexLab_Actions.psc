@@ -22,6 +22,12 @@ EndFunction
 ; Setup
 ; -------------------------------------------------
 Function Setup()
+    Bool links_ok = Setup_CheckLinks()
+    if !links_ok
+        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
+        return
+    endif
+
     if Game.GetModByName("Ostim.esp") != 255
         OStimActorCountFaction = Game.GetFormFromFile(0xECA, "Ostim.esp") as Faction
         Trace("Setup","Found Ostim.esp, OStimActorCountFaction set to "+OStimActorCountFaction)
@@ -29,6 +35,33 @@ Function Setup()
         OStimActorCountFaction = None 
     endif 
 EndFunction 
+
+Bool Function Setup_CheckLinks()
+    Bool links_ok = true
+
+    if main == None
+        main = (self as Quest) as SkyrimNet_SexLab_Main
+        if main == None
+            Trace("Setup_CheckLinks", "--- main is None", true)
+            links_ok = false
+        endif
+    endif
+
+    if manager == None
+        manager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
+        if manager == None
+            Trace("Setup_CheckLinks", "--- manager is None", true)
+            links_ok = false
+        endif
+    endif
+
+    if sexlab == None
+        Trace("Setup_CheckLinks", "--- sexlab is None", true)
+        links_ok = false
+    endif
+
+    return links_ok
+EndFunction
 
 ;-------------------------------------------
 ; One
@@ -67,22 +100,18 @@ Function StartScene_Consensual_Two(String intent, Actor speaker, Actor target, s
     StartScene_Event(intent, speaker, target, None, style, method, direction, setting_name=setting_name) 
 EndFunction
 
-Function StartScene_Nonconsensual_Two(String intent, Actor speaker, Actor target=None, string style="", string method="", String direction="", bool speaker_victim=false, String setting_name="")
-    Trace("StartScene_Nonconsensual_Two",GetDisplayName(speaker)+" "+GetDisplayName(target)+" style: "+style+" method:"+method+" direction: "+direction+" speaker_victim:"+speaker_victim+" setting_name:"+setting_name)
-    Actor victim = target
-    if speaker_victim 
-        victim = speaker
-    endif 
+Function StartScene_Nonconsensual_Two(String intent, Actor speaker, Actor target=None, Actor victim,string style="", string method="", String direction="", String setting_name="")
+    Trace("StartScene_Nonconsensual_Two",GetDisplayName(speaker)+" "+GetDisplayName(target)+" victim:"+GetDisplayName(victim)+" style: "+style+" method:"+method+" direction: "+direction+" setting_name:"+setting_name)
     StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name) 
 EndFunction
 
-Function StartScene_Nonconsensual_Two_Victim(String intent, Actor speaker, Actor target=None, string style="", string method="", String direction="", Actor victim, String setting_name="")
-    Trace("StartScene_Nonconsensual_Two",GetDisplayName(speaker)+" "+GetDisplayName(target)+" style: "+style+" method:"+method+" direction: "+direction+" speaker_victim:"+GetDisplayName(victim)+" setting_name:"+setting_name)
+Function StartScene_Nonconsensual_Two_SpeakerVictim(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="")
+    Trace("StartScene_Nonconsensual_Two_SpeakerVictim",GetDisplayName(speaker)+" "+GetDisplayName(target)+" style: "+style+" method:"+method+" direction: "+direction+" setting_name:"+setting_name)
+    Actor victim = speaker
     StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name) 
 EndFunction
-
-Function StartScene_Punish_Two(String intent, Actor speaker, Actor target=None, string style="", string method="", String direction="", String setting_name="")
-    Trace("StartScene_Punish_Two",GetDisplayName(speaker)+" "+GetDisplayName(target)+" style: "+style+" method:"+method+" direction: "+direction+" setting_name:"+setting_name)
+Function StartScene_Nonconsensual_Two_TargetVictim(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="")
+    Trace("StartScene_Nonconsensual_Two_TargetVictim",GetDisplayName(speaker)+" "+GetDisplayName(target)+" style: "+style+" method:"+method+" direction: "+direction+" setting_name:"+setting_name)
     Actor victim = target
     StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name) 
 EndFunction

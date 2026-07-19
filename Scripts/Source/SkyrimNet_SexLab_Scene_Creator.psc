@@ -34,7 +34,7 @@ int[] no_stripping_mask
 
 int no_orgasm_default_current = 0
 int no_stripping_default_current = 0
-String speaking_modifiers_default_current = ""
+String Property speaking_modifiers_default_current = "_pleasure_" AUTO
 
 String[] Property speaking_modifiers AUTO
 
@@ -72,28 +72,37 @@ Function Trace(String func, String msg="", Bool notification=False)
     endif 
 EndFunction
 
+bool debug_mode = True
 Function DbgEnter(String func, String msg="")
-    if msg != ""
-        Trace(func, "--- enter "+msg)
-    else
-        Trace(func, "--- enter")
+    if debug_mode
+        if msg != ""
+            Trace(func, "--- enter "+msg)
+        else
+            Trace(func, "--- enter")
+        endif
     endif
 EndFunction
 
 Function DbgReturn(String func, String reason="")
-    if reason != ""
-        Trace(func, "--- return "+reason)
-    else
-        Trace(func, "--- return")
+    if debug_mode
+        if reason != ""
+            Trace(func, "--- return "+reason)
+        else
+            Trace(func, "--- return")
+        endif
     endif
 EndFunction
 
 Function DbgEnd(String func)
-    Trace(func, "--- end")
+    if debug_mode
+        Trace(func, "--- end")
+    endif
 EndFunction
 
 Function DbgMsg(String func, String msg)
-    Trace(func, "--- "+msg)
+    if debug_mode
+        Trace(func, "--- "+msg)
+    endif
 EndFunction
 
 
@@ -109,11 +118,11 @@ String Function GetString()
           +" tags:"+tags_string\
           +" suppress_tags:"+tags_suppress_string\
           +" style:"+style\
-          +" event_hook:"+event_hook
+          +" event_hook:"+event_hook\
+          +" speaking_modifiers: "+speaking_modifiers
 EndFunction 
 
 Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager, bool _is_generic = false) 
-    DbgEnter("Initialize", "sid:"+_sid)
     parent.Initialize(_sid, _manager, _is_generic) 
     sexlab = manager.sexlab
     EnsureActorsArraysLargeEnough(2) 
@@ -121,7 +130,6 @@ Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager, bool _is_
         tags = new String[10]
         tags_suppress = new String[10]
     endif 
-    DbgEnd("Initialize")
 EndFunction 
 
 ; -------------------------------------------------------
@@ -130,9 +138,21 @@ EndFunction
 
 Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, String _method="", String setting_name="")
     DbgEnter("Setup", "intent:"+_intent+" actors:["+JoinActors(_actors)+"] speaker:"+GetDisplayName(_speaker)+" target:"+GetDisplayName(_target)+" method:"+_method+" setting_name:"+setting_name)
+    Bool links_ok = Setup_CheckLinks()
+    if !links_ok
+        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
+        DbgReturn("Setup", "Setup_CheckLinks failed")
+        return
+    endif
+    if !_actors
+        Trace("Setup", "--- _actors is None, aborting", true)
+        DbgReturn("Setup", "_actors is None")
+        return
+    endif
+
     intent = _intent
     speaker = _speaker
-    target = _target 
+    target = _target
 
     EnsureActorsArraysLargeEnough(_actors.length) 
 
@@ -182,8 +202,25 @@ Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, S
     SetMethod(_method)
     AddTag(_method) 
     SetNames() 
+    Trace("Setup", GetString())
     DbgEnd("Setup")
 EndFunction 
+
+Bool Function Setup_CheckLinks()
+    Bool links_ok = true
+
+    if manager == None
+        Trace("Setup_CheckLinks", "--- manager is None", true)
+        links_ok = false
+    endif
+
+    if sexlab == None
+        Trace("Setup_CheckLinks", "--- sexlab is None", true)
+        links_ok = false
+    endif
+
+    return links_ok
+EndFunction
 
 
 ; --------------------------------------------
@@ -210,6 +247,8 @@ EndFunction
 ; --------------------------------------------
 SkyrimNet_SexLab_Scene Function StartScene() 
     DbgEnter("StartScene")
+    bool e_c = manager.empty == manager.cancel
+    Trace("StartScene", "manager.empty == manager.cancel: "+e_c)    
     SetNames() 
 
     Trace("StartScene",GetString()) 
@@ -225,7 +264,7 @@ SkyrimNet_SexLab_Scene Function StartScene()
     endif
 
     sslBaseAnimation[] animations = SelectAnimations() 
-    if animations == cancel
+    if animations == manager.cancel
         Trace("StartScene","SelectAnimations returned cancel")
         Release() 
         DbgReturn("StartScene", "None")
@@ -233,7 +272,7 @@ SkyrimNet_SexLab_Scene Function StartScene()
     endif
     ; If no animation list is provided (empty), SexLab randomly selects.
     DbgMsg("StartScene", "model.SetAnimations count="+animations.length)
-    if animations != empty && animations.length > 0
+    if animations != manager.empty && animations.length > 0
         model.SetAnimations(animations) 
     endif 
 
@@ -313,7 +352,7 @@ SkyrimNet_SexLab_Scene Function StartScene()
     sslThreadController thread = model.StartThread() 
     DbgMsg("StartScene", "model.StartThread() returned thread="+thread)
     if thread == None 
-        Trace("Start","StartThread returned None, releasing sl_scene.sid")
+        Trace("StartScene","StartThread returned None, releasing sl_scene.sid")
         Release() 
         DbgReturn("StartScene", "None")
         return None 
@@ -511,7 +550,7 @@ Function SetVictims(Actor[] _victims)
     endwhile 
 
     if num_victims == 0 
-        Trace("SexVictims","No valid victims found")
+        Trace("SetVictims","No valid victims found")
     else 
         victims = EnsureActorsLargeEnough(victims, num_victims) 
         i = 0 
@@ -712,23 +751,19 @@ EndFunction
 ; Load Scene Setting from File 
 ; -------------------------------------------------------------------------------------
 Function LoadSetting(String setting_name) 
-    DbgEnter("LoadSetting", "setting_name:"+setting_name)
     if setting_name == "" 
         Trace("LoadSetting", "setting_name is '', aborting")
-        DbgReturn("LoadSetting", "void")
         return 
     endif 
     String filename = manager.GetSceneSettingFilename(setting_name)
     if !MiscUtil.FileExists(filename) 
         Trace("LoadSetting",filename+" doesn't exist, aborting")
-        DbgReturn("LoadSetting", "void")
         return 
     endif  
 
     int setting_id = JValue.readFromFile(filename)
     if setting_id < 0 
         Trace("LoadSetting",filename+" couldn't be parsed, aborting")
-        DbgReturn("LoadSetting", "void")
         return 
     endif  
     Trace("LoadSetting","loading "+setting_name)
@@ -781,9 +816,10 @@ Function LoadSetting(String setting_name)
     ; ------------------------------------
     ; Set Actors Arrays with defaults
     ; ------------------------------------
+    int i = 0
     if JMap.HasKey(setting_id, "array_defaults") 
         int default_id = JMap.getObj(setting_id, "array_defaults")
-        int i = 0
+        i = 0
         while i < num_keys 
             if JMap.HasKey(default_id, keys[i]) 
                 if i == no_stripping_key || i == no_orgasm_key
@@ -817,7 +853,7 @@ Function LoadSetting(String setting_name)
     ; ------------------------------------
     ; Set Actors Arrays with specifics
     ; ------------------------------------
-    int i = 0 
+    i = 0 
     while i < num_keys 
         if JMap.HasKey(setting_id, keys[i])
             int array_id = JMap.getObj(setting_id, keys[i])
@@ -1047,14 +1083,14 @@ sslBaseAnimation[] Function SelectAnimations()
     else 
         Trace("SelectAnimations"," actors:"+actor_names)
     endif 
-    sslBaseAnimation[] animations = empty
+    sslBaseAnimation[] animations = manager.empty
     int button = BUTTON_YES
     if has_player
         button = YesNoDialog()
         Trace("SelectAnimations","--- button: "+button)
         if button == BUTTON_NO || button == BUTTON_NO_SILENT
             DbgReturn("SelectAnimations", "cancel")
-            return cancel 
+            return manager.cancel 
         endif 
     endif  
 
@@ -1062,16 +1098,16 @@ sslBaseAnimation[] Function SelectAnimations()
     if button != BUTTON_YES_RANDOM
         if (main.sex_edit_tags_player && has_player) || (main.sex_edit_tags_nonplayer && !has_player)
             animations = SelectAnimationsDialog()
-            if animations == cancel
+            if animations == manager.cancel
                 DbgReturn("SelectAnimations", "cancel")
-                return cancel
+                return manager.cancel
             endif
         endif 
     endif
 
     ; YES without tag editor, YES_RANDOM, or dialog returned empty:
     ; look up by tags when we do not already have a non-empty list from the dialog.
-    if animations == empty || !animations || animations.length == 0
+    if animations == manager.empty || !animations || animations.length == 0
         String tags_string = JoinStrings(tags, num_tags)
         String tags_suppress_string = JoinStrings(tags_suppress, num_tags_suppress)
         bool require = false 
@@ -1085,9 +1121,9 @@ sslBaseAnimation[] Function SelectAnimations()
 
     Trace("SelectAnimations","--- f animations: "+animations.length)
     ; empty = no forced list; StartScene skips SetAnimations and SexLab randomly selects.
-    if animations == empty || !animations || animations.length == 0
-        DbgReturn("SelectAnimations", "empty")
-        return empty
+    if animations == manager.empty || !animations || animations.length == 0
+        DbgReturn("SelectAnimations", "manager.empty")
+        return manager.empty
     endif
     DbgReturn("SelectAnimations", "animations")
     return animations  
@@ -1114,7 +1150,7 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
     if (has_player && !main.sex_edit_tags_player) || (!has_player && !main.sex_edit_tags_nonplayer)
         Trace("SelectAnimationsDialog", "Returning empty | sex_edit_tags_player:"+main.sex_edit_tags_player+" sex_edit_tags_nonplayer:"+main.sex_edit_tags_nonplayer)
         DbgReturn("SelectAnimationsDialog", "empty")
-        return empty 
+        return manager.empty 
     endif 
 
     String tags_string = JoinStrings(tags, num_tags)
@@ -1136,8 +1172,8 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
     int group_tags = JMap.getObj(manager.group_info,"group_tags",0)
     if group_tags == 0 
         Trace("SelectAnimationsDialog", "group_tags not found in group_tags.json")
-        DbgReturn("SelectAnimationsDialog", "empty")
-        return empty
+        DbgReturn("SelectAnimationsDialog", "manager.empty")
+        return manager.empty
     endif 
     Trace("SelectAnimationDialog e")
 
@@ -1213,7 +1249,7 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
                     JValue.release(groups)
                 endif
                 DbgReturn("SelectAnimationsDialog", "cancel")
-                return cancel
+                return manager.cancel
             elseif button == "<remove"
                 num_tags -= 1
             elseif button != "-continue-" && button != actor_names && button != tags_label && button != tags_suppress_label
@@ -1242,8 +1278,8 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
     if groups_owned
         JValue.release(groups)
     endif
-    DbgReturn("SelectAnimationsDialog", "empty")
-    return empty
+    DbgReturn("SelectAnimationsDialog", "manager.empty")
+    return manager.empty
 EndFunction
 
 Function AddGroupTags(uilistMenu listMenu, int group_tags, String group)

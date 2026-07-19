@@ -23,48 +23,42 @@ EndFunction
 
 
 bool Function Setup()
-
-    manager = Game.GetFormFromFile(0x000800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Scene_Manager
-
-    if manager == None 
-
-        Trace("Setup","manager is None, aborting")
-
-        return  False
-
-    endif 
-
-
-
-    ; Light Dom presence check (call sites use SkyrimNet_DOM_API, not a local Actions property)
-
-    if Game.GetModByName("SkyrimNet_DOM.esp") == 255
-
-        Trace("Setup","SkyrimNet_DOM.esp not loaded, aborting")
-
+    Bool links_ok = Setup_CheckLinks()
+    if !links_ok
+        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
         return False
-
     endif
-
-
 
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x000800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
-
-    if main == None
-
-        Trace("Setup", "main is None, aborting")
-
-        return False
-
-    endif
-
     main.handler_dom = self
 
     Trace("Setup", "Success")
-
     return True 
-
 endFunction
+
+Bool Function Setup_CheckLinks()
+    Bool links_ok = true
+
+    manager = Game.GetFormFromFile(0x000800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Scene_Manager
+    if manager == None 
+        Trace("Setup_CheckLinks", "--- manager is None", true)
+        links_ok = false
+    endif 
+
+    ; Light Dom presence check (call sites use SkyrimNet_DOM_API, not a local Actions property)
+    if Game.GetModByName("SkyrimNet_DOM.esp") == 255
+        Trace("Setup_CheckLinks", "--- SkyrimNet_DOM.esp not loaded", true)
+        links_ok = false
+    endif
+
+    SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x000800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
+    if main == None
+        Trace("Setup_CheckLinks", "--- main is None", true)
+        links_ok = false
+    endif
+
+    return links_ok
+EndFunction
 
 
 
@@ -88,7 +82,7 @@ String Function HandleOrgasmDenied(Actor akActor)
 
     DOM_Actor slave = SkyrimNet_DOM_API.GetSlave("SkyrimNet_SexLab_Handler_DOM", "HandleOrgasmDenied", akActor) as Dom_Actor
 
-    if slave != None 
+    if slave != None && slave.mind != None 
 
         if slave.mind.is_aroused_for > 0
 
@@ -132,9 +126,9 @@ EndFunction
 
 Bool Function Orgasm_Desired(Actor akActor)
 
-    DOM_Actor slave = SkyrimNet_DOM_API.GetSlave("SkyrimNet_SexLab_Main", "Orgasm_Combined", akActor) as Dom_Actor
+    DOM_Actor slave = SkyrimNet_DOM_API.GetSlave("SkyrimNet_SexLab_Main", "OrgasmCombined", akActor) as Dom_Actor
 
-    return slave != None && slave.mind.is_aroused_for > 0
+    return slave != None && slave.mind != None && slave.mind.is_aroused_for > 0
 
 EndFunction
 
@@ -143,25 +137,25 @@ EndFunction
 ; ------------------------------------------------------------
 
 Function Start_Masturbate(String intent, Actor speaker, Actor superior, String style="", String position="")
-
     SkyrimNet_DOM_API.Start_Masturbate(intent, speaker, superior, style, position)
-
 EndFunction
 
 
 
 Function StartScene_Consensual_Two(String intent, Actor speaker, Actor superior, Actor target, string style="", string method="", String direction="", String setting_name="")
-
     SkyrimNet_DOM_API.StartScene_Consensual_Two(intent, speaker, superior, target, style, method, direction, setting_name)
-
 EndFunction
 
 
 
-Function StartScene_Nonconsensual_Two(String intent, Actor speaker, Actor superior, Actor target=None, string style="", string method="", String direction="", bool speaker_victim=false, String setting_name="")
-
-    SkyrimNet_DOM_API.StartScene_Nonconsensual_Two(intent, speaker, superior, target, style, method, direction, speaker_victim, setting_name)
-
+Function StartScene_Nonconsensual_Two(String intent, Actor speaker, Actor superior, Actor target, Actor victim, string style="", string method="", String direction="", String setting_name="")
+    SkyrimNet_DOM_API.StartScene_Nonconsensual_Two(intent, speaker, superior, target, victim, style, method, direction, setting_name)
 EndFunction
 
+Function StartScene_Nonconsensual_Two_SpeakerVictim(String intent, Actor speaker, Actor superior, Actor target, string style="", string method="", String direction="", String setting_name="")
+    SkyrimNet_DOM_API.StartScene_Nonconsensual_Two_SpeakerVictim(intent, speaker, superior, target, style, method, direction, setting_name)
+EndFunction
 
+Function StartScene_Nonconsensual_Two_TargetVictim(String intent, Actor speaker, Actor superior, Actor target, string style="", string method="", String direction="", String setting_name="")
+    SkyrimNet_DOM_API.StartScene_Nonconsensual_Two_TargetVictim(intent, speaker, superior, target, style, method, direction, setting_name)
+EndFunction

@@ -88,6 +88,11 @@ int Property counter Auto
 
 Function Setup()
     Trace("Setup","")
+    Bool links_ok = Setup_CheckLinks()
+    if !links_ok
+        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
+        return
+    endif
 
     if Game.GetModByName("SexLab.esm") == 255
         Trace("Setup","Data/SexLab.esm does not exist") 
@@ -98,11 +103,35 @@ Function Setup()
     ; Decorators
     ; --------------------------------
     SkyrimNet_SexLab_Decorators.RegisterDecorators() 
-    ((self as Quest) as SkyrimNet_SexLab_Actions).Setup()
-    ((self as Quest) as SkyrimNet_SexLab_MCM).Setup()
-    ((self as Quest) as SkyrimNet_SexLab_Menu).Setup()
-    ((self as Quest) as SkyrimNet_SexLab_Stages).Setup()
-    ((self as Quest) as SkyrimNet_SexLab_Scene_Manager).Setup()
+    SkyrimNet_SexLab_Actions actions = (self as Quest) as SkyrimNet_SexLab_Actions
+    if actions != None
+        actions.Setup()
+    else 
+        Trace("Setup", "ERROR: Failed to get external actions. Using fallback.", true)
+    endif
+    SkyrimNet_SexLab_MCM mcm = (self as Quest) as SkyrimNet_SexLab_MCM
+    if mcm != None
+        mcm.Setup()
+    else
+        Trace("Setup", "ERROR: Failed to get MCM.", true)
+    endif
+    SkyrimNet_SexLab_Menu menu = (self as Quest) as SkyrimNet_SexLab_Menu
+    if menu != None
+        menu.Setup()
+    else
+        Trace("Setup", "ERROR: Failed to get Menu.", true)
+    endif
+    if stages != None
+        stages.Setup()
+    else
+        Trace("Setup", "ERROR: Failed to get Stages.", true)
+    endif
+    SkyrimNet_SexLab_Scene_Manager sceneManager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
+    if sceneManager != None
+        sceneManager.Setup()
+    else
+        Trace("Setup", "ERROR: Failed to get Scene_Manager.", true)
+    endif
 
     ; --------------------------------
     ; DOM Handler
@@ -122,7 +151,7 @@ Function Setup()
     endif 
     if handler_dom == None 
         handler_dom = (self as Quest) as SkyrimNet_SexLab_Handler_DOM_Interface
-        Trace("Setup","SkyrimNet_SexLab_Handler_DOM found:"+skyrimnet_sexlab_handler_dom_found+", SkyrimNet_DOM found :"+skyrimnet_dom_found)
+        Trace("Setup","handler_dom set to interface | SkyrimNet_SexLab_Handler_DOM found:"+skyrimnet_sexlab_handler_dom_found+", SkyrimNet_DOM found :"+skyrimnet_dom_found)
     endif 
 
     if handler_dom == None
@@ -155,6 +184,49 @@ Function Setup()
         Trace("Setup","Found TT_OstimNet.esp found")
     endif 
 
+EndFunction
+
+Bool Function Setup_CheckLinks()
+    Bool links_ok = true
+
+    if sexlab == None
+        Trace("Setup_CheckLinks", "--- sexlab is None", true)
+        links_ok = false
+    endif
+
+    if stages == None
+        stages = (self as Quest) as SkyrimNet_SexLab_Stages
+        if stages == None
+            Trace("Setup_CheckLinks", "--- stages is None", true)
+            links_ok = false
+        endif
+    endif
+
+    SkyrimNet_SexLab_Actions actions = (self as Quest) as SkyrimNet_SexLab_Actions
+    if actions == None
+        Trace("Setup_CheckLinks", "--- actions is None", true)
+        links_ok = false
+    endif
+
+    SkyrimNet_SexLab_MCM mcm = (self as Quest) as SkyrimNet_SexLab_MCM
+    if mcm == None
+        Trace("Setup_CheckLinks", "--- mcm is None", true)
+        links_ok = false
+    endif
+
+    SkyrimNet_SexLab_Menu menu = (self as Quest) as SkyrimNet_SexLab_Menu
+    if menu == None
+        Trace("Setup_CheckLinks", "--- menu is None", true)
+        links_ok = false
+    endif
+
+    SkyrimNet_SexLab_Scene_Manager sceneManager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
+    if sceneManager == None
+        Trace("Setup_CheckLinks", "--- sceneManager is None", true)
+        links_ok = false
+    endif
+
+    return links_ok
 EndFunction
 
 

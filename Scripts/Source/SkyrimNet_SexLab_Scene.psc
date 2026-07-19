@@ -172,16 +172,24 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
     else
         DbgEnter("Setup")
     endif
+    Bool links_ok = Setup_CheckLinks()
+    if !links_ok
+        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
+        DbgReturn("Setup", "void")
+        return
+    endif
     if thread == None 
         Trace("Setup","thread is none, aborting")
         DbgReturn("Setup", "void")
         return 
     endif 
 
-
-    Trace("Setup", "--- a "+"creator.speaking_modifiers: "+creator.speaking_modifiers)
-
     Actor[] positions = thread.positions
+    if !positions
+        Trace("Setup", "--- thread.positions is None, aborting", true)
+        DbgReturn("Setup", "void")
+        return
+    endif
     int num_actors = positions.length
     DbgMsg("Setup", "thread.positions count="+num_actors)
     EnsureActorArraysLargeEnough(num_actors) 
@@ -201,6 +209,7 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
 
     Trace("Setup", "--- a num_actors: "+num_actors)
     if creator != None 
+        Trace("Setup", "--- a creator.speaking_modifiers: "+creator.speaking_modifiers)
         has_player = creator.has_player
         intent = creator.intent 
         style = creator.style
@@ -221,8 +230,8 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
         Trace("Setup", "initiator:"+GetDisplayName(initiator)+" sender:"+GetDisplayName(sender)+" receiver:"+GetDisplayName(receiver))
         i = 0 
         while i < num_actors 
-            Trace("Setup", "--- b i:"+i+" creator.no_mask_mask: "+creator.no_orgasm_mask[i]+" creator.speaking_modifiers["+i+"]:"+creator.speaking_modifiers[i])
             if i < creator.num_actors
+                Trace("Setup", "--- b i:"+i+" creator.no_mask_mask: "+creator.no_orgasm_mask[i]+" creator.speaking_modifiers["+i+"]:"+creator.speaking_modifiers[i])
                 SetPosition(i, positions[i], creator.no_orgasm_mask[i], creator.speaking_modifiers[i]) 
             else 
                 SetPosition(i, positions[i], 0, creator.speaking_modifiers_default_current)
@@ -275,6 +284,42 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
     TraceScene("Setup") 
     DbgEnd("Setup")
 EndFunction 
+
+Bool Function Setup_CheckLinks()
+    Bool links_ok = true
+
+    if manager == None
+        Trace("Setup_CheckLinks", "--- manager is None", true)
+        links_ok = false
+    endif
+
+    if main == None
+        Trace("Setup_CheckLinks", "--- main is None", true)
+        links_ok = false
+    endif
+
+    if stages == None
+        Trace("Setup_CheckLinks", "--- stages is None", true)
+        links_ok = false
+    endif
+
+    if sexlab == None
+        Trace("Setup_CheckLinks", "--- sexlab is None", true)
+        links_ok = false
+    endif
+
+    if threadSlots == None
+        Trace("Setup_CheckLinks", "--- threadSlots is None", true)
+        links_ok = false
+    endif
+
+    if actorLib == None
+        Trace("Setup_CheckLinks", "--- actorLib is None", true)
+        links_ok = false
+    endif
+
+    return links_ok
+EndFunction
 
 ; Reconcile SkyrimNet_SexLab_Faction_Victim membership with the current
 ; thread.positions. Adds the faction to current victims, removes it from current
@@ -846,8 +891,20 @@ EndFunction
 ; --------------------------------------------
 Function AnimationStart()
     description_last = ""
-    status = STATUS_SETUP 
-    orgasm_messages_set = false
+    ; Re-entrant mid-scene AnimationStart must not force STATUS_SETUP (would re-run
+    ; first-start/initiator path) or clear orgasm_messages_set while leaving non-empty
+    ; slots (flush skips; Combined will not refill). Only reset orgasm stash on first start.
+    if status != STATUS_ACTIVE
+        status = STATUS_SETUP
+        if orgasm_messages
+            int m = 0
+            while m < orgasm_messages.length
+                orgasm_messages[m] = ""
+                m += 1
+            endwhile
+        endif
+        orgasm_messages_set = false
+    endif
     DbgEnter("AnimationStart")
     AlignActors() 
     manager.SaveThreadsJson() 
@@ -882,6 +939,7 @@ Function StageStart()
         String narration = GetDescription() + orgasm_narration
         if initiator != None
             narration = initiator.GetDisplayName()+" initiates: "+desc
+            narration += orgasm_narration
         endif
         if has_player
             DirectNarration(narration, sender, receiver) 
@@ -892,34 +950,20 @@ Function StageStart()
     ; Late Dom custom msgs may arrive after Combined; flush any leftovers before send/Release
     else
         Trace("StageStart","--- a status not active")
-        bool orgasm_happened = false
-        bool ejaculation_happened = false
-        int num_actors = thread.positions.length
-
         String narration = ""
         bool change_scene = false
         if desc != "" && description_last != ""
             if desc != description_last
-                ; Preserve orgasm/denied block already in narration; do not overwrite it.
-                String scene_change = "Scene changes to "+desc
-                if narration != ""
-                    if StringUtil.GetNthChar(scene_change, StringUtil.GetLength(scene_change) - 1) != " "
-                        scene_change += " "
-                    endif
-                    narration = scene_change + narration
-                else
-                    narration = scene_change
-                endif
+                ; Scene-change is prefixed; orgasm block is appended from orgasm_narration below.
+                narration = "Scene changes to "+desc
                 change_scene = true
             else 
                 desc = ""
             endif 
         endif 
         Trace("StageStart","--- c desc:"+desc+" description_last:"+description_last)
-        ; Generate cum message 
         if orgasm_narration != ""
             narration += orgasm_narration
-            ; Add
             if has_player
                 DirectNarration(narration, sender, receiver, purge_dialogue=True)
             else
@@ -935,7 +979,11 @@ Function StageStart()
             endif 
         endif 
     endif 
-    description_last = desc
+    ; Only advance description_last when desc is a real new description; unchanged
+    ; path sets desc="" and must not wipe the prior value (would skip later Scene changes to).
+    if desc != ""
+        description_last = desc
+    endif
 
     ; If this thread is being tracked print the thread's status 
     if tracking
@@ -1007,8 +1055,14 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
         narration += after
     endif 
 
-    if has_player && (speaker != None || orgasm_narration != "")
+    if orgasm_narration != ""
         narration += orgasm_narration
+        if has_player
+            DirectNarration(narration, sender, receiver)
+        else
+            DirectNarration_Optional("orgasm", narration, sender, receiver)
+        endif
+    elseif has_player && speaker != None
         DirectNarration(narration, sender, receiver)
     elseif orgasm_denied
         DirectNarration_Optional(intent+" ends", narration, sender, receiver)
@@ -1057,8 +1111,6 @@ Function OrgasmCombined()
     DbgEnter("OrgasmCombined")
     AlignActors() 
     int[] orgasm_expected = stages.GetOrgasmExpected(thread)
-    bool someone_ejaculated = False 
-    String narration = "" 
     int i = 0
     int num_actors = thread.positions.length
     EnsureActorArraysLargeEnough(num_actors)
@@ -1104,11 +1156,12 @@ Function OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
         SetTotalOrgasms(akActor, num_orgasms)
     endif 
 
+    ; Prompt gate requires exact substring " is orgasming." (0550_sexlab_narration).
     String msg = ""
     if num_orgasms == 1
-        msg += akActor.GetDisplayName()+" orgasmed."
+        msg += akActor.GetDisplayName()+" is orgasming. "
     else
-        msg += akActor.GetDisplayName()+" orgasmed again."
+        msg += akActor.GetDisplayName()+" is orgasming. again. "
     endif 
 
     OrgasmHelper(akActor, msg)
@@ -1611,4 +1664,19 @@ String Function GetDescriptionFromTags()
     EndIf
     buffer += ".\n\n"
     return buffer
+endFunction
+
+Function SetStyleDialog()
+    DbgEnter("SetStyleDialog")
+    String style_old = style
+    parent.SetStyleDialog()
+
+    if style_old != style
+        String name = GetDisplayName(sender)
+        if has_player
+            name = GetDisplayName(game.GetPlayer())
+        endif 
+        DirectNarration(name+" changes from '"+style_old+"' to '"+style+"'", sender, receiver)
+    endif 
+    DbgReturn("SetStyleDialog")
 endFunction
