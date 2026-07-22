@@ -1,0 +1,29 @@
+customCategory: sexlab_punish
+name: SexLab_Punish_Rape_Target_By_Target
+description: "[style] [method] sexual assault on [speaker]"
+questEditorId: SkyrimNet_SexLab
+scriptName: SkyrimNet_SexLab_Actions
+executionFunctionName: StartScene_Nonconsensual_Two_SpeakerVictim
+defaultPriority: 8
+parameterMapping:
+  - type: static 
+    name: intent
+    value: sexual assault
+  - type: speaker
+    name: speaker
+    description: Speaker Actor parameter (triggering entity)
+  - type: dynamic
+    name: target
+    description: Actor
+  - type: dynamic
+    name: style
+    description: forceful|normal|gentle
+  - type: dynamic
+    name: method
+    description: vaginal|anal
+  - type: dynamic
+    name: direction
+    description: giving|getting
+  - type: static 
+    name: setting_name
+    value: "punish_pleasure_pain_rape"

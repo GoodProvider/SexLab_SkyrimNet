@@ -16,7 +16,7 @@
     <summary>Bridge mod between SkyrimNet (LLM) and SexLab Framework.</summary>
     <language>Papyrus (Skyrim SE/AE)</language>
     <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
-    <updated>2026-07-16</updated>
+    <updated>2026-07-22</updated>
     <key_paths>
       <scripts_source>Scripts/Source</scripts_source>
       <action_yamls>SKSE/Plugins/SkyrimNet/config/actions</action_yamls>
@@ -72,9 +72,24 @@
     <decision>Dom Combined narration: silent unless orgasm_expected==1; LLM reminder only when a slave did not orgasm.</decision>
     <decision>Menu locks actors via LockAllActorLock (mirrors Action_Start); Release on lock failure.</decision>
     <decision>SkyrimNet_DOM optional: Interface stub + real Handler_DOM must both work.</decision>
+    <decision id="M4">Style DirectNarration: exactly one DN when style changes on a live Scene (EditDescriptions style button). No DN from Scene_Creator or Interface.SetStyleDialog.</decision>
+    <decision id="YAML-Victim">Fixed-role nonconsensual two-actor actions use StartScene_Nonconsensual_Two_TargetVictim / _SpeakerVictim. Dynamic victim uses StartScene_Nonconsensual_Two with explicit victim. Never pass speaking_victim in action YAMLs.</decision>
+    <decision id="YAML-Names">Action YAML name values must be unique; static mappings use value; dynamic mappings use description; prefer Papyrus slot names (method, how).</decision>
   </locked_decisions>
 
   <pass_history note="Newest first. Detailed findings are in the linked review docs.">
+    <pass date="2026-07-22" scope="Docs split + punish-rape setting_name fix" status="applied" compile="n/a">
+      <review_doc>README.md / Actions.md / Prompts.md / Code.md / update.md</review_doc>
+      <headline>Y-RapeSettingName: sexlab_punish_rape_target*.yaml setting_name punish_pain_pleasure_rape → punish_pleasure_pain_rape (matches scenes/punish_pleasure_pain_rape.json + Menu.psc). Docs: README end-user guide; Actions.md / Prompts.md / Code.md author-dev guides; update.md changelog since 0.30.5.</headline>
+    </pass>
+    <pass date="2026-07-18" scope="Action YAML practice + parameter audit (all 29 actions vs Actions.psc)" status="applied" compile="clean">
+      <review_doc>reviews/2026-07-18-01.review.md</review_doc>
+      <headline>H1-H5 assault → TargetVictim/SpeakerVictim or Nonconsensual_Two+victim (none_rape); remove speaking_victim; M1/M2 unique names Sexual_Refused / Masturbation_Forced; M3/M4 method + dynamic description; L1-L3 category JSON, stop/outfit names, static intent values; KB action-YAML practice note.</headline>
+    </pass>
+    <pass date="2026-07-17" scope="Scoped post-checkpoint review (files newer than 2026-07-16 10:06) + fix pass H1-H3 M1-M5 L1-L2" status="applied" compile="clean">
+      <review_doc>reviews/2026-07-17-01.review.md</review_doc>
+      <headline>H1 initiator keeps orgasm_narration; H2 AnimationStart re-entrant preserves ACTIVE + orgasm stash; H3 EditDescriptions anim_info != 0 release; M1 description_last; M2 AnimationEnd NPC orgasm DN; M3 OrgasmIndividual " is orgasming."; M4 locked Scene-only style DN; M5 by_target on [speaker]; L1/L2 dead branch/locals.</headline>
+    </pass>
     <pass date="2026-07-16" scope="Deferred-backlog fix pass (M7, hide_help, victim_faction, trace_labels, dom_pr, S11)" status="applied" compile="clean">
       <review_doc>reviews/2026-07-16-03.review.md</review_doc>
       <headline>M7 GetAnim_Info retain + caller-release (Stages, no caching: animation+stage change between calls); hide_help gates EditDescriptions help; victim_faction tracked via retained JArray of forms reconciled in Setup/AlignActors and cleared in Release (Scene); trace-label fixes (Manager 168/217/745, Creator 327/525); dom_pr dead commented Setup removed; S11 furniture natural phrasing. L-E dropped: direction must stay type:dynamic (giving|getting sets speaker-vs-target victim role).</headline>
@@ -97,20 +112,23 @@
     </pass>
   </pass_history>
 
-  <open_backlog note="Deferred / not yet scheduled. No known regressions. M7, hide_help, victim faction, trace labels, DOM PR (Handler_DOM_PR), and S11 were applied in the 2026-07-16 (03) pass.">
+  <open_backlog note="Deferred / not yet scheduled. 2026-07-22 applied Y-RapeSettingName + docs split.">
     <deferred id="M8">orgasm_expected vs description-walk mismatch (confirm per-stage vs per-animation semantics with author before changing).</deferred>
     <deferred id="M9-M16">Remaining: orgasm editor UX polish; OStim affection path (Menu affection branch is a no-op notification under OStim).</deferred>
     <deferred id="S10b">Convert always-on Trace scaffolding to debug_mode-gated DbgMsg (Scene.psc).</deferred>
     <informational id="L-D">Registered-but-unconsumed decorators: Intent (_intent), Player_LOS_Distance (_distance/_los).</informational>
-    <informational id="L-E">punish_* action YAMLs: direction stays type: dynamic with value: giving|getting — intentionally NOT changed to description:, because giving|getting decides the speaker-vs-target victim role and must remain LLM-chosen. Do not re-report.</informational>
+    <informational id="A-StageCase">Animation JSON stage keys are case-sensitive in JContainers; loader uses lowercase "stage N" / "version". Some shipped author files may use "Stage N" — prefer lowercase when editing; bulk re-case of GoodProvider not scheduled.</informational>
+    <resolved id="Y-RapeSettingName">2026-07-22: sexlab_punish_rape_target.yaml and sexlab_punish_rape_target_by_target.yaml setting_name was punish_pain_pleasure_rape; fixed to punish_pleasure_pain_rape to match scenes/punish_pleasure_pain_rape.json and Menu.psc. Do not re-report.</resolved>
+    <resolved id="L-E">Superseded 2026-07-18: fixed-role victim is TargetVictim/SpeakerVictim; LLM direction (e.g. nude spanking) correctly uses dynamic description. Do not re-report value:-for-direction.</resolved>
   </open_backlog>
 
   <current_status>
-    <state>All applied fixes are in source and compile clean via pyro (2026-07-16 03: deferred-backlog pass; pyro exit 0, scripts up to date).</state>
+    <state>2026-07-22: Y-RapeSettingName fixed in action YAMLs; README/Actions/Prompts/Code/update docs updated. Prior Papyrus passes still compile clean via pyro (last user-confirmed: 2026-07-18 01).</state>
     <pending>
-      <item>In-game smoke tests for the 2026-07-16 (03) pass: M7 multi-stage JContainers, hide_help MCM toggle, victim_faction mid-scene departure, S11 furniture _location phrasing. See post_fix_verification in review-execution-plan.xml.</item>
-      <item>In-game smoke tests for the 2026-07-16 (02) pass: multitarget 6-actor selection (N-1), punish/affection sub-menu cancel (N-2/N-3), first setting-file selectable (N-4).</item>
-      <item>In-game smoke tests for the 2026-07-16 (01) pass still outstanding.</item>
+      <item>In-game smoke tests for the 2026-07-18 (01) pass: assault Target/Speaker victim roles, none_rape dynamic victim, unique refused/masturbation names, outfit/stop. See post_fix_verification in review-execution-plan.xml.</item>
+      <item>In-game smoke tests for the 2026-07-17 (01) pass still outstanding.</item>
+      <item>In-game smoke tests for the 2026-07-16 (03)/(02)/(01) passes still outstanding.</item>
+      <item>Smoke-test punish-rape actions load scene punish_pleasure_pain_rape after YAML fix.</item>
       <item>Schedule the deferred backlog above when desired (M8, remaining M9-M16, S10b).</item>
     </pending>
   </current_status>
