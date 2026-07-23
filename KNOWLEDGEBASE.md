@@ -1,5 +1,31 @@
 # Knowledgebase
 
+## SexLab position slots and speaker_position (2026-07-23)
+
+In this mod's sex / punish animations, **position_0 is submissive** and **position_1 is dominant**:
+- position_0 gives oral to position_1; position_1 receives oral from position_0.
+- position_1 fucks into position_0; position_0 is fucked by position_1.
+- Punish scene JSON puts `_pain_` (and whipping `_gagged_`) on index 0.
+
+The **Speaker is always the subject** of LLM-facing sentences. `speaker_position` places the Speaker into that slot:
+- `StartScene_Nonconsensual_Two_TargetVictim` → speaker at **pos1** (target is victim).
+- `StartScene_Nonconsensual_Two_SpeakerVictim` → speaker at **pos0** (speaker is victim).
+- Consensual direction tokens (Speaker as subject): `fucking` / `fuck a` / `fucking a` / service `getting` → pos1; `fucked in` / service `giving` → pos0.
+
+## Intent start/finish mirror (2026-07-23)
+
+`GetIntentMessage(START)` → `"A and B start <intent>."`; `GetIntentMessage(END)` → `"A and B finish <intent>."` (same actors + same static intent phrase). Intent is not always sexual — examples: `sexual activities`, `showing physical affection`, `physically comforting each other`, `physically punishing`, `sexual assault`, `cuddling`. YAML `intent` values must be static phrases that fit both templates.
+
+## Orgasm stash / AnimationEnd pipeline (2026-07-23)
+
+1. `OrgasmCombined` / Combined `OrgasmCustom` stash messages and call `thread.UpdateTimer(4.0)` to extend the current stage.
+2. Next `StageStart` flushes via `OrgasmMessagesToNarration()` into stage narration (no `OnUpdate` flush).
+3. `AnimationEnd`: leftover `OrgasmMessagesToNarration()` → `RegisterEvent` if non-empty → `PurgeDialogue` → `GetIntentMessage(END)` finish mirror (+ SeparateOrgasms afterglow). Do not narrate ongoing activity at end.
+
+## Actor lock key (2026-07-23)
+
+Creator locks with `skyrimnet_sexlab_scene_actor_lock`. Action YAML eligibility and `Main.storage_actor_lock_key` must use the same string (not `skyrimnet_sexlab_actor_lock`).
+
 ## Punish-rape setting_name must match scene file (2026-07-22)
 
 `sexlab_punish_rape_target.yaml` / `sexlab_punish_rape_target_by_target.yaml` must use `setting_name: punish_pleasure_pain_rape` (file `scenes/punish_pleasure_pain_rape.json`). A swapped token order (`punish_pain_pleasure_rape`) fails to load the scene. Hotkey Menu.psc uses the correct name. See review-checkpoint `Y-RapeSettingName`.
