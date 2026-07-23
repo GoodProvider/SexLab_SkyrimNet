@@ -9,6 +9,8 @@ SexLabFramework Property sexlab Auto
 sslThreadSlots Property threadSlots Auto
 sslActorLibrary Property actorLib Auto
 
+Faction Property OStimActorCountFaction = None Auto
+
 ; sl_scene_generic is returned when there are no more sl_scenes available
 ; If a sl_scene is not found, sl_scene_generic is returned
 ; to make sure a description is always possible
@@ -76,6 +78,14 @@ Function Setup()
         Trace("Setup","RebuildScenePool failed, aborting", true)
         return
     endif
+
+    ; Used to check if an actor is controled by OStim
+    if Game.GetModByName("Ostim.esp") != 255
+        OStimActorCountFaction = Game.GetFormFromFile(0xECA, "Ostim.esp") as Faction
+        Trace("Setup","Found Ostim.esp, OStimActorCountFaction set to "+OStimActorCountFaction)
+    else 
+        OStimActorCountFaction = None 
+    endif 
 
     if !cancel 
         cancel = new sslBaseAnimation[1]
@@ -704,9 +714,24 @@ event AnimationEnd(int ThreadID, bool HasPlayer)
     SkyrimNet_SexLab_Scene sl_scene = GetSceneByThreadId(ThreadID, any_state=True)
     if sl_scene == None 
         Trace("AnimationEnd","Scene is None for ThreadID "+ThreadID)
-        return
+    else 
+        sslThreadController[] threads = ThreadSlots.Threads
+        int i = threads.length - 1 
+        bool found = false
+        while 0 <= i && !found
+            String s = (threads[i] as sslThreadModel).GetState()
+            if s == "animating" || s == "prepare"
+                found = true
+            endif 
+            i -= 1
+        endwhile
+        if found
+            main.active_sex = true
+        else 
+            main.active_sex = false
+        endif
+        sl_scene.AnimationEnd() 
     endif
-    sl_scene.AnimationEnd() 
 EndEvent 
 
 ; Function AllowedDeniedOnlyIncrease(Actor[] actors, sslThreadController thread, String status)
@@ -813,7 +838,7 @@ String Function GetThreadsJson(Actor speaker = None)
             speaker = Game.GetPlayer()
         endif 
     else 
-        speaker_last = None
+        speaker_last = speaker
     endif 
 
     if main == None
@@ -823,19 +848,12 @@ String Function GetThreadsJson(Actor speaker = None)
 
     sslThreadController[] threads = ThreadSlots.Threads
 
-    if threads.length == -1 
-        main.active_sex = false 
-        return "{}"
-    endif 
-
     int obj = JMap.object() 
     JMap.setStr(obj, "_counter", thread_counter)
     thread_counter += 1 
 
-
     int threads_array = JArray.object() 
     int i = 0
-    String threads_str = ""
     while i < threads.length
         ; Read-only: do not allocate/Setup scenes while dumping JSON
         SkyrimNet_SexLab_Scene sl_scene = GetSceneByThread(threads[i], False, False)
@@ -846,15 +864,104 @@ String Function GetThreadsJson(Actor speaker = None)
         endif 
         i += 1
     endwhile
+
+    int threads_dom = main.handler_dom.GetThreads()
+    if threads_dom
+        i = JArray.count(threads_dom) - 1
+        while i >= 0
+            int thread = JArray.getObj(threads_dom, i)
+            String description = JMap.getStr(thread, "_description")
+            if description != ""
+                ; Enrich actors for prompts without SetActor StorageUtil / orgasm side effects
+                int actor_objs = JMap.getObj(thread, "_actors")
+                int j = JArray.count(actor_objs) - 1
+                Actor akActor = None
+                bool speaker_in_thread = false
+                while j >= 0
+                    int actor_obj = JArray.getObj(actor_objs, j)
+                    Actor a = JMap.getForm(actor_obj, "_form") as Actor
+                    if a != None
+                        akActor = a
+                        if speaker != None && a == speaker
+                            speaker_in_thread = true
+                        endif
+                        EnrichActorObjForJson(actor_obj, a)
+                    endif
+                    j -= 1
+                endwhile
+
+                float distance = 0.0
+                bool los = false
+                if speaker != None
+                    if speaker_in_thread
+                        distance = 1.0
+                        los = true
+                    elseif akActor != None
+                        distance = 0.0142875 * speaker.GetDistance(akActor)
+                        los = speaker.HasLOS(akActor)
+                    endif
+                endif
+
+                AddStrIfNotDefined(thread, "_location", "floor")
+                AddStrIfNotDefined(thread, "_style", "normal")
+                JMap.setFlt(thread, "_speaker_distance", distance)
+                JMap.setInt(thread, "_speaker_los", los as int)
+                JArray.addObj(threads_array, thread)
+            endif
+            i -= 1
+        endwhile
+    endif
+
     JMap.setObj(obj, "_threads", threads_array) 
 
     String json = JValue.toJsonString(obj) 
     
     Trace("getThreadsJson",json)
     JValue.release(obj) 
+    JValue.release(threads_dom)
     Miscutil.WriteToFile(threads_filename, json, append=False)
     return json
 EndFunction 
+
+; Prompt-safe actor fields for DOM threads. No StorageUtil / SexLab thread mutation.
+Function EnrichActorObjForJson(int actor_obj, Actor akActor)
+    if actor_obj == 0 || akActor == None
+        return
+    endif
+    JMap.setStr(actor_obj, "_uuid", UuidToDecimalString(SkyrimNetApi.GetEntityUUID(akActor)))
+    JMap.setStr(actor_obj, "_formid", akActor.GetFormID())
+    AddStrIfNotDefined(actor_obj, "_name", akActor.GetDisplayName())
+    if !JMap.hasKey(actor_obj, "_victim")
+        JMap.setInt(actor_obj, "_victim", 0)
+    endif
+    if !JMap.hasKey(actor_obj, "_arousal")
+        JMap.setInt(actor_obj, "_arousal", -1)
+    endif
+    if !JMap.hasKey(actor_obj, "_notice_level")
+        JMap.setStr(actor_obj, "_notice_level", "nothing")
+    endif
+    if !JMap.hasKey(actor_obj, "_creature_description")
+        JMap.setStr(actor_obj, "_creature_description", "")
+    endif
+    if !JMap.hasKey(actor_obj, "_is_hermaphrodiate")
+        JMap.setInt(actor_obj, "_is_hermaphrodiate", 0)
+    endif
+    if !JMap.hasKey(actor_obj, "_wearing_strapon")
+        JMap.setInt(actor_obj, "_wearing_strapon", 0)
+    endif
+    if main != None && main.handler_dom.IsDOMSlave(akActor)
+        JMap.setInt(actor_obj, "_dom_slave", 1)
+    else
+        JMap.setInt(actor_obj, "_dom_slave", 0)
+    endif
+EndFunction
+
+Function AddStrIfNotDefined(int obj, String key_, String value)
+    if JMap.hasKey(obj, key_)
+        return
+    endif
+    JMap.setStr(obj, key_, value)
+EndFunction
 
 String Function GetStyleDialog(String msg) global
     String[] buttons = new String[4]
