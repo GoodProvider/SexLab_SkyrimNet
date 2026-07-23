@@ -24,9 +24,13 @@ Bool Function Orgasm_Desired(Actor akActor)
     return false 
 EndFunction
 
+int Function GetThreads()
+    return 0
+EndFunction 
+
 ; ------------------------------------------------------------
 
-Function Start_Masturbate(String intent, Actor speaker, Actor superior, String style="", String position="")
+Function Start_Masturbate(String intent, Actor speaker, Actor superior, String position="")
 EndFunction
 
 Function StartScene_Consensual_Two(String intent, Actor speaker, Actor Superior, Actor target, string style="", string method="", String direction="", String setting_name="")
