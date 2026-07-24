@@ -1,8 +1,10 @@
 <fomod>
-  <!-- this file is generated from fomod-source/info.xml -->
-  <Name></Name>
-  <Version>0.28.4</Version>
-  <Id></Id>
+  <!-- this file is generated from FOMOD_source/info.xml -->
+  <Name>SkyrimNet SexLab</Name>
+  <Version>0.31.0</Version>
+  <Description>Provider SexLab support for SkyrimNet</Description> 
   <Author>Good Provider</Author>
-  <Description/>
+  <Groups>
+        <element>Optional</element>
+  </Groups>
 </fomod>

@@ -1,9 +1,0 @@
-
-{# ----------------------------------------------------- #} 
-{# Instructions                                          #}
-{# ----------------------------------------------------- #} 
-{% if is_narration_enabled() %}
-{{ "## Undress/Dressing Insructions" }}
-- If the character is getting naked, the dailogue must include a description of removing clothing, include no other actions, and a single narration with optional spoken words.
-- If the character is getting dressed, the dailogue must include a description of dressing clothing, include no other actions, and a single narration with optional spoken words.
-{% endif %}

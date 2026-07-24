@@ -55,24 +55,23 @@ include("${CommonLibPath}/cmake/CommonLibSSE.cmake")
 # find_package(CommonLibSSE CONFIG REQUIRED)
 
 # Collect all source files
-file(GLOB_RECURSE SOURCES
-    "plugin.cpp"
+file(GLOB SOURCES
     "src/*.cpp"
+    "include/*.h"
     "version.rc"
 )
 
 # add_library(${PROJECT_NAME} SHARED ${SOURCES})
 add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${SOURCES})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 standard
-# Ensure project root, src/, and include/ are on the include path so files can include headers by name
-target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include)
-target_precompile_headers(${PROJECT_NAME} PRIVATE PCH.h) # <--- PCH.h is required!
+target_precompile_headers(${PROJECT_NAME} PRIVATE src/PCH.h) # <--- PCH.h is required!
 
-# Add include directories
+# include/ for public headers, src/ for PCH, lib/PrismaUI for PrismaUI_API.h
 target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../SkyrimNet/CppAPI
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/PrismaUI
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../SkyrimNet/CppAPI
 )
 
 # Silence Microsoft STL deprecation warnings

@@ -1,0 +1,58 @@
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/Cutleast/FOMOD-Creation-Kit/master/res/schemas/ModConfig5.0.xsd">
+  	<!-- this file is generated from $source -->
+	<moduleName>$name ($version)</moduleName>
+	<moduleImage path="images\sexlab_logo.png"/>
+	<requiredInstallFiles>
+		<folder source="core" destination="" alwaysInstall="true" priority="0"/>
+	</requiredInstallFiles>
+	<installSteps order="Explicit">
+		<installStep name="Optional">
+			<optionalFileGroups order="Explicit">
+				<group name="Select plugins to support" type="SelectAny">
+					<plugins order="Explicit">
+						<plugin name="SkyrimNetUDNG | github.com/naitro2010/SkyrimNet_UDNG">
+							<description> Allows SkyrimNet_SexLab's hotkey to call SkyrimNetUDNG</description>
+							<image path="images\sexlab_logo.png" />
+							<files>
+								<file source="handler_udng\SkyrimNet_SexLab_Handler_UDNG.esp" destination="" alwaysInstall="false" installIfUsable="false" priority="0"/>
+							</files>
+							<typeDescriptor>
+								<dependencyType>
+									<defaultType name="Optional"/>
+									<patterns>
+										<pattern>
+											<dependencies operator="And">
+												<fileDependency file="SkyrimNetUDNG.esp" state="Active"/>
+											</dependencies>
+											<type name="Recommended"/>
+										</pattern>
+									</patterns>
+								</dependencyType>
+							</typeDescriptor>
+						</plugin>
+						<plugin name="SkyrimNet_DOM | github.com/GoodProvider/SkyrimNet_DOM">
+							<description> Bridges SkyrimNet_SexLab and SkyrimNet_DOM</description>
+							<image path="images\sexlab_logo.png" />
+							<files>
+								<file source="handler_dom\SkyrimNet_SexLab_Handler_DOM.esp" destination="" alwaysInstall="false" installIfUsable="false" priority="0"/>
+							</files>
+							<typeDescriptor>
+								<dependencyType>
+									<defaultType name="Optional"/>
+									<patterns>
+										<pattern>
+											<dependencies operator="And">
+												<fileDependency file="SkyrimNet_DOM.esp" state="Active"/>
+											</dependencies>
+											<type name="Recommended"/>
+										</pattern>
+									</patterns>
+								</dependencyType>
+							</typeDescriptor>
+						</plugin>
+					</plugins>
+				</group>
+			</optionalFileGroups>
+		</installStep>
+	</installSteps>
+</config>

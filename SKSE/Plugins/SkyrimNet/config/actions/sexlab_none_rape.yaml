@@ -1,10 +1,13 @@
-name: Rape_Start
-description: "[style] [type] sexual assalt on [victim]"
+name: SexLab_Start_Rape
+description: "[style] [direction] [method] sexual assault on [victim]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
-executionFunctionName: Rape_Start
-defaultPriority: 7
+executionFunctionName: StartScene_Nonconsensual_Two
+defaultPriority: 8
 parameterMapping:
+  - type: static 
+    name: intent
+    value: sexual assault
   - type: speaker
     name: speaker
     description: Speaker Actor parameter (triggering entity)
@@ -12,28 +15,37 @@ parameterMapping:
     name: target
     description: Object Actor (maybe Speaker)
   - type: dynamic
-    name: direction
-    description: giving|getting
+    name: victim
+    description: Object Actor (Target or Speaker)
   - type: dynamic
     name: style
     description: forceful|normal|gentle
   - type: dynamic
-    name: type
-    description: oral|vaginal|anal|masturbation|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob
+    name: method
+    description: ass|pussy|mouth|masturbation|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob
   - type: dynamic
-    name: victim
-    description: (Target or Speaker)
+    name: direction
+    description: giving|getting|fucking a|fucked in
+  - type: static
+    name: setting_name
+    value: ""
 eligibilityRules:
   - conditions:
       - decoratorName: get_global_value
         arguments:
-          - skyrimnet_sexlab_ostim_player
+          - SkyrimNet_SexLab_ostim_player
         comparisonOperator: ==
+        expectedValue: 1
+      - decoratorName: get_faction_rank
+        arguments:
+          - currentActor
+          - SexLabAnimatingFaction
+        comparisonOperator: <
         expectedValue: 1
       - decoratorName: is_in_faction
         arguments:
           - currentActor
-          - SexLabAnimatingFaction
+          - dse_dm_FactionActorUsingDevice
         comparisonOperator: ==
         expectedValue: false
       - decoratorName: is_in_faction
@@ -42,20 +54,17 @@ eligibilityRules:
           - OStimActorCountFaction
         comparisonOperator: ==
         expectedValue: false
-      - decoratorName: is_in_faction
-        arguments:
-          - currentActor
-          - ChildFaction
-        comparisonOperator: ==
-        expectedValue: false
       - decoratorName: is_in_combat
         arguments:
           - currentActor
         comparisonOperator: ==
         expectedValue: false
-      - decoratorName: decnpc
+      - decoratorName: papyrus_util
         arguments:
+          - "HasIntValue"
           - currentActor
+          - "skyrimnet_sexlab_scene_actor_lock"
         comparisonOperator: ==
         expectedValue: false
-        resultPath: isChild
+    logicalOperator: AND
+    required: true

@@ -1,0 +1,26 @@
+customCategory: sexlab_punish
+name: SexLab_Punish_Refused
+description: "[Target] [style] refuse to punish [Speaker] with [method]" 
+questEditorId: SkyrimNet_SexLab
+scriptName: SkyrimNet_SexLab_Actions
+executionFunctionName: StartScene_Refused_Two
+defaultPriority: 6
+parameterMapping:
+  - type: static 
+    name: intent
+    value: punish
+  - type: speaker
+    name: speaker
+    description: "Speaker Actor parameter (triggering entity)"
+  - type: dynamic
+    name: target
+    description: actor
+  - type: dynamic
+    name: style
+    description: "forcefully|normally|gently"
+  - type: dynamic
+    name: method
+    description: "spanking|whipping"
+  - type: static
+    name: direction
+    value: giving

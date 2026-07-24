@@ -1,0 +1,14 @@
+{
+    "Stage 1": {
+        "description": "{{sl.actors.1}}'s right index finger gently touches {{sl.actors.0}}'s face. ",
+        "version": "2.0"
+    },
+    "Stage 2": {
+        "description": "{{sl.actors.1}} holds {{sl.actors.0}}'s chin. {{sl.actors.0}} holds {{sl.actors.1}}.",
+        "version": "2.0"
+    },
+    "Stage 3": {
+        "description": "{{sl.actors.1}} and {{sl.actors.0}}'s hold each other, with heads resting on other's shoulder.",
+        "version": "2.0"
+    }
+}

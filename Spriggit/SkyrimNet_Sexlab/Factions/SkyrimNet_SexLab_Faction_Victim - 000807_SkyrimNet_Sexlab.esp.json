@@ -4,5 +4,10 @@
   "Name": {
     "TargetLanguage": "English",
     "Value": "SkyrimNet_SexLab_Faction_Victim"
-  }
+  },
+  "CrimeValues": {
+    "Arrest": true,
+    "AttackOnSight": true
+  },
+  "VendorValues": {}
 }

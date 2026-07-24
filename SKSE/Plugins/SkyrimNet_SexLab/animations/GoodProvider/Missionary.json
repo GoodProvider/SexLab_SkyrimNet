@@ -1,0 +1,14 @@
+{
+    "Stage 1": {
+        "description": "{{sl.actors.0}} lays on back left arm holding left leg wide open. {{sl.actors.1}} thrusts deep between {{sl.actors.0}}'s wide legs with one arm holding open {{sl.actors.0}}'s leg and the other holding down {{sl.actors.0}}'s arm. ",
+        "version": "2.0"
+    },
+    "Stage 3": {
+        "description": "{{sl.actors.1}} increases the pace and force. {{sl.actors.0}} lays on back left arm holding left leg wide open. {{sl.actors.1}} thrusts deep between {{sl.actors.0}}'s wide legs with one arm holding open {{sl.actors.0}}'s leg and the other holding down {{sl.actors.0}}'s arm. ",
+        "version": "2.0"
+    },
+    "Stage 4": {
+        "description": "{{sl.actors.1}} slows and {{sl.actors.0}} shakes head. {{sl.actors.0}} lays on back left arm holding left leg wide open. {{sl.actors.1}} thrusts deep between {{sl.actors.0}}'s wide legs with one arm holding open {{sl.actors.0}}'s leg and the other holding down {{sl.actors.0}}'s arm. ",
+        "version": "2.0"
+    }
+}

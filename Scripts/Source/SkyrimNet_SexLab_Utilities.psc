@@ -1,18 +1,112 @@
 Scriptname SkyrimNet_SexLab_Utilities
 
-; ------------------------------------------------------------
-; Trace for Utilities
-; ------------------------------------------------------------
-
 Function Trace(String func, String msg, Bool notification=False) global
-
-    ;msg = GetTimeStamp()+" [SkyrimNet_SexLab_Utilities."+func+"] "+msg
     msg = "[SkyrimNet_SexLab_Utilities."+func+"] "+msg
     Debug.Trace(msg)
     if notification
         Debug.Notification(msg)
     endif 
 EndFunction
+
+String Function GetDisplayName(Actor akActor) global
+    if akActor == None 
+        return "none"
+    endif 
+    return akActor.GetDisplayName()
+EndFunction 
+
+String Function IntToHex(int value) global
+    if value == 0
+        return "0"
+    endif
+    String s = ""
+    while value > 0
+        int nibble = Math.LogicalAnd(value, 0xF)
+        s = StringUtil.GetNthChar("0123456789abcdef", nibble) + s
+        value = Math.RightShift(value, 4)
+    endwhile
+    return s
+EndFunction
+
+int Function HexCharToInt(String c) global
+    int i = StringUtil.Find("0123456789abcdef", c)
+    if i < 0
+        i = StringUtil.Find("0123456789ABCDEF", c)
+    endif
+    return i
+EndFunction
+
+String Function DecimalStringMultiplyAdd(String decimal, int multiplier, int addend) global
+    int carry = addend
+    String result = ""
+    int i = StringUtil.GetLength(decimal) - 1
+    while i >= 0
+        int digit = StringUtil.AsOrd(StringUtil.GetNthChar(decimal, i)) - 48
+        int value = digit * multiplier + carry
+        result = StringUtil.GetNthChar("0123456789", value % 10) + result
+        carry = value / 10
+        i -= 1
+    endwhile
+    while carry > 0
+        result = StringUtil.GetNthChar("0123456789", carry % 10) + result
+        carry = carry / 10
+    endwhile
+    if result == ""
+        return "0"
+    endif
+    return result
+EndFunction
+
+String Function HexToDecimalString(String hex) global
+    if hex == ""
+        return ""
+    endif
+    if StringUtil.GetLength(hex) >= 2
+        String prefix = StringUtil.Substring(hex, 0, 2)
+        if prefix == "0x" || prefix == "0X"
+            hex = StringUtil.Substring(hex, 2, StringUtil.GetLength(hex) - 2)
+        endif
+    endif
+    String result = "0"
+    int i = 0
+    int len = StringUtil.GetLength(hex)
+    while i < len
+        int digit = HexCharToInt(StringUtil.GetNthChar(hex, i))
+        if digit >= 0
+            result = DecimalStringMultiplyAdd(result, 16, digit)
+        endif
+        i += 1
+    endwhile
+    return result
+EndFunction
+
+bool Function IsHexUuid(String entityUuid) global
+    int i = 0
+    while i < StringUtil.GetLength(entityUuid)
+        int o = StringUtil.AsOrd(StringUtil.GetNthChar(entityUuid, i))
+        if (o >= 65 && o <= 70) || (o >= 97 && o <= 102)
+            return true
+        endif
+        i += 1
+    endwhile
+    return false
+EndFunction
+
+String Function UuidToDecimalString(String entityUuid) global
+    if entityUuid == ""
+        return ""
+    endif
+    if IsHexUuid(entityUuid)
+        return HexToDecimalString(entityUuid)
+    endif
+    return entityUuid
+EndFunction
+
+
+; ------------------------------------------------------------
+; Timestamps
+; A reasonable timestamp is acceptable. 
+; ------------------------------------------------------------
 String Function GetTimestamp() global
     int ts = Utility.GetCurrentRealTime() as int
 
@@ -89,62 +183,105 @@ EndFunction
 ; ------------------------------------------------------------
 ; Combines Actors or Strings into natural language list 
 ; will make a natural sentence with comma and 'and' 
-; filter is an int[] array 0 - false and 1 - true
+; mask is an int[] array 0 - false and 1 - true
 ; ------------------------------------------------------------
-String Function JoinActors(ACtor[] actors, String noun = "") global 
-    int[] filter = Utility.CreateIntArray(actors.length, 1)
-    return JoinActorsFiltered(actors,filter,noun,True)
-EndFunction 
-
-String Function JoinActorsFiltered(Actor[] actors, int[] filter,  String Noun = "", Bool ignore_filter=False) global 
-    String[] strings = Utility.CreateStringArray(actors.length) 
-    int i = actors.length - 1 
-    while 0 <= i 
-        if actors[i] == None 
-            strings[i] = "None"
-        else
-            strings[i] = actors[i].GetDisplayName() 
-        endif 
-        i -= 1 
-    endwhile 
-    ;Trace("JoinActorsFiltered",strings)
-    if ignore_filter
-        return JoinStrings(strings, noun)
-    else
-        return JoinStringsFiltered(strings, filter, noun)
+String Function JoinActors(Actor[] actors, int num_actors=-1) global 
+    if !actors 
+        return "none"
     endif 
+    if num_actors < 0 
+        num_actors = actors.length
+    endif 
+    int i = 0
+    string joined = "" 
+    while i < num_actors 
+        String name = "none"
+        if actors[i] != None 
+            name = actors[i].GetDisplayName() 
+        endif 
+
+        if joined != "" 
+            if num_actors > 2
+                joined += ", "
+            endif
+            if i == num_actors - 1 
+                joined += " and "
+            endif
+        endif
+        joined += name
+        i += 1  
+    endwhile 
+    return joined
 EndFunction 
 
-String Function JoinStrings(String[] strings, bool add_is_are=False) global 
-    int[] filter = Utility.CreateIntArray(strings.length, 1)
+String Function JoinActorsMasked(Actor[] actors, int[] mask, int num_actors = -1) global 
+    if !actors 
+        return "none"
+    endif 
+
+    if num_actors < 0 
+        num_actors = actors.length
+    endif 
+    int i = 0
+    string joined = "" 
+    while i < num_actors 
+        if mask[i] == 1 
+            String name = "none"
+            if actors[i] != None 
+                name = actors[i].GetDisplayName() 
+            endif 
+
+            if joined != "" 
+                if num_actors > 2
+                    joined += ", "
+                endif
+                if i == num_actors - 1 
+                    joined += " and "
+                endif
+            endif
+            joined += name
+        endif 
+        i += 1  
+    endwhile 
+    return joined
+EndFunction 
+
+String Function JoinNouns(String[] strings, int num_nouns = -1, bool add_is_are=false) global 
+    if !strings 
+        return "none"
+    endif 
+    int[] mask = Utility.CreateIntArray(strings.length, 1)
 
     int total = strings.length 
     int i = 0
-    int count = strings.length
+    if num_nouns < 0 
+        num_nouns = strings.length 
+    endif 
     string joined = "" 
-    while i < count 
+    while i < num_nouns 
         if joined != "" 
             if total > 2
                 joined += ", "
             endif
-            if i == count - 1 
+            if i == num_nouns - 1 
                 joined += " and "
             endif
         endif
         joined += strings[i]
         i += 1  
     endwhile 
-    joined = JoinIsAre(joined, total, add_is_are) 
-    ;Trace("JoinStrings","strings: "+strings+" add_is_are: "+add_is_are+" joined: "+joined)
-    return joined
+    return JoinIsAre(joined, total, add_is_are) 
 EndFunction 
 
-String Function JoinStringsFiltered(String[] strings, int[] filter, Bool add_is_are = false) global 
+String Function JoinNounsMasked(String[] strings, int[] mask, int num_strings = -1, bool add_is_are = false) global 
+    if !strings 
+        return "none"
+    endif 
     int total = 0
     int i = 0
     int count = strings.length
     while i < count 
-        if filter[i] == 1
+        if mask[i] == 1
             total += 1 
         endif 
         i += 1
@@ -154,7 +291,7 @@ String Function JoinStringsFiltered(String[] strings, int[] filter, Bool add_is_
     int j = 0
     string joined = "" 
     while i < count
-        if filter[i] == 1
+        if mask[i] == 1
             if j > 0
                 if total > 2
                     joined += ", "
@@ -171,7 +308,6 @@ String Function JoinStringsFiltered(String[] strings, int[] filter, Bool add_is_
         i += 1 
     endwhile 
     joined = JoinIsAre(joined, total, add_is_are) 
-    ;Trace("JoinStringsfilter","strings: "+strings+" filter: "+filter+" add_is_are: "+add_is_are+" total: "+total+" joined: "+joined)
     return joined
 EndFunction
 
@@ -186,28 +322,159 @@ String Function JoinIsAre(String joined, int total, bool add_is_are) global
     return joined 
 EndFunction 
 
-String Function JoinStringToArray(String[] strings, int[] filter) global 
-    String array = "" 
-    int i = strings.length - 1 
-    while 0 <= i 
-        if filter[i] == 1
-            if array != "" 
-                array += ", "
-            endif 
-            array += "\""+strings[i]+"\""
+String Function JoinStringsToJson(String[] strings, int num_strings=-1) global 
+    if !strings 
+        return "none"
+    endif 
+    if num_strings == -1 
+        num_strings = strings.length 
+    endif 
+    String json = "" 
+    int i = 0
+    while i < num_strings 
+        if json != "" 
+            json += ", "
         endif 
-        i -= 1
+        json += "\""+strings[i]+"\""
+        i += 1
     endwhile
-    array = "["+array+"]"
-    ;Trace("JoinStringToArray","strings:"+strings+" filter: "+filter+" array: "+array)
-    return array
+    json = "["+json+"]"
+    return json
+EndFunction 
+
+String Function JoinStringsToJsonMasked(String[] strings, int[] mask=None, int num_strings=-1) global 
+    if !strings 
+        return "none"
+    endif 
+    if num_strings == -1 
+        num_strings = strings.length 
+    endif 
+    String json = "" 
+    int i = 0
+    while i < num_strings 
+        if mask == None || mask[i] == 1
+            if json != "" 
+                json += ", "
+            endif 
+            json += "\""+strings[i]+"\""
+        endif 
+        i += 1
+    endwhile
+    json = "["+json+"]"
+    return json
+EndFunction 
+
+String Function JoinActorsToJson(Actor[] actors, int num_actors=-1) global
+    if !actors 
+        return "none"
+    endif 
+    if num_actors == -1 
+        num_actors = actors.length 
+    endif 
+    String json = ""
+    int i = 0
+    while i < num_actors 
+        if json != ""
+            json += ", "
+        endif 
+        String name = "none" 
+        if actors[i] != None 
+            name = actors[i].GetDisplayName()
+        endif
+        json += "\""+name+"\""
+        i += 1
+    endwhile 
+    return "["+json+"]"
+EndFunction 
+
+String Function JoinActorsToJsonMasked(Actor[] actors, int[] mask, int num_actors=-1) global
+    if !actors 
+        return "none"
+    endif 
+    if num_actors == -1 
+        num_actors = actors.length 
+    endif 
+    String json = ""
+    int i = 0
+    while i < num_actors 
+        if mask[i] == 1 
+            if json != ""
+                json += ","
+            endif 
+
+            String name = "none" 
+            if actors[i] != None 
+                name = actors[i].GetDisplayName()
+            endif
+            json += "\""+name+"\""
+        endif 
+        i += 1
+    endwhile 
+    return "["+json+"]"
+EndFunction 
+
+String Function JoinStrings(String[] strings, int num_strings=-1) global
+    if !strings 
+        return "none"
+    endif 
+    int i = 0 
+    if num_strings < 0
+        num_strings = strings.length 
+    endif 
+    string joined = ""
+    while i < num_strings 
+        if joined != ""
+            joined += "," 
+        endif 
+        joined += strings[i]
+        i += 1 
+    endwhile 
+    return joined 
+EndFunction 
+
+String Function JoinIntsToJson(int[] ints, int num_ints=-1) global 
+    if !ints 
+        return "none"
+    endif 
+    if num_ints == -1 
+        num_ints = ints.length 
+    endif 
+    String json = "" 
+    int i = 0
+    while i < num_ints 
+        if json != "" 
+            json += ", "
+        endif 
+        json += ints[i]
+        i += 1
+    endwhile
+    json = "["+json+"]"
+    return json
+EndFunction 
+
+String Function JoinJArrayStrToJson(int array) global 
+    if array < 1
+        return "none"
+    endif 
+    int num_strings = JArray.count(array)
+    int i = 0
+    String json = ""
+    while i < num_strings 
+        if json != "" 
+            json += ", "
+        endif 
+        json += "\""+JArray.getStr(array, i)+"\""
+        i += 1
+    endwhile
+    json = "["+json+"]"
+    return json
 EndFunction 
 
 ; ------------------------------------------------------------
 ; Narration Wrappers 
 ; ------------------------------------------------------------
 
-Function ContinueActivity(Actor source=None, Actor target=None, bool optional=False) global 
+Function ContinueActivity(Actor source=None, Actor target=None, bool optional_is_dropped=False) global 
     String msg = ""
     If source != None 
         if target != None 
@@ -216,18 +483,19 @@ Function ContinueActivity(Actor source=None, Actor target=None, bool optional=Fa
             msg = "continue activity that includes "+source.GetDisplayName()
         endif 
     else 
-            msg = "continue activity"
+        msg = "continue activity"
     endif
-    DirectNarration_Optional("continue activity", msg, source, target, optional)
+    DirectNarration_Optional("continue activity", msg, source, target, optional_is_dropped)
 EndFunction 
 
-Function DirectNarration_Optional(String event_type, String msg, Actor source=None, Actor target=None, bool optional=False) global
-;    msg = CheckDuplicate("DirectNarration_Optional", source, msg)
-
+Bool Function NarrationCoolOffAllows(Actor source, Actor target) global
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
+    if main == None 
+        return False 
+    endif 
 
-    float unit_meter = 0.01465
-    float distance = (unit_meter*main.direct_narration_max_distance) + 1 
+    float unit_meter = 0.0142875
+    float distance = 0
     if source != None 
         Actor player = Game.GetPlayer()
         if player == source 
@@ -237,22 +505,36 @@ Function DirectNarration_Optional(String event_type, String msg, Actor source=No
         endif 
     endif 
 
-    String type = "" 
     int queue_size = SkyrimNetAPI.GetSpeechQueueSize()
-    int last_audio = SkyrimNetAPI.GetTimeSinceLastAudioEnded()/1000 ; in seconds
+    int last_audio = SkyrimNetAPI.GetTimeSinceLastAudioEnded()/1000 
     float time_current = Utility.GetCurrentRealTime() 
     float time_delta = time_current - main.direct_narration_last_time 
-    if time_delta > main.direct_narration_cool_off && queue_size == 0 && (last_audio >= main.direct_narration_cool_off && distance <= main.direct_narration_max_distance)
+    return time_delta > main.direct_narration_cool_off && queue_size == 0 && (last_audio >= main.direct_narration_cool_off && distance <= main.direct_narration_max_distance)
+EndFunction
+
+bool Function DirectNarration_Optional(String event_type, String msg, Actor source=None, Actor target=None, bool optional_is_dropped=False) global
+    msg = CheckDuplicate("DirectNarration_Optional", source, msg, False, target)
+    if msg == ""
+        return false 
+    endif 
+
+    SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
+    if main == None
+        Trace("DirectNarration_Optional","main is None, aborting")
+        return false
+    endif
+
+    String type = "" 
+    if NarrationCoolOffAllows(source, target)
         SkyrimNetApi.DirectNarration(msg, source, target)
-        main.direct_narration_last_time = time_current
-        ;SkyrimNetApi.RegisterEvent(event_type, msg, source, target)
+        main.direct_narration_last_time = Utility.GetCurrentRealTime() 
         type = "direct"
     else 
-        if !optional && msg != ""
+        if optional_is_dropped || msg == ""
+            type = "dropped"
+        else
             SkyrimNetApi.RegisterEvent(event_type, msg, source, target)
             type = "event"
-        else 
-            type = "skipped"
         endif 
     endif 
 
@@ -262,16 +544,26 @@ Function DirectNarration_Optional(String event_type, String msg, Actor source=No
     if target != None 
         msg += " target:"+target.GetDisplayName()
     endif
-    Trace("DirectNarration_Optional","type:"+type+" narration_delta:"+time_delta+" queue_size:"+queue_size+" last_audio_secs:"+last_audio+">?"+main.direct_narration_cool_off+" distance:"+distance+"<?"+main.direct_narration_max_distance+" msg:"+msg)
+    Trace("DirectNarration_Optional","type:"+type+" msg:"+msg)
+    return type != "dropped"
 EndFunction
 
-Function DirectNarration(String msg, Actor source=None, Actor target=None) global
+Function DirectNarration(String msg, Actor source=None, Actor target=None, bool purge_dialogue=False) global
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
-    ; msg = CheckDuplicate("DirectNarration", source, msg)
+    if main == None
+        Trace("DirectNarration","main is None, aborting")
+        return
+    endif 
+    msg = CheckDuplicate("DirectNarration", source, msg, False, target)
+    if msg == ""
+        return 
+    endif 
 
+    if purge_dialogue
+          SkyrimNetApi.PurgeDialogue(True)
+    endif 
     SkyrimNetApi.DirectNarration(msg, source, target)
     main.direct_narration_last_time = Utility.GetCurrentRealTime() 
-    ;SkyrimNetApi.RegisterEvent("sexlab_event", msg, source, target)
     if source != None 
         msg += " source:"+source.GetDisplayName()
     endif 
@@ -283,34 +575,167 @@ EndFunction
 
 
 Function RegisterEvent(String event_name, String msg, Actor source=None, Actor target=None) global
-    if msg != "" 
-        msg = CheckDuplicate("RegisterEvent", source, msg)
-
-        SkyrimNetApi.RegisterEvent(event_name, msg, source, target)
-
-        ; Sets up the log message
-        if source != None 
-            msg += " source:"+source.GetDisplayName()
-        endif 
-        if target != None 
-            msg += " target:"+target.GetDisplayName()
-        endif
-        Trace("RegisterEvent", "event_name:"+event_name+" msg:"+msg)
+    if msg == ""
+        return 
     endif 
+    msg = CheckDuplicate("RegisterEvent", source, msg, False, target)
+    if msg == ""
+        return 
+    endif 
+    SkyrimNetApi.RegisterEvent(event_name, msg, source, target)
+
+    if source != None 
+        msg += " source:"+source.GetDisplayName()
+    endif 
+    if target != None 
+        msg += " target:"+target.GetDisplayName()
+    endif
+    Trace("RegisterEvent", "event_name:"+event_name+" msg:"+msg)
 EndFunction
 
-String Function CheckDuplicate(String func, Actor source, String msg) global
+String Function CheckDuplicate(String func, Actor source, String msg, Bool allow_continue_fallback=True, Actor target=None) global
     if msg == ""
         return msg
     endif 
+    if source == None && target == None 
+        return "" 
+    endif 
+
+    Actor storage_actor = source 
+    if storage_actor == None 
+        storage_actor = Game.GetPlayer() 
+    endif 
+
     String storage_key = "sexlab_narration_last_msg"
-    String old = StorageUtil.GetStringValue(source, storage_key, "")
-    Bool old_equals_new = old == msg
+    String old = StorageUtil.GetStringValue(storage_actor, storage_key, "")
     if old == msg
-        Trace(func+".CheckDuplicate", "changing duplicate `"+msg+"' to ''")
+        Trace(func+".CheckDuplicate", "changing duplicate \""+msg+"\" to \"\"")
+        if allow_continue_fallback && NarrationCoolOffAllows(source, target)
+            ContinueActivity(source, target, True)
+        endif 
         return "" 
     else 
-        StorageUtil.SetStringValue(source, storage_key, msg)
+        StorageUtil.SetStringValue(storage_actor, storage_key, msg)
         return msg
     endif
+EndFunction
+
+String Function JsonBool(bool value) global
+    if value 
+        return ":true"
+    endif 
+    return ":false"
+EndFunction
+
+; ------------------------------------------------------------
+; Ensure Functions 
+; ------------------------------------------------------------
+int[] Function EnsureIntsLargeEnough(int[] ints, int total, int default=0) global 
+    if !ints 
+        return Utility.CreateIntArray(total, default) 
+    endif 
+    if total <= ints.length
+        return ints 
+    endif 
+
+    int[] _ints = Utility.CreateIntArray(total + 10,default) 
+    int i = 0 
+    int count = ints.length 
+    while i < count 
+        _ints[i] = ints[i]
+        i += 1 
+    endwhile 
+
+    return _ints 
+EndFunction 
+
+String[] Function EnsureStringsLargeEnough(String[] strings, int num_strings, String default="") global 
+    if !strings 
+        return Utility.CreateStringArray(num_strings,default) 
+    endif 
+    if num_strings <= strings.length
+        return strings 
+    endif 
+
+    String[] _strings = Utility.CreateStringArray(num_strings + 10,default) 
+    int i = 0 
+    int count = strings.length 
+    while i < count 
+        _strings[i] = strings[i]
+        i += 1 
+    endwhile 
+
+    return _strings 
+EndFunction 
+
+Actor[] Function EnsureActorsLargeEnough(Actor[] actors_current, int total) global 
+    if !actors_current
+        return PapyrusUtil.ActorArray(total) 
+    endif 
+    if total <= actors_current.length
+        return actors_current 
+    endif 
+
+    Actor[] _actors = PapyrusUtil.ActorArray(total + 10) 
+    int i = 0 
+    int count = actors_current.length 
+    while i < count 
+        _actors[i] = actors_current[i]
+        i += 1 
+    endwhile 
+
+    return _actors 
+EndFunction 
+
+String Function ReplaceWord(String asSource, String asToFind, String asReplacement) global
+    If asSource == "" || asToFind == ""
+        Return asSource
+    EndIf
+
+    int iTargetLen = StringUtil.GetLength(asToFind)
+    int iPos = StringUtil.Find(asSource, asToFind)
+    
+    While iPos >= 0
+        bool bIsWordMatch = false
+        int iSourceLen = StringUtil.GetLength(asSource)
+        
+        If iSourceLen == iTargetLen
+            bIsWordMatch = true
+            
+        ElseIf iPos == 0
+            If StringUtil.Substring(asSource, iTargetLen, 1) == " "
+                bIsWordMatch = true
+            EndIf
+            
+        ElseIf iPos == (iSourceLen - iTargetLen)
+            If StringUtil.Substring(asSource, iPos - 1, 1) == " "
+                bIsWordMatch = true
+            EndIf
+            
+        Else
+            If StringUtil.Substring(asSource, iPos - 1, 1) == " " && StringUtil.Substring(asSource, iPos + iTargetLen, 1) == " "
+                bIsWordMatch = true
+            EndIf
+        EndIf
+        
+        If bIsWordMatch
+            String sBefore = ""
+            If iPos > 0
+                sBefore = StringUtil.Substring(asSource, 0, iPos)
+            EndIf
+            
+            String sAfter = ""
+            If (iPos + iTargetLen) < iSourceLen
+                sAfter = StringUtil.Substring(asSource, iPos + iTargetLen, 0)
+            EndIf
+            
+            asSource = sBefore + asReplacement + sAfter
+            
+            iPos = StringUtil.Find(asSource, asToFind, iPos + StringUtil.GetLength(asReplacement))
+        Else
+            iPos = StringUtil.Find(asSource, asToFind, iPos + 1)
+        EndIf
+    EndWhile
+    
+    Return asSource
 EndFunction

@@ -1,4 +1,5 @@
 scriptname SkyrimNet_SexLab_Creatures 
+
 ; This is a helper function used to find all the race form ids and store them into a JSON file 
 
 
@@ -19,6 +20,10 @@ Function Store_Races() global
     Int actorBaseType = 43
 
     Form[] forms = PO3_SKSEFunctions.GetAllFormsInMod(asModName = creaturesum_esp, aiFormtype = actorBaseType)
+    if forms == None 
+        Trace("Store_Races", "forms is None, aborting") 
+        return 
+    endif 
     int i = forms.length - 1 
     int races = JMap.object()
     while 0 <= i
@@ -30,11 +35,12 @@ Function Store_Races() global
             int info = JMap.object() 
             JMap.setStr(info, "name", race_name) 
             JMap.setForm(info, "form", r)
-            JMap.setObj(races,race_name,info) 
+            JMap.setObj(races,race_name,info)  ; adding the race to the higher level to be saved with it later
         endif 
         i -= 1 
     endwhile
     String filename = "Data/SKSE/Plugins/SkyrimNet_SexLab/name_race.json"
     Trace("SkyrimNet_SexLab_Creatures","forms count: "+JMap.count(races)+" writing "+filename)
     JValue.writeToFile(races, filename) 
+    JValue.release(races) 
 EndFunction

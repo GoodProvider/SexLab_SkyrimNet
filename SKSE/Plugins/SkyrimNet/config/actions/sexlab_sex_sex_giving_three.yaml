@@ -1,0 +1,32 @@
+customCategory: sexlab_sex
+name: SexLab_Start_Giving_Three
+description: "Consensual [style] [direction] [method] with [Target] and [participate]"
+questEditorId: SkyrimNet_SexLab
+scriptName: SkyrimNet_SexLab_Actions
+executionFunctionName: StartScene_Consensual_Three
+defaultPriority: 7
+parameterMapping:
+  - type: static 
+    name: intent 
+    value: sexual activities
+  - type: speaker
+    name: speaker
+    description: Speaker Actor parameter (triggering entity)
+  - type: dynamic
+    name: target
+    description: consenting actor
+  - type: dynamic
+    name: style
+    description: forceful|normal|gentle
+  - type: dynamic 
+    name: direction 
+    description: giving|getting
+  - type: dynamic
+    name: method
+    description: oral|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob
+  - type: static 
+    name: setting_name
+    value: ""
+  - type: dynamic
+    name: participate
+    description: third participating actor 

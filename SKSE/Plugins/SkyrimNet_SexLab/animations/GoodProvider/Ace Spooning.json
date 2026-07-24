@@ -1,0 +1,14 @@
+{
+    "Stage 1": {
+        "description": "{{sl.actors.0}} lays on side, looking over shoulder at {{sl.actors.1}}. {{sl.actors.1}} is raised on one arm, the other arm hugs {{sl.actors.0}}, and looks into {{sl.actors.0}}'s eyes. ",
+        "version": "2.0"
+    },
+    "Stage 2": {
+        "description": "{{sl.actors.0}} lays on side with eyes closed, head turned towards {{sl.actors.1}}. {{sl.actors.1}} is raised on one arm, the other arm hugs {{sl.actors.0}}, and kisses {{sl.actors.0}}'s. ",
+        "version": "2.0"
+    },
+    "Stage 3": {
+        "description": "{{sl.actors.0}} lays on side with eyes closed and head resting on {{sl.actors.1}}'s arm. {{sl.actors.1}} is raised on one arm, the other arm hugs {{sl.actors.0}}, and head resting on {{sl.actors.0}}'s shoulder. ",
+        "version": "2.0"
+    }
+}

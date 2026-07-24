@@ -10,6 +10,15 @@ SKSE/Plugins/SkyrimNet/prompts/submodules/user_final_instructions/0049_sexlab_ac
 main.py 
 SexLab
 PapyrusSourcesDD
-SKSE_Source/build 
-SKSE/Plugins/SkyrimNet_SexLab.dll
-extern
+Headers
+handler_udng
+handler_dom
+handler_ostimnet
+z-ignored
+
+# SKSE plugin CMake / MSBuild artifacts
+SKSE_Source/build/
+SKSE_Source/install/
+SKSE_Source/.vs/
+SKSE_Source/compile_commands.json
+SKSE_Source/CMakeUserPresets.json

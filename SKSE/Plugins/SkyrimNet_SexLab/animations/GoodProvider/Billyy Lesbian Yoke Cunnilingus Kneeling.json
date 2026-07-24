@@ -3,16 +3,23 @@
         0,
         1
     ],
-    "Stage 1": {
-        "description": "{{sl.actors.1}} gets oral sex from and whips the ass of {{sl.actors.0}}. {{sl.actors.0}} kneels between {{sl.actors.1}}'s legs and has arms locked into a yoke.",
+    "stage 1": {
+        "description": "{{sl.actors.0}} kneels between {{sl.actors.1}} legs with arms bound behind back and gives oral sex. {{sl.actors.1}} is lightly whipping {{sl.actors.0}}'s ass. {{sl.actors.0}}'s mouth is busy and can not speak.",
         "version": "2.0"
     },
-    "Stage 2": {
-        "description": "{{sl.actors.1}} gets oral sex from, rubbing {{sl.actors.0}}'s head, and whips the ass of {{sl.actors.0}}. {{sl.actors.0}} kneels between {{sl.actors.1}}'s legs and has arms locked into a yoke.",
+    "stage 2": {
+        "description": "{{sl.actors.0}} kneels between {{sl.actors.1}} legs with arms bound behind back and gives oral sex. {{sl.actors.1}} controls {{sl.actors.0}}'s head with one hand and increases the strength of {{sl.actors.0}}'s ass whipping. {{sl.actors.0}}'s mouth is busy and can not speak.",
         "version": "2.0"
     },
-    "orgasm_denied": [
-        1,
-        0
-    ]
+    "stage 3": {
+        "description": "{{sl.actors.0}} kneels between {{sl.actors.1}} legs with arms bound behind back and gives oral sex. {{sl.actors.1}}'s hand in {{sl.actors.0}}'s hair rocks it to the rhythm of each thrust, while thrusting deeper into {{sl.actors.0}}'s throat, and increasing the speed of of {{sl.actors.0}}'s ass whipping. {{sl.actors.0}} struggles to breath between thrusts. {{sl.actors.0}}'s mouth is busy and can not speak.", 
+        "version": "2.0"
+    },
+    "stage 4": {
+        "description": "{{sl.actors.0}} kneels between {{sl.actors.1}} legs with arms bound behind back and gives oral sex. {{sl.actors.1}}'s hand in {{sl.actors.0}}'s hair rocks it to the rhythm of each thrust, while thrusting deeper into {{sl.actors.0}}'s throat, and increasing the speed and strength of {{sl.actors.0}}'s ass whipping. {{sl.actors.1}} puts a leg over {{sl.actors.0}}'s shoulder pulling them in. {{sl.actors.0}}'s mind awash in pain. {{sl.actors.0}} can't breath between thrusts. {{sl.actors.0}}'s mouth is busy and can not speak.", 
+        "version": "2.0"
+    },
+    "stage 5": {
+        "description": "{{sl.actors.0}} kneels between {{sl.actors.1}} legs with arms bound behind back and gives oral sex. {{sl.actors.1}} shutters in orgasm with both hands in {{sl.actors.0}}'s hair. {{sl.actors.0}} can't breath and begins to faint, but the whipping has stopped. {{sl.actors.0}}'s mouth is busy and can not speak.", "version": "2.0"
+    }
 }

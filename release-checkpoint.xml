@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  release-checkpoint.xml — cold-start context for release documentation of SkyrimNet_SexLab.
+
+  Purpose: feed this file together with release-guide.xml to a fresh agent so it can
+  continue release-doc alignment without rediscovering the ground rules.
+
+  Design: durable release-doc state only. Per-change detail lives in CHANGELOG.md.
+-->
+<checkpoint>
+  <metadata>
+    <project>SkyrimNet_SexLab</project>
+    <summary>Bridge mod between SkyrimNet (LLM) and SexLab Framework.</summary>
+    <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
+    <updated>2026-07-23</updated>
+    <base_tag>0.30.5</base_tag>
+    <version_status>info.json / fomod still report 0.30.5; version bump and git tag are pending</version_status>
+    <related_artifacts>
+      <artifact role="release rules / persona">release-guide.xml</artifact>
+      <artifact role="changelog since last tag">CHANGELOG.md</artifact>
+      <artifact role="end-user guide">README.md</artifact>
+      <artifact role="action authoring">Actions.md</artifact>
+      <artifact role="prompt authoring">Prompts.md</artifact>
+      <artifact role="developer guide">Code.md</artifact>
+    </related_artifacts>
+  </metadata>
+
+  <doc_files>
+    <file>README.md</file>
+    <file>CHANGELOG.md</file>
+    <file>Prompts.md</file>
+    <file>Actions.md</file>
+    <file>Code.md</file>
+    <file>release-checkpoint.xml</file>
+    <file>release-guide.xml</file>
+  </doc_files>
+
+  <status>
+    <note>Docs aligned to working tree + commits since tag 0.30.5 (2026-07-23).</note>
+    <note>update.md removed; CHANGELOG.md is the authoritative changelog.</note>
+    <note>Open: bump version strings, package, tag when ready to ship.</note>
+  </status>
+
+  <conventions>
+    <convention>Speaking modifiers and external JSON keys use underscore protocol (_pain_, _speaking_modifiers, …).</convention>
+    <convention>Punish scene files use punish_* names (not punishing_*).</convention>
+    <convention>Actor lock StorageUtil key: skyrimnet_sexlab_scene_actor_lock.</convention>
+    <convention>Orgasm narration gate substring: " is orgasming."</convention>
+  </conventions>
+</checkpoint>

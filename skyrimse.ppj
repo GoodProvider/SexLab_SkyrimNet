@@ -13,10 +13,16 @@
         <!-- The folder where you store all of your mods -->
         <Variable Name="ModsFolder" Value="C:\Skyrim\dev\mods" />
     </Variables>
+
     <Imports>
-        <Import>.\Scripts\Source</Import>
-        <Import>.\Scripts\Source</Import>
-        <Import>.\Headers</Import>
+        <Import>Scripts\Source</Import>
+        <Import>Scripts\Source</Import>
+        <Import>.\Headers_Source</Import>
+        <Import>.\Headers_Source\OstimNet</Import>
+        <Import>.\Headers_Source\Ostim</Import>
+        <Import>@ModsFolder\SkyrimNet_DOM\scripts\Source</Import>
+            <Import>@ModsFolder\SkyrimNet_DOM\Headers_Source\DOM</Import>
+
         <Import>@ModsFolder\SKSE64\Scripts\Source</Import>
         <Import>@ModsFolder\SkyrimNet\Source\Scripts</Import>
         <Import>@ModsFolder\powerofthree's Tweaks\Source\Scripts</Import>
@@ -40,16 +46,15 @@
 
         <Import>@ModsFolder\SexLab Separate Orgasm\Scripts\Source</Import>
         <Import>@ModsFolder\SexLabFrameworkAE_v166b\scripts\Source</Import>
+
+        <!--
+        <Import>@ModsFolder\SkyrimNet_DOM\scripts\Source</Import>
         <Import>.\Headers\SLO Aroused NG</Import>
-        <Import>.\Headers\OstimNet</Import>
         <Import>.\Headers\OStim</Import>
         <Import>.\Headers\Devious Devices</Import>
         
-        <Import>@ModsFolder\SkyrimNet_DOM\scripts\Source</Import>
         <Import>@ModsFolder\SkyrimNet_DOM\Headers\Ostim</Import>
         <Import>@ModsFolder\SkyrimNet_DOM\Headers\DOM</Import>
-        <!--
-        <Import>.\Headers\PAH Diary of Mine</Import>
         <Import>@ModsFolder\Fores New Idles in Skyrim SE - FNIS SE\scripts\source</Import>
         <Import>@ModsFolder\OSL Aroused\Scripts\Source</Import>
         <Import>.\Headers</Import>
@@ -66,6 +71,6 @@
         <Import>C:\Skyrim\dev\skyrim\Data\Source\Scripts</Import>
     </Imports>
     <Folders>
-        <Folder>.\Scripts\Source</Folder>
+        <Folder>Scripts\Source</Folder>
     </Folders>
 </PapyrusProject>

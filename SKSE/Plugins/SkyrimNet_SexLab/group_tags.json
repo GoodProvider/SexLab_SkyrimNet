@@ -1,6 +1,8 @@
 {
   "groups": [
-    "actions>",
+    "action:sex>",
+    "action:punish>",
+    "action:affection>",
     "positions>",
     "tools>",
     "styles>",
@@ -9,6 +11,39 @@
     "authors>"
   ],
   "group_tags": {
+    "action:sex>": [
+      "vaginal",
+      "oral",
+      "anal",
+      "blowjob",
+      "handjob",
+      "cunnilingus",
+      "masturbation",
+      "fingering",
+      "dildo",
+      "footjob",
+      "boobjob",
+      "fisting",
+      "thighjob"
+    ],
+    "action:punish>": [
+      "spanking",
+      "slapping",
+      "whip"
+    ],
+    "action:affection>": [
+      "kissing",
+      "hugging",
+      "spooning",
+      "cuddling",
+      "lappillow",
+      "headpat",
+      "handholding",
+      "carry",
+      "hold",
+      "caress",
+      "sleeping"
+    ],
     "bondage>": [
       "yoke",
       "cuffs",
@@ -38,7 +73,8 @@
       "rack",
       "stockade",
       "torturerack",
-      "coffin"
+      "coffin",
+      "wall"
     ],
     "positions>": [
       "doggy",
@@ -57,24 +93,6 @@
       "sideways",
       "side",
       "reversecowgirl"
-    ],
-    "actions>": [
-      "vaginal",
-      "oral",
-      "anal",
-      "blowjob",
-      "handjob",
-      "cunnilingus",
-      "kissing",
-      "masturbation",
-      "fingering",
-      "dildo",
-      "footjob",
-      "boobjob",
-      "fisting",
-      "thighjob",
-      "spanking",
-      "slapping"
     ],
     "styles>": [
       "dirty",

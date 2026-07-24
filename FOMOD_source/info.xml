@@ -1,0 +1,10 @@
+<fomod>
+  <!-- this file is generated from $source -->
+  <Name>$name</Name>
+  <Version>$version</Version>
+  <Description>Provider SexLab support for SkyrimNet</Description> 
+  <Author>Good Provider</Author>
+  <Groups>
+        <element>Optional</element>
+  </Groups>
+</fomod>

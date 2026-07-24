@@ -1,0 +1,32 @@
+customCategory: sexlab_nonsexual
+name: SexLab_Start_Nonsexual_Three
+description: "[direction] [style] [method] with [Target] and [participate]"
+questEditorId: SkyrimNet_SexLab
+scriptName: SkyrimNet_SexLab_Actions
+executionFunctionName: StartScene_Consensual_Three
+defaultPriority: 7
+parameterMapping:
+  - type: static 
+    name: intent 
+    value: cuddling
+  - type: speaker
+    name: speaker
+    description: Speaker Actor parameter (triggering entity)
+  - type: dynamic
+    name: target
+    description: accepting actor
+  - type: dynamic
+    name: style
+    description: forcefully|normally|gently
+  - type: dynamic
+    name: direction
+    description: "giving|getting"
+  - type: dynamic
+    name: method
+    description: single hug|hugging|kissing|cuddle
+  - type: static
+    name: setting_name
+    value: "nonsexual_male_position_2"
+  - type: dynamic
+    name: participate 
+    description: third participating actor 

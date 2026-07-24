@@ -1,0 +1,26 @@
+customCategory: sexlab_comfort
+name: SexLabComfortRefused
+description: "[Target] [style] refuses to [direction] [method] for [intent]"
+questEditorId: SkyrimNet_SexLab
+scriptName: SkyrimNet_SexLab_Actions
+executionFunctionName: StartScene_Refused_Two
+defaultPriority: 6
+parameterMapping:
+  - type: static 
+    name: intent 
+    value: refused
+  - type: speaker
+    name: speaker
+    description: Speaker Actor parameter (triggering entity)
+  - type: dynamic
+    name: target
+    description: rejecting actor
+  - type: dynamic
+    name: style
+    description: forceful|normal|gentle
+  - type: dynamic
+    name: method
+    description: one word
+  - type: dynamic
+    name: direction
+    description: "giving|getting"

@@ -1,12 +1,14 @@
 Scriptname SkyrimNet_SexLab_Actions extends Quest
+
 SkyrimNet_SexLab_Main Property main Auto 
-SkyrimNet_SexLab_AnimationHandler Property anim_handler Auto 
+SkyrimNet_SexLab_Scene_Manager Property manager Auto 
+SexLabFramework Property sexlab Auto 
 
 import SkyrimNet_SexLab_Utilities
 
 Idle Property pa_HugA Auto  ; IDLE:000F4699
 
-Quest Property ostimnet_actions Auto 
+Faction OStimActorCountFaction = None 
 
 Function Trace(String func, String msg, Bool notification=False) global
     msg = "[SkyrimNet_SexLab_Actions."+func+"] "+msg
@@ -16,445 +18,278 @@ Function Trace(String func, String msg, Bool notification=False) global
     endif 
 EndFunction
 
+; -------------------------------------------------
+; Setup
+; -------------------------------------------------
 Function Setup()
-    main = (self as Quest) as SkyrimNet_SexLab_Main
-    anim_handler = (Self as Quest) as SkyrimNet_SexLab_AnimationHandler
-    if MiscUtil.FileExists("Data/TT_OStimNet.esp")
-        ostimnet_actions = Game.GetFormFromFile(0x800, "TT_OStimNet.esp") as TTON_Actions
-    endif 
+    Bool links_ok = Setup_CheckLinks()
+    if !links_ok
+        return
+    endif
 
-    ; Load animation_functions from JSON 
-    int names = JValue.readFromFile("Data/SKSE/Plugins/SkyrimNet_SexLab/animation_function_names.json")
-    int i = JArray.count(names) - 1
-    while 0 <= i
-        String name = JArray.GetStr(names, i)
-        Trace("Setup","Registering function "+i+" "+name)
-        SkyrimNetApi.RegisterAction("Temp", \
-            "Temp", \
-            "SkyrimNet_SexLab_Actions", "SexStart_IsEligible",  \
-            "SkyrimNet_SexLab_Actions", name,  \
-            "", "PAPYRUS", 1, \
-            "", "BodyAnimation")
-        i -= 1
-    endwhile
-    SkyrimNetApi.UnregisterAction("Temp")
+    if Game.GetModByName("Ostim.esp") != 255
+        OStimActorCountFaction = Game.GetFormFromFile(0xECA, "Ostim.esp") as Faction
+        Trace("Setup","Found Ostim.esp, OStimActorCountFaction set to "+OStimActorCountFaction)
+    else 
+        OStimActorCountFaction = None 
+    endif 
 EndFunction 
 
-; -------------------------------------------------
-; Tag 
-; -------------------------------------------------
+Bool Function Setup_CheckLinks()
+    Bool links_ok = true
 
-bool Function BodyAnimation_IsEligible(Actor akActor, string contextJson, string paramsJson) global
-    float start = Utility.GetCurrentRealTime()
-    if akActor == None 
-        Trace("BodyAnimation_IsEligible","akActor is None")
-        return false
-    endif
-
-    String name = akActor.GetDisplayName()
-    float current = Utility.GetCurrentRealTime() - start 
-    Trace("BodyAnimation_IsEligible",current+" "+name+" contextJson: "+contextJson+" paramsJson: "+paramsJson)
-    if akActor.IsDead() || akActor.IsInCombat() 
-        Trace("BodyAnimation_IsEligible", akActor.GetDisplayName()+" is dead or in combat")
-        return false 
-    endif 
-
-    ;float time = Utility.GetCurrentRealTime()
-    ;float delta = time- time_last
-    ;time_last = time
-    ;Trace("BodyAnimation_tag","after isdead:"+delta)
-
-    ; SexLab check
-    SkyrimNet_SexLab_Main sexlab_main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
-    if sexlab_main == None
-        return false
-    endif
-
-    ;time = Utility.GetCurrentRealTime()
-    ;delta = time- time_last
-    ;time_last = time
-    ;Trace("BodyAnimation_tag","after GetFrom :"+delta)
-
-    if sexlab_main.IsActorLocked(akActor)
-        Trace("BodyAnimation_IsEligible", akActor.GetDisplayName()+" is locked")
-        return false 
-    endif
-
-    if sexlab_main.sexLab.IsActorActive(akActor) 
-        Trace("BodyAnimation_IsEligible", akActor.GetDisplayName()+" SexLab animation")
-    endif 
-
-    ;time = Utility.GetCurrentRealTime()
-    ;delta = time- time_last
-    ;time_last = time
-    ;Trace("BodyAnimation_tag","locked :"+delta)
-
-    ;time = Utility.GetCurrentRealTime()
-    ;delta = time- time_last
-    ;time_last = time
-    ;Trace("BodyAnimation_tag","cuddle :"+delta)
-
-    ; Ostim check 
-    if sexlab_main.ostimnet_found && OActor.IsInOStim(akActor)
-        return false 
-    endif 
-
-    ;time = Utility.GetCurrentRealTime()
-    ;delta = time- time_last
-    ;time_last = time
-    ;Trace("BodyAnimation_tag","ostim :"+delta)
-
-    Trace("BodyAnimation_Tag", name+" is eligible for sex")
-    return True
-EndFunction
-
-;--------------------------------------------------
-; Sex Start Functions 
-;--------------------------------------------------
-
-sslThreadModel Function Sex_Start(Actor Speaker, Actor Target, string style, string direction, string tag) 
-    Trace("Sex_Start",Speaker.GetDisplayName()+" + "+Target.GetDisplayName()+" style: "+style+" direction: "+direction+" type: "+tag)
-    Actor[] actors = new Actor[2]
-    actors[0] = Speaker
-    actors[1] = Target
-    Actor[] victims = PapyrusUtil.ActorArray(0) 
-    Trace("Sex_Start",SkyrimNet_SexLab_Utilities.JoinActors(actors)+" style: "+style+" direction:"+direction+" type: "+tag)
-    return Sex_Start_helper(Speaker, actors, victims, style, direction, tag, "") 
-EndFunction
-
-sslThreadModel Function Rape_Start(Actor Speaker, Actor Target, string style, String direction, string tag, Actor victim)
-    Trace("Rape_Start",Speaker.GetDisplayName()+" + "+Target.GetDisplayName()+" style: "+style+" type: "+tag+" victim: "+victim.GetDisplayName())
-    Actor[] actors = new Actor[2]
-    actors[0] = Target
-    actors[1] = Speaker
-
-    Actor[] victims = PapyrusUtil.ActorArray(1) 
-    victims[0] = actors[0]
-
-    Trace("Rape_Start",SkyrimNet_SexLab_Utilities.JoinActors(actors)+" victim:"+victim.GetDisplayName()+" style: "+style+" direction:"+direction+" type: "+tag)
-    return Sex_Start_helper(Speaker, actors, victims, style, direction, tag, "") 
-EndFunction
-
-sslThreadModel Function Orgy_Start(Actor Speaker, Actor Target, Actor participate, string style, String direction, string tag)
-    Actor[] possible = new Actor[3]
-    possible[0] = speaker
-    possible[1] = target
-    possible[2] = participate 
-
-    int num_actors = 1
-    int i = possible.length - 1
-    while 0 <= i
-        if possible[i] != None
-            num_actors += 1
+    if main == None
+        main = (self as Quest) as SkyrimNet_SexLab_Main
+        if main == None
+            links_ok = false
         endif
-        i -= 1
-    endwhile
-    Actor[] actors = PapyrusUtil.ActorArray(num_actors+1)
-    actors[0] = Speaker
-    int k = 1
-    i = possible.length - 1
-    while 0 <= i
-        if possible[i] != None
-            actors[k] = possible[i]
-            k += 1
+    endif
+
+    if manager == None
+        manager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
+        if manager == None
+            links_ok = false
         endif
-        i -= 1
-    endwhile
+    endif
 
-    Trace("Orgy_Start",SkyrimNet_SexLab_Utilities.JoinActors(actors)+" style: "+style+" direction:"+direction+" type: "+tag)
-    Actor[] victims = PapyrusUtil.ActorArray(0) 
-    return Sex_Start_helper(Speaker, actors, victims, style, direction, tag, "") 
+    if sexlab == None
+        links_ok = false
+    endif
+
+    return links_ok
 EndFunction
 
+;-------------------------------------------
+; One
+;-------------------------------------------
 
-sslThreadModel Function Masturbation_Start(Actor Speaker, string style, String tag)
-    Trace("Masturbation_Start",Speaker.GetDisplayName()+" style: "+style+" tag: "+tag)
-    int gender = main.sexlab.GetGender(Speaker)
-    bool has_penis = (gender != 1 && gender != 3)
-
-    Actor[] actors = new Actor[1] 
-    actors[0] = speaker
-
-    Actor[] victims = PapyrusUtil.ActorArray(0) 
-    return Sex_Start_helper(Speaker, actors, victims, style, "", tag, "") 
+Function StartScene_Consensual_One(String intent, Actor speaker, string style="", String method="", String setting_name="")
+    Trace("StartScene_Consensual_One",intent+" "+speaker.GetDisplayName()+" style: "+style+" method: "+method)
+    StartScene_Event(intent, speaker, style=style, method=method, setting_name=setting_name) 
 EndFunction
 
-sslThreadModel Function Affection_Start(Actor Speaker, Actor Target, String style, String tag, bool narration = False)
-    Trace("Affection_start"," speaker:"+speaker.getDisplayName() +" target:"+target.GetDisplayName()+" style:"+style+" tag:"+tag)
-    ;if main.sexlab_ostim_affection 
-        ;Trace("Affection_Start","ostimnet_actions")
-        ;main.sexlab_ostim_player = 1
-        ;(ostimnet_actions as TTON_Actions).StartAffectionSceneExecute(speaker, target, tag)
-        ;main.sexlab_ostim_player = 0
-        ;return None 
-    ;endif 
+Function StartScene_Nonconsensual_One(String intent, Actor speaker, string style="", String method="", String setting_name="")
+    Trace("StartScene_Nonconsensual_One",intent+" "+speaker.GetDisplayName()+" style: "+style+" method: "+method)
+    StartScene_Event(intent, speaker, victim=speaker, style=style, method=method, setting_name=setting_name) 
+EndFunction
 
-    if tag == "hugging" 
+;-------------------------------------------
+; Two
+;-------------------------------------------
+
+Function StartScene_Consensual_Two(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="")
+    Trace("StartScene_Consensual_Two","intent:"+intent+" speaker:"+speaker.GetDisplayName()+" + "+target.GetDisplayName()+" style: "+style+" direction: "+direction+" intent: "+intent+" method:"+method+" setting_name:"+setting_name)
+
+    ; Hug idle is bi-directional, so is ignored 
+    if method == "hug" || method == "single hug"
         target.playIdleWithTarget(pa_HugA, speaker) 
-        DirectNarration(speaker.GetDisplayName()+" hugs "+target.GetDisplayName()+".", speaker, target)
-        return None 
-    ; Couldn't make these look nice 
-    ;elseif tag == "kiss"
-    ;
-    ;   anim_handler.PlayByName_SpeakerTarget(Speaker,Target, "kiss")
-    ;    return None 
+        Actor sender = speaker 
+        Actor receiver = target 
+        if direction == "get" || direction == "getting"
+            sender = target 
+            receiver = speaker 
+        endif 
+        String msg = sender.GetDisplayName()+" hugs "+receiver.GetDisplayName()+"."
+        DirectNarration(msg, speaker, target)
+        return
     endif 
-
-    Actor[] actors = new Actor[2] 
-    actors[0] = Speaker 
-    actors[1] = Target 
-    Actor[] victims = PapyrusUtil.ActorArray(0) 
-    String tag_include = "kissing_only"
-    String tag_exclude =" oral,vaginal,anal,masturbation,handjob,boobjob,thighjob,fisting,dildo,fingering,footjob"
-    return Sex_Start_Helper(Speaker, actors, victims, style, "giving", tag_include, tag_exclude)
+    StartScene_Event(intent, speaker, target, None, style, method, direction, setting_name=setting_name) 
 EndFunction
 
-sslThreadModel Function Sex_Start_Helper(Actor Speaker, Actor[] actors, Actor[] victims, String style, String direction, String tag_include, String tag_exclude, String hook="")
-    Trace("Sex_Start_Helper",SkyrimNet_SexLab_Utilities.JoinActors(actors)+" style:"+style+" direction:"+direction+" tag_include:"+tag_include+" exclude:"+tag_exclude+" hook:"+hook)
-    if !main.LockActors(actors) 
-        return None
-    endif 
-
-    ; ------------------------------------------
-    ; Set up directions and tags 
-    ; ------------------------------------------
-    if actors.length == 1
-        if tag_include != ""
-            tag_include += ","
-        endif
-        int gender = main.sexlab.GetGender(actors[0])
-
-        bool has_penis = (gender != 1 && gender != 3)
-        if has_penis 
-            tag_include = "M"
-        else 
-            tag_include = "F"
-        endif 
-    else
-        if  (tag_include == "oral" || tag_include == "handjob" || tag_include == "boobjob" || tag_include == "thighjob" || tag_include == "footjob") && direction == "getting"
-            Actor temp = actors[0] 
-            actors[0] = actors[1]
-            actors[1] = temp 
-        else 
-            if direction == "fucking a"
-                Actor temp = actors[0] 
-                actors[0] = actors[1]
-                actors[1] = temp 
-            endif 
-            if tag_include == "pussy" 
-                tag_include = "vaginal" 
-            elseif tag_include == "ass" 
-                tag_include = "anal"
-            endif 
-        endif 
-    endif 
-
-    ; ------------------------------------------
-    ; Find player 
-    ; ------------------------------------------
-    Actor player = Game.GetPlayer() 
-    Bool has_player = False
-    String names = ""
-    int i = actors.length - 1
-    while i >= 0 
-        if actors[i] == player
-            has_player = True
-        endif 
-        i -= 1
-    endwhile 
-    
-    if names != ""
-        Trace("Sex_Start_Helper","Ineligible actors: "+names)
-        return NOne 
-    endif
-
-    ;-------------------------------
-    ; Animations
-    ;-------------------------------
-
-    sslThreadModel thread = main.sexlab.NewThread()
-
-    if thread == None
-        Trace("Sex_Start_Helper","Failed to create thread")
-        main.UnlockActors(actors)
-        return None 
-    endif
-
-    ; Set the style 
-    int style_int = main.STYLE_NORMALLY
-    if style == "gentle" || style == "gently"
-        style_int = main.STYLE_GENTLY   
-    elseif style == "forceful" || style == "forcefully"
-        style_int = main.STYLE_FORCEFULLY
-    endif
-    main.SetThreadStyle(thread.tid, style_int) 
-    
-    ; Get the animations 
-    ;sslBaseAnimation[] anims =  GetAnims(main, thread, actors, victims, player, tag, has_player) 
-    ;if anims.length > 0 && anims[0] == None
-        ;main.UnlockActors(actors) 
-        ;return None
-    ;endif 
-    sslBaseAnimation[] anims =  main.sexLab.GetAnimationsByTags(actors.length, tag_include, tag_exclude, true)
-
-
-    if anims.length > 0 
-        thread.SetAnimations(anims) 
-    elseif tag_include == "kissing_only"
-        Debug.Notification("No animations found for kissing")
-        main.UnlockActors(actors)
-        return None 
-    endif 
-
-
-    ;-------------------------------
-    Trace("Sex_Start_Helper","adding actors")
-
-    int[] speaker_filter = Utility.CreateIntArray(actors.length,1)
-    i = 0 
-    int count = actors.length 
-    while i < count 
-        if actors[i] == speaker
-            speaker_filter[i] = 0
-        endif 
-
-        if thread.addActor(actors[i]) < 0   
-            Trace("Sex_Start_Helper","Starting sex couldn't add " + actors[i].GetDisplayName())
-            main.UnLockActors(actors) 
-            return None
-        endif  
-        if tag_include == "kissing_only"
-            thread.SetNoStripping(actors[i])
-            thread.DisableOrgasm(actors[i], true) 
-        endif 
-        i += 1 
-    endwhile 
-
-    if tag_include == "kissing_only"
-        main.SetKissingOnly(thread.tid, True ) 
-    else
-        main.SetKissingOnly(thread.tid, False ) 
-    endif 
-
-    ; Add Victims 
-    i = victims.length - 1
-    while 0 <= i 
-        thread.SetVictim(victims[i])
-        i -= 1 
-    endwhile  
-
-    Trace("Sex_Start_Helper",\
-         " actors: \""+SkyrimNet_SexLab_Utilities.JoinActors(actors)+"\""\
-        +" victims: \""+SkyrimNet_SexLab_Utilities.JoinActors(victims)+"\""\
-        +" tag_include:"+tag_include\
-        +" style:"+style\
-        +" has_player: "+has_player\
-        +" anims.length: "+anims.length) 
-
-    if hook != "" 
-        thread.SetHook(hook)
-    endif 
-
-    ; If gender is male and giving oral, treat as woman so they can stay in the giving location
-    Trace("Sex_Start_Helper",SkyrimNet_SexLab_Utilities.JoinActors(thread.positions))
-    if actors.length > 1 
-        String msg = "" 
-        if tag_include == "kissing_only"
-            msg = speaker.GetDisplayName()+" starts activities with "+JoinActorsFiltered(actors,speaker_filter)+"."
-        else 
-            msg = speaker.GetDisplayName()+" starts sexual activites with "+JoinActorsFiltered(actors,speaker_filter)+"."
-        endif 
-        RegisterEvent("Start_Activities",msg, speaker) 
-    endif 
-    thread.StartThread() 
-    return thread 
+Function StartScene_Nonconsensual_Two(String intent, Actor speaker, Actor target=None, Actor victim,string style="", string method="", String direction="", String setting_name="")
+    Trace("StartScene_Nonconsensual_Two",GetDisplayName(speaker)+" "+GetDisplayName(target)+" victim:"+GetDisplayName(victim)+" style: "+style+" method:"+method+" direction: "+direction+" setting_name:"+setting_name)
+    StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name) 
 EndFunction
 
-;--------------------------------------
-; Stop Function 
-;--------------------------------------
+Function StartScene_Nonconsensual_Two_SpeakerVictim(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="")
+    Trace("StartScene_Nonconsensual_Two_SpeakerVictim",GetDisplayName(speaker)+" "+GetDisplayName(target)+" style: "+style+" method:"+method+" direction: "+direction+" setting_name:"+setting_name)
+    Actor victim = speaker
+    StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name) 
+EndFunction
+Function StartScene_Nonconsensual_Two_TargetVictim(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="")
+    Trace("StartScene_Nonconsensual_Two_TargetVictim",GetDisplayName(speaker)+" "+GetDisplayName(target)+" style: "+style+" method:"+method+" direction: "+direction+" setting_name:"+setting_name)
+    Actor victim = target
+    StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name) 
+EndFunction
 
-Function Sex_Stop(Actor akActor) 
-    sslThreadController thread = main.GetThread(akActor) 
-    main.AnimationEndFunction(thread.tid,true, akActor) 
-    sslThreadSlots thread_slots = (main.sexlab as Quest) as sslThreadSlots
-    thread_slots.StopThread(thread) 
+;-------------------------------------------
+; Threesome
+;-------------------------------------------
+
+Function StartScene_Consensual_Three(String intent, Actor speaker, Actor target, string style, string direction, string method, String setting_name="", Actor participate)
+    Trace("StartScene_Consensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style+" direction: "+direction+" method: "+method+" participate:"+participate.GetDisplayName()+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
+    StartScene_Event(intent, speaker, target, None, style, method, direction, setting_name=setting_name, participate_3=participate)
+EndFunction
+
+
+Function StartScene_Nonconsensual_Three(String intent, Actor speaker, Actor target, string style, string method, string direction, bool speaker_victim, String setting_name="", Actor participate)
+    Trace("StartScene_Nonconsensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style+" direction: "+direction+" method: "+method+" speaker_victim:"+speaker_victim+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
+    Actor victim = target
+    if speaker_victim 
+        victim = speaker
+    endif 
+    StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name, participate_3=participate) 
+EndFunction
+
+;-------------------------------------------
+; Scene Stop 
+;-------------------------------------------
+
+Function SceneStop(Actor speaker, String style)
+    Trace("SceneStop",GetDisplayName(speaker)+" style: "+style)
+    SceneStop_Event(speaker, speaker, style) 
+EndFunction
+
+Function SceneStop_Target(Actor speaker, Actor target, String style)
+    Trace("SceneStop",GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style)
+    SceneStop_Event(speaker, target, style) 
+EndFunction
+
+;------------------------------------------------------------------------------
+; Refused
+;------------------------------------------------------------------------------
+
+Function StartScene_Refused_Two(String intent, Actor speaker, Actor target, string style="", string method="", string direction="")
+    String speaker_name = GetDisplayName(speaker)
+    String target_name = GetDisplayName(target)
+    Trace("StartScene_Refused_Two","intent: "+intent+" "+speaker_name+" + "+target_name+" style: "+style+" direction: "+direction+" method: "+method)
+    if style == "normal" || style == "normally"
+        style = "" 
+    endif 
+    String msg = target_name+" "+style+" refused to allow "+intent+" by "
+    if direction == "" || direction == "getting" 
+        msg += direction+" "+method+" from "+speaker.GetDisplayName() 
+    else 
+        msg += direction+" "+method+" to "+speaker.GetDisplayName() 
+    endif 
+    DirectNarration(msg, target, speaker) 
+EndFunction
+
+;------------------------------------------------------------------------------
+; Events 
+;------------------------------------------------------------------------------
+
+Function SceneStop_Event(Actor speaker, Actor target, String style) 
+    int handle = ModEvent.Create("SkyrimNet_SexLab_Action_Stop")
+    ModEvent.PushForm(handle, speaker)
+    ModEvent.PushForm(handle, target)
+    ModEvent.PushString(handle, style)
+    ModEvent.Send(handle)
 EndFunction 
 
 ;--------------------------------------
-; Kissing Function 
+; Two actors 
 ;--------------------------------------
+Function StartScene_Event(String intent, Actor speaker, Actor target=None, Actor victim=None,\
+     string style="", string method="", String direction="", String event_hook="", String setting_name="",\
+     Actor participate_3=None)
+
+    if target == None && participate_3 != None 
+        target = participate_3 
+        participate_3 = None 
+    endif 
+
+    String speaker_name = GetDisplayName(speaker)
+    String target_name = GetDisplayName(target) 
+    String victim_name = GetDisplayName(victim) 
+    String participate_3_name = GetDisplayName(participate_3) 
+    
+    if method == "pussy"
+        method = "vaginal"
+    elseif method == "mouth"
+        method = "oral"
+    elseif method == "ass" 
+        method = "anal"
+    endif 
+
+    if method == "whipping"
+        method = "whip"
+    endif 
+
+    if method == "hugging"
+        method = "hug"
+    endif 
+
+    int speaker_position = 0 
+    if target != None 
+        ; Victim wrappers: TargetVictim → speaker pos1 (dominant); SpeakerVictim → speaker pos0 (submissive)
+        if victim != None && victim == speaker
+            speaker_position = 0
+        elseif victim != None && victim == target
+            speaker_position = 1
+        else
+            ; Consensual: Speaker is sentence subject. pos0=submissive, pos1=dominant.
+            ; Penetration: position_1 fucks position_0; oral: position_0 gives, position_1 receives.
+            if direction == "fucking" || direction == "fuck a" || direction == "fucking a"
+                speaker_position = 1
+            elseif direction == "fucked in"
+                speaker_position = 0
+            elseif direction == "getting" || direction == "get"
+                ; Speaker receives (e.g. gets oral) → dominant slot
+                speaker_position = 1
+            elseif direction == "giving" || direction == "give"
+                ; Speaker gives service (e.g. gives oral) → submissive slot
+                speaker_position = 0
+            endif
+        endif
+    endif 
+
+    String event_name = "SkyrimNet_SexLab_Action_Start"
+    Trace("StartScene_Event","event_name:"+event_name+" intent:"+intent+" speaker:"+speaker_name+" target:"+target_name+" victim:"+victim_name\
+        +" style:"+style+" speaker_position:"+speaker_position+" method:"+method+" event_hook:"+event_hook+" setting_name:"+setting_name\
+        +" participate_3_name:"+participate_3_name)
+
+    int handle = ModEvent.Create(event_name)
+    ModEvent.PushString(handle, intent)
+    ModEvent.PushForm(handle, speaker)
+    ModEvent.PushForm(handle, target)
+    ModEvent.PushForm(handle, victim)
+    ModEvent.PushString(handle, style)
+    ModEvent.PushString(handle, method)
+    ModEvent.PushInt(handle, speaker_position)
+    ModEvent.PushString(handle, event_hook)
+    ModEvent.PushString(handle, setting_name)
+    ModEvent.PushForm(handle, participate_3)
+    ModEvent.Send(handle)
+EndFunction 
+
 
 ;--------------------------------------
 ; Functions 
 ;--------------------------------------
 
-sslBaseAnimation[] Function GetAnims(SkyrimNet_SexLab_Main main, sslThreadModel thread, Actor[] actors, Actor[] victims, Actor player, String tag, Bool has_player) global
-    String names = SkyrimNet_SexLab_Utilities.JoinActors(actors) 
-    String victim_names = SkyrimNet_SexLab_Utilities.JoinActors(victims) 
-    Trace("GetAnims", "actors: "+names+" victims: "+victim_names+" tag:"+tag+" has_player: "+has_player)
-    sslBaseAnimation[] anims = new sslBaseAnimation[1] 
-    anims[0] = None 
-    int button = main.BUTTON_YES
-    if has_player
-        button = main.YesNoSexDialog(actors, victims, player, tag)
-        if button == main.BUTTON_NO || button == main.BUTTON_NO_SILENT
-            Trace("GetAnims_CheckLock","User declined")
-            return anims 
-        endif 
-    endif  
 
-    if button != main.BUTTON_YES_RANDOM
-        if tag == "kissing_only"
-            String tag_filter =" oral,vaginal,anal,masturbation,handjob,boobjob,thighjob,fisting,dildo,fingering,footjob"
-            anims = main.sexLab.GetAnimationsByTags(actors.length, "kissing", tag_filter, true)
-        else 
-            String type = "sex"
-            if victims.length > 0 
-                type = "rape"
-            endif 
-
-            if (main.sex_edit_tags_player && has_player) || (main.sex_edit_tags_nonplayer && !has_player)
-                Trace("GetAnims", "Opening anim edit dialog")
-                anims = main.GetAnimsDialog(thread, actors, type, tag)
-            else 
-                anims = main.sexLab.GetAnimationsByTags(actors.length, tag, "", true)
-            endif 
-            Trace("GetAnims", "has_player: "+has_player+" player edit: "+main.sex_edit_tags_player\
-                +" nonplayer edit: "+main.sex_edit_tags_nonplayer+" anims.length: "+anims.length)
-        endif 
-    else
-        String tagSupress = ""
-        anims =  main.sexLab.GetAnimationsByTags(actors.length, tag, tagSupress, true)
-    endif 
-
-    return anims 
-EndFunction 
 
 ; -------------------------------------------------
 ; Dress and Undress
+; Narration: direct, silent, none (notification or event)
 ; -------------------------------------------------
-Function Change_Outfit(Actor Stripper, Actor Stripped, String Style, String how, String Narration)
-    Trace("Change_Outfit",Stripper.GetDisplayName()+" stripper "+Stripped.GetDisplayName()+" style:"+style+" how: "+how+" narration:"+narration)
-    SkyrimNet_SexLab_Main main_local = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
+Function Change_Outfit(Actor stripper, Actor stripped, String style, String how, String narration)
+    Trace("Change_Outfit",stripper.GetDisplayName()+" stripper "+stripped.GetDisplayName()+" style:"+style+" how: "+how+" narration:"+narration)
+
+    if how == "take off" 
+        how = "undress"
+    elseif how == "put on"
+        how = "dress"
+    endif 
 
     bool success = False
-    if how == "dresses"
-        Form[] forms = main_local.UnStoreStrippedItems(Stripped)
+    if how == "dress"
+        Form[] forms = main.UnStoreStrippedItems(Stripped)
         if forms.length > 0
-            main_local.sexlab.UnStripActor(Stripped, forms, false)
+            sexlab.UnStripActor(Stripped, forms, false)
             success = True
         else
             Trace("Change_Outfit",Stripped.GetDisplayName()+" has no stripped items")
         endif
     else
         ;/* StripActor
-        * * Strips an actor using SexLab's strip settings as chosen by the user from the SexLab MCM
+        * * Strips an actor using SexLab's strip setting as chosen by the user from the SexLab MCM
         * * 
         * * @param: Actor ActorRef - The actor whose equipment shall be unequipped.
-        * * @param: Actor VictimRef [OPTIONAL] - If ActorRef matches VictimRef victim strip settings are used. If VictimRef is set but doesn't match, aggressor settings are used.
+        * * @param: Actor VictimRef [OPTIONAL] - If ActorRef matches VictimRef victim strip setting are used. If VictimRef is set but doesn't match, aggressor setting are used.
         * * @param: bool DoAnimate [OPTIONAL true by default] - Whether or not to play the actor stripping animations during the strip
-        * * @param: bool LeadIn [OPTIONAL false by default] - If TRUE and VictimRef == none, Foreplay strip settings will be used.
+        * * @param: bool LeadIn [OPTIONAL false by default] - If TRUE and VictimRef == none, Foreplay strip setting will be used.
         * * @return: Form[] - An array of all equipment stripped from ActorRef
         */;
         Actor victim = None 
@@ -463,8 +298,9 @@ Function Change_Outfit(Actor Stripper, Actor Stripped, String Style, String how,
             victim = stripped 
             do_animate = False
         endif 
-        Form[] forms = main_local.sexlab.StripActor(stripped, victim, do_animate, false) 
-        main_local.StoreStrippedItems(Stripped, forms)
+        Form[] forms = sexlab.StripActor(stripped, victim, do_animate, false) 
+        main.StoreStrippedItems(stripped, forms)
+        success = True 
     endif
 
     if success
@@ -473,11 +309,45 @@ Function Change_Outfit(Actor Stripper, Actor Stripped, String Style, String how,
             listener = None 
         endif 
 
-        String msg = Stripper.GetDisplayName()+" "+style+" "+how+"es "+Stripped.GetDisplayName()+"."
+        String msg = stripper.GetDisplayName()+" "+style+" "+how+"es "+stripped.GetDisplayName()+"."
         if narration == "direct"
             DirectNarration(msg, stripper, listener) 
         elseif narration == "silent"
             RegisterEvent(how,msg, stripper, listener) 
         endif 
     endif 
+EndFunction
+
+; -------------------------------------------------
+; IsEligible
+; -------------------------------------------------
+
+bool Function BodyAnimation_IsEligible(Actor akActor, string contextJson, string paramsJson)
+    if akActor == None 
+        Trace("BodyAnimation_IsEligible","akActor is None")
+        return false
+    endif
+
+    String name = akActor.GetDisplayName()
+    if akActor.IsDead() || akActor.IsInCombat() 
+        Trace("BodyAnimation_IsEligible", akActor.GetDisplayName()+" is dead or in combat")
+        return false 
+    endif 
+
+    if StorageUtil.HasIntValue(akActor, "skyrimnet_sexlab_scene_actor_lock")
+        Trace("BodyAnimation_IsEligible", akActor.GetDisplayName()+" is locked")
+        return false 
+    endif
+
+    if main.sexLab.IsActorActive(akActor) 
+        Trace("BodyAnimation_IsEligible", akActor.GetDisplayName()+" SexLab animation")
+        return false 
+    endif 
+
+    if OstimActorCountFaction != None && akActor.IsInFaction(OStimActorCountFaction)
+        Trace("BodyAnimation_IsEligible", akActor.GetDisplayName()+" OStim animation")
+        return false 
+    endif
+    Trace("BodyAnimation_Tag", name+" is eligible for sex")
+    return True
 EndFunction

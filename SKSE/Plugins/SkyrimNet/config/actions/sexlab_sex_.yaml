@@ -1,18 +1,24 @@
 customCategory: sexlab_sex
-name: Sexual_Activities
-description: 'PARAMS: {"type":"oral|vaginal|anal|masturbation|other"} - [type] sexual activites'
+name: SexLab_Sexual_Activities
+description: 'PARAMS: {"type":"oral|vaginal|anal|masturbation|other", "intent":"who, why, and how"} - [type] sexual activities'
 enabled: true
 eligibilityRules:
   - conditions:
       - decoratorName: get_global_value
         arguments:
-          - skyrimnet_sexlab_ostim_player
+          - SkyrimNet_SexLab_ostim_player
         comparisonOperator: ==
         expectedValue: 0
-      - decoratorName: is_in_faction
+      - decoratorName: get_faction_rank
         arguments:
           - currentActor
           - SexLabAnimatingFaction
+        comparisonOperator: <
+        expectedValue: 1
+      - decoratorName: is_in_faction
+        arguments:
+          - currentActor
+          - dse_dm_FactionActorUsingDevice
         comparisonOperator: ==
         expectedValue: false
       - decoratorName: is_in_faction
@@ -21,20 +27,17 @@ eligibilityRules:
           - OStimActorCountFaction
         comparisonOperator: ==
         expectedValue: false
-      - decoratorName: is_in_faction
-        arguments:
-          - currentActor
-          - ChildFaction
-        comparisonOperator: ==
-        expectedValue: false
       - decoratorName: is_in_combat
         arguments:
           - currentActor
         comparisonOperator: ==
         expectedValue: false
-      - decoratorName: decnpc
+      - decoratorName: papyrus_util
         arguments:
+          - "HasIntValue"
           - currentActor
+          - "skyrimnet_sexlab_scene_actor_lock"
         comparisonOperator: ==
         expectedValue: false
-        resultPath: isChild
+    logicalOperator: AND
+    required: true

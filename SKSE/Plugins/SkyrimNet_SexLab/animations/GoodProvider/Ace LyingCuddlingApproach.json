@@ -1,0 +1,10 @@
+{
+    "Stage 1": {
+        "description": "{{sl.actors.1}} lays on ground, raised up on elbows. {{sl.actors.0}} sits on {{sl.actors.1}}'s waist with knees to both sides, hands on {{sl.actors.1}}'s shoulder, and looking into {{sl.actors.1}}'s eyes.",
+        "version": "2.0"
+    },
+    "Stage 2": {
+        "description": "{{sl.actors.1}} lays on ground, raised up on elbows. {{sl.actors.0}} sits on {{sl.actors.1}}'s waist with knees to both sides, hands on {{sl.actors.1}}'s shoulder, and deep kissing {{sl.actors.1}}.",
+        "version": "2.0"
+    }
+}

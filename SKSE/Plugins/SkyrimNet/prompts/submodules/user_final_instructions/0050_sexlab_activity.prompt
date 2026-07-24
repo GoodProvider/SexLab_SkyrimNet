@@ -4,145 +4,117 @@
 {#      If game paused load the cached file              #} 
 {#      else call the decorator                          #} 
 {# ----------------------------------------------------- #} 
-
-{% set actor_having_sex = false %} 
-{% set actor_kissing_only = false %} 
-{% set actor_rape_victim = false %}
-{% if get_global_value("skyrimnet_sexlab_active_sex") == 1.0 %}
-     {% if not isTimePaused %}
-          {% set sexlab = sexlab_get_threads(npc.UUID) -%}
-          {% if not sexlab.threads %}
-               {% set sexlab = read_json("SkyrimNet_SexLab/threads.json") %} 
-          {% endif %}
-     {% else %} 
+{% if not isTimePaused %}
+     {% set sexlab = sexlab_get_threads(npc.UUID) -%}
+     {% set sexlab.source = "sexlab_get_threads" %} 
+     {% if not sexlab._threads %}
           {% set sexlab = read_json("SkyrimNet_SexLab/threads.json") %} 
+          {% set sexlab.source = "file" %} 
      {% endif %}
 {% else %} 
-     {% set sexlab.threads = [] %} 
+     {% set sexlab = read_json("SkyrimNet_SexLab/threads.json") %} 
+     {% set sexlab.source = "file" %}
 {% endif %}
 
-{% if length(sexlab.threads) > 0 %} 
-     {% set actor_having_sex = false %} 
-     {% for thread in sexlab.threads %}
-          {% if contains(thread.victims, npc.name) %} 
-               {% set actor_rape_victim = true %} 
+{% set speaker = {"_speaking_modifiers":[], "_victim":0, "_notice_level":0, "_active":false} %}
+
+{% if existsIn(sexlab,"_threads") and length(sexlab._threads) > 0 %}
+     {% for thread in sexlab._threads %}
+          {% set _notice_level = 0 %} 
+
+          {% if _notice_level != 2 %} 
+               {% if thread._speaker_los %}
+                    {% if thread._speaker_distance < 12 %} 
+                         {% set _notice_level = 2 %} 
+                    {% else if thread._speaker_distance < 36 %} 
+                         {% set _notice_level = 1 %}
+                    {% endif %} 
+               {% endif %} 
           {% endif %} 
-          {% if contains(thread.names, npc.name) %} 
-               {% if thread.kissing_only %} 
-                    {% set actor_kissing_only = true %} 
-               {% else %} 
-                    {% set actor_having_sex = true %} 
-               {% endif %} 
-               - {% if thread.location != "" %} On {{thread.location}},{% endif %} {{ thread.description }}
-          {% else %}
+
           
-               {% set can_seen_desc = "can not see what is happening." %} 
-               {% if has_los %}
-                    {% if distance > 36 %}
-                         {% set can_notice_level = 0 %}
-                    {% else if distance > 12 %} 
-                         {% set can_notice_level = 1 %}
-                         {% set can_see_desc = "can see the sex, but not specifically who or what is involved." %} 
-                    {% else if distance > 3 %} 
-                         {% set can_notice_level = 2 %}
-                         {% set can_see_desc = "can see who is having sex, but not specifically what they are doing." %} 
-                    {% else %}
-                         {% set can_notice_level = 2 %}
-                    {% endif %}
-               {% else %} 
-                    {% if distance > 768 %} {# 36 feet beyond sight/hearing range #} 
-                         {% set can_notice_level = 0 %}
-                    {% else if distance > 256 %} {# 12 feet far enough to see, but details vague #}
-                         {% set can_notice_level = 1 %}
-                         {% set can_heard_desc = "can hear muffled sounds that might be sex." %} 
-                    {% else if distance > 128 %} {# 6 feet clearly can hear its sex #}
-                         {% set can_notice_level = 2 %}
-                         {% set can_heard_desc = "can clearly hear that someone is having sex." %} 
-                    {% else %}
-                         {% set can_notice_level = 2 %}
-                         {% set can_heard_desc = "can clearly hear that someone is having sex and might be able to tell who." %} 
-                    {% endif %}
-               {% endif %} 
-               
-
-               {% if can_notice_level > 0 %}
-                    - {% if thread.location != "" %} On {{thread.location}},{% endif %} {{ thread.description }} {% 
-                    if can_hear_desc != "" %} You {{can_hear_desc}} {% endif %} {% 
-                    if can_see_desc != "" %} You {{can_see_desc }} {% endif %} 
-               {% else %} 
-                    - You can not see or hear what is happening with {{thread.names_string}}.
+          {% set _includes_creatures = false %} 
+          {%- for actor_record in thread._actors %} 
+               {% if to_number(actor_record._uuid) == npc.UUID %}
+                    {% set speaker = actor_record %}
+                    {% set _notice_level = 2 %} 
+                    {% set speaker._active = true %}
                {% endif %}
+               {% if actor_record._creature_description != "" %} 
+                    {% set _includes_creatures = True %} 
+               {% endif %} 
+          {% endfor %} 
+
+          {% set speaker._notice_level = _notice_level %} 
+
+          {% if _notice_level == 2 %}
+               - {% if thread._location != "" %} On {{thread._location}},{% endif %} {{ thread._description }} {%- 
+                    for actor_record in thread._actors %} {% 
+                         if actor_record._is_hermaphrodiate %} {{ actor_record._name }} is a hermaphrodiate. {% endif %} {% 
+                         if actor_record._creature_description != "" %} {{ actor_record._creature_description }} {% endif %} {% 
+                         if actor_record._wearing_strapon %} {{ actor_record._name }} is wearing a strap on dildo. {% endif %}
+                    {% endfor %} 
+          {% else if _notice_level == 1 %} 
+               - You can tell someone is having sex{% if _includes_creatures %}, which includes creatures{% endif %}.
           {% endif %}
-     {%- endfor %}
-
-**Your reaction must evolve—don't loop on the same observation.**
-     {% if actor_having_sex %}
-{{ "## CRITICAL: YOU ARE CURRENTLY HAVING SEX" }}
-You are physically engaged in intense sexual activity right now.
-
-**Match your personality and consent:**
-- Consensual: desire, vulnerability, playfulness, intensity, connection, desperation
-- Non-consensual: fear, resistance, anger, dissociation, bargaining, survival coping
-
-**Vary your responses—cycle through these dimensions:**
-- Physical focus: what specific sensation dominates right now? (pressure, friction, heat, fullness, ache)
-- Emotional focus: what feeling is surfacing? (need, shame, power, surrender, connection, fear)
-- Partner focus: something about them—their sounds, touch, expression, words
-- Internal focus: your own body's responses, building tension, losing control
-- Verbal fragments: demands, pleas, names, curses, praise, warnings
-
-**CRITICAL VARIATION RULES:**
-1. Never repeat the exact same phrase twice in a row
-2. Alternate between at least 3 different sensation types before repeating
-3. Mix short gasps with longer fragmented thoughts
-4. Vary volume/intensity: whispers, gasps, moans, cries
-5. Include at least one unexpected element every 3-4 responses
-
-**How to speak:**
-- Mind overwhelmed by physical pleasure (or pain/trauma if non-consensual).
-- No more then 5 consective words before adding a moun, cry, or gasp (Uh Ah Ungh etc)
-- Dialogue must have a clear understandable idea
-- When the speaker orgasms, 
-   - this is the most important information to communicate
-   - dailogue must be present tense. "-ing."
-
-** Final Rule ** 
-- Do not include periods, dots, or dashes "—" in dialogue!
-- Each dialogue must be a different idea
-
-     {% else if not actor_kissing_only %} 
-{{ "## You Are Aware of Nearby Sexual Activity" }}
-
-**Possible reaction arc (shift between these, don't repeat)**:
-1. **Initial:** Shock, confusion, disbelief, freezing, double-take
-2. **Processing:** Curiosity, disgust, arousal, concern, embarrassment, fascination
-3. **Decision:** Ignore it, watch, leave, intervene, comment, use it as leverage
-4. **Ongoing:** Distraction during conversation, intrusive thoughts, physical response, moral judgment
-
-**Consider once, then move on:**
-- Your relationship to participants
-- Whether it appears consensual
-- Location/social context
-- Your own values
-
-**BANNED repetitions:**
-- "I can hear moaning/sounds"
-- "They're still going at it"
-- "I try to focus"
-- Describing the same visual twice
-- Noting your own arousal/discomfort repeatedly
-
-     {% endif %}
+     {%- endfor -%}
+{% endif %} 
+{% if speaker._notice_level > 1 %} 
+**Reaction must evolve—don't loop on the same observation.**
+     {% if speaker._active %}
+          {% if contains(speaker._speaking_modifiers,"_pleasure_") or contains(speaker._speaking_modifiers,"_pain_") %}
+               {% if speaker._victim == 1 %} 
+You are physically engaged in non-consensual, often violent violation, intense physical activity right now.
+Match your feelings of fear, resistance, anger, dissociation, bargaining, survival coping.
+ 
+               {% else %} 
+You are physically engaged in consensual intense physical activity right now.
+Match your feelings of desire, vulnerability, playfulness, intensity, connection, and desperation.
+               {% endif %}
+         {% endif %} 
+         {% if is_narration_enabled() %}
+         {% endif %}
+         {% if length(speaker._speaking_modifiers) > 0 %} 
+         
+**Speaking Rules**:
+               {% if contains(speaker._speaking_modifiers,"_pleasure_") or contains(speaker._speaking_modifiers, "_pain_") %}
+- Your mind is overwelmed by physical {% if contains(speaker._speaking_modifiers, "_pleasure_") %} pleasure {% endif %} {% if contains(speaker._speaking_modifiers,"_pain_") %} pain {% endif %} 
+               {% endif %} 
+               {% if contains(speaker._speaking_modifiers,"_gagged_") %} 
+- Your mouth is blocked, you can only communictate 1 to 3 vocalizations ahh, hahh, hoooh, huh, ahh!, or similair
+               {% else if contains(speaker._speaking_modifiers,"_pleasure_") or contains(speaker._speaking_modifiers, "_pain_") %}
+                      {% if contains(speaker._speaking_modifiers,"_pleasure_") %}
+    - Your dialog contain at least one to two vocalizations ( hahh!, huuhh, hooh, ahh ) every random 1,2,or 3 words
+                      {% else %} 
+    - Your dialog contain at least one to two vocalizations ( hahh!, ow!, iyaa!, huh!, hooohh, ouch! ) every random 1,2,or 3 words
+                      {% endif %} 
+- You are distracted, you can only speak 8 words or less (vocalizations don't count).
+               {% else if contains(speaker._speaking_modifiers, "_kissing_") %} 
+- Your mouth is busy kissing, rephrase spoken words down to 5 words or less!
+                {% else %} 
+- You can speak normally, do not include a vocalization, unless it is truely needed.
+               {% endif %} 
+        {% endif %}
+     {% else %} 
 After your first acknowledgment, either act on it, dismiss it, or let it color your responses subtly—don't keep narrating that it's happening.
-{% if get_global_value("skyrimnet_sexlab_hide_dialogue_historic_instructions") != 1.0 %}
-     ** Style Reminder
-     - Use fantasy / medieval historical language appropriate for Skyrim
-     - NEVER use modern slang or language
-     - Use racial speech patterns, slang and idioms, racial cultural views
-     - Match the speaker's medieval social hierarch position
-{% endif %}
+     {% endif %}
 
-** Reminder
-- The final response can include only 2 sentences. One descriptive and one optional **short** spoken sentence.
-- If the spoken sentence has nothing new to say, remove it and add sounds to the description.
+    {% if get_global_value("SkyrimNet_SexLab_hide_dialogue_historic_instructions") != 1.0 %}
+** Dialogue and Internal Thoughts Style Reminder
+- Use fantasy / medieval historical language appropriate for Skyrim
+- NEVER use modern slang or language
+- Use racial speech patterns, slang and idioms, racial cultural views
+- Match the speaker's medieval social hierarch position
+     {% endif %} 
+
+** Length Remember Reminder
+{% if is_narration_enabled() and speaker._active %}
+- The final response can include only 2 sentences. One narration (no more then 12 words) and  dialoge sentence (it can be only vocalizations).
+- Never more then 2 vocalizations in a row, never the same vocalization in a row.
+{% endif %} 
+- If dialog has nothing new to say, replace with non-verbals.
+- Your dialog must NEVER use dots ".", only commas "," , the Text-To-Speech fails to pronounce them correctly
+- Your response must be a clear understandable idea
+- Internal Dialogue must never just repeat the spoken dialogue
+
 {% endif %}

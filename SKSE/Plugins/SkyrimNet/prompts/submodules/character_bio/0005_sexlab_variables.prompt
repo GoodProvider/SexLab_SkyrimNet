@@ -1,20 +1,12 @@
 
+{% set show_internal = (render_mode == "full" or render_mode == "thoughts" or render_mode == "thought" or render_mode == "transform" or render_mode == "book" or render_mode == "equipment") %}
+{% set show_external_only = (render_mode == "dialogue_target") %}
+{% if show_external_only or show_internal %} 
 {% set actor_name = decnpc(actorUUID).name %}
 {% set actor_gender = lower(decnpc(actorUUID).sex) %}
-{% set actor_having_sex = false %} {% set actor_rape_victim = false %}
-{% if (render_mode == "full" or render_mode == "thoughts" or render_mode == "transform" or render_mode == "book" or render_mode == "equipment") %}
-
-    {#% set sexlab_speaker.stats = {} %#} 
-    {#######################################################}
-    {# Gets the speaker's stats                            #}
-    {#######################################################}
-    {#% if not isTimePaused %#}
-      {#% set sexlab_speaker = sexlab_speaker_info(npc.UUID) %#}
-    {#% endif %#} 
-
-  {% if not is_plugin_loaded("SkyrimNetUDNG.esp") %}
+{% set actor_having_sex = is_in_faction(actorUUID, "SexLabAnimatingFaction") or is_in_faction(actorUUID, "OStimActorCountFaction") %} 
+{% if not is_plugin_loaded("SkyrimNetUDNG.esp") %}
     {% set show_internal = (render_mode == "full" or render_mode == "thoughts" or render_mode == "thought" or render_mode == "transform" or render_mode == "book" or render_mode == "equipment") %}
-    {% set show_external_only = (render_mode == "dialogue_target") %}
 
     {% set bound_armor = has_spell(actorUUID, "REQ_Conjuration3_Bound_Armor") %}
 
@@ -42,25 +34,4 @@
     {% set vibrators_active = is_in_faction(actorUUID, "zadVibratorFaction") %}
   {% endif %} 
 {% endif %}
-
-{# speaker having sex #} 
-{% set actor_having_sex = false %} 
-{% set sexlab.threads = [] %}
-{% if get_global_value("skyrimnet_sexlab_active_sex") == 1.0 %}
-  {% if not isTimePaused %}
-      {% set sexlab = sexlab_get_threads(actorUUID) -%}
-      {% if not sexlab.threads %}
-        {% set sexlab = read_json("SkyrimNet_SexLab/threads.json") %} 
-      {% endif %}
-  {% else %} 
-      {% set sexlab = read_json("SkyrimNet_SexLab/threads.json") %} 
-  {% endif %}
-  {% for thread in sexlab.threads %}
-        {% if contains(thread.victims, decnpc(actorUUID).name) %} 
-            {% set actor_rape_victim = true %} 
-      {% endif %} 
-      {% if contains(thread.names, decnpc(actorUUID).name) %} 
-            {% set actor_having_sex = true %} 
-      {% endif %}
-  {% endfor %}
-{% endif %} 
+ 

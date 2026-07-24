@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SkyrimNet_SexLab — review-execution-plan.xml
+  Pass: 2026-07-23 YAML + prompts full review (actions, helpers, submodules, scenes).
+  Line numbers include commented lines.
+  Status: findings only (not yet applied).
+-->
+<execution_plan>
+  <metadata>
+    <project_name>SkyrimNet_SexLab</project_name>
+    <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
+    <created>2026-07-23</created>
+    <phase>review</phase>
+    <status>open</status>
+    <sources>
+      <file>review-guide.xml</file>
+      <file>review-checkpoint.xml</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Actions.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Decorators.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Scene_Manager.psc</file>
+    </sources>
+    <directories>
+      <action_yamls>SKSE/Plugins/SkyrimNet/config/actions</action_yamls>
+      <prompts>SKSE/Plugins/SkyrimNet/prompts</prompts>
+      <scenes>SKSE/Plugins/SkyrimNet_SexLab/scenes</scenes>
+    </directories>
+    <verified_ok>
+      <item>All 25 executable YAMLs: parameterMapping count/order match Actions.psc signatures (positional).</item>
+      <item>All 29 action names unique; no speaking_victim; static uses value / dynamic uses description.</item>
+      <item>Fixed-role assault uses TargetVictim/SpeakerVictim; none_rape uses Nonconsensual_Two + victim.</item>
+      <item>setting_name values that are non-empty resolve to existing scene JSON (incl. punish_pleasure_pain_rape).</item>
+      <item>Helper/stop/outfit prompts read _activity / _options; activity/narration prompts read _threads/_actors/_speaking_modifiers underscore keys.</item>
+      <item>Do not re-report Y-RapeSettingName (resolved).</item>
+    </verified_ok>
+    <questions_for_author>
+      <question id="Q1">For penetration direction: should YAML adopt Papyrus token "fuck a", or should Actions.psc accept "fucked in|fucking|fucking a" (and giving|getting for oral/vaginal/anal)?</question>
+      <question id="Q2">For punish spanking/whipping: prefer split TargetVictim/SpeakerVictim actions (like rape), or keep dynamic victim and drive speaker_position from victim?</question>
+    </questions_for_author>
+  </metadata>
+
+  <findings>
+    <!-- HIGH -->
+    <finding id="H1" severity="high" status="open">
+      <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_sex_sex_fucking.yaml</file>
+      <line>26</line>
+      <also_files>
+        <file line="23">SKSE/Plugins/SkyrimNet/config/actions/sexlab_sex_sex_fucking_three.yaml</file>
+        <file line="28">SKSE/Plugins/SkyrimNet/config/actions/sexlab_none_rape.yaml</file>
+      </also_files>
+      <problem>
+        Direction vocab advertised to the LLM does not match what StartScene_Event recognizes for oral/vaginal/anal.
+        Actions.psc only sets speaker_position=1 when direction == "fuck a". YAML offers "fucked in|fucking"
+        (fucking actions) or "fucking a|fucked in" (none_rape). None of those strings match, so "receiving"
+        never swaps actor slots — speaker always stays SexLab position 0.
+      </problem>
+      <evidence>
+        Actions.psc ~219-222: if method oral/vaginal/anal and direction == "fuck a" then speaker_position = 1.
+        sexlab_sex_sex_fucking.yaml L26: description: fucked in|fucking
+        sexlab_none_rape.yaml L28: giving|getting|fucking a|fucked in
+      </evidence>
+      <fix>
+        Author Q1: either change YAML direction options to include the exact token "fuck a" (and document it),
+        or widen Actions.psc to accept fucked in / fucking / fucking a (and ideally giving|getting for penetration).
+        Keep Two vs Three parameter order unchanged.
+      </fix>
+      <confidence>95</confidence>
+      <assumptions>speaker_position still drives Action_Start actor array order (Manager ~630-636).</assumptions>
+    </finding>
+
+    <finding id="H2" severity="high" status="open">
+      <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_sex_rape_target.yaml</file>
+      <line>26</line>
+      <also_files>
+        <file line="26">SKSE/Plugins/SkyrimNet/config/actions/sexlab_sex_rape_by_target.yaml</file>
+        <file line="26">SKSE/Plugins/SkyrimNet/config/actions/sexlab_punish_rape_target.yaml</file>
+        <file line="26">SKSE/Plugins/SkyrimNet/config/actions/sexlab_punish_rape_target_by_target.yaml</file>
+      </also_files>
+      <problem>
+        Fixed-role assault YAMLs expose direction as giving|getting while method includes oral|vaginal|anal.
+        For those penetration methods, giving/getting are ignored by StartScene_Event (only "fuck a" flips position).
+        Victim faction is set correctly via TargetVictim/SpeakerVictim, but SexLab position order (and thus
+        scene speaking_modifiers / male_position assumptions) will not invert for "getting" penetration.
+      </problem>
+      <evidence>
+        sexlab_sex_rape_target.yaml L23-26: method oral|vaginal|anal|...; direction giving|getting
+        Actions.psc L219-228: penetration branch only checks "fuck a"; giving/getting only hit the final elseif
+        for non-penetration methods.
+      </evidence>
+      <fix>
+        Same as H1/Q1: align direction options with Papyrus for penetration methods, or extend Papyrus.
+        Optionally split assault into fucking-style vs giving-style actions (mirror consensual fucking/giving).
+      </fix>
+      <confidence>92</confidence>
+      <assumptions>Victim wrappers only SetVictim; they do not force victim into actors[0].</assumptions>
+    </finding>
+
+    <finding id="H3" severity="high" status="open">
+      <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_punish_spanking.yaml</file>
+      <line>28</line>
+      <also_files>
+        <file line="28">SKSE/Plugins/SkyrimNet/config/actions/sexlab_punish_whipping_oral.yaml</file>
+        <file>SKSE/Plugins/SkyrimNet_SexLab/scenes/punish_spanking.json</file>
+        <file>SKSE/Plugins/SkyrimNet_SexLab/scenes/punish_whipping_oral.json</file>
+      </also_files>
+      <problem>
+        Dynamic victim + static empty direction. StartScene_Event leaves speaker_position=0 whenever direction is "".
+        Scene JSON assigns victim-side speaking_modifiers to position 0 (_pain_ / _pain_,_gagged_).
+        When LLM picks victim=target, the speaker (assailant) still occupies position 0 and receives victim
+        speaking modifiers; the actual victim gets the empty/pleasure slot.
+      </problem>
+      <evidence>
+        sexlab_punish_spanking.yaml L18-29: dynamic victim; direction value: ""
+        punish_spanking.json: speaking_modifiers ["_pain_",""]
+        punish_whipping_oral.json: speaking_modifiers ["_pain_,_gagged_","_pleasure_"]
+        Actions.psc L223-225: spanking/whip only flip when direction is giving|give
+        Manager Action_Start L630-636: speaker_position selects actors[0]/actors[1]
+      </evidence>
+      <fix>
+        Author Q2: preferred YAML fix per locked YAML-Victim — split into TargetVictim / SpeakerVictim
+        actions (like punish rape), with direction set so victim lands in position 0; OR keep dynamic
+        victim and derive speaker_position from whether victim==speaker. Also remove misleading [direction]
+        from descriptions when direction is unused (see M2).
+      </fix>
+      <confidence>93</confidence>
+      <assumptions>Scene speaking_modifiers arrays are index-aligned with SexLab positions after Action_Start.</assumptions>
+    </finding>
+
+    <!-- MEDIUM -->
+    <finding id="M1" severity="medium" status="open">
+      <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_comfort_general.yaml</file>
+      <line>28</line>
+      <also_files>
+        <file line="28">SKSE/Plugins/SkyrimNet/config/actions/sexlab_nonsexual_general.yaml</file>
+        <file>SKSE/Plugins/SkyrimNet_SexLab/scenes/nonsexual_kissing.json</file>
+        <file line="209">Scripts/Source/SkyrimNet_SexLab_Menu.psc</file>
+      </also_files>
+      <problem>
+        method may be "kissing", but setting_name is always nonsexual_male_position_1 (empty speaking_modifiers).
+        Menu path loads nonsexual_kissing (tags=kissing, speaking_modifiers=_kissing_). LLM kissing actions
+        therefore miss _kissing_ prompt rules in 0050_sexlab_activity.prompt.
+      </problem>
+      <evidence>
+        comfort_general / nonsexual_general setting_name "nonsexual_male_position_1"
+        Menu.psc ~209: setting_name = "nonsexual_kissing" when kissing selected
+        nonsexual_kissing.json: speaking_modifiers "_kissing_"; tags "kissing"
+        0050_sexlab_activity.prompt L93: contains(..., "_kissing_")
+      </evidence>
+      <fix>
+        Dedicated kissing action with setting_name nonsexual_kissing, or map method kissing → that setting
+        in Papyrus (out of YAML-only scope). At minimum document that YAML kissing will not get _kissing_ mods.
+      </fix>
+      <confidence>90</confidence>
+    </finding>
+
+    <finding id="M2" severity="medium" status="open">
+      <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_punish_spanking.yaml</file>
+      <line>3</line>
+      <also_files>
+        <file line="3">SKSE/Plugins/SkyrimNet/config/actions/sexlab_punish_whipping_oral.yaml</file>
+      </also_files>
+      <problem>
+        Description placeholders include [direction] but direction is static "". LLM sees an empty direction
+        slot in the action template, which confuses generation and overlaps with H3.
+      </problem>
+      <evidence>
+        spanking L3: "[Victim] is punished by [direction] [style] spanking"; L28-29 direction value: ""
+        whipping L3: "[Victim] is punished by [direction] oral sex..."; L28-29 direction value: ""
+      </evidence>
+      <fix>
+        Drop [direction] from description while direction stays empty; or make direction dynamic (and fix H3).
+      </fix>
+      <confidence>95</confidence>
+    </finding>
+
+    <finding id="M3" severity="medium" status="open">
+      <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_comfort_cuddle.yaml</file>
+      <line>23</line>
+      <also_files>
+        <file line="23">SKSE/Plugins/SkyrimNet/config/actions/sexlab_comfort_general.yaml</file>
+      </also_files>
+      <problem>
+        Creator.AddTag(method) uses method as a SexLab tag. comfort_cuddle allows sitting|laying (unlikely
+        SexLab tags). comfort_general allows "cuddle" while SexLab/Menu typically use "cuddling".
+        Weak or empty animation matches likely.
+      </problem>
+      <evidence>
+        Scene_Creator.Setup calls AddTag(_method) after SetMethod
+        RemapTag only remaps mouth/pussy/ass — not cuddle/sitting/laying
+        Menu.psc uses method-ish "cuddle" with setting nonsexual_male_position_1
+      </evidence>
+      <fix>
+        Align method options with real SexLab tags (e.g. cuddling) or put tags in scene JSON and leave method descriptive only.
+        Clarify intended tags for sitting|laying with author before changing.
+      </fix>
+      <confidence>80</confidence>
+      <assumptions>SexLab animation library does not widely tag "sitting"/"laying" alone.</assumptions>
+    </finding>
+
+    <finding id="M4" severity="medium" status="open">
+      <file>SKSE/Plugins/SkyrimNet/prompts/submodules/user_final_instructions/0050_sexlab_activity.prompt</file>
+      <line>62</line>
+      <problem>
+        Bare {{ speaker }} emits the whole speaker object into final instructions on every render.
+        Likely leftover debug; pollutes LLM context with raw actor JSON (_uuid, _formid, modifiers, …).
+      </problem>
+      <evidence>
+        L19-48 builds speaker; L62 {{ speaker }}; L63+ uses speaker fields for rules.
+      </evidence>
+      <fix>
+        Remove line 62 unless SkyrimNet requires dumping that object for tooling. Prefer structured prose only.
+      </fix>
+      <confidence>85</confidence>
+      <assumptions>Inja {{ object }} stringifies to JSON/map text visible to the model.</assumptions>
+    </finding>
+
+    <finding id="M5" severity="medium" status="open">
+      <file>SKSE/Plugins/SkyrimNet/prompts/helpers/sexlab_action_rape_target_start.prompt</file>
+      <line>1</line>
+      <also_files>
+        <file line="1">SKSE/Plugins/SkyrimNet/prompts/helpers/sexlab_action_raped_by_target_start.prompt</file>
+        <file line="10">SKSE/Plugins/SkyrimNet/prompts/helpers/sexlab_action_orgy.prompt</file>
+        <file>SKSE/Plugins/SkyrimNet/prompts/helpers/sexlab_default_sex_life.prompt</file>
+      </also_files>
+      <problem>
+        Helper prompts use stale [type] placeholders and are not referenced by any action YAML
+        (no render_template). Prompts.md claims they are tied to actions; assault YAMLs use inline
+        descriptions with [method] instead. Dead/misleading helpers risk future wiring bugs.
+      </problem>
+      <evidence>
+        Grep: only sexlab_none_change_outfit / sexlab_none_stop use render_template("helpers/...")
+        rape helpers: "[style] [type] sexually assault..."
+        Current sexlab_sex_rape_target.yaml description uses [method], not helpers
+      </evidence>
+      <fix>
+        Wire helpers via render_template and update [type]→[method], or delete/move to docs, or mark unused in Prompts.md.
+      </fix>
+      <confidence>90</confidence>
+    </finding>
+
+    <finding id="M6" severity="medium" status="open">
+      <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_sex_refused.yaml</file>
+      <line>11</line>
+      <also_files>
+        <file line="11">SKSE/Plugins/SkyrimNet/config/actions/sexlab_comfort_refused.yaml</file>
+        <file line="11">SKSE/Plugins/SkyrimNet/config/actions/sexlab_nonsexual_refused.yaml</file>
+      </also_files>
+      <problem>
+        Static intent value "refused" is interpolated by StartScene_Refused_Two into
+        "... refused to allow {intent} by ...", producing "refused to allow refused by ...".
+      </problem>
+      <evidence>
+        Actions.psc L163: msg = target_name+" "+style+" refused to allow "+intent+" by "
+        YAML intent value: refused
+      </evidence>
+      <fix>
+        Set intent to a noun phrase matching the category (sexual activities / comforting / showing affection),
+        matching punish_refused which uses value: punish.
+      </fix>
+      <confidence>88</confidence>
+    </finding>
+
+    <!-- LOW -->
+    <finding id="L1" severity="low" status="open">
+      <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_sex_.yaml</file>
+      <line>3</line>
+      <also_files>
+        <file line="3">SKSE/Plugins/SkyrimNet/config/actions/sexlab_punish_.yaml</file>
+        <file line="3">SKSE/Plugins/SkyrimNet/config/actions/sexlab_nonsexual_.yaml</file>
+      </also_files>
+      <problem>
+        Category PARAMS still use key "type" while executable children and Actions.md prefer Papyrus slot name "method".
+        LLM category hints can disagree with child action parameter names.
+      </problem>
+      <fix>Rename PARAMS keys type→method (and [type]→[method]) in category parent descriptions.</fix>
+      <confidence>90</confidence>
+    </finding>
+
+    <finding id="L2" severity="low" status="open">
+      <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_sex_sex_giving.yaml</file>
+      <line>20</line>
+      <also_files>
+        <file>many sexlab_sex_*.yaml vs sexlab_comfort_*.yaml / sexlab_punish_*.yaml</file>
+      </also_files>
+      <problem>
+        Style option vocab is inconsistent: sex/rape/masturbation use forceful|normal|gentle;
+        comfort/nonsexual/punish/stop/outfit use forcefully|normally|gently.
+        Refused_Two normalizes normal/normally only; other styles pass through to narration as-is.
+      </problem>
+      <fix>Pick one adverb form across all sexlab_* actions (prefer forcefully|normally|gently to match GetStyleDialog).</fix>
+      <confidence>85</confidence>
+    </finding>
+
+    <finding id="L3" severity="low" status="open">
+      <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_none_stop.yaml</file>
+      <line>1</line>
+      <also_files>
+        <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_none_change_outfit.yaml</file>
+        <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_none_change_targets_outfit.yaml</file>
+        <file>SKSE/Plugins/SkyrimNet/config/actions/sexlab_none_rape.yaml</file>
+      </also_files>
+      <problem>
+        Actions.md documents customCategory sexlab_none, but there is no sexlab_none_.yaml category parent and
+        none_* executables omit customCategory. They still load as top-level actions; category gating/docs drift.
+      </problem>
+      <fix>Add sexlab_none_.yaml + customCategory: sexlab_none on those four files, or update Actions.md to say they are uncategorized.</fix>
+      <confidence>90</confidence>
+    </finding>
+
+    <finding id="L4" severity="low" status="open" informational="true">
+      <file>SKSE/Plugins/SkyrimNet_SexLab/scenes/nonsexual_kissing.json</file>
+      <line>1</line>
+      <also_files>
+        <file>SKSE/Plugins/SkyrimNet_SexLab/scenes/nonsexual.json</file>
+        <file>SKSE/Plugins/SkyrimNet_SexLab/scenes/nonsexual_male_position_0.json</file>
+        <file>SKSE/Plugins/SkyrimNet_SexLab/scenes/pleasure_pain.json</file>
+      </also_files>
+      <problem>
+        Scene JSONs exist that no action YAML references via setting_name (Menu/Creator still may load them).
+        Couples with M1 for nonsexual_kissing.
+      </problem>
+      <fix>No change required if Menu-only; otherwise wire kissing YAML (M1). Informational.</fix>
+      <confidence>95</confidence>
+    </finding>
+  </findings>
+
+  <implementation_order note="Do not apply until author answers Q1/Q2.">
+    <step id="1" priority="1">Resolve Q1; fix H1+H2 direction vocab (YAML and/or Actions.psc).</step>
+    <step id="2" priority="1">Resolve Q2; fix H3 punish victim vs position-0 speaking_modifiers; tidy M2 descriptions.</step>
+    <step id="3" priority="2">M1 kissing setting; M3 cuddle tags; M6 refused intent values.</step>
+    <step id="4" priority="2">M4 remove {{ speaker }} dump; M5 orphan helpers.</step>
+    <step id="5" priority="3">L1-L3 polish; L4 informational only.</step>
+    <step id="6" priority="3">Write reviews/2026-07-23-01.review.md; refresh review-checkpoint.xml.</step>
+  </implementation_order>
+</execution_plan>

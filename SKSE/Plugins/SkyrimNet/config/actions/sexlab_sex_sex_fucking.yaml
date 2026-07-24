@@ -1,11 +1,14 @@
 customCategory: sexlab_sex
-name: Sex_Start_Fucking
-description: "Consensual [style] [direction] [type]"
+name: SexLab_Start_Fucking
+description: "Consensual [style] [direction] [method]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
-executionFunctionName: Sex_Start
+executionFunctionName: StartScene_Consensual_Two
 defaultPriority: 7
 parameterMapping:
+  - type: static 
+    name: intent
+    value: sexual activities
   - type: speaker
     name: speaker
     description: Speaker Actor parameter (triggering entity)
@@ -15,45 +18,12 @@ parameterMapping:
   - type: dynamic
     name: style
     description: forceful|normal|gentle
-  - type: dynamic 
-    name: direction 
-    description: fucked in my|fucking a
   - type: dynamic
-    name: type
-    description: pussy|ass
-eligibilityRules:
-  - conditions:
-      - decoratorName: get_global_value
-        arguments:
-          - skyrimnet_sexlab_ostim_player
-        comparisonOperator: ==
-        expectedValue: 0
-      - decoratorName: is_in_faction
-        arguments:
-          - currentActor
-          - SexLabAnimatingFaction
-        comparisonOperator: ==
-        expectedValue: false
-      - decoratorName: is_in_faction
-        arguments:
-          - currentActor
-          - OStimActorCountFaction
-        comparisonOperator: ==
-        expectedValue: false
-      - decoratorName: is_in_faction
-        arguments:
-          - currentActor
-          - ChildFaction
-        comparisonOperator: ==
-        expectedValue: false
-      - decoratorName: is_in_combat
-        arguments:
-          - currentActor
-        comparisonOperator: ==
-        expectedValue: false
-      - decoratorName: decnpc
-        arguments:
-          - currentActor
-        comparisonOperator: ==
-        expectedValue: false
-        resultPath: isChild
+    name: method
+    description: mouth|pussy|ass
+  - type: dynamic
+    name: direction
+    description: fucked in|fucking
+  - type: static 
+    name: setting_name
+    value: ""

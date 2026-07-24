@@ -1,19 +1,133 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"type": "pyro",
-			"projectFile": "skyrimse.ppj",
-			"gamePath": "C:\\Skyrim\\dev\\skyrim",
-			"problemMatcher": [
-				"$PapyrusCompiler"
-			],
-			"label": "pyro: Compile Project (skyrimse.ppj)",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			}
-		},
+    "version": "2.0.0",
+    "tasks": [
+        /* --- Compilers --- */
+        {
+            "label": "headers: build",
+            "type": "shell",
+            "command": "uv",
+            "args": [
+                "run",
+                "${workspaceFolder}/python_scripts/headers_build.py",
+                "-s",
+                "${workspaceFolder}/Scripts/Source",
+                "-p",
+                "${workspaceFolder}/skyrimse.ppj",
+                "-o",
+                "${workspaceFolder}/Headers"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "compile: papyrus",
+            "type": "shell",
+            "command": "c:/Skyrim/tools/papyrus-compiler/papyrus.exe",
+            "args": [
+                "compile",
+                "-nocache",
+                "-i", "${workspaceFolder}/Scripts/Source",
+                "-o", "${workspaceFolder}/Scripts",
+                "-h", "${workspaceFolder}/Headers",
+                "-h",
+                "${workspaceFolder}/Headers",
+                "-h",
+                "C:/Skyrim/dev/mods/SKSE64/Scripts/Source"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "compile: pyro",
+            "type": "shell",
+            "command": "c:/Users/bhuff/.vscode/extensions/joelday.papyrus-lang-vscode-2024.578.1412/pyro/pyro.exe",
+            "args": [
+                "${workspaceFolder}/skyrimse.ppj",
+                "--game-path",
+                "C:\\Skyrim\\dev\\skyrim"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": "$PapyrusCompiler"
+        },
+        {
+            "label": "compile: pyro (vs code)",
+            "type": "pyro",
+            "projectFile": "skyrimse.ppj",
+            "gamePath": "C:\\Skyrim\\dev\\skyrim",
+            "problemMatcher": ["$PapyrusCompiler"]
+        },
+        {
+            "label": "compile: skyrim",
+            "type": "shell",
+            "command": "C:\\Skyrim\\dev\\skyrim\\Papyrus Compiler\\PapyrusCompiler.exe",
+            "args": [
+                "${workspaceFolder}/Scripts/Source",
+                "-all",
+                "-output=${workspaceFolder}/Scripts",
+                "-import='${workspaceFolder}/Headers;${workspaceFolder}/Scripts/Source'"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        /* --- Helper Functions --- */
+        {
+            "label": "Swap Script Extensions",
+            "type": "shell",
+            "command": "uv",
+            "args": [
+                "run",
+                "python_scripts/change-extentions.py"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        /* --- SKSE / CMake --- */
         {
             "label": "CMake: Configure (Debug)",
             "type": "shell",
@@ -59,7 +173,7 @@
         {
             "label": "Copy DLL to SKSE/Plugins (Debug)",
             "type": "shell",
-			"command": "cmake -E make_directory \"${workspaceFolder}/SKSE/Plugins\" && cmake -E copy_if_different \"${workspaceFolder}/SKSE_Source/build/debug/Debug/SkyrimNet_SexLab.dll\" \"${workspaceFolder}/SKSE/Plugins/SkyrimNet_SexLab.dll\"",
+            "command": "cmake -E make_directory \"${workspaceFolder}/SKSE/Plugins\" && cmake -E copy_if_different \"${workspaceFolder}/SKSE_Source/build/debug/Debug/SkyrimNet_SexLab.dll\" \"${workspaceFolder}/SKSE/Plugins/SkyrimNet_SexLab.dll\"",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -76,5 +190,5 @@
             "dependsOn": "CMake: Build SKSE (Release)",
             "problemMatcher": []
         }
-	]
+    ]
 }

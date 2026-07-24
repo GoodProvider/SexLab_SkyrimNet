@@ -1,0 +1,6 @@
+{
+    "array_defaults":{
+        "speaking_modifiers":"_pleasure_"
+    },
+    "speaking_modifiers":["_pain_,_pleasure_"]
+}

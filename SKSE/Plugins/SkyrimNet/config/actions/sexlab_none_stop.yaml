@@ -1,24 +1,29 @@
-name: Sex_Stop
-description: "Stop Consensual sex."
+name: SEXLAB_STOP
+description: "{{render_template(\"helpers/sexlab_none_stop\")}}"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
-executionFunctionName: Sex_Stop
+executionFunctionName: SceneStop
 defaultPriority: 7
 parameterMapping:
   - type: speaker
-    name: consenting speaker
+    name: speaker
     description: Speaker Actor parameter (triggering entity)
+  - type: dynamic
+    name: style 
+    description: forcefully|normally|gently
 eligibilityRules:
   - conditions:
-      - decoratorName: is_in_faction
+      - decoratorName: get_faction_rank
         arguments:
           - currentActor
           - SexLabAnimatingFaction
-        comparisonOperator: ==
-        expectedValue: true
-      - decoratorName: is_in_faction
+        comparisonOperator: > 
+        expectedValue: 0
+      - decoratorName: get_faction_rank
         arguments:
           - currentActor
           - SkyrimNet_SexLab_Faction_Victim
-        comparisonOperator: ==
-        expectedValue: false
+        comparisonOperator: < 
+        expectedValue: 0
+    logicalOperator: AND
+    required: true

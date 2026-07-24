@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  review-checkpoint.xml — cold-start context for a Papyrus code review of SkyrimNet_SexLab.
+
+  Purpose: feed this file together with review-guide.xml to a fresh agent (no prior chat
+  context) so it can resume reviewing/fixing without rediscovering the ground rules.
+
+  Design: this file holds DURABLE knowledge only — architecture, hard constraints, locked
+  decisions, the open backlog, and current status. Per-pass finding detail lives in the
+  reviews/*.review.md files and in review-execution-plan.xml; this checkpoint links to them
+  rather than duplicating them.
+-->
+<checkpoint>
+  <metadata>
+    <project>SkyrimNet_SexLab</project>
+    <summary>Bridge mod between SkyrimNet (LLM) and SexLab Framework.</summary>
+    <language>Papyrus (Skyrim SE/AE)</language>
+    <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
+    <updated>2026-07-22</updated>
+    <key_paths>
+      <scripts_source>Scripts/Source</scripts_source>
+      <action_yamls>SKSE/Plugins/SkyrimNet/config/actions</action_yamls>
+      <prompts>SKSE/Plugins/SkyrimNet/prompts</prompts>
+    </key_paths>
+    <related_artifacts>
+      <artifact role="review rules / persona">review-guide.xml</artifact>
+      <artifact role="current fix-pass plan (findings, problem/fix/file/line)">review-execution-plan.xml</artifact>
+      <artifact role="per-pass changelog">reviews/*.review.md</artifact>
+    </related_artifacts>
+    <compile>
+      Use the VS Code / Cursor task "compile: pyro" (pyro against skyrimse.ppj, game path
+      C:\Skyrim\dev\skyrim). Do not invent alternate one-off compile commands.
+    </compile>
+    <dependencies>
+      SexLabFramework, JContainers, StorageUtil, SKSE, SkyrimNet API, PO3_SKSEFunctions,
+      UIExtensions, SkyMessage. SkyrimNet_DOM is optional (../SkyrimNet_DOM/Scripts/Source).
+    </dependencies>
+  </metadata>
+
+  <architecture>
+    <flow>Creator (pooled) -> StartScene -> Manager.CreateSceneByCreator -> Scene.Setup(creator) -> caller MUST creator.Release().</flow>
+    <detail>manager.CreateCreator() returns the first inactive slot from a fixed creators[] pool and marks it ACTIVE; returns None when exhausted. Scene.Setup copies all values out of the creator, so every caller must Release() afterwards to free the slot.</detail>
+    <detail>Manager hooks SexLab thread events and routes to Scene handlers. SkyrimNet consumes scene state as JSON via Scene.GetDescription / GetObj and the decorators in SkyrimNet_SexLab_Decorators.psc.</detail>
+    <detail>DOM is optional: main.handler_dom is either the Interface stub (safe no-op/passthrough on the Main quest) or the real SkyrimNet_SexLab_Handler_DOM.esp. Main.Setup guarantees handler_dom is non-None.</detail>
+    <detail>SeparateOrgasms for Dom slaves: Manager intentionally skips; external SkyrimNet_DOM OnOrgasm -> DOMSlave_Orgasmed -> Manager.OrgasmCustom (which appends " is orgasming.").</detail>
+    <detail>External-consumer JSON keys are underscore-prefixed (e.g. _actors, _activity, _options); prompts must read the exact underscored key.</detail>
+  </architecture>
+
+  <constraints note="Hard rules from review-guide.xml/facts. Do NOT re-report these as findings.">
+    <do_not_report>Compile errors — all Scripts/Source compiles via pyro.</do_not_report>
+    <do_not_report>Case mismatches — Papyrus is case-insensitive.</do_not_report>
+    <do_not_report>GetFormFromFile / CK property wiring — intentional in global functions.</do_not_report>
+    <do_not_report>PagedActors and related calls.</do_not_report>
+    <do_not_report>udng_groups None concern — set correctly.</do_not_report>
+    <ignore>Files/identifiers starting with z-*.</ignore>
+    <ignore>SkyrimNet_Sexlab_Creatures.psc — out of scope per guide.</ignore>
+    <not_dead_code>SkyrimNet_SexLab_WebUI.psc — intentional stub for future SKSE library anchor.</not_dead_code>
+    <not_a_bug id="H9">Manager Dom orgasm early-return — external DOM calls DOMSlave_Orgasmed.</not_a_bug>
+    <fact>GetModByName("Data/SexLab.esm"): 255 = missing; the Data/ prefix is correct.</fact>
+    <fact>ParseString(desc, "sl", json): pass {"actors":[...]}; namespace becomes sl.actors.N.</fact>
+  </constraints>
+
+  <locked_decisions note="Design decisions confirmed by the user; treat as settled.">
+    <decision>Creator.Release() on cancel or once the Scene is created; full pool-slot reset.</decision>
+    <decision>Narration param name is optional_is_dropped everywhere; fallback optional_is_dropped=True.</decision>
+    <decision>RegisterEvent is silent on blank message and on duplicates (silent drop only).</decision>
+    <decision>Shared NarrationCoolOffAllows(source, target); CheckDuplicate calls ContinueActivity when cool-off allows.</decision>
+    <decision>allow_continue_fallback=False on DirectNarration_Optional/RegisterEvent paths (anti-recursion).</decision>
+    <decision>Both source and target None: silent drop; no ContinueActivity from CheckDuplicate.</decision>
+    <decision>Player fallback StorageUtil key used when source is None.</decision>
+    <decision>First StageStart: GetIntentMessage(INTENT_STAGE_START) + append stage desc if non-empty; empty desc -> ContinueActivity(..., True). Non-first or unchanged desc -> ContinueActivity(True).</decision>
+    <decision>Dom Combined narration: silent unless orgasm_expected==1; LLM reminder only when a slave did not orgasm.</decision>
+    <decision>Menu locks actors via LockAllActorLock (mirrors Action_Start); Release on lock failure.</decision>
+    <decision>SkyrimNet_DOM optional: Interface stub + real Handler_DOM must both work.</decision>
+    <decision id="M4">Style DirectNarration: exactly one DN when style changes on a live Scene (EditDescriptions style button). No DN from Scene_Creator or Interface.SetStyleDialog.</decision>
+    <decision id="YAML-Victim">Fixed-role nonconsensual two-actor actions use StartScene_Nonconsensual_Two_TargetVictim / _SpeakerVictim. Dynamic victim uses StartScene_Nonconsensual_Two with explicit victim. Never pass speaking_victim in action YAMLs.</decision>
+    <decision id="YAML-Names">Action YAML name values must be unique; static mappings use value; dynamic mappings use description; prefer Papyrus slot names (method, how).</decision>
+  </locked_decisions>
+
+  <pass_history note="Newest first. Detailed findings are in the linked review docs.">
+    <pass date="2026-07-22" scope="Docs split + punish-rape setting_name fix" status="applied" compile="n/a">
+      <review_doc>README.md / Actions.md / Prompts.md / Code.md / CHANGELOG.md</review_doc>
+      <headline>Y-RapeSettingName: sexlab_punish_rape_target*.yaml setting_name punish_pain_pleasure_rape → punish_pleasure_pain_rape (matches scenes/punish_pleasure_pain_rape.json + Menu.psc). Docs: README end-user guide; Actions.md / Prompts.md / Code.md author-dev guides; CHANGELOG.md since 0.30.5.</headline>
+    </pass>
+    <pass date="2026-07-18" scope="Action YAML practice + parameter audit (all 29 actions vs Actions.psc)" status="applied" compile="clean">
+      <review_doc>reviews/2026-07-18-01.review.md</review_doc>
+      <headline>H1-H5 assault → TargetVictim/SpeakerVictim or Nonconsensual_Two+victim (none_rape); remove speaking_victim; M1/M2 unique names Sexual_Refused / Masturbation_Forced; M3/M4 method + dynamic description; L1-L3 category JSON, stop/outfit names, static intent values; KB action-YAML practice note.</headline>
+    </pass>
+    <pass date="2026-07-17" scope="Scoped post-checkpoint review (files newer than 2026-07-16 10:06) + fix pass H1-H3 M1-M5 L1-L2" status="applied" compile="clean">
+      <review_doc>reviews/2026-07-17-01.review.md</review_doc>
+      <headline>H1 initiator keeps orgasm_narration; H2 AnimationStart re-entrant preserves ACTIVE + orgasm stash; H3 EditDescriptions anim_info != 0 release; M1 description_last; M2 AnimationEnd NPC orgasm DN; M3 OrgasmIndividual " is orgasming."; M4 locked Scene-only style DN; M5 by_target on [speaker]; L1/L2 dead branch/locals.</headline>
+    </pass>
+    <pass date="2026-07-16" scope="Deferred-backlog fix pass (M7, hide_help, victim_faction, trace_labels, dom_pr, S11)" status="applied" compile="clean">
+      <review_doc>reviews/2026-07-16-03.review.md</review_doc>
+      <headline>M7 GetAnim_Info retain + caller-release (Stages, no caching: animation+stage change between calls); hide_help gates EditDescriptions help; victim_faction tracked via retained JArray of forms reconciled in Setup/AlignActors and cleared in Release (Scene); trace-label fixes (Manager 168/217/745, Creator 327/525); dom_pr dead commented Setup removed; S11 furniture natural phrasing. L-E dropped: direction must stay type:dynamic (giving|getting sets speaker-vs-target victim role).</headline>
+    </pass>
+    <pass date="2026-07-16" scope="Follow-up review scoped to Scripts/Source only (per user request)" status="applied" compile="clean">
+      <review_doc>reviews/2026-07-16-02.review.md</review_doc>
+      <headline>All in Menu.psc: N-1 (high) MutliTarget selection OOB when list full (remove branch hit with stale indexes[]==-1; prior M-D guarded only add); N-2/N-3 (med) punish/affection sub-menu cancel ("" from getIndex=false) still started scene; N-4 (low) setting picker off-by-one excluded idx 0.</headline>
+    </pass>
+    <pass date="2026-07-16" scope="Fresh comprehensive review — whole Scripts/Source + action YAMLs + prompt schema" status="applied" compile="clean">
+      <review_doc>reviews/2026-07-16-01.review.md</review_doc>
+      <headline>H-A creator-pool leak (GetSceneByThread / CreateSceneWithoutCreator now Release); H-B OStim -1/cancel collision; H-C/H-D decorator key mismatches (_activity/_options); M-A..M-E, L-A..L-C.</headline>
+    </pass>
+    <pass date="2026-07-15" scope="Focused single-file review — SkyrimNet_SexLab_Scene.psc" status="applied" compile="clean">
+      <review_doc>see checkpoint history / prior notes (S1–S10)</review_doc>
+      <headline>S1 GetLocation dead special-location block; S2 Setup index OOB; S4 Release clears orgasm_messages; S9 StageStart empty-desc fallback; plus S3/S5–S10 polish.</headline>
+    </pass>
+    <pass date="2026-07-08" scope="Whole Scripts/Source review + fix pass" status="applied" compile="clean">
+      <review_doc>reviews/2026-07-08-01.review.md</review_doc>
+      <headline>H1–H10, H7b, M1–M6, NEW-1/2, Y1–Y3, P2–P8; sexlab_activities decorator + GetObj names/victims/location exports.</headline>
+    </pass>
+  </pass_history>
+
+  <open_backlog note="Deferred / not yet scheduled. 2026-07-22 applied Y-RapeSettingName + docs split.">
+    <deferred id="M8">orgasm_expected vs description-walk mismatch (confirm per-stage vs per-animation semantics with author before changing).</deferred>
+    <deferred id="M9-M16">Remaining: orgasm editor UX polish; OStim affection path (Menu affection branch is a no-op notification under OStim).</deferred>
+    <deferred id="S10b">Convert always-on Trace scaffolding to debug_mode-gated DbgMsg (Scene.psc).</deferred>
+    <informational id="L-D">Registered-but-unconsumed decorators: Intent (_intent), Player_LOS_Distance (_distance/_los).</informational>
+    <informational id="A-StageCase">Animation JSON stage keys are case-sensitive in JContainers; loader uses lowercase "stage N" / "version". Some shipped author files may use "Stage N" — prefer lowercase when editing; bulk re-case of GoodProvider not scheduled.</informational>
+    <resolved id="Y-RapeSettingName">2026-07-22: sexlab_punish_rape_target.yaml and sexlab_punish_rape_target_by_target.yaml setting_name was punish_pain_pleasure_rape; fixed to punish_pleasure_pain_rape to match scenes/punish_pleasure_pain_rape.json and Menu.psc. Do not re-report.</resolved>
+    <resolved id="L-E">Superseded 2026-07-18: fixed-role victim is TargetVictim/SpeakerVictim; LLM direction (e.g. nude spanking) correctly uses dynamic description. Do not re-report value:-for-direction.</resolved>
+  </open_backlog>
+
+  <current_status>
+    <state>2026-07-22: Y-RapeSettingName fixed in action YAMLs; README/Actions/Prompts/Code/update docs updated. Prior Papyrus passes still compile clean via pyro (last user-confirmed: 2026-07-18 01).</state>
+    <pending>
+      <item>In-game smoke tests for the 2026-07-18 (01) pass: assault Target/Speaker victim roles, none_rape dynamic victim, unique refused/masturbation names, outfit/stop. See post_fix_verification in review-execution-plan.xml.</item>
+      <item>In-game smoke tests for the 2026-07-17 (01) pass still outstanding.</item>
+      <item>In-game smoke tests for the 2026-07-16 (03)/(02)/(01) passes still outstanding.</item>
+      <item>Smoke-test punish-rape actions load scene punish_pleasure_pain_rape after YAML fix.</item>
+      <item>Schedule the deferred backlog above when desired (M8, remaining M9-M16, S10b).</item>
+    </pending>
+  </current_status>
+
+  <how_to_resume>
+    <step>Read review-guide.xml (persona, output rules, do-not-report facts) and this checkpoint.</step>
+    <step>For a new review pass: regenerate review-execution-plan.xml with findings ordered High-&gt;Medium-&gt;Low, each with problem, suggested fix, filename, and 1-based line number (include commented lines).</step>
+    <step>Apply fixes, compile via the "compile: pyro" task, write reviews/&lt;YYYY-MM-DD-NN&gt;.review.md, then add a &lt;pass&gt; entry here and update &lt;updated&gt; and &lt;current_status&gt;.</step>
+    <step>Respect &lt;constraints&gt; and &lt;locked_decisions&gt;; do not re-report items listed there.</step>
+  </how_to_resume>
+</checkpoint>
