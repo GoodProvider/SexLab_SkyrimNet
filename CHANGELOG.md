@@ -1,6 +1,9 @@
 # Changelog
 
-## Updates since 0.30.5
+https://github.com/GoodProvider/SkyrimNet_SexLab/releases/tag/0.31.0
+
+requires: 
+    - https://github.com/ryobg/JContainers/releases/tag/v4.2.13.1 (newer then nexus) 
 
 ### Players
 
