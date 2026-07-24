@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SkyrimNet SexLab</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            user-select: none;
+        }
+
+        :root {
+            --accent:        #c9a84c;
+            --accent-glow:   rgba(201, 168, 76, 0.15);
+            --text:          rgba(218, 210, 192, 0.95);
+            --text-muted:    rgba(175, 162, 138, 0.75);
+            --bg:            rgba(10, 8, 5, 0.70);
+            --border:        rgba(201, 168, 76, 0.20);
+            --danger:        #c27a6a;
+            --danger-hover:  #d48878;
+            --font-body:     Georgia, 'Times New Roman', serif;
+            --font-ui:       system-ui, sans-serif;
+            --fs:            48px;
+        }
+
+        /* ── Panels container ─────────────────────────────────── */
+        #panels-container {
+            position: absolute;
+            top: 20%;
+            left: 10%;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        /* ── Panel ────────────────────────────────────────────── */
+        .panel {
+            min-width: 380px;
+            padding: 28px 36px 24px;
+            background: var(--bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            animation: panelIn 0.25s ease-out;
+        }
+
+        #sex-menu-panel {
+            width: 920px;
+        }
+
+        @keyframes panelIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0);    }
+        }
+
+        /* ── Name ─────────────────────────────────────────────── */
+        .target-row {
+            font-family: var(--font-ui);
+            font-size: var(--fs);
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 0.04em;
+            text-shadow: 0 0 18px var(--accent-glow);
+            margin-bottom: 18px;
+        }
+
+        /* ── Framework row ────────────────────────────────────── */
+        .field-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-family: var(--font-ui);
+            font-size: var(--fs);
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .field-row select {
+            background: rgba(10, 8, 5, 0.85);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.90);
+            padding: 2px 10px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        .field-row select:hover {
+            border-color: rgba(201, 168, 76, 0.45);
+        }
+
+        /* ── Section headers ──────────────────────────────────── */
+        .section-header {
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.65);
+            color: var(--text-muted);
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 4px;
+            margin: 20px 0 6px;
+        }
+
+        /* ── Clickable options ────────────────────────────────── */
+        .option {
+            font-family: var(--font-body);
+            font-size: var(--fs);
+            color: var(--text);
+            cursor: pointer;
+            padding: 7px 0 7px 18px;
+            transition: color 0.15s ease, box-shadow 0.15s ease;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.70);
+        }
+
+        .option:hover {
+            color: var(--accent);
+            box-shadow: inset 2px 0 0 var(--accent);
+        }
+
+        .option:active {
+            color: var(--text-muted);
+            box-shadow: inset 2px 0 0 var(--text-muted);
+        }
+
+        /* ── Cancel ───────────────────────────────────────────── */
+        .option-cancel {
+            font-family: var(--font-ui);
+            font-size: var(--fs);
+            color: var(--danger);
+            cursor: pointer;
+            padding: 7px 0;
+            margin-top: 20px;
+            border-top: 1px solid rgba(194, 122, 106, 0.20);
+            transition: color 0.15s ease;
+        }
+
+        .option-cancel:hover {
+            color: var(--danger-hover);
+        }
+
+        .option-cancel:active {
+            color: var(--text-muted);
+        }
+
+        /* ── Subsection header ────────────────────────────────── */
+        .subsection-header {
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.55);
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin: 10px 0 4px;
+        }
+
+        /* ── Position row ─────────────────────────────────────── */
+        .position-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-body);
+            font-size: var(--fs);
+            color: var(--text);
+            padding: 2px 0 2px 18px;
+        }
+
+        .nude-toggle {
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.65);
+            cursor: pointer;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 1px 8px;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .nude-toggle.nude {
+            color: var(--text-muted);
+        }
+
+        .nude-toggle.clothed {
+            color: var(--accent);
+            border-color: rgba(201, 168, 76, 0.45);
+        }
+
+        .pos-hint {
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.55);
+            color: var(--text-muted);
+        }
+
+        /* ── Name list (empty state) ──────────────────────────── */
+        .name-list {
+            font-family: var(--font-body);
+            font-size: calc(var(--fs) * 0.80);
+            color: var(--text);
+            padding: 2px 0 2px 18px;
+            min-height: 1.4em;
+        }
+
+        /* ── Bottom bar (Start + Cancel) ─────────────────────── */
+        .bottom-bar {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            margin-top: 20px;
+            padding-top: 10px;
+        }
+
+        .bottom-bar .option-cancel {
+            margin-top: 0;
+            border-top: none;
+            padding: 0;
+        }
+
+        /* ── Start button ─────────────────────────────────────── */
+        .action-btn {
+            font-family: var(--font-ui);
+            font-size: var(--fs);
+            color: var(--accent);
+            cursor: pointer;
+            padding: 4px 20px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            transition: background 0.15s;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-glow);
+        }
+
+        .action-btn.disabled {
+            color: var(--text-muted);
+            border-color: var(--border);
+            cursor: default;
+            pointer-events: none;
+        }
+
+        /* ── Tag mode row ─────────────────────────────────────── */
+        .tag-mode-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            font-family: var(--font-ui);
+            font-size: var(--fs);
+            padding: 4px 0;
+        }
+
+        .tag-mode-btn {
+            color: var(--text-muted);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: color 0.15s;
+        }
+
+        .tag-mode-btn.active {
+            color: var(--accent);
+        }
+
+        .tag-mode-btn:hover {
+            color: var(--accent);
+        }
+
+        /* ── Tag chips ────────────────────────────────────────── */
+        .active-tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.70);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 1px 8px;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .tag-chip:hover {
+            color: var(--danger);
+            border-color: rgba(194, 122, 106, 0.45);
+        }
+
+        /* ── Nearby wrapping list ─────────────────────────────── */
+        .nearby-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 4px 0 4px 18px;
+        }
+
+        .nearby-item {
+            font-family: var(--font-body);
+            font-size: var(--fs);
+            color: var(--text);
+            cursor: pointer;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 2px 10px;
+            transition: color 0.15s, background 0.15s, border-color 0.15s;
+        }
+
+        .nearby-item.selected {
+            color: var(--accent);
+            border-color: rgba(201, 168, 76, 0.45);
+            background: var(--accent-glow);
+        }
+
+        .nearby-item:hover {
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        /* ── Tag group buttons ────────────────────────────────── */
+        .tag-group-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 24px 0 8px;
+        }
+
+        .tag-group-btn {
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.65);
+            color: var(--text-muted);
+            cursor: pointer;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 2px 10px;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .tag-group-btn:hover,
+        .tag-group-btn.open {
+            color: var(--accent);
+            border-color: rgba(201, 168, 76, 0.45);
+        }
+
+        /* ── Tag group dropdown ───────────────────────────────── */
+        .tag-group-dropdown {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .tag-member {
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.70);
+            color: var(--text);
+            cursor: pointer;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 2px 10px;
+            transition: color 0.15s, background 0.15s;
+        }
+
+        .tag-member:hover {
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+    </style>
+</head>
+<body>
+    <div id="panels-container">
+    <div id="target-panel" class="panel">
+
+        <div class="target-row">Bill Bob</div>
+
+        <div class="field-row">
+            <span>Framework</span>
+            <select id="framework-select" onchange="dispatchFrameworkChange(this.value)">
+                <option value="sexlab">SexLab</option>
+                <option value="ostim">OStim</option>
+            </select>
+        </div>
+
+        <div class="section-header">Affection</div>
+        <div class="option" onclick="dispatchAction('kiss')">Kiss</div>
+        <div class="option" onclick="dispatchAction('hug')">Hug</div>
+
+        <div class="section-header">Sexual</div>
+        <div class="option" onclick="showSexMenuForSex()">sex</div>
+        <div class="option" onclick="dispatchAction('rape')">rape</div>
+        <div class="option" onclick="dispatchAction('raped by')">raped by</div>
+
+        <div class="section-header">Gear</div>
+        <div class="option" onclick="dispatchAction('clothing')">undress</div>
+        <div class="option" onclick="dispatchAction('bondage')">bondage</div>
+
+        <div class="option-cancel" onclick="window.onCancel()">Cancel</div>
+
+    </div>
+
+    <div id="sex-menu-panel" class="panel">
+
+        <div class="target-row">Sex Menu</div>
+
+        <div class="section-header">Actors</div>
+
+        <div class="subsection-header">nearby</div>
+        <div id="nearby-list"></div>
+
+        <div class="subsection-header">positions</div>
+        <div id="positions-list"></div>
+
+        <div class="section-header">Tags</div>
+
+        <div class="tag-mode-row">
+            <span id="btn-include" class="tag-mode-btn active" onclick="setActiveList('include')">include</span>
+            <div id="include-tags" class="active-tag-list"></div>
+        </div>
+        <div class="tag-mode-row">
+            <span id="btn-exclude" class="tag-mode-btn" onclick="setActiveList('exclude')">exclude</span>
+            <div id="exclude-tags" class="active-tag-list"></div>
+        </div>
+
+        <div id="tag-group-row" class="tag-group-row"></div>
+        <div id="tag-group-dropdown" class="tag-group-dropdown" style="display:none"></div>
+
+        <div class="bottom-bar">
+            <div id="start-btn" class="action-btn disabled" onclick="sexMenuStart()">Start</div>
+            <div class="option-cancel" onclick="window.onCancel()">Cancel</div>
+        </div>
+
+    </div>
+    </div><!-- #panels-container -->
+
+    <script>
+        function dispatchAction(action) {
+            if (typeof window.onAction === 'function') {
+                window.onAction(action);
+            }
+        }
+
+        function dispatchFrameworkChange(value) {
+            if (typeof window.onFrameworkChange === 'function') {
+                window.onFrameworkChange(value);
+            }
+        }
+
+        // C++ Invoke adapters (Papyrus_WebUI / WebUI.cpp panel names)
+        function showPanel(id) {
+            if (id === 'target_menu_panel' || id === 'target-panel') {
+                document.getElementById('target-panel').style.display = '';
+            } else if (id === 'sex_menu_panel' || id === 'sex-menu-panel') {
+                showSexMenu();
+            }
+        }
+
+        function hidePanel(id) {
+            if (id === 'target_menu_panel' || id === 'target-panel') {
+                document.getElementById('target-panel').style.display = 'none';
+            } else if (id === 'sex_menu_panel' || id === 'sex-menu-panel') {
+                hideSexMenu();
+            }
+        }
+
+        // ── Tag data (loaded from tag_group.json on show) ─────────
+        let TAG_DATA = { groups: [], group_tags: {} };
+
+        async function loadTagData() {
+            try {
+                const res  = await fetch('../../../SKSE/Plugins/SkyrimNet_SexLab/tag_group.json');
+                const data = await res.json();
+                TAG_DATA = {
+                    groups: data._order || [],
+                    group_tags: Object.fromEntries(
+                        Object.entries(data._group_tags || {}).map(([g, tags]) => [g, Object.keys(tags)])
+                    )
+                };
+            } catch (e) {
+                console.error('Failed to load tag_group.json', e);
+            }
+        }
+
+        // ── State ─────────────────────────────────────────────────
+        let playerName  = 'Player';   // kept in sync by setPlayerActor
+        let nearbyActors = [];        // [{name, uuid}, ...] — populated by C++
+        let actorNames   = {};        // uuid -> name (lookup for renderPositions)
+        let playerActor  = { name: 'Player', uuid: '0' };
+        let targetActor  = { name: '',       uuid: '0' };
+        let selectedActors = new Set();   // Set<uuid string>
+        let nudeState      = {};          // uuid -> bool
+        let includeTags    = [];
+        let excludeTags    = [];
+        let activeList     = 'include';
+        let openGroup      = null;
+
+        // ── C++-callable actor setters ────────────────────────────
+        function setNearbyActors(actors) {
+            nearbyActors = actors;
+            actorNames = {};
+            for (const a of nearbyActors) actorNames[a.uuid] = a.name;
+            renderNearby();
+        }
+
+        function setTargetActor(uuid, name) {
+            targetActor = { uuid, name };
+            actorNames[uuid] = name;
+            document.querySelector('.target-row').textContent = name;
+        }
+
+        function setPlayerActor(uuid, name) {
+            playerActor = { uuid, name };
+            actorNames[uuid] = name;
+            playerName = name;
+        }
+
+        // ── Actors ────────────────────────────────────────────────
+        function toggleActor(uuid) {
+            if (selectedActors.has(uuid)) {
+                selectedActors.delete(uuid);
+                delete nudeState[uuid];
+            } else {
+                selectedActors.add(uuid);
+                nudeState[uuid] = true;
+            }
+            renderNearby(); renderPositions();
+        }
+
+        function renderNearby() {
+            const sorted = [...nearbyActors].sort((a, b) => a.name.localeCompare(b.name));
+            document.getElementById('nearby-list').innerHTML =
+                `<div class="nearby-list">${sorted.map(({ name, uuid }) => {
+                    const sel = selectedActors.has(uuid);
+                    return `<span class="nearby-item${sel ? ' selected' : ''}" onclick="toggleActor('${uuid}')">${name}</span>`;
+                }).join('')}</div>`;
+        }
+
+        function toggleNude(uuid) {
+            nudeState[uuid] = !nudeState[uuid];
+            renderPositions();
+        }
+
+        function renderPositions() {
+            const uuids = [...selectedActors];
+            document.getElementById('start-btn').classList.toggle('disabled', uuids.length === 0);
+            if (!uuids.length) {
+                document.getElementById('positions-list').innerHTML =
+                    `<div class="name-list">\u2014</div>`;
+                return;
+            }
+            document.getElementById('positions-list').innerHTML = uuids.map((uuid, i) => {
+                const name   = actorNames[uuid] || uuid;
+                const isNude = nudeState[uuid] !== false;
+                const hint   = i === 0 ? '<span class="pos-hint">(often female/sub)</span>'
+                             : i === 1 ? '<span class="pos-hint">(often male/dom)</span>' : '';
+                return `<div class="position-row">${i}&nbsp;${name}<span class="nude-toggle ${isNude ? 'nude' : 'clothed'}" onclick="toggleNude('${uuid}')">${isNude ? 'nude' : 'clothed'}</span>${hint}</div>`;
+            }).join('');
+        }
+
+        // ── Tags ──────────────────────────────────────────────────
+        function setActiveList(mode) {
+            activeList = mode;
+            document.getElementById('btn-include').classList.toggle('active', mode === 'include');
+            document.getElementById('btn-exclude').classList.toggle('active', mode === 'exclude');
+        }
+
+        function removeTag(tag, list) {
+            if (list === 'include') includeTags = includeTags.filter(t => t !== tag);
+            else excludeTags = excludeTags.filter(t => t !== tag);
+            renderTagLists();
+        }
+
+        function renderTagLists() {
+            ['include', 'exclude'].forEach(list => {
+                const tags = list === 'include' ? includeTags : excludeTags;
+                document.getElementById(`${list}-tags`).innerHTML = tags.map(t =>
+                    `<span class="tag-chip" onclick="removeTag('${t}','${list}')">${t}</span>`
+                ).join('');
+            });
+        }
+
+        // ── Tag groups ────────────────────────────────────────────
+        function initTagGroups() {
+            document.getElementById('tag-group-row').innerHTML =
+                TAG_DATA.groups.map(g =>
+                    `<span class="tag-group-btn" id="grpbtn-${g}" onclick="toggleGroup('${g}')">${g}</span>`
+                ).join('');
+        }
+
+        function toggleGroup(group) {
+            openGroup = openGroup === group ? null : group;
+            renderGroupDropdown();
+        }
+
+        function renderGroupDropdown() {
+            const dd = document.getElementById('tag-group-dropdown');
+            TAG_DATA.groups.forEach(g => {
+                const btn = document.getElementById(`grpbtn-${g}`);
+                if (btn) btn.classList.toggle('open', g === openGroup);
+            });
+            if (!openGroup) { dd.style.display = 'none'; return; }
+            const members = TAG_DATA.group_tags[openGroup] || [];
+            dd.innerHTML = members.map(t =>
+                `<span class="tag-member" onclick="addTag('${t}')">${t}</span>`
+            ).join('');
+            dd.style.display = 'flex';
+        }
+
+        function addTag(tag) {
+            const list = activeList === 'include' ? includeTags : excludeTags;
+            if (!list.includes(tag)) { list.push(tag); renderTagLists(); }
+            openGroup = null;
+            renderGroupDropdown();
+        }
+
+        document.addEventListener('click', e => {
+            if (!openGroup) return;
+            const row = document.getElementById('tag-group-row');
+            const dd  = document.getElementById('tag-group-dropdown');
+            if (!row.contains(e.target) && !dd.contains(e.target)) {
+                openGroup = null;
+                renderGroupDropdown();
+            }
+        });
+
+        // ── Visibility ────────────────────────────────────────────
+        function sexMenuStart() {
+            if (typeof window.onAction === 'function') {
+                window.onAction(JSON.stringify({
+                    action:  'sex_start',
+                    actors:  [...selectedActors].map(uuid => ({ uuid, nude: nudeState[uuid] !== false })),
+                    include: includeTags,
+                    exclude: excludeTags
+                }));
+            }
+        }
+
+        async function showSexMenu() {
+            selectedActors = new Set(); nudeState = {}; includeTags = []; excludeTags = [];
+            activeList = 'include'; openGroup = null;
+            renderNearby(); renderPositions();
+            renderTagLists();
+            await loadTagData();
+            initTagGroups(); renderGroupDropdown();
+            document.getElementById('sex-menu-panel').style.display = '';
+        }
+
+        async function showSexMenuForSex() {
+            await showSexMenu();
+            selectedActors.add(targetActor.uuid);
+            nudeState[targetActor.uuid] = true;
+            selectedActors.add(playerActor.uuid);
+            nudeState[playerActor.uuid] = true;
+            renderPositions();
+            renderNearby();
+        }
+
+        function hideSexMenu() {
+            document.getElementById('sex-menu-panel').style.display = 'none';
+        }
+
+        hideSexMenu();
+        document.getElementById('target-panel').style.display = 'none';
+    </script>
+</body>
+</html>

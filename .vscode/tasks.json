@@ -74,13 +74,6 @@
             "problemMatcher": "$PapyrusCompiler"
         },
         {
-            "label": "compile: pyro (vs code)",
-            "type": "pyro",
-            "projectFile": "skyrimse.ppj",
-            "gamePath": "C:\\Skyrim\\dev\\skyrim",
-            "problemMatcher": ["$PapyrusCompiler"]
-        },
-        {
             "label": "compile: skyrim",
             "type": "shell",
             "command": "C:\\Skyrim\\dev\\skyrim\\Papyrus Compiler\\PapyrusCompiler.exe",
@@ -141,7 +134,7 @@
         {
             "label": "CMake: Build SKSE (Debug)",
             "type": "shell",
-            "command": "cmake --build --preset build-debug",
+            "command": "cmake --build --preset build-debug && cmake -E make_directory \"${workspaceFolder}/SKSE/Plugins\" && cmake -E copy_if_different \"${workspaceFolder}/SKSE_Source/build/debug/Debug/SkyrimNet_SexLab.dll\" \"${workspaceFolder}/SKSE/Plugins/SkyrimNet_SexLab.dll\"",
             "options": {
                 "cwd": "${workspaceFolder}/SKSE_Source"
             },

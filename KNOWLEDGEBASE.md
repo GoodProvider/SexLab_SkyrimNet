@@ -1,5 +1,9 @@
 # Knowledgebase
 
+## PrismaUI view path (2026-07-24)
+
+`CreateView("SkyrimNet_SexLab/index.html")` loads from **`Data/PrismaUI/views/`**, not from `SKSE/Plugins/`. This mod ships the overlay at `PrismaUI/views/SkyrimNet_SexLab/index.html` (restored from commit `a8c9440`). Missing that file → valid-looking C++ open path (hotkey / `Target_Menu_Open`) but **no visible UI**. C++ Invokes use panel ids `target_menu_panel` / `sex_menu_panel`; the HTML maps those via `showPanel` / `hidePanel` adapters onto `#target-panel` / `#sex-menu-panel`.
+
 ## SexLab position slots and speaker_position (2026-07-23)
 
 In this mod's sex / punish animations, **position_0 is submissive** and **position_1 is dominant**:

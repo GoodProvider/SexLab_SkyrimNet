@@ -3,9 +3,16 @@
 #include "WebUI_Log.h"
 #include "RE/Skyrim.h"
 
+#include <deque>
+#include <mutex>
+#include <string>
+
 static PRISMA_UI_API::IVPrismaUI1* PrismaUI = nullptr;
 static PrismaView g_view = 0;
 static std::atomic<bool> g_gameReady{false};
+static std::atomic<bool> g_domReady{false};
+static std::mutex g_invokeMutex;
+static std::deque<std::string> g_pendingInvokes;
 
 KeyHandler* KeyHandler::GetSingleton()
 {
@@ -73,9 +80,14 @@ void WebUI_Visibility_Show()
         webui_log::info("WebUI blocked — no game loaded.");
         return;
     }
+    if (!PrismaUI->IsValid(g_view)) {
+        webui_log::critical("WebUI_Visibility_Show: view invalid (missing PrismaUI/views/SkyrimNet_SexLab/index.html?).");
+        return;
+    }
 
     PapyrusBindings_WebUI::PopulateNearbyActors();
 
+    webui_log::info("WebUI Show + Focus.");
     PrismaUI->Show(g_view);
     PrismaUI->Focus(g_view, true);
 }
@@ -101,9 +113,33 @@ void WebUI_Visibility_Toggle()
 
 void WebUI_Invoke(const std::string& script)
 {
-    if (PrismaUI)
-        PrismaUI->Invoke(g_view, script.c_str());
+    if (!PrismaUI) return;
+
+    if (!g_domReady.load()) {
+        std::scoped_lock lock(g_invokeMutex);
+        g_pendingInvokes.push_back(script);
+        return;
+    }
+
+    PrismaUI->Invoke(g_view, script.c_str());
 }
+
+static void FlushPendingInvokes()
+{
+    std::deque<std::string> pending;
+    {
+        std::scoped_lock lock(g_invokeMutex);
+        pending.swap(g_pendingInvokes);
+    }
+    if (!PrismaUI) return;
+    for (const auto& script : pending) {
+        PrismaUI->Invoke(g_view, script.c_str());
+    }
+    if (!pending.empty()) {
+        webui_log::info("Flushed {} queued WebUI Invoke(s) after DomReady.", pending.size());
+    }
+}
+
 // ── Sex Menu API ────────────────────────────────────────────────────────────
 
 void WebUI_Reset()
@@ -135,7 +171,19 @@ void InitWebUI()
         }
         webui_log::info("PrismaUI API acquired successfully.");
 
-        g_view = PrismaUI->CreateView("SkyrimNet_SexLab/index.html", nullptr);
+        g_domReady = false;
+        g_view = PrismaUI->CreateView("SkyrimNet_SexLab/index.html", [](PrismaView view) {
+            g_view = view;
+            g_domReady = true;
+            webui_log::info("WebUI DomReady.");
+            FlushPendingInvokes();
+        });
+
+        if (!PrismaUI->IsValid(g_view)) {
+            webui_log::critical(
+                "CreateView returned invalid view — ensure Data/PrismaUI/views/SkyrimNet_SexLab/index.html exists.");
+        }
+
         PrismaUI->Hide(g_view);
 
         PrismaUI->RegisterJSListener(g_view, "onCancel", [](const char*) {
@@ -144,9 +192,14 @@ void InitWebUI()
 
         PrismaUI->RegisterJSListener(g_view, "onAction", [](const char* value) {
             if (!value) return;
+
+            // Capture target before Reset_To_Default clears it.
+            auto* target = PapyrusBindings_WebUI::Target_Current;
+            std::string actionStr(value);
+
             Reset_To_Default();
 
-            std::string_view action(value);
+            std::string_view action(actionStr);
             std::string verb = "";
             if (action == "hug")
                 verb = "hugging";
@@ -156,7 +209,6 @@ void InitWebUI()
             webui_log::info("onAction: action={} verb={}", action, verb);
             if (verb != "") {
                 auto* player = RE::PlayerCharacter::GetSingleton();
-                auto* target = PapyrusBindings_WebUI::Target_Current;
                 if (!player || !target) {
                     webui_log::warn("onAction {}: player or target is null", action);
                     return;
