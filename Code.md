@@ -57,6 +57,9 @@ Scene_Creator (pooled) ──StartScene──► Scene_Manager.CreateSceneByCrea
 
 - **Creator pool:** `CreateCreator()` marks a slot ACTIVE; returns `None` when exhausted. Every caller **must** `Release()` after cancel or after `Scene.Setup` copied values out.
 - **Manager:** hooks SexLab thread events; routes to Scene; orgasm / stage / narration paths live here and on Scene.
+- **Menu:** hotkey UI lives in `SkyrimNet_SexLab_Menu.psc` (split out of MCM).
+- **Init:** Main, Actions, Menu, Manager, Creator, and DOM handlers call `Setup_CheckLinks()` before continuing setup.
+- **Actor lock:** StorageUtil key `skyrimnet_sexlab_scene_actor_lock` (`Main.storage_actor_lock_key`); YAML eligibility must match.
 - **Decorators** (`SkyrimNet_SexLab_Decorators.psc`): expose scene state as underscore-keyed JSON for prompts.
 - **Optional DOM:** `main.handler_dom` is either the Interface stub (no-op / passthrough) or real `SkyrimNet_SexLab_Handler_DOM` when `SkyrimNet_DOM.esp` is loaded. Dom orgasm uses `DOMSlave_Orgasmed` → `OrgasmCustom` (appends `" is orgasming."`).
 - **Optional UDNG:** bondage-related hotkey / handler when present.

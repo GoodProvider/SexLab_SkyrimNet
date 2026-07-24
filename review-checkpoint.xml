@@ -79,8 +79,8 @@
 
   <pass_history note="Newest first. Detailed findings are in the linked review docs.">
     <pass date="2026-07-22" scope="Docs split + punish-rape setting_name fix" status="applied" compile="n/a">
-      <review_doc>README.md / Actions.md / Prompts.md / Code.md / update.md</review_doc>
-      <headline>Y-RapeSettingName: sexlab_punish_rape_target*.yaml setting_name punish_pain_pleasure_rape → punish_pleasure_pain_rape (matches scenes/punish_pleasure_pain_rape.json + Menu.psc). Docs: README end-user guide; Actions.md / Prompts.md / Code.md author-dev guides; update.md changelog since 0.30.5.</headline>
+      <review_doc>README.md / Actions.md / Prompts.md / Code.md / CHANGELOG.md</review_doc>
+      <headline>Y-RapeSettingName: sexlab_punish_rape_target*.yaml setting_name punish_pain_pleasure_rape → punish_pleasure_pain_rape (matches scenes/punish_pleasure_pain_rape.json + Menu.psc). Docs: README end-user guide; Actions.md / Prompts.md / Code.md author-dev guides; CHANGELOG.md since 0.30.5.</headline>
     </pass>
     <pass date="2026-07-18" scope="Action YAML practice + parameter audit (all 29 actions vs Actions.psc)" status="applied" compile="clean">
       <review_doc>reviews/2026-07-18-01.review.md</review_doc>

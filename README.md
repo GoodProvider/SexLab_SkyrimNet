@@ -2,7 +2,7 @@
 
 Adds SkyrimNet support to SexLab.
 
-See also: [update.md](update.md) (changelog), [Actions.md](Actions.md), [Prompts.md](Prompts.md), [Code.md](Code.md).
+See also: [CHANGELOG.md](CHANGELOG.md), [Actions.md](Actions.md), [Prompts.md](Prompts.md), [Code.md](Code.md).
 
 ## F.A.Q.
 

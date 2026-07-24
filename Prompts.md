@@ -17,12 +17,14 @@ SKSE/Plugins/SkyrimNet/prompts/
 
 | File | Role |
 |------|------|
-| `submodules/character_bio/0005_sexlab_variables.prompt` | Sex-active / arousal variables for character bio |
+| `submodules/character_bio/0005_sexlab_variables.prompt` | Sex-active / arousal variables for character bio (`actor_having_sex` via SexLabAnimatingFaction / OStimActorCountFaction) |
 | `submodules/character_bio/0415_sexlab_appearance.prompt` | Appearance while SexLab-active |
 | `submodules/system_head/0020_sexlab_setting.prompt` | System-head SexLab settings |
 | `submodules/user_final_instructions/0050_sexlab_activity.prompt` | Active scene description + speaking rules |
 | `submodules/user_final_instructions/0550_sexlab_narration.prompt` | Direct-narration / orgasm instructions |
 | `helpers/sexlab_*.prompt` | Helpers tied to specific actions (outfit, stop, rape start, orgy, …) |
+
+There is no `0520_sexlab_dressing_instructions.prompt` (removed). Outfit / dress guidance lives in action helpers and activity prompts.
 
 You are expected to tune these for your world. Keep protocol literals exact (below) or prompts will stop matching game data.
 

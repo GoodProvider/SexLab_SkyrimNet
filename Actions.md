@@ -125,6 +125,8 @@ When you include `eligibilityRules` groups:
 
 Category parents often gate on OStim framework choice, SexLabAnimatingFaction, combat, actor lock, etc. Copy patterns from existing `sexlab_*_.yaml` files.
 
+Actor lock eligibility must use StorageUtil key `skyrimnet_sexlab_scene_actor_lock` (same as `Main.storage_actor_lock_key` / Creator). Do not use the old `skyrimnet_sexlab_actor_lock` string.
+
 ## Rape-gated actions
 
 MCM **Add rape actions (must toggle/save/reload)** controls whether rape actions are registered. After changing those YAMLs or the MCM toggle, save, reload, and refresh Actions in Game Data Explorer (see README FAQ).
@@ -140,7 +142,8 @@ MCM **Add rape actions (must toggle/save/reload)** controls whether rape actions
 |------|---------|
 | `sexlab_sex_sex_fucking.yaml` | Consensual two-actor + style/method |
 | `sexlab_comfort_cuddle.yaml` | Comfort / nonsexual |
-| `sexlab_punish_spanking.yaml` | Nonconsensual + explicit `victim` + `setting_name` |
+| `sexlab_punish_spanking.yaml` | Fixed TargetVictim (`StartScene_Nonconsensual_Two_TargetVictim`) + `setting_name` |
+| `sexlab_punish_spanking_by_target.yaml` | Fixed SpeakerVictim (`StartScene_Nonconsensual_Two_SpeakerVictim`) + same scene |
 | `sexlab_punish_rape_target.yaml` | Fixed TargetVictim + `punish_pleasure_pain_rape` |
 | `sexlab_none_change_outfit.yaml` | Outfit / silent narration |
 | `sexlab_none_stop.yaml` | Stop scene |
