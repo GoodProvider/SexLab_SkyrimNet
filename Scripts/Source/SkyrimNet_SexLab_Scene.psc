@@ -76,7 +76,7 @@ Function Trace(String func, String msg="", Bool notification=False)
     endif 
 EndFunction
 
-bool debug_mode = true
+bool debug_mode = false
 Function DbgEnter(String func, String msg="")
     if debug_mode 
         if msg != ""
@@ -128,6 +128,7 @@ EndFunction
 ; _is_generic: pass true only for sl_scene_generic from Scene_Manager.
 ; This flag is permanent for the instance lifetime — do not clear on Release.
 Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager, bool _is_generic = false) 
+    debug_mode = False
     DbgEnter("Initialize", "sid:"+_sid+" is_generic:"+_is_generic)
     parent.Initialize(_sid,_manager, _is_generic) 
     EnsureActorArraysLargeEnough(2)
@@ -174,7 +175,6 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
     endif
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
-        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
         DbgReturn("Setup", "void")
         return
     endif
@@ -186,7 +186,6 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
 
     Actor[] positions = thread.positions
     if !positions
-        Trace("Setup", "--- thread.positions is None, aborting", true)
         DbgReturn("Setup", "void")
         return
     endif
@@ -207,9 +206,7 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
 
     ReconcileVictimFactions()
 
-    Trace("Setup", "--- a num_actors: "+num_actors)
     if creator != None 
-        Trace("Setup", "--- a creator.speaking_modifiers: "+creator.speaking_modifiers)
         has_player = creator.has_player
         intent = creator.intent 
         style = creator.style
@@ -231,7 +228,6 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
         i = 0 
         while i < num_actors 
             if i < creator.num_actors
-                Trace("Setup", "--- b i:"+i+" creator.no_mask_mask: "+creator.no_orgasm_mask[i]+" creator.speaking_modifiers["+i+"]:"+creator.speaking_modifiers[i])
                 SetPosition(i, positions[i], creator.no_orgasm_mask[i], creator.speaking_modifiers[i]) 
             else 
                 SetPosition(i, positions[i], 0, creator.speaking_modifiers_default_current)
@@ -272,16 +268,12 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
         endif
     endif
 
-    Trace("Setup", "--- d num_actors: "+num_actors)
     if !is_generic
         status = STATUS_SETUP
     else 
         status = STATUS_ACTIVE 
     endif 
-    Trace("Setup", "--- e num_actors: "+num_actors)
     SetNames()
-    Trace("Setup", "--- f num_actors: "+num_actors)
-    TraceScene("Setup") 
     DbgEnd("Setup")
 EndFunction 
 
@@ -289,32 +281,26 @@ Bool Function Setup_CheckLinks()
     Bool links_ok = true
 
     if manager == None
-        Trace("Setup_CheckLinks", "--- manager is None", true)
         links_ok = false
     endif
 
     if main == None
-        Trace("Setup_CheckLinks", "--- main is None", true)
         links_ok = false
     endif
 
     if stages == None
-        Trace("Setup_CheckLinks", "--- stages is None", true)
         links_ok = false
     endif
 
     if sexlab == None
-        Trace("Setup_CheckLinks", "--- sexlab is None", true)
         links_ok = false
     endif
 
     if threadSlots == None
-        Trace("Setup_CheckLinks", "--- threadSlots is None", true)
         links_ok = false
     endif
 
     if actorLib == None
-        Trace("Setup_CheckLinks", "--- actorLib is None", true)
         links_ok = false
     endif
 
@@ -385,24 +371,6 @@ Function ReconcileVictimFactions()
         i += 1 
     endwhile 
     DbgEnd("ReconcileVictimFactions")
-EndFunction 
-
-Function TraceScene(String func) 
-    Trace(func, "--- ++ status:"+status)
-    if thread != None
-        Trace(func, "--- ++ num_actors: "+thread.positions.length)
-        Trace(func, "--- ++ actors: "+JoinActors(thread.positions))
-    else
-        Trace(func, "--- ++ actors: "+actor_names)
-    endif
-    Trace(func, "--- ++ victims: "+victim_names)
-    Trace(func, "--- ++ assailants: "+assailant_names)
-    Trace(func, "--- ++ hermaphrodiate: "+hermaphrodiate_names)
-    Trace(func, "--- ++ strapon: "+strapon_names)
-    Trace(func, "--- ++ creature_descriptions: "+creature_descriptions)
-    Trace(func, "--- ++ description_last:"+description_last)
-    Trace(func, "--- ++ orgasm_messages:"+orgasm_messages)
-    Trace(func, "--- ++ orgasm_messages_set:"+orgasm_messages_set)
 EndFunction 
 
 ; Teardown only — reset/release all state except sid and is_generic.
@@ -524,7 +492,6 @@ EndFunction
 
 Function SetPosition(int index, Actor akActor, int no_orgasm, String speaking_modifiers) 
     DbgEnter("SetPosition", "start index:"+index+" akActor:"+GetDisplayName(akActor)+" no_orgasm:"+no_orgasm+" speaking_modifiers:"+speaking_modifiers)
-    Trace("SetPosition", "---- start index:"+index+" akActor:"+GetDisplayName(akActor)+" no_orgasm:"+no_orgasm+" speaking_modifiers:"+speaking_modifiers)
     EnsureActorArraysLargeEnough(index + 1)
 
     int obj = position_objs[index]
@@ -565,12 +532,15 @@ Function SetPosition(int index, Actor akActor, int no_orgasm, String speaking_mo
 Endfunction 
 
 bool Function SetActor(int i, Actor akActor)
-    DbgEnter("SetActor", "i:"+i+" akActor:"+GetDisplayName(akActor))
+    DbgEnter("SetActor", "i:"+i+" "+GetDisplayName(akActor))
+    if i < 0
+        DbgReturn("SetActor", "False")
+        return False
+    endif
     if akActor == None 
-        Trace("SetActor","akActor == None at position "+i)
         DbgReturn("SetActor", "False")
         return False 
-    endif  
+    endif
     int obj = position_objs[i]
     JArray.setObj(actors_objs, i, obj)
 
@@ -579,7 +549,6 @@ bool Function SetActor(int i, Actor akActor)
     JMap.setStr(obj, "_uuid", GetUUID(akActor))
     JMap.setStr(obj, "_formid", akActor.GetFormID())
     JMap.setStr(obj, "_name", akActor.GetDisplayName())
-    Trace("SetActor", "--- formid: "+akActor.GetFormID()+" "+JMap.getStr(obj, "_formid"))
 
     int gender = akActor.GetLeveledActorBase().GetSex() ; actorLib.GetGender(akActor)
     DbgMsg("SetActor", "sexlab.GetGender "+akActor.GetDisplayName())
@@ -599,15 +568,10 @@ bool Function SetActor(int i, Actor akActor)
         is_hermaphrodiate = 1
     endif 
 
-    int wearing_strapon = 0
-    if thread.IsUsingStrapon(akActor)
-        wearing_strapon = 1
-    endif 
 
     JMap.setInt(obj, "_has_penis", has_penis)
     JMap.setInt(obj, "_has_pussy", has_pussy)
     JMap.setInt(obj, "_is_hermaphrodiate", is_hermaphrodiate)
-    JMap.setInt(obj, "_wearing_strapon", wearing_strapon)
     JMap.setStr(obj, "_creature_description", GetCreatureDescriptions(akActor))
 
     JMap.setStr(obj,"_notice_level","nothing")
@@ -629,19 +593,27 @@ bool Function SetActor(int i, Actor akActor)
     endif 
 
     DbgMsg("SetActor", "thread.ActorAlias "+akActor.GetDisplayName())
-    sslActorAlias actorAlias = thread.ActorAlias(akActor) 
-    ;if Game.GetModByName("SLSO.esp") != 255
-        ;enjoyment = actorAlias.Getfull_enjoyment() 
-    ;else 
-        int enjoyment = actorAlias.GetEnjoyment() 
-    ;endif 
+    int enjoyment = 0
+    if status == STATUS_ACTIVE
+        sslActorAlias actorAlias = thread.ActorAlias(akActor) 
+        ;if Game.GetModByName("SLSO.esp") != 255
+            ;enjoyment = actorAlias.Getfull_enjoyment() 
+        ;else 
+        ;    int enjoyment = actorAlias.GetEnjoyment() 
+        ;endif 
+
+        if actorAlias != None
+            enjoyment = actorAlias.GetEnjoyment() 
+        endif 
+    endif 
     JMap.setInt(obj, "_enjoyment", enjoyment)
 
     if main.handler_dom.IsDOMSlave(akActor)
-        JMap.setInt(obj, "_is_dom_slave", 1)
+        JMap.setInt(obj, "_dom_slave", 1)
     else
-        JMap.setInt(obj, "_is_dom_slave", 0)
+        JMap.setInt(obj, "_dom_slave", 0)
     endif
+
 
     DbgReturn("SetActor", "True")
     return True
@@ -674,9 +646,16 @@ bool Function UpdateActor(int i , Actor akActor)
         int total_orgasms = StorageUtil.GetIntValue(akActor, storage_total_orgasms_key, 0) 
         SetTotalOrgasms(akActor, total_orgasms)
     elseif status == STATUS_ACTIVE
-        int obj = position_objs[i]
         JMap.setStr(obj, "_notice_level", "active")
     endif 
+
+    int obj = position_objs[i]
+    int wearing_strapon = 0
+    if thread.IsUsingStrapon(akActor)
+        wearing_strapon = 1
+    endif 
+    JMap.setInt(obj, "_wearing_strapon", wearing_strapon)
+
     DbgReturn("UpdateActor", "changed")
     return changed 
 EndFunction 
@@ -844,7 +823,7 @@ bool Function IsGeneric()
 EndFunction 
 
 ; --------------------------------------------
-; Get a Status message for the sl_scene (start, are, finished) 
+; Get a Status message for the sl_scene (start, are, finish) 
 ; --------------------------------------------
 String Function GetIntentMessage(int intent_stage = -1) 
     DbgEnter("GetIntentMessage", "intent_stage:"+intent_stage)
@@ -852,7 +831,7 @@ String Function GetIntentMessage(int intent_stage = -1)
     if intent_stage == INTENT_STAGE_START 
         msg = "start "+intent
     elseif intent_stage == INTENT_STAGE_END 
-        msg = "finished "+intent
+        msg = "finish "+intent
     endif 
     if num_victims > 0
         DbgReturn("GetIntentMessage", "with victims")
@@ -933,7 +912,6 @@ Function StageStart()
     ; Send a DN if its a start and includes a player
     ; if not player send DN if allowed by cool off 
     String desc = stages.GetStageDescription(thread)
-    Trace("StageStart","--- desc:"+desc+" description_last: "+description_last)
     if status != STATUS_ACTIVE
         status = STATUS_ACTIVE
         String narration = GetDescription() + orgasm_narration
@@ -946,10 +924,8 @@ Function StageStart()
         else
             DirectNarration_Optional("start", narration, sender, receiver) 
         endif
-        Trace("StageStart","--- status active narration:" +narration) 
     ; Late Dom custom msgs may arrive after Combined; flush any leftovers before send/Release
     else
-        Trace("StageStart","--- a status not active")
         String narration = ""
         bool change_scene = false
         if desc != "" && description_last != ""
@@ -961,17 +937,15 @@ Function StageStart()
                 desc = ""
             endif 
         endif 
-        Trace("StageStart","--- c desc:"+desc+" description_last:"+description_last)
         if orgasm_narration != ""
+            thread.UpdateTimer(3.0)
             narration += orgasm_narration
             if has_player
                 DirectNarration(narration, sender, receiver, purge_dialogue=True)
             else
                 DirectNarration_optional("orgasm", narration, sender, receiver)
             endif 
-            Trace("StageStart","--- d narration:"+narration)
         else 
-            Trace("StageStart","--- e desc:"+desc)
             if !change_scene
                 ContinueActivity(sender, receiver, True)
             else
@@ -1008,89 +982,52 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
     AlignActors() 
     manager.SaveThreadsJson()
 
-    String end_message = GetIntentMessage(INTENT_STAGE_END)
-    if SexLab == None || thread == None 
-        Trace("AnimationEnd","SexLab or thread is None for sl_scene with actors "+actor_names)
-        RegisterEvent("sexlab update", end_message, sender, receiver) 
-        Release()
-        DbgReturn("AnimationEnd", "void")
-        return 
-    endif 
-    Trace("AnimationEnd","thread id:"+thread.tid+" status:"+thread.GetState())
-    DbgMsg("AnimationEnd", "thread.GetState()="+thread.GetState())
-    ; Handle Separate Orgasms
-    DbgMsg("AnimationEnd", "SexLab as sslSystemConfig")
-    sslSystemConfig config = (SexLab as Quest) as sslSystemConfig
+    if SexLab != None && thread != None 
+        Trace("AnimationEnd","thread id:"+thread.tid+" status:"+thread.GetState())
+        DbgMsg("AnimationEnd", "thread.GetState()="+thread.GetState())
+        DbgMsg("AnimationEnd", "SexLab as sslSystemConfig")
+        sslSystemConfig config = (SexLab as Quest) as sslSystemConfig
 
-    String narration = ""
-    if style != "silently" && speaker != None
-        narration = speaker.GetDisplayName()+" "+style+" stops, "+GetIntentMessage(INTENT_STAGE_ONGOING)+". "
-    endif
-
-    String orgasm_narration = OrgasmMessagesToNarration()
-    if  thread.Animation.HasTag("tentacles")
-        orgasm_narration += "The tentacles is orgasming and flooding cum both inside and outside. "
-    endif
-
-    bool orgasm_denied = false
-    if config.SeparateOrgasms
-        String after = "" 
-        int[] orgasm_expected = stages.GetOrgasmExpected(thread)
-        int j = thread.positions.length - 1 
-        while 0 <= j 
-            String name = JMap.getStr(position_objs[j], "_name") 
-            int total_orgasms = JMap.getInt(position_objs[j], "_total_orgasm")
-            if total_orgasms < 1 
-                if orgasm_expected.length > j && orgasm_expected[j] == 1
-                    after += name+" failed to orgasm. "
-                    orgasm_denied = true
-                endif
-            elseif total_orgasms < 2
-                after += name+"'s body glows in post orgasm. "
-            else 
-                after += name+"'s body is recovering from "+total_orgasms+" orgasms. "
-            endif 
-            j -= 1 
-        endwhile ;
-        narration += after
-    endif 
-
-    if orgasm_narration != ""
-        narration += orgasm_narration
-        if has_player
-            DirectNarration(narration, sender, receiver)
-        else
-            DirectNarration_Optional("orgasm", narration, sender, receiver)
+        ; Leftover Combined orgasm stash → event before purge (not ongoing-activity DN)
+        String orgasm_narration = OrgasmMessagesToNarration()
+        if thread.Animation.HasTag("tentacles")
+            orgasm_narration += "The tentacles is orgasming and flooding cum both inside and outside. "
         endif
-    elseif has_player && speaker != None
-        DirectNarration(narration, sender, receiver)
-    elseif orgasm_denied
-        DirectNarration_Optional(intent+" ends", narration, sender, receiver)
-    endif 
-    RegisterEvent("sexlab update", end_message, sender, receiver) 
+        if orgasm_narration != ""
+            RegisterEvent("sexlab update", orgasm_narration, sender, receiver)
+        endif
 
-    if ThreadSlots == None
-        Trace("AnimationEnd","ThreadSlots is None", true)
-        Release()
-        DbgReturn("AnimationEnd", "void")
-        return
-    endif
-    sslThreadController[] threads = ThreadSlots.Threads
-
-    int i = threads.length - 1 
-    bool found = false
-    while 0 <= i && !found
-        String s = (threads[i] as sslThreadModel).GetState()
-        if s == "animating" || s == "prepare"
-            found = true
+        ; Post-activity afterglow (SeparateOrgasms); not ongoing sexual activity
+        String afterglow = ""
+        if config.SeparateOrgasms
+            int[] orgasm_expected = stages.GetOrgasmExpected(thread)
+            int j = thread.positions.length - 1 
+            while 0 <= j 
+                String name = JMap.getStr(position_objs[j], "_name") 
+                int total_orgasms = JMap.getInt(position_objs[j], "_total_orgasm")
+                if total_orgasms < 1 
+                    if orgasm_expected.length > j && orgasm_expected[j] == 1
+                        afterglow += name+" failed to orgasm. "
+                    endif
+                elseif total_orgasms < 2
+                    afterglow += name+"'s body glows in post orgasm. "
+                else 
+                    afterglow += name+"'s body is recovering from "+total_orgasms+" orgasms. "
+                endif 
+                j -= 1 
+            endwhile
         endif 
-        i -= 1
-    endwhile
-    if found
-        main.active_sex = true
-    else 
-        main.active_sex = false
-    endif
+
+        ; Stop sexy talk once animations have ended
+        SkyrimNetApi.PurgeDialogue(True)
+
+        ; Mirror AnimationStart: "A and B finish <intent>."
+        String end_message = GetIntentMessage(INTENT_STAGE_END)
+        if afterglow != ""
+            end_message += " "+afterglow
+        endif
+        RegisterEvent("sexlab update", end_message, sender, receiver) 
+    endif 
 
     Release() 
     DbgEnd("AnimationEnd")
@@ -1114,22 +1051,20 @@ Function OrgasmCombined()
     int i = 0
     int num_actors = thread.positions.length
     EnsureActorArraysLargeEnough(num_actors)
-    Trace("OrgasmCombined","--- ThreadID:"+thread.tid+" has_player:"+has_player+" orgasm_expected:"+orgasm_expected+" orgasm_messages:"+orgasm_messages+" orgasm_messages_set:"+orgasm_messages_set)
     while i < num_actors
         int obj = position_objs[i] 
-        String name = JMap.getStr(obj, "_name")
         bool no_orgasm = JMap.getInt(obj, "_no_orgasm") == 1
-        bool is_dom_slave = JMap.getInt(obj,"_is_dom_slave") == 1
+        bool is_dom_slave = JMap.getInt(obj,"_dom_slave") == 1
 
-        Trace("OrgasmCombined","--- i:"+i+" name:"+name+" orgasm_expected:"+orgasm_expected+" orgasm_messages:"+orgasm_messages)
-        Trace("OrgasmCombined","--- i:"+i+" name:"+name+" no_orgasm:"+no_orgasm+" is_dom_slave:"+is_dom_slave+" orgasm_messages[i]:"+orgasm_messages[i]+" orgasm_messages_set:"+orgasm_messages_set)
         if orgasm_expected[i] == 1 && !no_orgasm && !is_dom_slave && orgasm_messages[i] == ""
             orgasm_messages_set = true
             orgasm_messages[i] = thread.positions[i].GetDisplayName()+" is orgasming. "
         endif 
         i += 1
     endwhile
-    Trace("OrgasmCombined","--- orgasm_messages:"+orgasm_messages+" orgasm_messages_set:"+orgasm_messages_set)
+    if orgasm_messages_set && thread != None
+        thread.UpdateTimer(4.0)
+    endif
 
     DbgEnd("OrgasmCombined")
 EndFunction
@@ -1171,6 +1106,11 @@ EndFunction
 Function OrgasmCustom(Actor akActor, String msg)
     DbgEnter("OrgasmCustom", "akActor:"+GetDisplayName(akActor)+" msg:"+msg)
     sslSystemConfig config = (SexLab as Quest) as sslSystemConfig
+
+    if StringUtil.Find(msg, " is orgasming.") < 0 
+        msg += akActor.GetDisplayName()+" is orgasming. "
+    endif
+
     if config.SeparateOrgasms
         OrgasmHelper(akActor, msg)
     else 
@@ -1182,7 +1122,9 @@ Function OrgasmCustom(Actor akActor, String msg)
         if i < thread.positions.length
             orgasm_messages_set = true
             orgasm_messages[i] = msg
-            Trace("OrgasmCustom","--- orgasm_messages["+i+"] set to "+msg)
+            if thread != None
+                thread.UpdateTimer(4.0)
+            endif
         endif
     endif
     DbgEnd("OrgasmCustom")
@@ -1243,7 +1185,7 @@ String Function OrgasmMessagesToNarration()
                 endif 
                 narration += orgasm_messages[k]
                 orgasm_messages[k] = ""
-            elseif JMap.getInt(obj, "_is_dom_slave") == 1
+            elseif orgasm_expected.length > k && orgasm_expected[k] == 1 && JMap.getInt(obj, "_dom_slave") == 1
                 narration += main.handler_dom.HandleOrgasmDenied(thread.positions[k])   
             endif 
             k += 1
@@ -1252,7 +1194,6 @@ String Function OrgasmMessagesToNarration()
             narration += "Only listed actors started orgasming right now. "
         endif
     endif 
-    Trace("StageStart","--- b orgasm_happened:"+orgasm_happened+" ejaculation_happened:"+ejaculation_happened+" narration:"+narration)
 
     if ejaculation_happened
         int i = 0
@@ -1264,7 +1205,6 @@ String Function OrgasmMessagesToNarration()
                 endif
                 narration += cum_msg
             endif
-            Trace("StageStart","--- "+i+" "+thread.positions[i].GetDisplayName()+"| adding cum | narration: "+narration)
             i += 1 
         endwhile 
     endif 

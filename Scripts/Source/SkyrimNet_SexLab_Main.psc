@@ -59,7 +59,7 @@ bool Property rape_allowed = true Auto
 bool Property sex_edit_tags_player = true Auto 
 bool Property sex_edit_tags_nonplayer = False Auto
 
-String Property storage_actor_lock_key = "skyrimnet_sexlab_actor_lock" AutoReadOnly 
+String Property storage_actor_lock_key = "skyrimnet_sexlab_scene_actor_lock" AutoReadOnly 
 String Property storage_items_key = "skyrimnet_sexlab_storage_items" AutoReadOnly
 String Property storage_arousal_key = "skyrimnet_sexlab_arousal_level" AutoReadOnly
 String Property storage_thread_ejaculated = "skyrimnet_sexlab_thread_ejaculated" AutoReadOnly
@@ -90,7 +90,6 @@ Function Setup()
     Trace("Setup","")
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
-        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
         return
     endif
 
@@ -190,39 +189,33 @@ Bool Function Setup_CheckLinks()
     Bool links_ok = true
 
     if sexlab == None
-        Trace("Setup_CheckLinks", "--- sexlab is None", true)
         links_ok = false
     endif
 
     if stages == None
         stages = (self as Quest) as SkyrimNet_SexLab_Stages
         if stages == None
-            Trace("Setup_CheckLinks", "--- stages is None", true)
             links_ok = false
         endif
     endif
 
     SkyrimNet_SexLab_Actions actions = (self as Quest) as SkyrimNet_SexLab_Actions
     if actions == None
-        Trace("Setup_CheckLinks", "--- actions is None", true)
         links_ok = false
     endif
 
     SkyrimNet_SexLab_MCM mcm = (self as Quest) as SkyrimNet_SexLab_MCM
     if mcm == None
-        Trace("Setup_CheckLinks", "--- mcm is None", true)
         links_ok = false
     endif
 
     SkyrimNet_SexLab_Menu menu = (self as Quest) as SkyrimNet_SexLab_Menu
     if menu == None
-        Trace("Setup_CheckLinks", "--- menu is None", true)
         links_ok = false
     endif
 
     SkyrimNet_SexLab_Scene_Manager sceneManager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
     if sceneManager == None
-        Trace("Setup_CheckLinks", "--- sceneManager is None", true)
         links_ok = false
     endif
 

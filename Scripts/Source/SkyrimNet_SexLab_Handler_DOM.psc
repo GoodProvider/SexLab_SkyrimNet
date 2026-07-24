@@ -31,7 +31,6 @@ EndFunction
 bool Function Setup()
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
-        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
         return False
     endif
 
@@ -53,19 +52,16 @@ Bool Function Setup_CheckLinks()
 
     manager = Game.GetFormFromFile(0x000800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Scene_Manager
     if manager == None 
-        Trace("Setup_CheckLinks", "--- manager is None", true)
         links_ok = false
     endif 
 
     ; Light Dom presence check (call sites use SkyrimNet_DOM_API, not a local Actions property)
     if Game.GetModByName("SkyrimNet_DOM.esp") == 255
-        Trace("Setup_CheckLinks", "--- SkyrimNet_DOM.esp not loaded", true)
         links_ok = false
     endif
 
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x000800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
     if main == None
-        Trace("Setup_CheckLinks", "--- main is None", true)
         links_ok = false
     endif
 
@@ -133,9 +129,7 @@ Function DOMSlave_Orgasmed(Actor slave, String msg)
             StorageUtil.SetIntValue(slave, storage_actor_orgasm_total_key, total)
         endif
         RegisterForSingleUpdate(1.0)
-        Trace("DOMSlave_Orgasmed","--- "+GetDisplayName(slave)+" "+msg+" total:"+total) 
     else 
-        Trace("DOMSlave_Orgasmed","--- "+GetDisplayName(slave)+" "+msg) 
         manager.OrgasmCustom(slave, msg)
     endif
 EndFunction
@@ -167,7 +161,6 @@ Event OnUpdate()
         i += 1 
     endwhile 
     JArray.clear(actors_obj)
-    Trace("Update","--- narration:"+narration) 
     if narration != "" 
         DirectNarration(narration, sender, receiver, purge_dialogue=true)
     endif

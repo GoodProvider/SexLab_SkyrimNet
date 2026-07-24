@@ -4,6 +4,7 @@ Import SkyrimNet_SexLab_Utilities
 Import SkyrimNet_SexLab_Scene_Interface
 
 SexLabFramework Property sexlab Auto
+Faction OStimActorCountFaction = None 
 
 ; ----------------------------------
 ; Actors and Victims 
@@ -72,7 +73,7 @@ Function Trace(String func, String msg="", Bool notification=False)
     endif 
 EndFunction
 
-bool debug_mode = True
+bool debug_mode = false
 Function DbgEnter(String func, String msg="")
     if debug_mode
         if msg != ""
@@ -123,9 +124,11 @@ String Function GetString()
 EndFunction 
 
 Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager, bool _is_generic = false) 
+    debug_mode = False
     parent.Initialize(_sid, _manager, _is_generic) 
     sexlab = manager.sexlab
     EnsureActorsArraysLargeEnough(2) 
+    OStimActorCountFaction = manager.OStimActorCountFaction
     if !tags 
         tags = new String[10]
         tags_suppress = new String[10]
@@ -140,12 +143,10 @@ Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, S
     DbgEnter("Setup", "intent:"+_intent+" actors:["+JoinActors(_actors)+"] speaker:"+GetDisplayName(_speaker)+" target:"+GetDisplayName(_target)+" method:"+_method+" setting_name:"+setting_name)
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
-        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
         DbgReturn("Setup", "Setup_CheckLinks failed")
         return
     endif
     if !_actors
-        Trace("Setup", "--- _actors is None, aborting", true)
         DbgReturn("Setup", "_actors is None")
         return
     endif
@@ -210,12 +211,10 @@ Bool Function Setup_CheckLinks()
     Bool links_ok = true
 
     if manager == None
-        Trace("Setup_CheckLinks", "--- manager is None", true)
         links_ok = false
     endif
 
     if sexlab == None
-        Trace("Setup_CheckLinks", "--- sexlab is None", true)
         links_ok = false
     endif
 
@@ -347,7 +346,6 @@ SkyrimNet_SexLab_Scene Function StartScene()
         +" style:"+style\
         +" event_hook:"+event_hook)
 
-    Trace("StartScene","--- starting thread")
     DbgMsg("StartScene", "model.StartThread()")
     sslThreadController thread = model.StartThread() 
     DbgMsg("StartScene", "model.StartThread() returned thread="+thread)
@@ -358,7 +356,6 @@ SkyrimNet_SexLab_Scene Function StartScene()
         return None 
     endif 
 
-    Trace("StartScene","--- CreateSceneByCreator")
     SkyrimNet_SexLab_Scene sl_scene = manager.CreateSceneByCreator(self, thread) 
     if sl_scene == None
         Trace("StartScene","CreateSceneByCreator returned None, ending orphan thread")
@@ -990,13 +987,39 @@ EndFunction
 
 bool Function LockActorLock(Actor akActor) 
     DbgEnter("LockActorLock", "akActor:"+GetDisplayName(akActor))
+    if akActor == None 
+        Trace("LockActorLock","akActor is None")
+        return false
+    endif
+
+    if akActor.IsDead() || akActor.IsInCombat() 
+        Trace("LockActorLock", GetDisplayName(akActor)+" is dead or in combat")
+        return false 
+    endif 
+
+    if StorageUtil.HasIntValue(akActor, "skyrimnet_sexlab_scene_actor_lock")
+        Trace("LockActorLock", GetDisplayName(akActor)+" is locked")
+        return false 
+    endif
+
+    if sexlab.IsActorActive(akActor) 
+        Trace("LockActorLock", GetDisplayName(akActor)+" SexLab animation")
+        return false 
+    endif 
+
+    if OstimActorCountFaction != None && akActor.IsInFaction(OStimActorCountFaction)
+        Trace("LockActorLock", GetDisplayName(akActor)+" OStim animation")
+        return false 
+    endif
+    Trace("LockActorLock", GetDisplayName(akActor)+" is eligible for sex")
     if StorageUtil.HasIntValue(akActor, storage_actor_lock_key) 
-        DbgReturn("LockActorLock", "False")
-        return False 
+        Trace("LockActorLock", GetDisplayName(akActor)+" is already locked")
+        return false 
     endif 
     StorageUtil.SetIntValue(akActor, storage_actor_lock_key, 1) 
+    ; Trace("LockActorLock", GetDisplayName(akActor)+" is locked")
     DbgReturn("LockActorLock", "True")
-    return True 
+    return true 
 EndFunction 
 
 Function UnlockActorLock(Actor akActor) 
@@ -1060,13 +1083,11 @@ int function YesNoDialog()
     DbgMsg("YesNoDialog", "SkyMessage.ShowArray question="+question)
     int button = SkyMessage.ShowArray(question, buttons, getIndex = true) as int  
     DbgMsg("YesNoDialog", "SkyMessage.ShowArray returned button="+button)
-    Trace("YesNoDialog","--- question: "+question+" buttons: "+JoinStrings(buttons, buttons.length)+" button: "+button)
     if button == BUTTON_NO || button == BUTTON_NO_SILENT
         if button == BUTTON_NO 
             DirectNarration(rejection, player, actors[0])
         endif 
     endif 
-    Trace("YesNoDialog","--- returning button: "+button)
     DbgReturn("YesNoDialog", "button")
     return button
 EndFunction
@@ -1087,14 +1108,12 @@ sslBaseAnimation[] Function SelectAnimations()
     int button = BUTTON_YES
     if has_player
         button = YesNoDialog()
-        Trace("SelectAnimations","--- button: "+button)
         if button == BUTTON_NO || button == BUTTON_NO_SILENT
             DbgReturn("SelectAnimations", "cancel")
             return manager.cancel 
         endif 
     endif  
 
-    Trace("SelectAnimations","--- a button: "+button)
     if button != BUTTON_YES_RANDOM
         if (main.sex_edit_tags_player && has_player) || (main.sex_edit_tags_nonplayer && !has_player)
             animations = SelectAnimationsDialog()
@@ -1119,7 +1138,6 @@ sslBaseAnimation[] Function SelectAnimations()
         DbgMsg("SelectAnimations", "sexlab.GetAnimationsByTags returned count="+animations.length)
     endif
 
-    Trace("SelectAnimations","--- f animations: "+animations.length)
     ; empty = no forced list; StartScene skips SetAnimations and SexLab randomly selects.
     if animations == manager.empty || !animations || animations.length == 0
         DbgReturn("SelectAnimations", "manager.empty")

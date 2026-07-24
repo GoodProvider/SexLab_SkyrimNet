@@ -15,38 +15,6 @@ A Skyrim mode that acts as a bridge between SkyrimNet and SexLab Framework.
 
 These are the authoritative locations used by the Papyrus project file `skyrimse.ppj` for imports and compilation.
 
-# Papyrus rules 
-- Papyrus is case insensitive, so these are only for human reviewers
-- Papyrus does not allow an array variable (String[] a for example) to be compared to None `if a == None`, it must always be checked directly `if a`
-```Papayrus
-String[] a = None 
-; This will check that a is not None and not empty.
-if a 
-; This will cause run time errors
-if a == None
-- Papyrus is case insensitive (aA == Aa == aa == AA) 
-```
-  
-   - correct `String[] a = None; If a 
-
-## String case and external consumers
-- Skyrim is case-insensitive for string identity. It uses the **first casing** of a given string that appears in the load order; later sources that differ only by case reuse that pooled form.
-- The game's **internal casing is unstable** across installs/load orders — do not rely on Title Case vs lowercase surviving unchanged.
-- When a string must be matched **outside** Skyrim (prompts, Inja `contains`, JSON tooling, SKSE plugins that do case-sensitive compares), wrap the token in underscores to guarantee uniqueness and a stable literal, e.g. `_pleasure_`, `_pain_`, `_gagged_`, `_kissing_`.
-- Plain English words without wrapping are unsafe as protocol tokens for external matching.
-
-## SexLab orgasm narration (`" is orgasming."`)
-- `0550_sexlab_narration.prompt` gates orgasm instructions with `contains(_direct_narration, " is orgasming.")` on the **whole** direct narration string.
-- In multi-actor Combined/custom narration: every **orgasming** actor clause **must** include the exact substring `" is orgasming."`; **non-orgasming / denied** actor clauses **must not** include it (use denied / “did not orgasm” wording only).
-- `Scene_Manager.OrgasmCustom` appends `". "+name+" is orgasming."` on purpose so Dom/`DOMSlave_Orgasmed` messages trigger that prompt. Do not strip or rephrase that append without updating the prompt.
-- Non-Dom Combined uses `name+" is orgasming. "` for the same contract.
-- Dom Combined fallback: if `orgasm_expected` and totals > 0 but `customer_orgasm_messages[i]` is empty, still append `name+" is orgasming. "` (custom never arrived / race). Denied path must not use that substring.
-
-## JSON keys for Skyrim-generated, externally processed JSON
-- Keys in JSON that Skyrim emits and that is consumed outside the game (decorators, threads.json, prompts) **must start with an underscore**, e.g. `_speaking_modifiers`, `_actors`, `_uuid`.
-- Leading `_` keeps keys unique under Skyrim's case-insensitive string pool and stable for case-sensitive external consumers.
-- Do not invent new bare keys (`speaking_modifiers`, `Actors`) for that pipeline; prefer `_speaking_modifiers`-style names.
-
 ## naming convention  
 - Constant variable are all upper case: THIS_IS_A_CONSTANT
 - properties and variables:
@@ -56,25 +24,55 @@ if a == None
    - Match case to the close EndFunction, EndEvent 
 
 ## Installed Modding Tools
-Always include commented lines when calculating line number.
-
-**Papyrus compile (required)**: use the VS Code/Cursor task **`compile: pyro`** (`.vscode/tasks.json`). It runs Pyro against `skyrimse.ppj` with the project game path. Do not invent alternate Caprica/`papyrus.exe` one-off compile commands for this repo unless the user asks.
 
 All under `tools/`:
 
 | Tool | Purpose | Usage |
 |------|---------|-------|
-| **Pyro** | Compile Papyrus `.psc` → `.pex` via project file | Task **`compile: pyro`** (`skyrimse.ppj`) |
 | **Champollion** | Decompile Papyrus `.pex` → `.psc` | `tools/Champollion/Champollion.exe input.pex` |
+| **Caprica** | Compile Papyrus `.psc` → `.pex` | `tools/Caprica/Caprica.exe --game skyrim --import "Data/Scripts/Source" input.psc` |
 | **XEditLib.dll** | Programmatic ESP/ESM reading via FFI | Load with koffi in Node.js (see below) |
-| **Spriggit** | ESP ↔ YAML/JSON conversion (.NET) | `dotnet tool run spriggit serialize ...` / local `serialize.bat` / `deserialize.bat` |
+| **Spriggit** | ESP ↔ YAML/JSON conversion (.NET) | `dotnet tool run spriggit serialize ...` |
 
 > **Note**: Install tools you need into a `tools/` folder in your game directory. See the [xeditlib](https://github.com/WingedGuardian/xeditlib) repo for XEditLib setup.
+
+## XEditLib.dll API (Critical Notes)
+
+The DLL is Delphi-compiled. These quirks caused hours of debugging:
+
+1. **All strings are UCS-2/UTF-16LE** (Delphi `PWideChar`), never UTF-8:
+   ```js
+   function wcb(s) { const b = Buffer.alloc((s.length+1)*2,0); b.write(s,0,'ucs2'); return b; }
+   ```
+
+2. **`InitXEdit()` and `CloseXEdit()` are VOID**, not bool. Declaring them as bool corrupts the call stack.
+
+3. **`WordBool` = `uint16`** (2 bytes), not bool/uint8.
+
+4. **String return pattern**: Functions don't return strings directly. They write a length to a `PInteger` param, then you call `GetResultString(buffer, len)` to retrieve the actual value:
+   ```js
+   function getString(fn) {
+       const lenBuf = Buffer.alloc(4, 0);
+       fn(lenBuf);
+       const len = lenBuf.readInt32LE(0);
+       if (len < 1) return '';
+       const strBuf = Buffer.alloc(len * 2, 0);
+       GetResultString(strBuf, len);
+       return strBuf.toString('utf16le', 0, len * 2);
+   }
+   ```
+
+5. **Game mode enum**: gmFNV=0, gmFO3=1, gmTES4=2, gmTES5=3, **gmSSE=4** (use this for Skyrim VR), gmFO4=5
+
+6. **Registry requirement**: XEditLib reads game path from `HKLM\SOFTWARE\WOW6432Node\Bethesda Softworks\Skyrim Special Edition` (the SSE key, not the VR key, because game mode 4 = SSE).
+
+7. **xelib.js wrapper**: See [xeditlib on GitHub](https://github.com/WingedGuardian/xeditlib) for the full wrapper with all 163 functions.
 
 ## INI Config Hierarchy
 
 Settings load in this order (later overrides earlier):
 1. `Skyrim.ini` -- base settings
+2. `SkyrimVR.ini` -- VR-specific overrides
 3. `SkyrimPrefs.ini` -- user preferences (loaded last)
 
 ## Nexus Mod Research (Standing Rule)
@@ -107,6 +105,15 @@ These are the most dangerous/common pitfalls. Consult `KNOWLEDGEBASE.md` for ful
 14. **GoToState("") in OnUnload -> Self=None crash** -- move to OnLoad instead
 15. **Navmesh creation is CK-only** -- xEdit can only delete, never recreate
 
+## xelib Dry-Run Convention
+
+All ESP modifications via xelib scripts must follow this two-pass workflow:
+1. **Read-only pass**: load the ESP, log what would change (records added/modified/removed), print to console -- do NOT call `SaveFile()`
+2. **User reviews** the proposed changes
+3. **Write pass**: only after user approval, run again with `SaveFile()` enabled
+
+This prevents accidental ESP corruption. The hook system blocks direct ESP writes, but xelib operates through Bash and can write via `SaveFile()`.
+
 ## Safety Rules
 
 Hooks in `.claude/settings.json` enforce these automatically:
@@ -128,6 +135,7 @@ Hooks in `.claude/settings.json` enforce these automatically:
 ### General rules
 - **Always review changes before applying** -- this is a delicate install
 - Never modify ESP/ESM files directly -- use xelib programmatically or Spriggit
+- Vortex manages load order -- direct edits to loadorder.txt/plugins.txt may be overwritten by Vortex
 - User is knowledgeable about Skyrim modding and INI settings
 
 ### Safety improvement loop
@@ -158,6 +166,7 @@ After every session, near-miss, or unexpected outcome, evaluate whether a new ho
 ### Investigation checklist (before any change)
 - [ ] Consulted `KNOWLEDGEBASE.md` for known quirks
 - [ ] Read the actual source files involved
+- [ ] Checked if VR differs from SSE for this feature
 - [ ] Web-searched for known issues with this approach
 - [ ] Considered rollback path if the change breaks something
 - [ ] Evaluated whether this task reveals a gap in current hook coverage

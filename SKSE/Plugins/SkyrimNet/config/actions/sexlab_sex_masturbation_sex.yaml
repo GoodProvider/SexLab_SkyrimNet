@@ -1,6 +1,6 @@
 customCategory: sexlab_sex
 name: SexLab_Masturbation_Start
-description: "[style] [type] masturbation"
+description: "[style] [method] masturbation"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
 executionFunctionName: StartScene_Consensual_One

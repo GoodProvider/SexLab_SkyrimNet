@@ -6,9 +6,9 @@ scriptName: SkyrimNet_SexLab_Actions
 executionFunctionName: StartScene_Consensual_Two
 defaultPriority: 7
 parameterMapping:
-  - type: dynamic 
+  - type: static
     name: intent 
-    description: one or two words
+    value: "cuddling"
   - type: speaker
     name: speaker
     description: Speaker Actor parameter (triggering entity)

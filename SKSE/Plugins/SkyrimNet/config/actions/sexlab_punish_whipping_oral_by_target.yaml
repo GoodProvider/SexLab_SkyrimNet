@@ -1,9 +1,9 @@
 customCategory: sexlab_punish
-name: SexLab_Punish_Spanking_Target
-description: "[style] spanking punishment on [Target]"
+name: SexLab_Punish_Whipping_Oral_Speaker
+description: "[style] whipping and oral punishment on [speaker]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
-executionFunctionName: StartScene_Nonconsensual_Two_TargetVictim
+executionFunctionName: StartScene_Nonconsensual_Two_SpeakerVictim
 defaultPriority: 7
 parameterMapping:
   - type: static 
@@ -14,16 +14,16 @@ parameterMapping:
     description: "Speaker Actor parameter (triggering entity)"
   - type: dynamic
     name: target
-    description: actor being punished
+    description: actor giving the punishment
   - type: dynamic
     name: style
     description: "forcefully|normally|gently"
   - type: static
     name: method
-    value: spanking
+    value: whip
   - type: static
     name: direction
     value: ""
   - type: static 
     name: setting_name
-    value: punish_spanking
+    value: punish_whipping_oral

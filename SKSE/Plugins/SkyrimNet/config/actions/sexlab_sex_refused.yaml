@@ -1,14 +1,14 @@
 customCategory: sexlab_sex
-name: SexLab_Nonsexual_Refused
+name: SexLab_Sexual_Refused
 description: "[Target] [style] refuses to [direction] [method] for [intent]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
 executionFunctionName: StartScene_Refused_Two
 defaultPriority: 6
 parameterMapping:
-  - type: dynamic 
+  - type: static 
     name: intent 
-    description: one or two words 
+    value: refused
   - type: speaker
     name: speaker
     description: Speaker Actor parameter (triggering entity)

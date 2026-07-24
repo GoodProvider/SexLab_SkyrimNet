@@ -64,7 +64,6 @@ EndFunction
 Function Setup() 
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
-        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
         return
     endif
 
@@ -89,7 +88,6 @@ Bool Function Setup_CheckLinks()
     if main == None
         main = (self as Quest) as SkyrimNet_SexLab_Main
         if main == None
-            Trace("Setup_CheckLinks", "--- main is None", true)
             links_ok = false
         endif
     endif
@@ -97,7 +95,6 @@ Bool Function Setup_CheckLinks()
     if stages == None
         stages = (self as Quest) as SkyrimNet_SexLab_Stages
         if stages == None
-            Trace("Setup_CheckLinks", "--- stages is None", true)
             links_ok = false
         endif
     endif
@@ -105,7 +102,6 @@ Bool Function Setup_CheckLinks()
     if manager == None
         manager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
         if manager == None
-            Trace("Setup_CheckLinks", "--- manager is None", true)
             links_ok = false
         endif
     endif
@@ -113,7 +109,6 @@ Bool Function Setup_CheckLinks()
     if actions == None
         actions = (self as Quest) as SkyrimNet_SexLab_Actions
         if actions == None
-            Trace("Setup_CheckLinks", "--- actions is None", true)
             links_ok = false
         endif
     endif
@@ -121,7 +116,6 @@ Bool Function Setup_CheckLinks()
     if menu == None
         menu = (self as Quest) as SkyrimNet_SexLab_Menu
         if menu == None
-            Trace("Setup_CheckLinks", "--- menu is None", true)
             links_ok = false
         endif
     endif

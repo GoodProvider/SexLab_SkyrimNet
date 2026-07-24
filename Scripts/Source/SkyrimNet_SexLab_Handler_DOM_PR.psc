@@ -15,6 +15,7 @@ Event OnInit()
 EndEvent 
 
 Event OnPlayerLoadGame()
-;    handler.Setup()
+    ; Intentional no-op: DOM handler init is owned by SkyrimNet_SexLab_Main.Setup(),
+    ; so this player-alias does not call handler.Setup(). Kept as the alias hook only.
 EndEvent
 

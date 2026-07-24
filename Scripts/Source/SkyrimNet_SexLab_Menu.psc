@@ -6,6 +6,8 @@ SkyrimNet_SexLab_Stages Property stages Auto
 SkyrimNet_SexLab_Scene_Manager Property manager Auto 
 SkyrimNet_SexLab_Actions Property actions Auto 
 
+bool debug_mode = false 
+
 Function Trace(String func, String msg, Bool notification=False) global
     msg = "[SkyrimNet_SexLab_Menu."+func+"] "+msg
     Debug.Trace(msg) 
@@ -15,9 +17,9 @@ Function Trace(String func, String msg, Bool notification=False) global
 EndFunction
 
 Function Setup()
+    debug_mode = False
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
-        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
         return
     endif
 EndFunction
@@ -27,31 +29,26 @@ Bool Function Setup_CheckLinks()
 
     mcm = (self as Quest) as SkyrimNet_SexLab_MCM
     if mcm == None
-        Trace("Setup_CheckLinks", "--- mcm is None", true)
         links_ok = false
     endif
 
     main = (self as Quest) as SkyrimNet_SexLab_Main
     if main == None
-        Trace("Setup_CheckLinks", "--- main is None", true)
         links_ok = false
     endif
 
     stages = (self as Quest) as SkyrimNet_SexLab_Stages
     if stages == None
-        Trace("Setup_CheckLinks", "--- stages is None", true)
         links_ok = false
     endif
 
     manager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
     if manager == None
-        Trace("Setup_CheckLinks", "--- manager is None", true)
         links_ok = false
     endif
 
     actions = (self as Quest) as SkyrimNet_SexLab_Actions
     if actions == None
-        Trace("Setup_CheckLinks", "--- actions is None", true)
         links_ok = false
     endif
 
@@ -146,7 +143,7 @@ Function Target_Menu_Selection(Actor target, Actor player)
     endif 
     
     if button == masturbate
-        if mcm.sexlab_ostim_player == 0 || !main.ostimnet_found
+        if mcm.sexlab_ostim_player == 1 && main.ostimnet_found
             EventSend_OStimNet("SexStart", target, None, "")
         elseif main.handler_dom.IsDOMSlave(target) 
             main.handler_dom.Start_Masturbate("sexual training", target, player)
@@ -168,13 +165,14 @@ Function Target_Menu_Selection(Actor target, Actor player)
         bs[0] = "spanking"
         bs[1] = "spanking nude"
         bs[2] = "whip"
-        bs[2] = "rape"
-        String method = SkyMessage.ShowArray("How would you like to show affection?", bs, getIndex = false) as string  
+        bs[3] = "rape"
+        String method = SkyMessage.ShowArray("How would you like to punish?", bs, getIndex = false) as string  
         if method == ""
             Trace("Target_Menu_Selection","cancelled punish method selection")
             return
         endif
         string setting_name= "punish_spanking"
+        String punish_intent = "physically punishing"
         if method == "spanking nude"
             method = "spanking"
             setting_name= "punish_spanking_victim_nude"
@@ -184,11 +182,12 @@ Function Target_Menu_Selection(Actor target, Actor player)
         elseif method == "rape"
             method = ""
             setting_name= "punish_pleasure_pain_rape"
+            punish_intent = "sexual assault"
         endif 
-        if main.handler_dom.IsDOMSlave(target) 
-            main.handler_dom.StartScene_Nonconsensual_Two_SpeakerVictim("sexual assault", target, player, player)
+        if debug_mode && main.handler_dom.IsDOMSlave(target) 
+            main.handler_dom.StartScene_Nonconsensual_Two_SpeakerVictim(punish_intent, target, player, player, method=method, setting_name=setting_name)
         else
-            actions.StartScene_Nonconsensual_Two_TargetVictim("sexual assault", player, target)
+            actions.StartScene_Nonconsensual_Two_TargetVictim(punish_intent, player, target, method=method, setting_name=setting_name)
         endif 
     elseif button == affection
         if mcm.sexlab_ostim_player == 0 || !main.ostimnet_found    
@@ -208,25 +207,25 @@ Function Target_Menu_Selection(Actor target, Actor player)
             if method == "kissing" 
                 setting_name = "nonsexual_kissing"
             endif 
-            actions.StartScene_Consensual_Two("showing affection",player, target=target, style="gently", method=method,setting_name=setting_name)
+            actions.StartScene_Consensual_Two("showing physical affection",player, target=target, style="gently", method=method,setting_name=setting_name)
         else
             Debug.Notification("Affection is not available while OStim is the active framework.")
         endif 
     elseif button == sex
-        if main.handler_dom.IsDOMSlave(target) 
+        if debug_mode && main.handler_dom.IsDOMSlave(target) 
             main.handler_dom.StartScene_Consensual_Two("sexual activities", target, player, player)
         else
             actions.StartScene_Consensual_Two("sexual activities", player, target)
         endif 
     elseif button == rapes_player
-        if main.handler_dom.IsDOMSlave(target) 
+        if debug_mode && main.handler_dom.IsDOMSlave(target) 
             ; slave (speaker) assaults player (target); speaker is not the victim
             main.handler_dom.StartScene_Nonconsensual_Two_TargetVictim("sexual assault", target, player, player)
         else
             actions.StartScene_Nonconsensual_Two_SpeakerVictim("sexual assault", player, target)
         endif 
     elseif button == raped_by_player
-        if main.handler_dom.IsDOMSlave(target) 
+        if debug_mode && main.handler_dom.IsDOMSlave(target) 
             main.handler_dom.StartScene_Nonconsensual_Two_SpeakerVictim("sexual assault", target, player, player)
         else
             actions.StartScene_Nonconsensual_Two_TargetVictim("sexual assault",player, target)
@@ -446,7 +445,7 @@ Function MutliTarget_Menu_Selection(Actor player)
             endif 
         elseif index == 1 
             String[] buttons = new String[4] 
-            buttons[0] = "showing affection"
+            buttons[0] = "showing physical affection"
             buttons[1] = "sexual activities"
             buttons[2] = "sexual assault"
             buttons[3] = "custom"
@@ -522,7 +521,7 @@ Function MutliTarget_Menu_Selection(Actor player)
     if intent == "comfort"
         setting_name = "nonsexual_male_position_1"
         method = "spooning"
-    elseif intent == "showing affection"
+    elseif intent == "showing physical affection" || intent == "showing affection"
         method = "spooning"
         setting_name = "nonsexual_male_position_1"
     endif 

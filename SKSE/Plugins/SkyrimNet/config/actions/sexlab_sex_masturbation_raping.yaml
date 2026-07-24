@@ -1,6 +1,6 @@
 customCategory: sexlab_sex
-name: SexLab_Masturbation_Start
-description: "forced to [style] [type] masturbation"
+name: SexLab_Masturbation_Forced
+description: "forced to [style] [method] masturbation"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
 executionFunctionName: StartScene_Nonconsensual_One
@@ -8,7 +8,7 @@ defaultPriority: 5
 parameterMapping:
   - type: static
     name: intent
-    value: sexually assault
+    value: sexual assault
   - type: speaker
     name: speaker
     description: Speaker Actor parameter (triggering entity)

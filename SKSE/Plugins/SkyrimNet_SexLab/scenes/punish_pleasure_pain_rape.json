@@ -1,7 +1,6 @@
 {
     "array_defaults":{
-        "no_orgasm":0,
-        "no_stripping":0,
         "speaking_modifiers":"_pleasure_"
-    }
+    },
+    "speaking_modifiers":["_pain_,_pleasure_"]
 }

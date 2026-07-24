@@ -14,7 +14,6 @@ EndFunction
 Function Setup()
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
-        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
         return
     endif
 

@@ -1,10 +1,10 @@
 customCategory: sexlab_punish
-name: SexLab_Punish_Spanking_Target
-description: "[style] spanking punishment on [Target]"
+name: SexLab_Punish_Spanking_Victim_Nude_Speaker
+description: "[style] nude spanking punishment on [speaker]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
-executionFunctionName: StartScene_Nonconsensual_Two_TargetVictim
-defaultPriority: 7
+executionFunctionName: StartScene_Nonconsensual_Two_SpeakerVictim
+defaultPriority: 8
 parameterMapping:
   - type: static 
     name: intent
@@ -14,7 +14,7 @@ parameterMapping:
     description: "Speaker Actor parameter (triggering entity)"
   - type: dynamic
     name: target
-    description: actor being punished
+    description: actor giving the punishment
   - type: dynamic
     name: style
     description: "forcefully|normally|gently"
@@ -26,4 +26,4 @@ parameterMapping:
     value: ""
   - type: static 
     name: setting_name
-    value: punish_spanking
+    value: punish_spanking_victim_nude

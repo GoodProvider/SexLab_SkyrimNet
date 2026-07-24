@@ -1,14 +1,14 @@
 customCategory: sexlab_sex
 name: SexLab_Sexual_Assault_Target
-description: "[style] [type] sexual assault on [Target]"
+description: "[style] [method] sexual assault on [Target]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
-executionFunctionName: StartScene_Nonconsensual_Two
+executionFunctionName: StartScene_Nonconsensual_Two_TargetVictim
 defaultPriority: 8
 parameterMapping:
   - type: static 
     name: intent
-    value: sexually assaulting
+    value: sexual assault
   - type: speaker
     name: speaker
     description: Speaker Actor parameter (triggering entity)
@@ -24,9 +24,6 @@ parameterMapping:
   - type: dynamic
     name: direction
     description: giving|getting
-  - type: static 
-    name: speaking_victim
-    value: false
   - type: static 
     name: setting_name
     value: ""

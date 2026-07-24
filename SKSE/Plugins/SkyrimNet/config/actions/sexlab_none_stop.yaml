@@ -6,7 +6,7 @@ executionFunctionName: SceneStop
 defaultPriority: 7
 parameterMapping:
   - type: speaker
-    name: consenting speaker
+    name: speaker
     description: Speaker Actor parameter (triggering entity)
   - type: dynamic
     name: style 
@@ -25,3 +25,5 @@ eligibilityRules:
           - SkyrimNet_SexLab_Faction_Victim
         comparisonOperator: < 
         expectedValue: 0
+    logicalOperator: AND
+    required: true

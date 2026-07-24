@@ -23,7 +23,7 @@ String Property style Auto
 ; --------------------------------------------
 ; Speaking Style
 ; --------------------------------------------
-String Property speaking_modifiers_DEFAULT = "pleasure" AUTOReadOnly
+String Property speaking_modifiers_DEFAULT = "_pleasure_" AUTOReadOnly
 
 ; --------------------------------------------
 ; Number Victims
@@ -45,18 +45,16 @@ String Property creature_descriptions = "" Auto
 String Property hermaphrodiate_names = "" Auto
 String Property strapon_names = "" Auto
 
-; --------------------------------------------
-; Since returning a None array cause an error
-; we set the empty
-; --------------------------------------------
-sslBaseAnimation[] Property empty = None Auto
 
 ; --------------------------------------------
 ; Status 
+; STATUS_* must be AutoReadOnly — Auto lets saves corrupt the constants so
+; IsActive() (status != STATUS_INACTIVE) stays true forever and the scene pool
+; can never be reclaimed.
 ; --------------------------------------------
-String Property STATUS_INACTIVE = "INACTIVE" Auto
-String Property STATUS_SETUP = "SETUP" Auto
-String Property STATUS_ACTIVE = "ACTIVE" Auto
+String Property STATUS_INACTIVE = "INACTIVE" AutoReadOnly
+String Property STATUS_SETUP = "SETUP" AutoReadOnly
+String Property STATUS_ACTIVE = "ACTIVE" AutoReadOnly
 String Property status = "INACTIVE" Auto
 
 ; --------------------------------------------
@@ -88,21 +86,35 @@ String Function GetString()
 EndFunction 
 
 
-Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager) 
+; _is_generic is used by Scene (fallback pool flag). Creators ignore it (always false).
+Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager, bool _is_generic = false) 
     sid = _sid
     manager = _manager 
     main = manager.main
     stages = manager.stages 
-    if !empty 
-        empty = new sslBaseAnimation[1]
-        empty[0] = None 
-    endif 
+
     intent = INTENT_DEFAULT
+    ; Always reclaim pool slots on manager Setup / load — status is Auto and survives saves.
+    status = STATUS_INACTIVE
 EndFunction 
 
+; Reset all interface scene state except sid (pool identity).
+; Subclasses may preserve additional permanent flags (e.g. Scene.is_generic).
 Function Release()
     style = STYLE_NORMALLY
-    status = STATUS_INACTIVE 
+    status = STATUS_INACTIVE
+    intent = INTENT_DEFAULT
+    has_player = False
+    player_is_victim = False
+    num_victims = 0
+    actor_names = ""
+    actor_names_json = ""
+    victim_names = ""
+    victim_names_json = ""
+    assailant_names = ""
+    creature_descriptions = ""
+    hermaphrodiate_names = ""
+    strapon_names = ""
 EndFunction
 
 ; ------------------------------------------------------
@@ -129,7 +141,8 @@ EndFunction
 ; 0 forcefully 
 ; 1 normally 
 ; 2 gently 
-int Function SetStyleDialog()
+Function SetStyleDialog()
+    Trace("SetStyleDialog","-- start style: "+style)
     String[] buttons = new String[3] 
     if num_victims > 0 
         buttons[0] = "Violent "+intent
@@ -148,4 +161,5 @@ int Function SetStyleDialog()
     else 
         style = STYLE_NORMALLY
     endif 
+    Trace("SetStyleDialog","-- end: "+style)
 EndFunction

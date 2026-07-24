@@ -30,6 +30,26 @@
 								</dependencyType>
 							</typeDescriptor>
 						</plugin>
+						<plugin name="SkyrimNet_DOM | github.com/GoodProvider/SkyrimNet_DOM">
+							<description> Bridges SkyrimNet_SexLab and SkyrimNet_DOM</description>
+							<image path="images\sexlab_logo.png" />
+							<files>
+								<file source="handler_dom\SkyrimNet_SexLab_Handler_DOM.esp" destination="" alwaysInstall="false" installIfUsable="false" priority="0"/>
+							</files>
+							<typeDescriptor>
+								<dependencyType>
+									<defaultType name="Optional"/>
+									<patterns>
+										<pattern>
+											<dependencies operator="And">
+												<fileDependency file="SkyrimNet_DOM.esp" state="Active"/>
+											</dependencies>
+											<type name="Recommended"/>
+										</pattern>
+									</patterns>
+								</dependencyType>
+							</typeDescriptor>
+						</plugin>
 					</plugins>
 				</group>
 			</optionalFileGroups>

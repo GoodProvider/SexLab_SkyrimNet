@@ -102,6 +102,7 @@ String Function UuidToDecimalString(String entityUuid) global
     return entityUuid
 EndFunction
 
+
 ; ------------------------------------------------------------
 ; Timestamps
 ; A reasonable timestamp is acceptable. 
@@ -321,92 +322,95 @@ String Function JoinIsAre(String joined, int total, bool add_is_are) global
     return joined 
 EndFunction 
 
-; ------------------------------------------------------------
-; JContainers Refactored JSON Implementations
-; ------------------------------------------------------------
-
 String Function JoinStringsToJson(String[] strings, int num_strings=-1) global 
     if !strings 
-        return "none"  
+        return "none"
     endif 
     if num_strings == -1 
-        num_strings = strings.length  
+        num_strings = strings.length 
     endif 
-    
-    int obj = JArray.object() 
+    String json = "" 
     int i = 0
-    while i < num_strings
-        JArray.addStr(obj, strings[i])  
+    while i < num_strings 
+        if json != "" 
+            json += ", "
+        endif 
+        json += "\""+strings[i]+"\""
         i += 1
     endwhile
-    
-    return JValue.toJsonString(JValue.zeroLifetime(obj))  
+    json = "["+json+"]"
+    return json
 EndFunction 
 
 String Function JoinStringsToJsonMasked(String[] strings, int[] mask=None, int num_strings=-1) global 
     if !strings 
-        return "none"  
+        return "none"
     endif 
     if num_strings == -1 
-        num_strings = strings.length  
+        num_strings = strings.length 
     endif 
-    
-    int obj = JArray.object() 
+    String json = "" 
     int i = 0
     while i < num_strings 
-        if mask == None || mask[i] == 1  
-            JArray.addStr(obj, strings[i])  
+        if mask == None || mask[i] == 1
+            if json != "" 
+                json += ", "
+            endif 
+            json += "\""+strings[i]+"\""
         endif 
-        i += 1  
+        i += 1
     endwhile
-    
-    return JValue.toJsonString(JValue.zeroLifetime(obj))  
+    json = "["+json+"]"
+    return json
 EndFunction 
 
 String Function JoinActorsToJson(Actor[] actors, int num_actors=-1) global
     if !actors 
-        return "none"  
+        return "none"
     endif 
     if num_actors == -1 
-        num_actors = actors.length  
+        num_actors = actors.length 
     endif 
-    
-    int obj = JArray.object() 
+    String json = ""
     int i = 0
     while i < num_actors 
-        String name = "none"  
-        if actors[i] != None  
-            name = actors[i].GetDisplayName()  
+        if json != ""
+            json += ", "
+        endif 
+        String name = "none" 
+        if actors[i] != None 
+            name = actors[i].GetDisplayName()
         endif
-        JArray.addStr(obj, name)  
-        i += 1  
+        json += "\""+name+"\""
+        i += 1
     endwhile 
-    
-    return JValue.toJsonString(JValue.zeroLifetime(obj))  
+    return "["+json+"]"
 EndFunction 
 
 String Function JoinActorsToJsonMasked(Actor[] actors, int[] mask, int num_actors=-1) global
     if !actors 
-        return "none"  
+        return "none"
     endif 
     if num_actors == -1 
-        num_actors = actors.length  
+        num_actors = actors.length 
     endif 
-    
-    int obj = JArray.object() 
+    String json = ""
     int i = 0
     while i < num_actors 
-        if mask[i] == 1  
-            String name = "none"  
-            if actors[i] != None  
-                name = actors[i].GetDisplayName()  
+        if mask[i] == 1 
+            if json != ""
+                json += ","
+            endif 
+
+            String name = "none" 
+            if actors[i] != None 
+                name = actors[i].GetDisplayName()
             endif
-            JArray.addStr(obj, name)  
+            json += "\""+name+"\""
         endif 
-        i += 1  
+        i += 1
     endwhile 
-    
-    return JValue.toJsonString(JValue.zeroLifetime(obj))  
+    return "["+json+"]"
 EndFunction 
 
 String Function JoinStrings(String[] strings, int num_strings=-1) global
@@ -430,20 +434,40 @@ EndFunction
 
 String Function JoinIntsToJson(int[] ints, int num_ints=-1) global 
     if !ints 
-        return "none"  
+        return "none"
     endif 
     if num_ints == -1 
-        num_ints = ints.length  
+        num_ints = ints.length 
     endif 
-    
-    int obj = JArray.object() 
+    String json = "" 
     int i = 0
-    while i < num_ints
-        JArray.addInt(obj, ints[i])  
-        i += 1  
+    while i < num_ints 
+        if json != "" 
+            json += ", "
+        endif 
+        json += ints[i]
+        i += 1
     endwhile
-    
-    return JValue.toJsonString(JValue.zeroLifetime(obj))  
+    json = "["+json+"]"
+    return json
+EndFunction 
+
+String Function JoinJArrayStrToJson(int array) global 
+    if array < 1
+        return "none"
+    endif 
+    int num_strings = JArray.count(array)
+    int i = 0
+    String json = ""
+    while i < num_strings 
+        if json != "" 
+            json += ", "
+        endif 
+        json += "\""+JArray.getStr(array, i)+"\""
+        i += 1
+    endwhile
+    json = "["+json+"]"
+    return json
 EndFunction 
 
 ; ------------------------------------------------------------
@@ -470,8 +494,8 @@ Bool Function NarrationCoolOffAllows(Actor source, Actor target) global
         return False 
     endif 
 
-    float unit_meter = 0.01465
-    float distance = (unit_meter*main.direct_narration_max_distance) + 1 
+    float unit_meter = 0.0142875
+    float distance = 0
     if source != None 
         Actor player = Game.GetPlayer()
         if player == source 
@@ -488,13 +512,17 @@ Bool Function NarrationCoolOffAllows(Actor source, Actor target) global
     return time_delta > main.direct_narration_cool_off && queue_size == 0 && (last_audio >= main.direct_narration_cool_off && distance <= main.direct_narration_max_distance)
 EndFunction
 
-Function DirectNarration_Optional(String event_type, String msg, Actor source=None, Actor target=None, bool optional_is_dropped=False) global
+bool Function DirectNarration_Optional(String event_type, String msg, Actor source=None, Actor target=None, bool optional_is_dropped=False) global
     msg = CheckDuplicate("DirectNarration_Optional", source, msg, False, target)
     if msg == ""
-        return 
+        return false 
     endif 
 
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
+    if main == None
+        Trace("DirectNarration_Optional","main is None, aborting")
+        return false
+    endif
 
     String type = "" 
     if NarrationCoolOffAllows(source, target)
@@ -517,10 +545,15 @@ Function DirectNarration_Optional(String event_type, String msg, Actor source=No
         msg += " target:"+target.GetDisplayName()
     endif
     Trace("DirectNarration_Optional","type:"+type+" msg:"+msg)
+    return type != "dropped"
 EndFunction
 
 Function DirectNarration(String msg, Actor source=None, Actor target=None, bool purge_dialogue=False) global
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
+    if main == None
+        Trace("DirectNarration","main is None, aborting")
+        return
+    endif 
     msg = CheckDuplicate("DirectNarration", source, msg, False, target)
     if msg == ""
         return 
@@ -576,7 +609,7 @@ String Function CheckDuplicate(String func, Actor source, String msg, Bool allow
     String storage_key = "sexlab_narration_last_msg"
     String old = StorageUtil.GetStringValue(storage_actor, storage_key, "")
     if old == msg
-        Trace(func+".CheckDuplicate", "changing duplicate `"+msg+"' to ''")
+        Trace(func+".CheckDuplicate", "changing duplicate \""+msg+"\" to \"\"")
         if allow_continue_fallback && NarrationCoolOffAllows(source, target)
             ContinueActivity(source, target, True)
         endif 

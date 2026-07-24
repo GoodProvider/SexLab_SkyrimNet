@@ -29,6 +29,7 @@
     - *skyrimet_sexlab_WebUI.psc*: is the anchor point for SKSE libary we will use in the future
     - *SkyrimNet_SexLab_Creature.psc*: is used to update the creature list and the creature, it should be ignored
     - *SkyrimNet_SexLab_DOM*: is optional. so the code needs to work when handler_dom is set to skyrimnet_sexlab_dom_interface and skyrimnet_sexlab_dom.
+    - *Trace("...","---.....")*: Traces that start with "---" are used to debug the code, ignore them when reviewing the code.
   </facts>
 
   <instructions>
@@ -42,9 +43,11 @@
       3. Filename.
       4. Line number (you must include commented lines in your count).
     * *review-execution-plan.xml* is targeted at an AI agent that will execute the plan
+    Don't assume, ask questions
   </instructions>
 
   <output> 
-    review-execution-plan.xml 
+    review-execution-plan.xml : combined with review-checkout.xml, can be used to execute the plan
+    review-checkout.xml : contains enough information to start a new review
   </output>
 </system_prompt>

@@ -1,6 +1,6 @@
 customCategory: sexlab_sex
 name: SexLab_Start_Giving
-description: "Consensual [style] [direction] [type]"
+description: "Consensual [style] [direction] [method]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
 executionFunctionName: StartScene_Consensual_Two
@@ -19,7 +19,7 @@ parameterMapping:
     name: style
     description: forceful|normal|gentle
   - type: dynamic
-    name: type
+    name: method
     description: oral|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob
   - type: dynamic 
     name: direction 

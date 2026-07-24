@@ -1,7 +1,6 @@
 customCategory: sexlab_comfort
 name: ShowComfort
-description_: 'PARAMS: {"direction":"give|get", "intent":"who, why, and how"} - [direction] comfort with physical contact'
-description:  'You [direction] comfort with physical action {"direction":"give|get", "intent":"who, why, and how"}'
+description: 'PARAMS: {"direction":"giving|getting", "intent":"who, why, and how"} - [direction] comfort with physical contact'
 enabled: true
 eligibilityRules:
   - conditions:
@@ -37,6 +36,8 @@ eligibilityRules:
         arguments:
           - "HasIntValue"
           - currentActor
-          - "skyrimnet_sexlab_actor_lock"
+          - "skyrimnet_sexlab_scene_actor_lock"
         comparisonOperator: ==
         expectedValue: false
+    logicalOperator: AND
+    required: true

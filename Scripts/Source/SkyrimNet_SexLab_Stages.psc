@@ -60,7 +60,6 @@ Function Setup()
     String temp = "sl" ; attempt to set the capitalization of sl 
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
-        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
         return
     endif
 
@@ -97,20 +96,17 @@ Bool Function Setup_CheckLinks()
 
     main = (self as Quest) as SkyrimNet_SexLab_Main
     if main == None
-        Trace("Setup_CheckLinks", "--- main is None", true)
         links_ok = false
     endif
 
     actions = (self as Quest) as SkyrimNet_SexLab_Actions
     if actions == None
-        Trace("Setup_CheckLinks", "--- actions is None", true)
         links_ok = false
     endif
 
     if manager == None
         manager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
         if manager == None
-            Trace("Setup_CheckLinks", "--- manager is None", true)
             links_ok = false
         endif
     endif
@@ -185,11 +181,9 @@ String Function AddActorDescriptionActors(String version, Actor[] actors, String
             i += 1 
         endwhile 
         String json = "{\"actors\":["+actors_json+"]}"
-        Trace("AddActorDescriptionActors","--- json: "+json)
         result = SkyrimNetApi.ParseString(desc, "sl", json)
         Trace("AddActorDescriptionActors","json: "+json+" desc: "+desc+" result: "+result)
     endif 
-    Trace("AddActorDescriptionActors","--- version "+version+" actors:"+actors.length+" desc:"+desc+" -> "+result)
     return result
 EndFunction 
 ; ------------------------------------

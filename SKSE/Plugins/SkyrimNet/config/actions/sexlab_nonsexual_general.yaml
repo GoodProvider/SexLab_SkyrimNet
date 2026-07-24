@@ -1,14 +1,14 @@
 customCategory: sexlab_nonsexual
 name: SexLab_Nonsexual_Accepted
-description: "[direction] [style] [method] to [intent]"
+description: "[direction] [style] [method] showing physical affection"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
 executionFunctionName: StartScene_Consensual_Two
 defaultPriority: 7
 parameterMapping:
-  - type: dynamic 
-    name: intent 
-    description: one or two words
+  - type: static 
+    name: intent
+    value: showing physical affection
   - type: speaker
     name: speaker
     description: Speaker Actor parameter (triggering entity)

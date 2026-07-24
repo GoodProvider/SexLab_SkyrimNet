@@ -1,20 +1,20 @@
 name: change_outfit_target
-description: "[style] [verb] Target's outfit"
+description: "[style] [how] Target's outfit"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
 executionFunctionName: Change_Outfit
 parameterMapping:
   - type: speaker
-    name: akActor
+    name: stripper
     description: Speaker Actor parameter (triggering entity)
   - type: dynamic
-    name: target
+    name: stripped
     description: Stripped Actor
   - type: dynamic
     name: style
     description: forcefully|normally|gently
   - type: dynamic
-    name: verb
+    name: how
     description: "put on|take off"
   - type: static
     name: narration
@@ -49,7 +49,7 @@ eligibilityRules:
         arguments:
           - "HasIntValue"
           - currentActor
-          - "skyrimnet_sexlab_actor_lock"
+          - "skyrimnet_sexlab_scene_actor_lock"
         comparisonOperator: ==
         expectedValue: false
     logicalOperator: "AND"

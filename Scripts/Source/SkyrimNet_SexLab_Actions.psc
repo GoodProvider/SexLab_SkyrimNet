@@ -24,7 +24,6 @@ EndFunction
 Function Setup()
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
-        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
         return
     endif
 
@@ -42,7 +41,6 @@ Bool Function Setup_CheckLinks()
     if main == None
         main = (self as Quest) as SkyrimNet_SexLab_Main
         if main == None
-            Trace("Setup_CheckLinks", "--- main is None", true)
             links_ok = false
         endif
     endif
@@ -50,13 +48,11 @@ Bool Function Setup_CheckLinks()
     if manager == None
         manager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
         if manager == None
-            Trace("Setup_CheckLinks", "--- manager is None", true)
             links_ok = false
         endif
     endif
 
     if sexlab == None
-        Trace("Setup_CheckLinks", "--- sexlab is None", true)
         links_ok = false
     endif
 
@@ -216,17 +212,26 @@ Function StartScene_Event(String intent, Actor speaker, Actor target=None, Actor
 
     int speaker_position = 0 
     if target != None 
-        if method == "oral" || method == "vaginal" || method == "anal"
-            if direction == "fuck a"
-                speaker_position = 1 
-            endif 
-        elseif method == "kissing" || method == "spanking" || method == "whip"
-            if direction == "giving" || direction == "give" 
-                speaker_position = 1 
-            endif 
-        elseif direction == "get" || direction == "getting"
-            speaker_position = 1 
-        endif 
+        ; Victim wrappers: TargetVictim → speaker pos1 (dominant); SpeakerVictim → speaker pos0 (submissive)
+        if victim != None && victim == speaker
+            speaker_position = 0
+        elseif victim != None && victim == target
+            speaker_position = 1
+        else
+            ; Consensual: Speaker is sentence subject. pos0=submissive, pos1=dominant.
+            ; Penetration: position_1 fucks position_0; oral: position_0 gives, position_1 receives.
+            if direction == "fucking" || direction == "fuck a" || direction == "fucking a"
+                speaker_position = 1
+            elseif direction == "fucked in"
+                speaker_position = 0
+            elseif direction == "getting" || direction == "get"
+                ; Speaker receives (e.g. gets oral) → dominant slot
+                speaker_position = 1
+            elseif direction == "giving" || direction == "give"
+                ; Speaker gives service (e.g. gives oral) → submissive slot
+                speaker_position = 0
+            endif
+        endif
     endif 
 
     String event_name = "SkyrimNet_SexLab_Action_Start"

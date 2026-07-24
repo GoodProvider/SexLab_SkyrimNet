@@ -47,12 +47,6 @@
         {% else %}
     - Her breathing is rapid and shallow. Her nipples are prominently erect, skin deeply flushed, and her thighs press together periodically. She faintly smells of pussy juice.
         {% endif %}
-      {% else %}
-        {% if actor_gender == "male" %}
-    - His breathing is desperate and heavy, skin flushed. If unclothed, his erection is plainly visible with precum.
-        {% else %}
-    - Her breathing is desperate, rapid, and shallow. Her nipples are painfully prominently erect, skin deeply flushed, her thighs press together periodically, and pussy dripping. She strongly smells of pussy juice.
-        {% endif %}
       {% endif %}
     {% endif %}
   {% endif %}

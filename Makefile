@@ -1,4 +1,4 @@
-VERSION=0.30.5
+VERSION=0.31.0
 NAME=SkyrimNet SexLab
 
 RELEASE_FILE=versions/SkyrimNet_SexLab ${VERSION}.7z
@@ -30,16 +30,23 @@ release:
 	mkdir core 
 	powershell -NoProfile -Command "Copy-Item -Path 'Scripts','SKSE','SkyrimNet_SexLab.esp' -Destination 'core/.' -Recurse -Force"
 
-
 	if exist "$(subst /,\\,handler_udng)" rmdir /s /q "$(subst /,\\,handler_udng)"	
 	mkdir handler_udng 
 	powershell -NoProfile -Command "Copy-Item -Path 'SkyrimNet_SexLab_Handler_UDNG.esp' -Destination 'handler_udng/.' -Recurse -Force"
 
+	if exist "$(subst /,\\,handler_dom)" rmdir /s /q "$(subst /,\\,handler_dom)"	
+	mkdir handler_dom 
+	powershell -NoProfile -Command "Copy-Item -Path 'SkyrimNet_SexLab_Handler_DOM.esp' -Destination 'handler_dom/.' -Recurse -Force"
+
 	7z -bb1 a '${RELEASE_FILE}' -aoa FOMOD \
 		core \
 		images \
-		handler_udng 
+		handler_udng \
+		handler_dom 
+
 	if exist "$(subst /,\\,core)" rmdir /s /q "$(subst /,\\,core)"		
+	if exist "$(subst /,\\,handler_udng)" rmdir /s /q "$(subst /,\\,handler_udng)"	
+	if exist "$(subst /,\\,handler_dom)" rmdir /s /q "$(subst /,\\,handler_dom)"	
 
 group_tags:
 	python3 ./python_scripts/group-tags.py animations > SkyrimNet_SexLab/group_tags.json

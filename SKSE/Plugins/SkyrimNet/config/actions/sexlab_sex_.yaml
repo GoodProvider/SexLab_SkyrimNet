@@ -1,6 +1,6 @@
 customCategory: sexlab_sex
-name: Sexual_Activities
-description: 'PARAMS: {"type":"oral|vaginal|anal|masturbation|other", intent:"who, why, and how"} - [type] sexual activities'
+name: SexLab_Sexual_Activities
+description: 'PARAMS: {"type":"oral|vaginal|anal|masturbation|other", "intent":"who, why, and how"} - [type] sexual activities'
 enabled: true
 eligibilityRules:
   - conditions:
@@ -36,6 +36,8 @@ eligibilityRules:
         arguments:
           - "HasIntValue"
           - currentActor
-          - "skyrimnet_sexlab_actor_lock"
+          - "skyrimnet_sexlab_scene_actor_lock"
         comparisonOperator: ==
         expectedValue: false
+    logicalOperator: AND
+    required: true

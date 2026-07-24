@@ -66,7 +66,6 @@ EndFunction
 Function Setup() 
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
-        Trace("Setup", "--- Setup_CheckLinks failed, aborting", true)
         return
     endif
 
@@ -144,27 +143,22 @@ Bool Function Setup_CheckLinks()
     Bool links_ok = true
 
     if main == None
-        Trace("Setup_CheckLinks", "--- main is None", true)
         links_ok = false
     endif
 
     if stages == None
-        Trace("Setup_CheckLinks", "--- stages is None", true)
         links_ok = false
     endif
 
     if SexLab == None
-        Trace("Setup_CheckLinks", "--- SexLab is None", true)
         links_ok = false
     endif
 
     if threadSlots == None
-        Trace("Setup_CheckLinks", "--- threadSlots is None", true)
         links_ok = false
     endif
 
     if actorLib == None
-        Trace("Setup_CheckLinks", "--- actorLib is None", true)
         links_ok = false
     endif
 
@@ -970,4 +964,29 @@ String Function GetStyleDialog(String msg) global
     buttons[2] = "gently"
     buttons[3] = "silently"
     return SkyMessage.ShowArray(msg, buttons, getIndex=False) as String
+EndFunction
+
+; ----------------------------------------------------------------------------------------------------
+; Check if actor is busy
+; ----------------------------------------------------------------------------------------------------
+
+bool Function IsBusy(Actor akActor) 
+    if akActor == None 
+        Trace("IsActorBusy","akActor is None")
+        return false
+    endif
+
+    if akActor.IsDead() || akActor.IsInCombat() 
+        return true 
+    endif 
+
+    if sexlab.IsActorActive(akActor) 
+        return true 
+    endif 
+
+    if OstimActorCountFaction != None && akActor.IsInFaction(OStimActorCountFaction)
+        return true 
+    endif
+
+    return false
 EndFunction

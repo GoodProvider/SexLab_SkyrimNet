@@ -58,6 +58,12 @@ if a == None
 ## Installed Modding Tools
 Always include commented lines when calculating line number.
 
+## 
+
+## Debug Traces 
+Debug Trace message should always start with "---"  `Trace("FunctionName", "--- this is a debug message")`
+Debug Papyrus log file: C:\Users\bhuff\OneDrive\Documents\my games\Skyrim Special Edition\Logs\Script\Papyrus.0.log
+
 **Papyrus compile (required)**: use the VS Code/Cursor task **`compile: pyro`** (`.vscode/tasks.json`). It runs Pyro against `skyrimse.ppj` with the project game path. Do not invent alternate Caprica/`papyrus.exe` one-off compile commands for this repo unless the user asks.
 
 All under `tools/`:
@@ -117,7 +123,7 @@ Hooks in `.claude/settings.json` enforce these automatically:
 - Directly writing to ESP/ESM/ESL/BSA/BA2 files (use xelib or modding tools)
 
 ### Requires user confirmation
-- **Any edit to ANY file** in the game directory or config directory (catch-all)
+y **Any edit to ANY file** in the game directory or config directory (catch-all)
 - Papyrus scripts (`.psc`, `.pex`)
 - Skyrim INI files (Skyrim.ini, SkyrimVR.ini, SkyrimPrefs.ini)
 - SKSE plugin configs (`Data/SKSE/Plugins/*.ini`)

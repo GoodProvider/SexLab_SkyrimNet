@@ -1,6 +1,6 @@
 customCategory: sexlab_punish
 name: Sexlab_Punish
-description: 'PARAMS: {direction":"giving|getting", "type":"spanking|whipping", "intent":"who, why, and how"} - [direction] [type] to punish' 
+description: 'PARAMS: {"direction":"giving|getting", "type":"spanking|whipping", "intent":"who, why, and how"} - [direction] [type] to punish'
 enabled: true
 eligibilityRules:
   - conditions:
@@ -36,6 +36,8 @@ eligibilityRules:
         arguments:
           - "HasIntValue"
           - currentActor
-          - "skyrimnet_sexlab_actor_lock"
+          - "skyrimnet_sexlab_scene_actor_lock"
         comparisonOperator: ==
         expectedValue: false
+    logicalOperator: AND
+    required: true
