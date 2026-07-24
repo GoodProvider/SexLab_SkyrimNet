@@ -3,11 +3,24 @@
 #include "WebUI_Log.h"
 #include "WebUI.h"
 #include "PublicAPI.h"
+#include "ActionCatalog.h"
 #include <nlohmann/json.hpp>
 
 namespace PapyrusBindings_WebUI
 {
     RE::Actor* Target_Current = nullptr;
+
+    static std::string EscapeJsString(std::string_view s)
+    {
+        std::string out;
+        out.reserve(s.size() + 8);
+        for (char c : s) {
+            if (c == '\\' || c == '\'')
+                out.push_back('\\');
+            out.push_back(c);
+        }
+        return out;
+    }
 
     void Target_Menu_Open(RE::StaticFunctionTag*, RE::Actor* Target_Input)
     {
@@ -24,6 +37,9 @@ namespace PapyrusBindings_WebUI
         Reset_To_Default();
         Target_Current = Target_Input;
 
+        if (!ActionCatalog::IsLoaded())
+            ActionCatalog::Load();
+
         uint64_t uuid = (PublicFormIDToUUID) ? PublicFormIDToUUID(Target_Current->GetFormID()) : 0;
         std::string skyrimNetName = (uuid && PublicGetActorNameByUUID) ? PublicGetActorNameByUUID(uuid) : "";
         const char* targetName = !skyrimNetName.empty() ? skyrimNetName.c_str() : Target_Current->GetName();
@@ -31,7 +47,9 @@ namespace PapyrusBindings_WebUI
 
         webui_log::info("Target_Menu_Open triggered. Target: {}", name);
 
-        WebUI_Invoke(std::format("setTargetActor('{}', '{}');", uuid, name));
+        auto catalog = ActionCatalog::BuildUICatalog();
+        WebUI_Invoke("configureTargetMenu(" + catalog.dump() + ");");
+        WebUI_Invoke(std::format("setTargetActor('{}', '{}');", uuid, EscapeJsString(name)));
         WebUI_Invoke("showPanel('target_menu_panel');");
         WebUI_Visibility_Show();
     }
@@ -46,26 +64,25 @@ namespace PapyrusBindings_WebUI
 
     void PopulateNearbyActors()
     {
-        // Set player actor
         auto* player = RE::PlayerCharacter::GetSingleton();
         if (player && PublicFormIDToUUID) {
-            uint64_t playerUUID     = PublicFormIDToUUID(player->GetFormID());
-            std::string playerName  = player->GetName();
-            if (playerName.empty()) playerName = "Player";
-            WebUI_Invoke(std::format("setPlayerActor('{}', '{}');", playerUUID, playerName));
+            uint64_t playerUUID = PublicFormIDToUUID(player->GetFormID());
+            std::string playerName = player->GetName();
+            if (playerName.empty())
+                playerName = "Player";
+            WebUI_Invoke(std::format("setPlayerActor('{}', '{}');", playerUUID, EscapeJsString(playerName)));
         }
 
-        // Populate nearby actors from SkyrimNet engagement data
         if (PublicGetActorEngagement) {
             try {
                 std::string raw = PublicGetActorEngagement(20, true, false, 604800.0, 2592000.0);
                 auto arr = nlohmann::json::parse(raw);
                 nlohmann::json nearby = nlohmann::json::array();
                 for (auto& item : arr) {
-                    uint32_t formId       = item["formId"].get<uint32_t>();
+                    uint32_t formId = item["formId"].get<uint32_t>();
                     std::string actorName = item["name"].get<std::string>();
-                    uint64_t actorUUID    = PublicFormIDToUUID ? PublicFormIDToUUID(formId) : 0;
-                    nearby.push_back({ {"name", actorName}, {"uuid", std::to_string(actorUUID)} });
+                    uint64_t actorUUID = PublicFormIDToUUID ? PublicFormIDToUUID(formId) : 0;
+                    nearby.push_back({ { "name", actorName }, { "uuid", std::to_string(actorUUID) } });
                 }
                 WebUI_Invoke("setNearbyActors(" + nearby.dump() + ");");
             } catch (...) {

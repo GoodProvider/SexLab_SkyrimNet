@@ -1,0 +1,41 @@
+{
+  "defaults": {
+    "setting_name": { "type": "String", "default": "" },
+    "style": { "type": "String", "default": "normally" },
+    "speaker": { "type": "Actor", "source": "player" },
+    "target": { "type": "Actor", "source": "target" },
+    "stripper": { "type": "Actor", "source": "player" },
+    "stripped": { "type": "Actor", "source": "target" }
+  },
+  "options": [
+    {
+      "type": "parameter",
+      "name": "style",
+      "default": "normally",
+      "values": ["forcefully", "normally", "gently"]
+    },
+    {
+      "type": "category",
+      "label": "comfort",
+      "name": "sexlab_comfort",
+      "parameters": {
+        "intent": { "type": "String", "default": "cuddling" }
+      }
+    },
+    {
+      "type": "category",
+      "label": "affection",
+      "name": "sexlab_nonsexual"
+    },
+    {
+      "type": "category",
+      "label": "punish",
+      "name": "sexlab_punish"
+    },
+    {
+      "type": "category",
+      "label": "sex",
+      "name": "sexlab_sex"
+    }
+  ]
+}

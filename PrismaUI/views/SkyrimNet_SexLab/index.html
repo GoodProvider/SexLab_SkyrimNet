@@ -374,36 +374,79 @@
             color: var(--accent);
             background: var(--accent-glow);
         }
+        /* ── Cascading target menu ─────────────────────────────── */
+        .cascade-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .cascade-col {
+            min-width: 220px;
+        }
+
+        .cascade-col.hidden {
+            display: none;
+        }
+
+        .option.selected {
+            color: var(--accent);
+            box-shadow: inset 2px 0 0 var(--accent);
+        }
+
+        .dyn-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin: 8px 0;
+            padding-left: 8px;
+        }
+
+        .dyn-field label {
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.55);
+            color: var(--text-muted);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .dyn-field select,
+        .dyn-field input {
+            background: rgba(10, 8, 5, 0.85);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.85);
+            padding: 4px 10px;
+            outline: none;
+        }
     </style>
 </head>
 <body>
     <div id="panels-container">
-    <div id="target-panel" class="panel">
+    <div id="target-panel" class="panel" style="min-width:auto; width:auto; max-width:none;">
 
-        <div class="target-row">Bill Bob</div>
+        <div id="target-name" class="target-row">Target</div>
 
-        <div class="field-row">
-            <span>Framework</span>
-            <select id="framework-select" onchange="dispatchFrameworkChange(this.value)">
-                <option value="sexlab">SexLab</option>
-                <option value="ostim">OStim</option>
-            </select>
+        <div class="cascade-row">
+            <div id="col-left" class="cascade-col">
+                <div id="global-params"></div>
+                <div id="left-options"></div>
+                <div class="option-cancel" onclick="window.onCancel && window.onCancel()">Cancel</div>
+            </div>
+            <div id="col-middle" class="cascade-col hidden">
+                <div class="section-header" id="middle-header">Actions</div>
+                <div id="middle-options"></div>
+            </div>
+            <div id="col-right" class="cascade-col hidden">
+                <div class="section-header" id="right-header">Parameters</div>
+                <div id="right-dynamics"></div>
+                <div class="bottom-bar">
+                    <div id="target-start-btn" class="action-btn disabled" onclick="targetMenuStart()">Start</div>
+                </div>
+            </div>
         </div>
-
-        <div class="section-header">Affection</div>
-        <div class="option" onclick="dispatchAction('kiss')">Kiss</div>
-        <div class="option" onclick="dispatchAction('hug')">Hug</div>
-
-        <div class="section-header">Sexual</div>
-        <div class="option" onclick="showSexMenuForSex()">sex</div>
-        <div class="option" onclick="dispatchAction('rape')">rape</div>
-        <div class="option" onclick="dispatchAction('raped by')">raped by</div>
-
-        <div class="section-header">Gear</div>
-        <div class="option" onclick="dispatchAction('clothing')">undress</div>
-        <div class="option" onclick="dispatchAction('bondage')">bondage</div>
-
-        <div class="option-cancel" onclick="window.onCancel()">Cancel</div>
 
     </div>
 
@@ -442,12 +485,6 @@
     </div><!-- #panels-container -->
 
     <script>
-        function dispatchAction(action) {
-            if (typeof window.onAction === 'function') {
-                window.onAction(action);
-            }
-        }
-
         function dispatchFrameworkChange(value) {
             if (typeof window.onFrameworkChange === 'function') {
                 window.onFrameworkChange(value);
@@ -458,6 +495,7 @@
         function showPanel(id) {
             if (id === 'target_menu_panel' || id === 'target-panel') {
                 document.getElementById('target-panel').style.display = '';
+                renderTargetMenu();
             } else if (id === 'sex_menu_panel' || id === 'sex-menu-panel') {
                 showSexMenu();
             }
@@ -469,6 +507,250 @@
             } else if (id === 'sex_menu_panel' || id === 'sex-menu-panel') {
                 hideSexMenu();
             }
+        }
+
+        // ── Target menu (JSON/YAML catalog) ───────────────────────
+        let TARGET_CATALOG = { defaults: {}, options: [], actions: {}, by_category: {} };
+        let paramDict = {};           // typed parameter dictionary (mutable)
+        let selectedCategory = null;  // option object
+        let selectedActionName = null;
+
+        function displayLabel(obj) {
+            if (!obj) return '';
+            return (obj.label && String(obj.label).length) ? obj.label : (obj.name || '');
+        }
+
+        function deepClone(o) {
+            return JSON.parse(JSON.stringify(o || {}));
+        }
+
+        function mergeParams(into, from) {
+            if (!from || typeof from !== 'object') return into;
+            for (const [k, v] of Object.entries(from)) {
+                into[k] = v;
+            }
+            return into;
+        }
+
+        function configureTargetMenu(catalog) {
+            TARGET_CATALOG = catalog || { defaults: {}, options: [], actions: {}, by_category: {} };
+            resetTargetMenuState();
+            renderTargetMenu();
+        }
+
+        function resetTargetMenuState() {
+            paramDict = deepClone(TARGET_CATALOG.defaults || {});
+            selectedCategory = null;
+            selectedActionName = null;
+            // Apply top-level parameter option defaults into dict
+            for (const opt of (TARGET_CATALOG.options || [])) {
+                if (opt.type === 'parameter' && opt.name) {
+                    const cur = paramDict[opt.name];
+                    const defVal = opt.default != null ? opt.default
+                        : (cur && cur.default != null ? cur.default : '');
+                    paramDict[opt.name] = {
+                        type: 'String',
+                        default: defVal
+                    };
+                }
+            }
+        }
+
+        function setTargetActor(uuid, name) {
+            targetActor = { uuid, name };
+            actorNames[uuid] = name;
+            const el = document.getElementById('target-name');
+            if (el) el.textContent = name || 'Target';
+        }
+
+        function pipeValues(description) {
+            if (!description || description.indexOf('|') < 0) return null;
+            return description.split('|').map(s => s.trim()).filter(Boolean);
+        }
+
+        function isActorMapping(m) {
+            const t = (m.type || '').toLowerCase();
+            if (t === 'speaker' || t === 'target') return true;
+            const n = (m.name || '').toLowerCase();
+            return ['speaker','target','victim','participate','participate_3','stripper','stripped','actor'].includes(n);
+        }
+
+        function isStaticMapping(m) {
+            return (m.type || '').toLowerCase() === 'static';
+        }
+
+        function renderTargetMenu() {
+            const left = document.getElementById('left-options');
+            const globals = document.getElementById('global-params');
+            if (!left || !globals) return;
+
+            // Global parameter options
+            globals.innerHTML = '';
+            for (const opt of (TARGET_CATALOG.options || [])) {
+                if (opt.type !== 'parameter') continue;
+                const row = document.createElement('div');
+                row.className = 'field-row';
+                const label = document.createElement('span');
+                label.textContent = opt.name;
+                const sel = document.createElement('select');
+                const values = opt.values || [];
+                const current = (paramDict[opt.name] && paramDict[opt.name].default != null)
+                    ? paramDict[opt.name].default
+                    : (opt.default || '');
+                for (const v of values) {
+                    const o = document.createElement('option');
+                    o.value = v;
+                    o.textContent = v;
+                    if (v === current) o.selected = true;
+                    sel.appendChild(o);
+                }
+                sel.onchange = () => {
+                    paramDict[opt.name] = { type: 'String', default: sel.value };
+                };
+                row.appendChild(label);
+                row.appendChild(sel);
+                globals.appendChild(row);
+            }
+
+            // Category / action rows
+            left.innerHTML = '';
+            for (const opt of (TARGET_CATALOG.options || [])) {
+                if (opt.type === 'parameter') continue;
+                const row = document.createElement('div');
+                row.className = 'option' + (selectedCategory === opt ? ' selected' : '');
+                row.textContent = displayLabel(opt);
+                row.onclick = () => selectLeftOption(opt);
+                left.appendChild(row);
+            }
+
+            renderMiddle();
+            renderRight();
+        }
+
+        function selectLeftOption(opt) {
+            selectedCategory = opt;
+            selectedActionName = null;
+            // Merge option-level parameters into dict
+            if (opt.parameters) mergeParams(paramDict, deepClone(opt.parameters));
+            renderTargetMenu();
+        }
+
+        function renderMiddle() {
+            const col = document.getElementById('col-middle');
+            const list = document.getElementById('middle-options');
+            const header = document.getElementById('middle-header');
+            if (!col || !list) return;
+
+            if (!selectedCategory || (selectedCategory.type !== 'category' && selectedCategory.type !== 'action')) {
+                col.classList.add('hidden');
+                list.innerHTML = '';
+                return;
+            }
+            col.classList.remove('hidden');
+
+            if (selectedCategory.type === 'action') {
+                header.textContent = displayLabel(selectedCategory);
+                list.innerHTML = '';
+                selectedActionName = selectedCategory.name;
+                renderRight();
+                return;
+            }
+
+            header.textContent = displayLabel(selectedCategory);
+            const names = (TARGET_CATALOG.by_category && TARGET_CATALOG.by_category[selectedCategory.name]) || [];
+            list.innerHTML = '';
+            for (const name of names) {
+                const action = TARGET_CATALOG.actions[name];
+                if (!action || !action.executionFunctionName) continue;
+                const row = document.createElement('div');
+                row.className = 'option' + (selectedActionName === name ? ' selected' : '');
+                row.textContent = displayLabel(action);
+                row.onclick = () => {
+                    selectedActionName = name;
+                    renderMiddle();
+                    renderRight();
+                };
+                list.appendChild(row);
+            }
+        }
+
+        function renderRight() {
+            const col = document.getElementById('col-right');
+            const dyn = document.getElementById('right-dynamics');
+            const header = document.getElementById('right-header');
+            const startBtn = document.getElementById('target-start-btn');
+            if (!col || !dyn || !startBtn) return;
+
+            if (!selectedActionName || !TARGET_CATALOG.actions[selectedActionName]) {
+                col.classList.add('hidden');
+                dyn.innerHTML = '';
+                startBtn.classList.add('disabled');
+                return;
+            }
+
+            const action = TARGET_CATALOG.actions[selectedActionName];
+            col.classList.remove('hidden');
+            header.textContent = displayLabel(action);
+            dyn.innerHTML = '';
+
+            const mapping = action.parameterMapping || [];
+            for (const m of mapping) {
+                if (isActorMapping(m) || isStaticMapping(m)) continue;
+                const name = m.name;
+                if (!name) continue;
+
+                const field = document.createElement('div');
+                field.className = 'dyn-field';
+                const lab = document.createElement('label');
+                lab.textContent = name;
+                field.appendChild(lab);
+
+                const pipes = pipeValues(m.description || '');
+                const current = (paramDict[name] && paramDict[name].default != null)
+                    ? paramDict[name].default
+                    : (pipes ? pipes[0] : '');
+
+                if (pipes) {
+                    const sel = document.createElement('select');
+                    for (const v of pipes) {
+                        const o = document.createElement('option');
+                        o.value = v;
+                        o.textContent = v;
+                        if (v === current) o.selected = true;
+                        sel.appendChild(o);
+                    }
+                    sel.onchange = () => {
+                        paramDict[name] = { type: 'String', default: sel.value };
+                    };
+                    // seed dict
+                    paramDict[name] = { type: 'String', default: sel.value };
+                    field.appendChild(sel);
+                } else {
+                    const inp = document.createElement('input');
+                    inp.type = 'text';
+                    inp.placeholder = m.description || name;
+                    inp.value = current || '';
+                    inp.oninput = () => {
+                        paramDict[name] = { type: 'String', default: inp.value };
+                    };
+                    paramDict[name] = { type: 'String', default: inp.value };
+                    field.appendChild(inp);
+                }
+                dyn.appendChild(field);
+            }
+
+            startBtn.classList.remove('disabled');
+        }
+
+        function targetMenuStart() {
+            if (!selectedActionName) return;
+            if (typeof window.onAction !== 'function') return;
+            // Ensure style from global select is in dict
+            window.onAction(JSON.stringify({
+                action: 'start',
+                name: selectedActionName,
+                parameters: paramDict
+            }));
         }
 
         // ── Tag data (loaded from tag_group.json on show) ─────────
@@ -508,12 +790,6 @@
             actorNames = {};
             for (const a of nearbyActors) actorNames[a.uuid] = a.name;
             renderNearby();
-        }
-
-        function setTargetActor(uuid, name) {
-            targetActor = { uuid, name };
-            actorNames[uuid] = name;
-            document.querySelector('.target-row').textContent = name;
         }
 
         function setPlayerActor(uuid, name) {

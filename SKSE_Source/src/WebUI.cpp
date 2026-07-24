@@ -1,11 +1,14 @@
 #include "WebUI.h"
 #include "Papyrus_WebUI.h"
 #include "WebUI_Log.h"
+#include "ActionCatalog.h"
+#include "ActionDispatch.h"
 #include "RE/Skyrim.h"
 
 #include <deque>
 #include <mutex>
 #include <string>
+#include <nlohmann/json.hpp>
 
 static PRISMA_UI_API::IVPrismaUI1* PrismaUI = nullptr;
 static PrismaView g_view = 0;
@@ -64,8 +67,6 @@ RE::BSEventNotifyControl KeyHandler::ProcessEvent(RE::InputEvent* const* a_event
 
     return RE::BSEventNotifyControl::kContinue;
 }
-
-// ── WebUI API ───────────────────────────────────────────────────────────────
 
 void WebUI_SetGameReady()
 {
@@ -140,8 +141,6 @@ static void FlushPendingInvokes()
     }
 }
 
-// ── Sex Menu API ────────────────────────────────────────────────────────────
-
 void WebUI_Reset()
 {
     WebUI_Invoke("hidePanel('target_menu_panel');");
@@ -154,8 +153,6 @@ void Reset_To_Default()
     PapyrusBindings_WebUI::Target_Current = nullptr;
     WebUI_Reset();
 }
-
-// ── WebUI API ───────────────────────────────────────────────────────────────
 
 void InitWebUI()
 {
@@ -170,6 +167,8 @@ void InitWebUI()
             return;
         }
         webui_log::info("PrismaUI API acquired successfully.");
+
+        ActionCatalog::Load();
 
         g_domReady = false;
         g_view = PrismaUI->CreateView("SkyrimNet_SexLab/index.html", [](PrismaView view) {
@@ -187,57 +186,44 @@ void InitWebUI()
         PrismaUI->Hide(g_view);
 
         PrismaUI->RegisterJSListener(g_view, "onCancel", [](const char*) {
-            WebUI_Visibility_Toggle();
+            WebUI_Visibility_Hide();
+            PapyrusBindings_WebUI::Target_Current = nullptr;
         });
 
         PrismaUI->RegisterJSListener(g_view, "onAction", [](const char* value) {
             if (!value) return;
 
-            // Capture target before Reset_To_Default clears it.
             auto* target = PapyrusBindings_WebUI::Target_Current;
-            std::string actionStr(value);
+            auto* player = RE::PlayerCharacter::GetSingleton();
+            std::string payloadStr(value);
 
-            Reset_To_Default();
+            nlohmann::json payload;
+            try {
+                payload = nlohmann::json::parse(payloadStr);
+            } catch (...) {
+                webui_log::warn("onAction: non-JSON payload ignored: {}", payloadStr);
+                return;
+            }
 
-            std::string_view action(actionStr);
-            std::string verb = "";
-            if (action == "hug")
-                verb = "hugging";
-            else if (action == "kiss")
-                verb = "kissing";
+            const std::string action = payload.value("action", "");
+            if (action != "start") {
+                webui_log::info("onAction: ignoring action={}", action);
+                return;
+            }
 
-            webui_log::info("onAction: action={} verb={}", action, verb);
-            if (verb != "") {
-                auto* player = RE::PlayerCharacter::GetSingleton();
-                if (!player || !target) {
-                    webui_log::warn("onAction {}: player or target is null", action);
-                    return;
-                }
-                SKSE::GetTaskInterface()->AddTask([player, target, verb]() {
-                    auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
-                    if (!vm) return;
-                    // SkyrimNet_SexLab_Actions is a script on the main quest (FormID 0x800),
-                    // not a separate quest — look it up by FormID, not EditorID.
-                    auto* quest = RE::TESDataHandler::GetSingleton()
-                        ->LookupForm<RE::TESQuest>(0x800, "SkyrimNet_SexLab.esp");
-                    if (!quest) {
-                        webui_log::error("Could not find SkyrimNet_SexLab main quest (0x800)");
-                        return;
-                    }
-                    auto handle = vm->GetObjectHandlePolicy()->GetHandleForObject(
-                        static_cast<RE::VMTypeID>(quest->GetFormType()), quest);
-                    RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
-                    vm->FindBoundObject(handle, "SkyrimNet_SexLab_Actions", scriptObject);
-                    if (!scriptObject) {
-                        webui_log::error("Could not find bound script for SkyrimNet_SexLab_Actions");
-                        return;
-                    }
-                    auto* args = RE::MakeFunctionArguments(
-                        static_cast<RE::Actor*>(player), static_cast<RE::Actor*>(target),
-                        RE::BSFixedString("normal"), RE::BSFixedString(verb.c_str()), false);
-                    RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
-                    vm->DispatchMethodCall(scriptObject, RE::BSFixedString("Affection_Start"), args, callback);
-                });
+            const std::string name = payload.value("name", "");
+            nlohmann::json params = payload.value("parameters", nlohmann::json::object());
+
+            webui_log::info("onAction start name={}", name);
+
+            WebUI_Invoke("hidePanel('target_menu_panel');");
+            WebUI_Invoke("hidePanel('sex_menu_panel');");
+            WebUI_Visibility_Hide();
+
+            bool ok = ActionCatalog::ExecuteAction(name, params, player, target);
+            PapyrusBindings_WebUI::Target_Current = nullptr;
+            if (!ok) {
+                webui_log::error("onAction: ExecuteAction failed for {}", name);
             }
         });
 
@@ -261,14 +247,12 @@ void InitWebUI()
         KeyHandler::GetSingleton()->Register(0x01 /* escape */, []() {
             webui_log::info("Escape key pressed.");
             WebUI_Visibility_Hide();
-
+            PapyrusBindings_WebUI::Target_Current = nullptr;
         });
         KeyHandler::GetSingleton()->Register(0x2B /* backslash */, []() {
             auto* crosshairData = RE::CrosshairPickData::GetSingleton();
             if (crosshairData) {
-                // 1. target is an array, so we access index [0]
-                // 2. get() returns a NiPointer, so we use 'auto' instead of 'auto*'
-                if (auto ref = crosshairData->target[0].get()) { 
+                if (auto ref = crosshairData->target[0].get()) {
                     auto* targetActor = ref->As<RE::Actor>();
                     if (targetActor) {
                         PapyrusBindings_WebUI::Target_Menu_Open(nullptr, targetActor);

@@ -4,6 +4,14 @@
 
 `CreateView("SkyrimNet_SexLab/index.html")` loads from **`Data/PrismaUI/views/`**, not from `SKSE/Plugins/`. This mod ships the overlay at `PrismaUI/views/SkyrimNet_SexLab/index.html` (restored from commit `a8c9440`). Missing that file → valid-looking C++ open path (hotkey / `Target_Menu_Open`) but **no visible UI**. C++ Invokes use panel ids `target_menu_panel` / `sex_menu_panel`; the HTML maps those via `showPanel` / `hidePanel` adapters onto `#target-panel` / `#sex-menu-panel`.
 
+## WebUI target menu catalog (2026-07-24)
+
+Target panel UI is driven by:
+- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/target_options.json` — typed parameter dictionary + category options
+- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/actions_index.json` — generated from SkyrimNet action YAMLs (`tools/generate_actions_index.py`)
+
+Regenerate the index after editing action YAML `label`s. C++ `ActionCatalog` loads both at init / open; Start merges dictionary onto YAML `parameterMapping` and `DispatchMethodCall`s `scriptName`/`executionFunctionName`. Actor slots use dictionary `type: Actor` + `source: player|target` (menu focus). Do not change SkyrimNet mapping types for WebUI — only add `label` fields.
+
 ## SexLab position slots and speaker_position (2026-07-23)
 
 In this mod's sex / punish animations, **position_0 is submissive** and **position_1 is dominant**:
