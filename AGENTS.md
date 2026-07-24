@@ -11,9 +11,13 @@ A Skyrim mode that acts as a bridge between SkyrimNet and SexLab Framework.
 - **Repository root**: `c:\Skyrim\dev\mods\SkyrimNet_SexLab`
 - **Project Scripts (source)**: `Scripts/Source`
 - **Compiled Scripts output**: `Scripts` (project `Output`)
-- **Papyrus Headers**: `Headers` 
+- **Papyrus Headers**: `Headers`
 
 These are the authoritative locations used by the Papyrus project file `skyrimse.ppj` for imports and compilation.
+
+## WebUI / SKSE / PrismaUI
+
+See **[Guides/WebUI.md](Guides/WebUI.md)** for SKSE_Source, PrismaUI view paths, CMake build tasks, and WebUI config (`target_options.json` / `actions_index.json`).
 
 # Papyrus rules 
 - Papyrus is case insensitive, so these are only for human reviewers
@@ -65,6 +69,8 @@ Debug Trace message should always start with "---"  `Trace("FunctionName", "--- 
 Debug Papyrus log file: C:\Users\bhuff\OneDrive\Documents\my games\Skyrim Special Edition\Logs\Script\Papyrus.0.log
 
 **Papyrus compile (required)**: use the VS Code/Cursor task **`compile: pyro`** (`.vscode/tasks.json`). It runs Pyro against `skyrimse.ppj` with the project game path. Do not invent alternate Caprica/`papyrus.exe` one-off compile commands for this repo unless the user asks.
+
+**SKSE / WebUI compile**: see **[Guides/WebUI.md](Guides/WebUI.md)**.
 
 All under `tools/`:
 
