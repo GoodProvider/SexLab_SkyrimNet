@@ -81,21 +81,61 @@
             margin-bottom: 20px;
         }
 
-        .field-row select {
-            background: rgba(10, 8, 5, 0.85);
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: 3px;
+        /* Custom pulldown — native <select>/<option> ignore font-size in PrismaUI/CEF */
+        .pulldown {
+            position: relative;
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.90);
-            padding: 2px 10px;
-            cursor: pointer;
-            outline: none;
-            transition: border-color 0.15s ease;
+            font-size: var(--fs);
+            color: var(--text);
+            min-width: 8em;
         }
 
-        .field-row select:hover {
+        .pulldown-value {
+            background: rgba(10, 8, 5, 0.85);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 2px 10px;
+            cursor: pointer;
+            transition: border-color 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .pulldown-value:hover,
+        .pulldown.open .pulldown-value {
             border-color: rgba(201, 168, 76, 0.45);
+        }
+
+        .pulldown-menu {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: calc(100% + 4px);
+            z-index: 20;
+            min-width: 100%;
+            background: rgba(10, 8, 5, 0.95);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+            padding: 4px 0;
+        }
+
+        .pulldown.open .pulldown-menu {
+            display: block;
+        }
+
+        .pulldown-option {
+            font-family: var(--font-ui);
+            font-size: var(--fs);
+            color: var(--text);
+            padding: 4px 10px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .pulldown-option:hover,
+        .pulldown-option.selected {
+            color: var(--accent);
+            background: var(--accent-glow);
         }
 
         /* ── Section headers ──────────────────────────────────── */
@@ -410,16 +450,19 @@
             text-transform: uppercase;
         }
 
-        .dyn-field select,
         .dyn-field input {
             background: rgba(10, 8, 5, 0.85);
             color: var(--text);
             border: 1px solid var(--border);
             border-radius: 3px;
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.85);
+            font-size: var(--fs);
             padding: 4px 10px;
             outline: none;
+        }
+
+        .dyn-field .pulldown {
+            font-size: var(--fs);
         }
     </style>
 </head>
@@ -532,6 +575,53 @@
             return into;
         }
 
+        function closeAllPulldowns(except) {
+            document.querySelectorAll('.pulldown.open').forEach((el) => {
+                if (el !== except) el.classList.remove('open');
+            });
+        }
+
+        function createPulldown(values, current, onChange) {
+            const root = document.createElement('div');
+            root.className = 'pulldown';
+            const valueEl = document.createElement('div');
+            valueEl.className = 'pulldown-value';
+            valueEl.textContent = current || (values[0] || '');
+            const menu = document.createElement('div');
+            menu.className = 'pulldown-menu';
+
+            const paint = (selected) => {
+                valueEl.textContent = selected;
+                menu.innerHTML = '';
+                for (const v of values) {
+                    const item = document.createElement('div');
+                    item.className = 'pulldown-option' + (v === selected ? ' selected' : '');
+                    item.textContent = v;
+                    item.onclick = (e) => {
+                        e.stopPropagation();
+                        paint(v);
+                        root.classList.remove('open');
+                        if (onChange) onChange(v);
+                    };
+                    menu.appendChild(item);
+                }
+            };
+
+            valueEl.onclick = (e) => {
+                e.stopPropagation();
+                const willOpen = !root.classList.contains('open');
+                closeAllPulldowns(root);
+                root.classList.toggle('open', willOpen);
+            };
+
+            paint(valueEl.textContent);
+            root.appendChild(valueEl);
+            root.appendChild(menu);
+            return root;
+        }
+
+        document.addEventListener('click', () => closeAllPulldowns());
+
         function configureTargetMenu(catalog) {
             TARGET_CATALOG = catalog || { defaults: {}, options: [], actions: {}, by_category: {} };
             resetTargetMenuState();
@@ -584,7 +674,7 @@
             const globals = document.getElementById('global-params');
             if (!left || !globals) return;
 
-            // Global parameter options
+            // Global parameter options (custom pulldown — CEF native <option> font-size is ignored)
             globals.innerHTML = '';
             for (const opt of (TARGET_CATALOG.options || [])) {
                 if (opt.type !== 'parameter') continue;
@@ -592,23 +682,14 @@
                 row.className = 'field-row';
                 const label = document.createElement('span');
                 label.textContent = opt.name;
-                const sel = document.createElement('select');
                 const values = opt.values || [];
                 const current = (paramDict[opt.name] && paramDict[opt.name].default != null)
                     ? paramDict[opt.name].default
                     : (opt.default || '');
-                for (const v of values) {
-                    const o = document.createElement('option');
-                    o.value = v;
-                    o.textContent = v;
-                    if (v === current) o.selected = true;
-                    sel.appendChild(o);
-                }
-                sel.onchange = () => {
-                    paramDict[opt.name] = { type: 'String', default: sel.value };
-                };
                 row.appendChild(label);
-                row.appendChild(sel);
+                row.appendChild(createPulldown(values, current, (v) => {
+                    paramDict[opt.name] = { type: 'String', default: v };
+                }));
                 globals.appendChild(row);
             }
 
@@ -658,8 +739,10 @@
 
             header.textContent = displayLabel(selectedCategory);
             const names = (TARGET_CATALOG.by_category && TARGET_CATALOG.by_category[selectedCategory.name]) || [];
+            const exclude = new Set(selectedCategory.filter || []);
             list.innerHTML = '';
             for (const name of names) {
+                if (exclude.has(name)) continue;
                 const action = TARGET_CATALOG.actions[name];
                 if (!action || !action.executionFunctionName) continue;
                 const row = document.createElement('div');
@@ -711,20 +794,11 @@
                     : (pipes ? pipes[0] : '');
 
                 if (pipes) {
-                    const sel = document.createElement('select');
-                    for (const v of pipes) {
-                        const o = document.createElement('option');
-                        o.value = v;
-                        o.textContent = v;
-                        if (v === current) o.selected = true;
-                        sel.appendChild(o);
-                    }
-                    sel.onchange = () => {
-                        paramDict[name] = { type: 'String', default: sel.value };
-                    };
-                    // seed dict
-                    paramDict[name] = { type: 'String', default: sel.value };
-                    field.appendChild(sel);
+                    const seed = current || pipes[0];
+                    paramDict[name] = { type: 'String', default: seed };
+                    field.appendChild(createPulldown(pipes, seed, (v) => {
+                        paramDict[name] = { type: 'String', default: v };
+                    }));
                 } else {
                     const inp = document.createElement('input');
                     inp.type = 'text';

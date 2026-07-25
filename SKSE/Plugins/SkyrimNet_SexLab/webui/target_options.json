@@ -1,6 +1,5 @@
 {
   "defaults": {
-    "setting_name": { "type": "String", "default": "" },
     "style": { "type": "String", "default": "normally" },
     "speaker": { "type": "Actor", "source": "player" },
     "target": { "type": "Actor", "source": "target" },
@@ -18,6 +17,7 @@
       "type": "category",
       "label": "comfort",
       "name": "sexlab_comfort",
+      "filter": [],
       "parameters": {
         "intent": { "type": "String", "default": "cuddling" }
       }
@@ -25,17 +25,25 @@
     {
       "type": "category",
       "label": "affection",
-      "name": "sexlab_nonsexual"
+      "name": "sexlab_nonsexual",
+      "filter": ["SexLab_Start_Nonsexual_Three"]
     },
     {
       "type": "category",
       "label": "punish",
-      "name": "sexlab_punish"
+      "name": "sexlab_punish",
+      "filter": []
     },
     {
       "type": "category",
       "label": "sex",
-      "name": "sexlab_sex"
+      "name": "sexlab_sex",
+      "filter": [
+        "SexLab_Masturbation_Forced",
+        "SexLab_Masturbation_Start",
+        "SexLab_Start_Fucking_Three",
+        "SexLab_Start_Giving_Three"
+      ]
     }
   ]
 }
