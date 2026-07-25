@@ -17,12 +17,15 @@ static std::atomic<bool> g_domReady{false};
 static std::mutex g_invokeMutex;
 static std::deque<std::string> g_pendingInvokes;
 
+/// Returns the process-wide KeyHandler singleton used for WebUI hotkeys.
 KeyHandler* KeyHandler::GetSingleton()
 {
     static KeyHandler singleton;
     return &singleton;
 }
 
+/// Registers this KeyHandler as a BSInputDeviceManager event sink.
+/// Required before Escape / backslash (and other) hotkeys can fire.
 void KeyHandler::RegisterSink()
 {
     auto inputMgr = RE::BSInputDeviceManager::GetSingleton();
@@ -34,12 +37,16 @@ void KeyHandler::RegisterSink()
     }
 }
 
+/// Binds a DX scancode to a callback for WebUI keyboard shortcuts.
+/// Replaces any previous callback for the same key.
 void KeyHandler::Register(uint32_t dxScanCode, KeyCallback callback)
 {
     std::unique_lock lock(_mutex);
     _callbacks[dxScanCode] = std::move(callback);
 }
 
+/// Input sink: on keyboard key-down, runs any registered WebUI hotkey callbacks.
+/// Callbacks run outside the shared lock so they may mutate handler state safely.
 RE::BSEventNotifyControl KeyHandler::ProcessEvent(RE::InputEvent* const* a_eventList,
                                                    [[maybe_unused]] RE::BSTEventSource<RE::InputEvent*>* a_eventSource)
 {
@@ -68,12 +75,15 @@ RE::BSEventNotifyControl KeyHandler::ProcessEvent(RE::InputEvent* const* a_event
     return RE::BSEventNotifyControl::kContinue;
 }
 
+/// Marks that a save is loaded so Show / hotkeys are allowed to open the WebUI.
 void WebUI_SetGameReady()
 {
     g_gameReady = true;
     webui_log::info("Game ready — WebUI input enabled.");
 }
 
+/// Shows and focuses the PrismaUI overlay after refreshing nearby actors for the menu.
+/// No-ops if PrismaUI is missing, no game is loaded, or the view path is invalid.
 void WebUI_Visibility_Show()
 {
     if (!PrismaUI) return;
@@ -93,6 +103,7 @@ void WebUI_Visibility_Show()
     PrismaUI->Focus(g_view, true);
 }
 
+/// Unfocuses and hides the PrismaUI overlay without clearing Target_Current.
 void WebUI_Visibility_Hide()
 {
     if (!PrismaUI) return;
@@ -100,6 +111,7 @@ void WebUI_Visibility_Hide()
     PrismaUI->Hide(g_view);
 }
 
+/// Shows the overlay if hidden, otherwise hides it.
 void WebUI_Visibility_Toggle()
 {
     webui_log::info("WebUI visibility toggled.");
@@ -112,10 +124,13 @@ void WebUI_Visibility_Toggle()
     }
 }
 
+/// Runs a JS snippet on the WebUI view, or queues it until DomReady.
+/// Early invokes before the HTML loads are flushed by FlushPendingInvokes.
 void WebUI_Invoke(const std::string& script)
 {
     if (!PrismaUI) return;
 
+    // Queue until DomReady — CreateView callbacks may not have run yet.
     if (!g_domReady.load()) {
         std::scoped_lock lock(g_invokeMutex);
         g_pendingInvokes.push_back(script);
@@ -125,6 +140,7 @@ void WebUI_Invoke(const std::string& script)
     PrismaUI->Invoke(g_view, script.c_str());
 }
 
+/// Drains the DomReady queue and Invokes each pending script on the live view.
 static void FlushPendingInvokes()
 {
     std::deque<std::string> pending;
@@ -141,6 +157,7 @@ static void FlushPendingInvokes()
     }
 }
 
+/// Hides target/sex panels in JS and closes the overlay (menus back to closed).
 void WebUI_Reset()
 {
     WebUI_Invoke("hidePanel('target_menu_panel');");
@@ -148,12 +165,16 @@ void WebUI_Reset()
     WebUI_Visibility_Hide();
 }
 
+/// Clears the current target actor and resets panels / visibility to a closed UI.
 void Reset_To_Default()
 {
     PapyrusBindings_WebUI::Target_Current = nullptr;
     WebUI_Reset();
 }
 
+/// One-shot WebUI bootstrap: PrismaUI API, action catalog, view, JS listeners, hotkeys.
+/// View path must exist under Data/PrismaUI/views/SkyrimNet_SexLab/index.html.
+/// Escape hides UI; backslash opens target menu (crosshair) or multi-target picker.
 void InitWebUI()
 {
     static std::once_flag s_initFlag;
@@ -171,6 +192,7 @@ void InitWebUI()
         ActionCatalog::Load();
 
         g_domReady = false;
+        // Resolves under Data/PrismaUI/views/, not SKSE/Plugins/.
         g_view = PrismaUI->CreateView("SkyrimNet_SexLab/index.html", [](PrismaView view) {
             g_view = view;
             g_domReady = true;
@@ -190,6 +212,7 @@ void InitWebUI()
             PapyrusBindings_WebUI::Target_Current = nullptr;
         });
 
+        // JS "start" → hide menus and dispatch ActionCatalog::ExecuteAction.
         PrismaUI->RegisterJSListener(g_view, "onAction", [](const char* value) {
             if (!value) return;
 
@@ -249,16 +272,26 @@ void InitWebUI()
             WebUI_Visibility_Hide();
             PapyrusBindings_WebUI::Target_Current = nullptr;
         });
-        KeyHandler::GetSingleton()->Register(0x2B /* backslash */, []() {
-            auto* crosshairData = RE::CrosshairPickData::GetSingleton();
-            if (crosshairData) {
-                if (auto ref = crosshairData->target[0].get()) {
-                    auto* targetActor = ref->As<RE::Actor>();
-                    if (targetActor) {
-                        PapyrusBindings_WebUI::Target_Menu_Open(nullptr, targetActor);
-                    }
-                }
-            }
-        });
+        // TEMP: disabled — re-enable by uncommenting this Register block
+        // KeyHandler::GetSingleton()->Register(0x2B /* backslash */, []() {
+        //     if (!g_gameReady) {
+        //         webui_log::info("WebUI hotkey blocked — no game loaded.");
+        //         return;
+        //     }
+        //
+        //     RE::Actor* targetActor = nullptr;
+        //     auto* crosshairData = RE::CrosshairPickData::GetSingleton();
+        //     if (crosshairData) {
+        //         if (auto ref = crosshairData->target[0].get()) {
+        //             targetActor = ref->As<RE::Actor>();
+        //         }
+        //     }
+        //
+        //     if (targetActor) {
+        //         PapyrusBindings_WebUI::Target_Menu_Open(nullptr, targetActor);
+        //     } else {
+        //         PapyrusBindings_WebUI::Call_MultiTarget_Menu_Selection();
+        //     }
+        // });
     });
 }
