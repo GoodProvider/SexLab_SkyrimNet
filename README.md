@@ -177,7 +177,7 @@ The following and dependencies:
 
 - [SexLab Framework](https://www.loverslab.com/files/category/228-sexlab-framework-se/)
 - [Papyrus MessageBox](https://www.nexusmods.com/skyrimspecialedition/mods/83578)
-- [JContainers v4.2.13.1+](https://github.com/ryobg/JContainers/releases/tag/v4.2.13.1) (not nexusmods)
+- [JContainers v4.2.13.1+](https://www.nexusmods.com/skyrimspecialedition/mods/16495)
 - [SkyUI SE](https://www.nexusmods.com/skyrimspecialedition/mods/12604)
 - [UIExtensions](https://www.nexusmods.com/skyrimspecialedition/mods/17561)
   - [UIExtensions_UITextEntryMenu_with_VR_support](https://github.com/mrowrpurr/UIExtensions_UITextEntryMenu_with_VR_support) (VR users)
