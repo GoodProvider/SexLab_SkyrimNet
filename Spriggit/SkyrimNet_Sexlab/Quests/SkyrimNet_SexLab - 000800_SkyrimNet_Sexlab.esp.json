@@ -18,23 +18,23 @@
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "manager",
-            "Object": "000800:SkyrimNet_Sexlab.esp"
+            "Name": "ActorLib",
+            "Object": "000D62:SexLab.esm"
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "ActorLib",
-            "Object": "000D62:SexLab.esm"
+            "Name": "manager",
+            "Object": "000800:SkyrimNet_Sexlab.esp"
           }
         ]
       },
       {
-        "Name": "SkyrimNet_SexLab_Main",
+        "Name": "SkyrimNet_SexLab_Scene_Manager",
         "Properties": [
           {
             "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "stages",
-            "Object": "000800:SkyrimNet_Sexlab.esp"
+            "Name": "ActorLib",
+            "Object": "000D62:SexLab.esm"
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
@@ -42,29 +42,10 @@
             "Object": "000D62:SexLab.esm"
           },
           {
-            "MutagenObjectType": "ScriptBoolProperty",
-            "Name": "active_sex"
-          },
-          {
             "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "skyrimnet_sexlab_active_sex",
-            "Object": "000803:SkyrimNet_Sexlab.esp"
+            "Name": "ThreadSlots",
+            "Object": "000D62:SexLab.esm"
           },
-          {
-            "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "handler_dom",
-            "Object": "000800:SkyrimNet_Sexlab.esp"
-          },
-          {
-            "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "SkyrimNet_SexLab_Faction_Victim",
-            "Object": "000807:SkyrimNet_Sexlab.esp"
-          }
-        ]
-      },
-      {
-        "Name": "SkyrimNet_SexLab_Scene_Manager",
-        "Properties": [
           {
             "MutagenObjectType": "ScriptObjectListProperty",
             "Name": "sl_scenes",
@@ -113,18 +94,18 @@
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "main",
+            "Object": "000800:SkyrimNet_Sexlab.esp"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "sl_scene_generic",
+            "Object": "000812:SkyrimNet_Sexlab.esp"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
             "Name": "SkyrimNet_SexLab_Faction_Victim",
             "Object": "000807:SkyrimNet_Sexlab.esp"
-          },
-          {
-            "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "ThreadSlots",
-            "Object": "000D62:SexLab.esm"
-          },
-          {
-            "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "SexLab",
-            "Object": "000D62:SexLab.esm"
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
@@ -176,21 +157,6 @@
                 "Object": "00081C:SkyrimNet_Sexlab.esp"
               }
             ]
-          },
-          {
-            "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "main",
-            "Object": "000800:SkyrimNet_Sexlab.esp"
-          },
-          {
-            "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "ActorLib",
-            "Object": "000D62:SexLab.esm"
-          },
-          {
-            "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "sl_scene_generic",
-            "Object": "000812:SkyrimNet_Sexlab.esp"
           }
         ]
       },
@@ -203,9 +169,9 @@
             "Object": "000800:SkyrimNet_Sexlab.esp"
           },
           {
-            "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "sexlab_public_sex_accepted",
-            "Object": "000801:SkyrimNet_Sexlab.esp"
+            "MutagenObjectType": "ScriptStringProperty",
+            "Name": "ModName",
+            "Data": "SkyrimNet SexLab"
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
@@ -219,7 +185,12 @@
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "stages",
+            "Name": "sexlab_public_sex_accepted",
+            "Object": "000801:SkyrimNet_Sexlab.esp"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "Menu",
             "Object": "000800:SkyrimNet_Sexlab.esp"
           },
           {
@@ -228,14 +199,81 @@
             "Object": "000800:SkyrimNet_Sexlab.esp"
           },
           {
-            "MutagenObjectType": "ScriptStringProperty",
-            "Name": "ModName",
-            "Data": "SkyrimNet SexLab"
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "stages",
+            "Object": "000800:SkyrimNet_Sexlab.esp"
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
             "Name": "skyrimnet_sexlab_hide_hermaphrodites",
             "Object": "000806:SkyrimNet_Sexlab.esp"
+          }
+        ]
+      },
+      {
+        "Name": "SkyrimNet_SexLab_Main",
+        "Properties": [
+          {
+            "MutagenObjectType": "ScriptBoolProperty",
+            "Name": "active_sex"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "skyrimnet_sexlab_active_sex",
+            "Object": "000803:SkyrimNet_Sexlab.esp"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "SexLab",
+            "Object": "000D62:SexLab.esm"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "SkyrimNet_SexLab_Faction_Victim",
+            "Object": "000807:SkyrimNet_Sexlab.esp"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "stages",
+            "Object": "000800:SkyrimNet_Sexlab.esp"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "handler_dom",
+            "Object": "000800:SkyrimNet_Sexlab.esp"
+          }
+        ]
+      },
+      {
+        "Name": "SkyrimNet_SexLab_Handler_DOM_Interface"
+      },
+      {
+        "Name": "skyrimnet_sexlab_menu",
+        "Properties": [
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "main",
+            "Object": "000800:SkyrimNet_Sexlab.esp"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "mcm",
+            "Object": "000800:SkyrimNet_Sexlab.esp"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "actions",
+            "Object": "000800:SkyrimNet_Sexlab.esp"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "stages",
+            "Object": "000800:SkyrimNet_Sexlab.esp"
+          },
+          {
+            "MutagenObjectType": "ScriptObjectProperty",
+            "Name": "manager",
+            "Object": "000800:SkyrimNet_Sexlab.esp"
           }
         ]
       },
@@ -249,13 +287,13 @@
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "pa_HugA",
-            "Object": "0F4699:Skyrim.esm"
+            "Name": "manager",
+            "Object": "000800:SkyrimNet_Sexlab.esp"
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "manager",
-            "Object": "000800:SkyrimNet_Sexlab.esp"
+            "Name": "pa_HugA",
+            "Object": "0F4699:Skyrim.esm"
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
@@ -263,9 +301,6 @@
             "Object": "000D62:SexLab.esm"
           }
         ]
-      },
-      {
-        "Name": "SkyrimNet_SexLab_Handler_DOM_Interface"
       }
     ],
     "FileName": "",
