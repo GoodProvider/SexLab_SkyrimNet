@@ -1,5 +1,6 @@
 customCategory: sexlab_comfort
 name: SexLabComfortCuddle
+label: Cuddle
 description: "[direction] [style] cuddling while [method]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions

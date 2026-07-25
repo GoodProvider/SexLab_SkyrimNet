@@ -1,4 +1,5 @@
 name: SexLab_Start_Rape
+label: Rape
 description: "[style] [direction] [method] sexual assault on [victim]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions

@@ -1,5 +1,6 @@
 customCategory: sexlab_punish
 name: Sexlab_Punish
+label: Punish
 description: 'PARAMS: {"direction":"giving|getting", "type":"spanking|whipping", "intent":"who, why, and how"} - [direction] [type] to punish'
 enabled: true
 eligibilityRules:

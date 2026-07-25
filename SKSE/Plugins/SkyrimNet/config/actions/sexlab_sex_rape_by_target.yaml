@@ -1,5 +1,6 @@
 customCategory: sexlab_sex
 name: SexLab_Sexual_Assault_Speaker
+label: Assault speaker
 description: "[style] [method] sexual assault on [speaker]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions

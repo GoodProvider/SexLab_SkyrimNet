@@ -1,5 +1,6 @@
 customCategory: sexlab_sex
 name: SexLab_Sexual_Refused
+label: Sex refused
 description: "[Target] [style] refuses to [direction] [method] for [intent]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions

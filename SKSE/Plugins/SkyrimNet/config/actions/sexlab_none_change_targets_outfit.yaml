@@ -1,4 +1,5 @@
 name: change_outfit_target
+label: Change target outfit
 description: "[style] [how] Target's outfit"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions

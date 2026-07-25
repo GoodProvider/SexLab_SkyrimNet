@@ -1,5 +1,6 @@
 customCategory: sexlab_comfort
 name: SexLabComfortRefused
+label: Comfort refused
 description: "[Target] [style] refuses to [direction] [method] for [intent]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions

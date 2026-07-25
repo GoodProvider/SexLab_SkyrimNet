@@ -1,5 +1,6 @@
 customCategory: sexlab_comfort
 name: SexLabComfortGeneral
+label: Comfort (general)
 description: "[direction] [style] [method] physically comforting"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions

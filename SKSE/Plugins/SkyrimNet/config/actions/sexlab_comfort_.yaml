@@ -1,5 +1,6 @@
 customCategory: sexlab_comfort
 name: ShowComfort
+label: Comfort
 description: 'PARAMS: {"direction":"giving|getting", "intent":"who, why, and how"} - [direction] comfort with physical contact'
 enabled: true
 eligibilityRules:

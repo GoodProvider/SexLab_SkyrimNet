@@ -1,5 +1,6 @@
 customCategory: sexlab_nonsexual
 name: ExpressPhysicallyNonsexually
+label: Affection
 description: 'PARAMS: {"direction":"giving|getting", "what":"comforting|greeting|showing affection", "type":"hug|kiss|hugging|kissing|cuddling", "intent":"who, how, and why"} - [what] by [direction] [type]'
 enabled: true
 eligibilityRules:

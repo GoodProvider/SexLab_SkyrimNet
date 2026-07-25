@@ -1,5 +1,6 @@
 customCategory: sexlab_nonsexual
 name: SexLab_Nonsexual_Accepted
+label: Affection (accepted)
 description: "[direction] [style] [method] showing physical affection"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions

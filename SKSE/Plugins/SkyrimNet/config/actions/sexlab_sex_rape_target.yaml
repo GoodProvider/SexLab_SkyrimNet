@@ -1,5 +1,6 @@
 customCategory: sexlab_sex
 name: SexLab_Sexual_Assault_Target
+label: Assault target
 description: "[style] [method] sexual assault on [Target]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions

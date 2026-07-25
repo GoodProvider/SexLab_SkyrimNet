@@ -1,6 +1,7 @@
 customCategory: sexlab_sex
 name: SexLab_Sexual_Activities
-description: 'PARAMS: {"type":"oral|vaginal|anal|masturbation|other", "intent":"who, why, and how"} - [type] sexual activities'
+label: Sex
+description: 'PARAMS: {"type":"oral|vaginal|anal|masturbation|other", "intent":"who, why, and how"} - [type] sexual activities with [Target]'
 enabled: true
 eligibilityRules:
   - conditions:

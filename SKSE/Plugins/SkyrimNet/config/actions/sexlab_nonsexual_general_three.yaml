@@ -1,5 +1,6 @@
 customCategory: sexlab_nonsexual
 name: SexLab_Start_Nonsexual_Three
+label: Affection (three)
 description: "[direction] [style] [method] with [Target] and [participate]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions

@@ -1,5 +1,6 @@
 customCategory: sexlab_sex
 name: SexLab_Start_Giving
+label: Giving
 description: "Consensual [style] [direction] [method]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions

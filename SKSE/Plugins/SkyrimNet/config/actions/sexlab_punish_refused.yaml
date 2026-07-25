@@ -1,5 +1,6 @@
 customCategory: sexlab_punish
 name: SexLab_Punish_Refused
+label: Punish refused
 description: "[Target] [style] refuse to punish [Speaker] with [method]" 
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
