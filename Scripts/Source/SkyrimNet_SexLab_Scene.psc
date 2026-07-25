@@ -932,10 +932,11 @@ Function StageStart()
 
     ; Send a DN if its a start and includes a player
     ; if not player send DN if allowed by cool off 
-    String desc = stages.GetStageDescription(thread)
+    ; GetDescription: stage JSON, else tag fallback (raw GetStageDescription alone leaves initiates: empty)
+    String desc = GetDescription()
     if status != STATUS_ACTIVE
         status = STATUS_ACTIVE
-        String narration = GetDescription() + orgasm_narration
+        String narration = desc + orgasm_narration
         if initiator != None
             narration = initiator.GetDisplayName()+" initiates: "+desc
             narration += orgasm_narration
