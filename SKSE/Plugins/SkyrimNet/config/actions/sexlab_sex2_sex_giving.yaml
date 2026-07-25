@@ -1,29 +1,29 @@
-customCategory: sexlab_sex
-name: SexLab_Sexual_Assault_Speaker
-label: Assault speaker
-description: "[style] [method] sexual assault on [speaker]"
+customCategory: sexlab_sex2
+name: SexLab_Start_Giving
+label: Giving
+description: "Consensual [style] [direction] [method]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
-executionFunctionName: StartScene_Nonconsensual_Two_SpeakerVictim
-defaultPriority: 8
+executionFunctionName: StartScene_Consensual_Two
+defaultPriority: 7
 parameterMapping:
   - type: static 
     name: intent
-    value: sexual assault
+    value: sexual activities
   - type: speaker
     name: speaker
     description: Speaker Actor parameter (triggering entity)
   - type: dynamic
     name: target
-    description: Object Actor
+    description: consenting actor
   - type: dynamic
     name: style
     description: forceful|normal|gentle
   - type: dynamic
     name: method
-    description: oral|vaginal|anal|masturbation|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob
-  - type: dynamic
-    name: direction
+    description: oral|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob
+  - type: dynamic 
+    name: direction 
     description: giving|getting
   - type: static 
     name: setting_name

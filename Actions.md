@@ -16,12 +16,12 @@ Upstream schema: [WORKFLOW_ACTIONS.md](https://github.com/MinLL/SkyrimNet-GamePl
 
 Shipped categories (filename prefix / `customCategory`):
 
-- `sexlab_sex` — sex, masturbation, rape (MCM-gated)
+- `sexlab_sex1` / `sexlab_sex2` / `sexlab_sex3` — masturbation (1), sex (2), threesome (3)
 - `sexlab_nonsexual` / `sexlab_comfort` — affection and nonsexual scenes
 - `sexlab_punish` — spanking, whipping, punish-rape
 - `sexlab_none` — stop, outfit change, utility
 
-Category parent files end with `_` only (e.g. `sexlab_sex_.yaml`). They define the category; they do not call Papyrus.
+Category parent files end with `_` only (e.g. `sexlab_sex2_.yaml`). They define the category; they do not call Papyrus.
 
 ## Category parents vs executable actions
 
@@ -140,7 +140,7 @@ MCM **Add rape actions (must toggle/save/reload)** controls whether rape actions
 
 | File | Pattern |
 |------|---------|
-| `sexlab_sex_sex_fucking.yaml` | Consensual two-actor + style/method |
+| `sexlab_sex2_sex_fucking.yaml` | Consensual two-actor + style/method |
 | `sexlab_comfort_cuddle.yaml` | Comfort / nonsexual |
 | `sexlab_punish_spanking.yaml` | Fixed TargetVictim (`StartScene_Nonconsensual_Two_TargetVictim`) + `setting_name` |
 | `sexlab_punish_spanking_by_target.yaml` | Fixed SpeakerVictim (`StartScene_Nonconsensual_Two_SpeakerVictim`) + same scene |

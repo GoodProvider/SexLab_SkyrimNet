@@ -1,0 +1,44 @@
+customCategory: sexlab_sex3
+name: SexLab_Sexual_Activities_Three
+label: Sex (three)
+description: '[type] sexual activities with [Target] and [participate]'
+enabled: true
+eligibilityRules:
+  - conditions:
+      - decoratorName: get_global_value
+        arguments:
+          - SkyrimNet_SexLab_ostim_player
+        comparisonOperator: ==
+        expectedValue: 0
+      - decoratorName: get_faction_rank
+        arguments:
+          - currentActor
+          - SexLabAnimatingFaction
+        comparisonOperator: <
+        expectedValue: 1
+      - decoratorName: is_in_faction
+        arguments:
+          - currentActor
+          - dse_dm_FactionActorUsingDevice
+        comparisonOperator: ==
+        expectedValue: false
+      - decoratorName: is_in_faction
+        arguments:
+          - currentActor
+          - OStimActorCountFaction
+        comparisonOperator: ==
+        expectedValue: false
+      - decoratorName: is_in_combat
+        arguments:
+          - currentActor
+        comparisonOperator: ==
+        expectedValue: false
+      - decoratorName: papyrus_util
+        arguments:
+          - "HasIntValue"
+          - currentActor
+          - "skyrimnet_sexlab_scene_actor_lock"
+        comparisonOperator: ==
+        expectedValue: false
+    logicalOperator: AND
+    required: true

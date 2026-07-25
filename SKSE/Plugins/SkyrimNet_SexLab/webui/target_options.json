@@ -36,14 +36,15 @@
     },
     {
       "type": "category",
+      "label": "masturbation",
+      "name": "sexlab_sex1",
+      "filter": []
+    },
+    {
+      "type": "category",
       "label": "sex",
-      "name": "sexlab_sex",
-      "filter": [
-        "SexLab_Masturbation_Forced",
-        "SexLab_Masturbation_Start",
-        "SexLab_Start_Fucking_Three",
-        "SexLab_Start_Giving_Three"
-      ]
+      "name": "sexlab_sex2",
+      "filter": []
     }
   ]
 }
