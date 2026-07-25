@@ -62,6 +62,17 @@ namespace PapyrusBindings_WebUI
         WebUI_Visibility_Show();
     }
 
+    RE::BSFixedString TraceLog(RE::StaticFunctionTag*, RE::BSFixedString script_name,
+        RE::BSFixedString func, RE::BSFixedString msg)
+    {
+        const char* script = script_name.c_str() ? script_name.c_str() : "";
+        const char* fn = func.c_str() ? func.c_str() : "";
+        const char* body = msg.c_str() ? msg.c_str() : "";
+        std::string formatted = std::format("[{}.{}] {}", script, fn, body);
+        SKSE::log::info("{}", formatted);
+        return RE::BSFixedString(formatted);
+    }
+
     void PopulateNearbyActors()
     {
         auto* player = RE::PlayerCharacter::GetSingleton();
@@ -92,6 +103,49 @@ namespace PapyrusBindings_WebUI
         }
     }
 
+    void Call_MultiTarget_Menu_Selection()
+    {
+        auto* player = RE::PlayerCharacter::GetSingleton();
+        if (!player) {
+            webui_log::warn("Call_MultiTarget_Menu_Selection: no player");
+            return;
+        }
+
+        webui_log::info("Call_MultiTarget_Menu_Selection: dispatching Papyrus MultiTarget_Menu_Selection");
+
+        SKSE::GetTaskInterface()->AddTask([player]() {
+            auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+            if (!vm) {
+                webui_log::error("Call_MultiTarget_Menu_Selection: no VM");
+                return;
+            }
+
+            RE::TESQuest* quest = RE::TESForm::LookupByEditorID<RE::TESQuest>("SkyrimNet_SexLab");
+            if (!quest) {
+                quest = RE::TESDataHandler::GetSingleton()
+                    ->LookupForm<RE::TESQuest>(0x800, "SkyrimNet_SexLab.esp");
+            }
+            if (!quest) {
+                webui_log::error("Call_MultiTarget_Menu_Selection: quest SkyrimNet_SexLab not found");
+                return;
+            }
+
+            auto handle = vm->GetObjectHandlePolicy()->GetHandleForObject(
+                static_cast<RE::VMTypeID>(quest->GetFormType()), quest);
+            RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
+            vm->FindBoundObject(handle, "SkyrimNet_SexLab_Menu", scriptObject);
+            if (!scriptObject) {
+                webui_log::error("Call_MultiTarget_Menu_Selection: bound script SkyrimNet_SexLab_Menu not found");
+                return;
+            }
+
+            auto* args = RE::MakeFunctionArguments(static_cast<RE::Actor*>(player));
+            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
+            vm->DispatchMethodCall(scriptObject, RE::BSFixedString("MultiTarget_Menu_Selection"), args, callback);
+            webui_log::info("Call_MultiTarget_Menu_Selection: dispatched");
+        });
+    }
+
     bool Register_WebUI_Functions(RE::BSScript::IVirtualMachine* a_vm)
     {
         if (!a_vm) {
@@ -103,6 +157,7 @@ namespace PapyrusBindings_WebUI
 
         a_vm->RegisterFunction("Target_Menu_Open", scriptName, Target_Menu_Open);
         a_vm->RegisterFunction("Sex_Menu_Open", scriptName, Sex_Menu_Open);
+        a_vm->RegisterFunction("TraceLog", scriptName, TraceLog);
 
         webui_log::info("Successfully registered Papyrus functions for {}", scriptName);
         return true;

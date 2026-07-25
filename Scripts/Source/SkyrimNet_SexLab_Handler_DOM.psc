@@ -13,17 +13,10 @@ int actors_obj = 0
 
 
 Function Trace(String func, String msg, Bool notification=False)
-
-    msg = "[SkyrimNet_SexLab_Handler_DOM."+func+"] "+msg
-
-    Debug.Trace(msg) 
-
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Handler_DOM", func, msg)
     if notification
-
-        Debug.Notification(msg)
-
+        Debug.Notification(logged)
     endif 
-
 EndFunction
 
 

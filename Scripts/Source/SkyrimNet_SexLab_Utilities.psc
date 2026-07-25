@@ -1,10 +1,9 @@
 Scriptname SkyrimNet_SexLab_Utilities
 
 Function Trace(String func, String msg, Bool notification=False) global
-    msg = "[SkyrimNet_SexLab_Utilities."+func+"] "+msg
-    Debug.Trace(msg)
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Utilities", func, msg)
     if notification
-        Debug.Notification(msg)
+        Debug.Notification(logged)
     endif 
 EndFunction
 

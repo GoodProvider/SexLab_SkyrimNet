@@ -4,10 +4,9 @@ Scriptname SkyrimNet_SexLab_PlayerRef extends ReferenceAlias
 SkyrimNet_SexLab_Main Property main Auto  
 
 Function Trace(String func, String msg, Bool notification=False) global
-    msg = "[SkyrimNet_SexLab_PlayerRef."+func+"] "+msg
-    Debug.Trace(msg) 
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_PlayerRef", func, msg)
     if notification
-        Debug.Notification(msg)
+        Debug.Notification(logged)
     endif 
 EndFunction
 

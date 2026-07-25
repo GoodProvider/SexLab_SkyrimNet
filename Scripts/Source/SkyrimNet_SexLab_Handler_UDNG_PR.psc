@@ -4,10 +4,9 @@ Scriptname SkyrimNet_SexLab_Handler_UDNG_PR extends ReferenceAlias
 SkyrimNet_SexLab_Handler_UDNG Property handler Auto  
 
 Function Trace(String func, String msg, Bool notification=False) global
-    msg = "[SkyrimNet_SexLab_Handler_UDNG_PlayerRef."+func+"] "+msg
-    Debug.Trace(msg) 
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Handler_UDNG_PlayerRef", func, msg)
     if notification
-        Debug.Notification(msg)
+        Debug.Notification(logged)
     endif 
 EndFunction
 

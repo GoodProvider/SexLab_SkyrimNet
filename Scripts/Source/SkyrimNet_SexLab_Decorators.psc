@@ -7,10 +7,9 @@ import SkyrimNet_SexLab_Utilities
 import PO3_SKSEFunctions
 
 Function Trace(String func, String msg, Bool notification=False) global
-    msg = "[SkyrimNet_SexLab_Decorators."+func+"] "+msg
-    Debug.Trace(msg) 
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Decorators", func, msg)
     if notification
-        Debug.Notification(msg)
+        Debug.Notification(logged)
     endif 
 EndFunction
 

@@ -71,10 +71,9 @@ String Property INTENT_DEFAULT = "sexual activities" Auto
 
 
 Function Trace(String func, String msg="", Bool notification=False)
-    msg = "[SkyrimNet_SexLab_Scene_Interface."+func+"] sid:"+sid+" "+msg
-    Debug.Trace(msg) 
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Scene_Interface", func, "sid:"+sid+" "+msg)
     if notification
-        Debug.Notification(msg)
+        Debug.Notification(logged)
     endif 
 EndFunction
 

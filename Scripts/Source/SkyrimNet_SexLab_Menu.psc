@@ -9,10 +9,9 @@ SkyrimNet_SexLab_Actions Property actions Auto
 bool debug_mode = false 
 
 Function Trace(String func, String msg, Bool notification=False) global
-    msg = "[SkyrimNet_SexLab_Menu."+func+"] "+msg
-    Debug.Trace(msg) 
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Menu", func, msg)
     if notification
-        Debug.Notification(msg)
+        Debug.Notification(logged)
     endif 
 EndFunction
 
@@ -82,7 +81,7 @@ Function ProcessHotkey(int key_code)
             Target_Menu_Selection(target, player)
         endif 
     else 
-        MutliTarget_Menu_Selection(player)
+        MultiTarget_Menu_Selection(player)
     endif 
 EndFunction
 
@@ -288,7 +287,7 @@ Function EventSend_UDNG(String type, Actor target)
     ModEvent.Send(handle)
 EndFunction
 
-Function MutliTarget_Menu_Selection(Actor player)
+Function MultiTarget_Menu_Selection(Actor player)
     String msg = "No target in crosshair, looking for nearby sexable actors"
     Debug.Notification(msg)
     Trace("MultiTarget_Menu_Selection",msg)

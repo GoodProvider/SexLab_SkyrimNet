@@ -69,10 +69,9 @@ sslThreadController thread
 bool is_generic
 
 Function Trace(String func, String msg="", Bool notification=False)
-    msg = "[SkyrimNet_SexLab_Scene."+func+"] sid:"+sid+" "+msg
-    Debug.Trace(msg) 
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Scene", func, "sid:"+sid+" "+msg)
     if notification
-        Debug.Notification(msg)
+        Debug.Notification(logged)
     endif 
 EndFunction
 

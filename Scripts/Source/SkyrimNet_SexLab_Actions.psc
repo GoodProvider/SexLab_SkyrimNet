@@ -11,10 +11,9 @@ Idle Property pa_HugA Auto  ; IDLE:000F4699
 Faction OStimActorCountFaction = None 
 
 Function Trace(String func, String msg, Bool notification=False) global
-    msg = "[SkyrimNet_SexLab_Actions."+func+"] "+msg
-    Debug.Trace(msg) 
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Actions", func, msg)
     if notification
-        Debug.Notification(msg)
+        Debug.Notification(logged)
     endif 
 EndFunction
 

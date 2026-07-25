@@ -55,11 +55,9 @@ sslBaseAnimation[] Property empty = None Auto
 sslBaseAnimation[] Property cancel = None Auto
 
 Function Trace(String func, String msg="", Bool notification=False)
-
-    msg = "[SkyrimNet_SexLab_Scene_Manager."+func+"] "+msg
-    Debug.Trace(msg) 
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Scene_Manager", func, msg)
     if notification
-        Debug.Notification(msg)
+        Debug.Notification(logged)
     endif 
 EndFunction
 

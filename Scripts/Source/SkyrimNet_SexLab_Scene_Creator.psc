@@ -66,10 +66,9 @@ int actorLock = 0
 float actorLockTimeout = 0.00069444444 ;  1 day / (24 hours  * 60 minutes )  
 
 Function Trace(String func, String msg="", Bool notification=False)
-    msg = "[SkyrimNet_SexLab_Scene_Creator."+func+"] sid:"+sid+" "+msg
-    Debug.Trace(msg) 
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Scene_Creator", func, "sid:"+sid+" "+msg)
     if notification
-        Debug.Notification(msg)
+        Debug.Notification(logged)
     endif 
 EndFunction
 
