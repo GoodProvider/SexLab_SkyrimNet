@@ -28,6 +28,14 @@ The **Speaker is always the subject** of LLM-facing sentences. `speaker_position
 
 `GetIntentMessage(START)` → `"A and B start <intent>."`; `GetIntentMessage(END)` → `"A and B finish <intent>."` (same actors + same static intent phrase). Intent is not always sexual — examples: `sexual activities`, `showing physical affection`, `physically comforting each other`, `physically punishing`, `sexual assault`, `cuddling`. YAML `intent` values must be static phrases that fit both templates.
 
+## Orgasm totals via GetIsOrgasming (2026-07-24)
+
+`Scene.GetIsOrgasming(Actor, total_orgasms=-1)` is the single place that both bumps per-actor totals (`StorageUtil` + `_total_orgasm`) and returns the `" is orgasming."` prompt-gate clause. Call sites: `OrgasmCombined` (stash), `OrgasmIndividual` (SLSO absolute `num_orgasms`), `OrgasmCustom` (always increment; append only if substring missing), tentacles `AnimationEnd` (flavor prefix + per-position `GetIsOrgasming`). `OrgasmMessagesToNarration` must not increment again on flush.
+
+## Pyro / UIExtensions import (2026-07-24)
+
+`skyrimse.ppj` imports `@ModsFolder\UIExtensions\scripts\Source`. If that folder is empty, Caprica fails with `unable to locate script UIExtensions`. Restore real UIExtensions sources there (stubs only for compile smoke tests).
+
 ## Orgasm stash / AnimationEnd pipeline (2026-07-23)
 
 1. `OrgasmCombined` / Combined `OrgasmCustom` stash messages and call `thread.UpdateTimer(4.0)` to extend the current stage.

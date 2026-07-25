@@ -795,6 +795,28 @@ Function SetTotalOrgasms(Actor akActor, int total_orgasms)
     DbgEnd("SetTotalOrgasms")
 EndFunction 
 
+; Builds the prompt-gate clause and updates the actor's orgasm total.
+; total_orgasms < 0: +1 from current. total_orgasms >= 0: set absolute (SLSO).
+String Function GetIsOrgasming(Actor akActor, int total_orgasms = -1)
+    DbgEnter("GetIsOrgasming", "akActor:"+GetDisplayName(akActor)+" total_orgasms:"+total_orgasms)
+    if akActor == None
+        Trace("GetIsOrgasming", "Is None")
+        return ""
+    endif
+    if total_orgasms < 0
+        SetTotalOrgasms(akActor, GetTotalOrgasms(akActor) + 1)
+    else
+        SetTotalOrgasms(akActor, total_orgasms)
+    endif
+    String name = akActor.GetDisplayName()
+    if total_orgasms > 1
+        DbgReturn("GetIsOrgasming", name+" is orgasming. again. ")
+        return name+" is orgasming. again. "
+    endif
+    DbgReturn("GetIsOrgasming", name+" is orgasming. ")
+    return name+" is orgasming. "
+EndFunction
+
 Function SetThread(sslThreadController _thread) 
     if _thread != None
         DbgEnter("SetThread", "tid:"+_thread.tid)
@@ -992,6 +1014,11 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
         String orgasm_narration = OrgasmMessagesToNarration()
         if thread.Animation.HasTag("tentacles")
             orgasm_narration += "The tentacles is orgasming and flooding cum both inside and outside. "
+            int t = 0
+            while t < thread.positions.length
+                orgasm_narration += GetIsOrgasming(thread.positions[t])
+                t += 1
+            endwhile
         endif
         if orgasm_narration != ""
             RegisterEvent("sexlab update", orgasm_narration, sender, receiver)
@@ -1058,7 +1085,7 @@ Function OrgasmCombined()
 
         if orgasm_expected[i] == 1 && !no_orgasm && !is_dom_slave && orgasm_messages[i] == ""
             orgasm_messages_set = true
-            orgasm_messages[i] = thread.positions[i].GetDisplayName()+" is orgasming. "
+            orgasm_messages[i] = GetIsOrgasming(thread.positions[i])
         endif 
         i += 1
     endwhile
@@ -1087,17 +1114,10 @@ Function OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
             return 
         endif 
         JMap.setInt(obj, "_enjoyment", full_enjoyment) 
-
-        SetTotalOrgasms(akActor, num_orgasms)
     endif 
 
-    ; Prompt gate requires exact substring " is orgasming." (0550_sexlab_narration).
-    String msg = ""
-    if num_orgasms == 1
-        msg += akActor.GetDisplayName()+" is orgasming. "
-    else
-        msg += akActor.GetDisplayName()+" is orgasming. again. "
-    endif 
+    ; Prompt gate + total via GetIsOrgasming (SLSO absolute count).
+    String msg = GetIsOrgasming(akActor, num_orgasms)
 
     OrgasmHelper(akActor, msg)
     DbgEnd("OrgasmIndividual")
@@ -1108,7 +1128,10 @@ Function OrgasmCustom(Actor akActor, String msg)
     sslSystemConfig config = (SexLab as Quest) as sslSystemConfig
 
     if StringUtil.Find(msg, " is orgasming.") < 0 
-        msg += akActor.GetDisplayName()+" is orgasming. "
+        msg += GetIsOrgasming(akActor)
+    else
+        ; Manager/DOM already appended the substring; still count this orgasm.
+        GetIsOrgasming(akActor)
     endif
 
     if config.SeparateOrgasms
@@ -1178,8 +1201,7 @@ String Function OrgasmMessagesToNarration()
             if orgasm_messages[k] != ""
                 num_orgasmers += 1
                 orgasm_happened = true
-                int total_orgasms = JMap.getInt(obj, "_total_orgasm")
-                JMap.setInt(obj, "_total_orgasm", total_orgasms + 1)
+                ; Totals already bumped when GetIsOrgasming built the stashed clause.
                 if JMap.getInt(obj, "_has_penis") == 1 
                     ejaculation_happened = true
                 endif 
