@@ -64,9 +64,15 @@ Always include commented lines when calculating line number.
 
 ## 
 
-## Debug Traces 
+## Debug Traces Log files 
 Debug Trace message should always start with "---"  `Trace("FunctionName", "--- this is a debug message")`
-Debug Papyrus log file: C:\Users\bhuff\OneDrive\Documents\my games\Skyrim Special Edition\Logs\Script\Papyrus.0.log
+- **SkyrimNet_SexLab**: C:\Users\bhuff\OneDrive\Documents\my games\Skyrim Special Edition\SKSE\SkyrimNet_SexLab.log
+   - This is the primary location to look, it contains the log message produced by SkyrimNet_SexLab TraceLog 
+- **Papyrus**: C:\Users\bhuff\OneDrive\Documents\my games\Skyrim Special Edition\Logs\Script\Papyrus.0.log
+   - This is where to look for None errors.  The matter will look like \_SexLab.*line \, to find the call to SkyrimNet_SexLab code, but you will need 2 to3 the lines above and below for context. 
+- **SkyrimNet**: C:\Users\bhuff\OneDrive\Documents\my games\Skyrim Special Edition\SKSE\SkyrimNet.log
+   - This can be checked if all else fails and you want to see SkyrimNets view. 
+   - This is a last resort, it is very large/verbose expensive to read , alway ask before checking.
 
 **Papyrus compile (required)**: use the VS Code/Cursor task **`compile: pyro`** (`.vscode/tasks.json`). It runs Pyro against `skyrimse.ppj` with the project game path. Do not invent alternate Caprica/`papyrus.exe` one-off compile commands for this repo unless the user asks.
 

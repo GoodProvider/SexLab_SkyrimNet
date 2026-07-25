@@ -9,7 +9,7 @@ defaultPriority: 5
 parameterMapping:
   - type: static
     name: intent
-    value: sexual assault
+    value: being forced to masturbate
   - type: speaker
     name: speaker
     description: Speaker Actor parameter (triggering entity)

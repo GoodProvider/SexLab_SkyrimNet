@@ -127,7 +127,7 @@ EndFunction
 ; _is_generic: pass true only for sl_scene_generic from Scene_Manager.
 ; This flag is permanent for the instance lifetime — do not clear on Release.
 Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager, bool _is_generic = false) 
-    debug_mode = False
+    debug_mode = True
     DbgEnter("Initialize", "sid:"+_sid+" is_generic:"+_is_generic)
     parent.Initialize(_sid,_manager, _is_generic) 
     EnsureActorArraysLargeEnough(2)
@@ -807,6 +807,7 @@ String Function GetIsOrgasming(Actor akActor, int total_orgasms = -1)
     else
         SetTotalOrgasms(akActor, total_orgasms)
     endif
+    DbgMsg("GetIsOrgasming", GetDisplayName(akActor)+" total_orgasms:"+GetTotalOrgasms(akActor)) ; debug-total_orgasms
     String name = akActor.GetDisplayName()
     if total_orgasms > 1
         DbgReturn("GetIsOrgasming", name+" is orgasming. again. ")
@@ -1053,6 +1054,14 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
         if afterglow != ""
             end_message += " "+afterglow
         endif
+        int d = 0
+        while d < thread.positions.length
+            String dbg_name = JMap.getStr(position_objs[d], "_name")
+            int dbg_total = JMap.getInt(position_objs[d], "_total_orgasm")
+            DbgMsg("AnimationEnd", dbg_name+" total_orgasms:"+dbg_total) ; debug-total_orgasms
+            d += 1
+        endwhile
+        DbgMsg("AnimationEnd", "end_message:"+end_message) ; debug-total_orgasms
         RegisterEvent("sexlab update", end_message, sender, receiver) 
     endif 
 
