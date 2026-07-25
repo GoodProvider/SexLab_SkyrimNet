@@ -6,26 +6,19 @@
 #include <string>
 #include <string_view>
 
-// Logging wrappers that auto-prepend "Namespace::Function" to every message.
-// Supports the same call style as SKSE::log:
-//   webui_log::info("simple message");
-//   webui_log::info("Target: {}, Player: {}", targetName, playerName);
-//
-// Implementation note: the struct+CTAD pattern is required because C++ does not
-// allow a variadic template parameter pack and a std::source_location default
-// argument on the same plain function.  The struct constructor handles both;
-// CTAD deduces Args at the call site, and source_location::current() captures
-// the caller's location as the default.
+/// WebUI logging wrappers that prepend "Namespace::Function" to each message.
+/// Call style matches SKSE::log: webui_log::info("msg {}", arg).
+/// Struct+CTAD is required so a pack and source_location default can coexist.
 namespace webui_log {
 
     namespace detail {
-        // Trims MSVC's full signature to "Namespace::Function".
-        // "void __cdecl Foo::Bar(int)" -> "Foo::Bar"
+        /// Trims an MSVC function_name() signature down to Namespace::Function.
         std::string strip_func_name(std::string_view full);
     }
 
     template<typename... Args>
     struct info {
+        /// Logs an info line tagged with the caller's Namespace::Function.
         info(std::format_string<Args...> fmt, Args&&... args,
              std::source_location loc = std::source_location::current()) {
             SKSE::log::info("[{}] {}", detail::strip_func_name(loc.function_name()),
@@ -37,6 +30,7 @@ namespace webui_log {
 
     template<typename... Args>
     struct warn {
+        /// Logs a warning tagged with the caller's Namespace::Function.
         warn(std::format_string<Args...> fmt, Args&&... args,
              std::source_location loc = std::source_location::current()) {
             SKSE::log::warn("[{}] {}", detail::strip_func_name(loc.function_name()),
@@ -48,6 +42,7 @@ namespace webui_log {
 
     template<typename... Args>
     struct error {
+        /// Logs an error tagged with the caller's Namespace::Function.
         error(std::format_string<Args...> fmt, Args&&... args,
               std::source_location loc = std::source_location::current()) {
             SKSE::log::error("[{}] {}", detail::strip_func_name(loc.function_name()),
@@ -59,6 +54,7 @@ namespace webui_log {
 
     template<typename... Args>
     struct critical {
+        /// Logs a critical failure tagged with the caller's Namespace::Function.
         critical(std::format_string<Args...> fmt, Args&&... args,
                  std::source_location loc = std::source_location::current()) {
             SKSE::log::critical("[{}] {}", detail::strip_func_name(loc.function_name()),
@@ -70,6 +66,7 @@ namespace webui_log {
 
     template<typename... Args>
     struct debug {
+        /// Logs a debug line tagged with the caller's Namespace::Function.
         debug(std::format_string<Args...> fmt, Args&&... args,
               std::source_location loc = std::source_location::current()) {
             SKSE::log::debug("[{}] {}", detail::strip_func_name(loc.function_name()),

@@ -10,6 +10,7 @@ namespace PapyrusBindings_WebUI
 {
     RE::Actor* Target_Current = nullptr;
 
+    /// Escapes backslash and single quote so actor names are safe inside JS string literals.
     static std::string EscapeJsString(std::string_view s)
     {
         std::string out;
@@ -22,6 +23,9 @@ namespace PapyrusBindings_WebUI
         return out;
     }
 
+    /// Opens the target menu for the given actor and focuses the PrismaUI view.
+    /// Reloads the action catalog if needed and pushes configure/setTarget/show JS.
+    /// Same target again toggles visibility instead of rebuilding.
     void Target_Menu_Open(RE::StaticFunctionTag*, RE::Actor* Target_Input)
     {
         if (!Target_Input) {
@@ -54,6 +58,8 @@ namespace PapyrusBindings_WebUI
         WebUI_Visibility_Show();
     }
 
+    /// Resets the overlay and shows the sex_menu_panel for an active sex thread.
+    /// thread / has_player are accepted for Papyrus signature parity; panel JS owns layout.
     void Sex_Menu_Open(RE::StaticFunctionTag*, RE::TESForm* thread, bool has_player)
     {
         webui_log::info("Sex_Menu_Open triggered. has_player={}", has_player);
@@ -62,6 +68,7 @@ namespace PapyrusBindings_WebUI
         WebUI_Visibility_Show();
     }
 
+    /// Formats [script.func] msg, logs it through SKSE, and returns the same string to Papyrus.
     RE::BSFixedString TraceLog(RE::StaticFunctionTag*, RE::BSFixedString script_name,
         RE::BSFixedString func, RE::BSFixedString msg)
     {
@@ -73,6 +80,8 @@ namespace PapyrusBindings_WebUI
         return RE::BSFixedString(formatted);
     }
 
+    /// Sends setPlayerActor / setNearbyActors JS from SkyrimNet engagement data.
+    /// Called from WebUI_Visibility_Show so the target menu has actor pick lists.
     void PopulateNearbyActors()
     {
         auto* player = RE::PlayerCharacter::GetSingleton();
@@ -103,6 +112,8 @@ namespace PapyrusBindings_WebUI
         }
     }
 
+    /// Main-thread Papyrus call into SkyrimNet_SexLab_Menu.MultiTarget_Menu_Selection.
+    /// Used when the WebUI hotkey has no crosshair actor to open against.
     void Call_MultiTarget_Menu_Selection()
     {
         auto* player = RE::PlayerCharacter::GetSingleton();
@@ -146,6 +157,7 @@ namespace PapyrusBindings_WebUI
         });
     }
 
+    /// Binds Target_Menu_Open, Sex_Menu_Open, and TraceLog on SkyrimNet_SexLab_WebUI.
     bool Register_WebUI_Functions(RE::BSScript::IVirtualMachine* a_vm)
     {
         if (!a_vm) {

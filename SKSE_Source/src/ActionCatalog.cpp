@@ -15,11 +15,10 @@ namespace ActionCatalog
         nlohmann::json g_targetOptions = nlohmann::json::object();
         bool g_loaded = false;
 
+        /// Resolves Data/SKSE/Plugins/SkyrimNet_SexLab/webui next to this DLL.
+        /// Falls back to cwd/Data/... when the DLL-relative folder is missing.
         std::filesystem::path ResolveWebUIDir()
         {
-            // Prefer folder next to this SKSE plugin DLL:
-            //   Data/SKSE/Plugins/SkyrimNet_SexLab.dll
-            //   Data/SKSE/Plugins/SkyrimNet_SexLab/webui/
             HMODULE hm = nullptr;
             if (GetModuleHandleExW(
                     GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
@@ -32,10 +31,10 @@ namespace ActionCatalog
                         return p;
                 }
             }
-            // Fallback: cwd/Data/...
             return std::filesystem::current_path() / "Data" / "SKSE" / "Plugins" / "SkyrimNet_SexLab" / "webui";
         }
 
+        /// Reads an entire file as binary into a string; empty on open failure.
         std::string ReadFile(const std::filesystem::path& path)
         {
             std::ifstream in(path, std::ios::binary);
@@ -45,16 +44,20 @@ namespace ActionCatalog
         }
     }
 
+    /// Public path to the WebUI JSON config directory (actions_index / target_options).
     std::filesystem::path WebUIDir()
     {
         return ResolveWebUIDir();
     }
 
+    /// True after a successful Load() of actions_index.json and target_options.json.
     bool IsLoaded()
     {
         return g_loaded;
     }
 
+    /// Loads actions_index.json and target_options.json into the in-memory catalog.
+    /// Builds name/category indexes used by the target menu and ExecuteAction.
     bool Load()
     {
         g_actions.clear();
@@ -135,6 +138,7 @@ namespace ActionCatalog
         }
     }
 
+    /// Looks up a loaded ActionDef by SkyrimNet action name; nullptr if missing.
     const ActionDef* FindByName(const std::string& name)
     {
         auto it = g_byName.find(name);
@@ -143,6 +147,7 @@ namespace ActionCatalog
         return &g_actions[it->second];
     }
 
+    /// Returns executable actions registered under a customCategory for menu grouping.
     std::vector<const ActionDef*> ChildrenOfCategory(const std::string& category)
     {
         std::vector<const ActionDef*> out;
@@ -154,11 +159,14 @@ namespace ActionCatalog
         return out;
     }
 
+    /// Raw target_options.json object (defaults + options) used when building UI params.
     const nlohmann::json& TargetOptions()
     {
         return g_targetOptions;
     }
 
+    /// Builds the JSON catalog JS configureTargetMenu expects (defaults, options, actions, by_category).
+    /// Loads the catalog first if it is not already loaded.
     nlohmann::json BuildUICatalog()
     {
         if (!g_loaded)

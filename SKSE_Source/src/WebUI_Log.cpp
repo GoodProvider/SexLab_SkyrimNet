@@ -2,15 +2,15 @@
 
 namespace webui_log::detail {
 
+    /// Trims MSVC's full signature to "Namespace::Function" for log prefixes.
+    /// Strips params, anon-namespace tokens (before space trim), then return/cc.
     std::string strip_func_name(std::string_view full) {
-        // Drop parameter list: everything from '(' onward
+        // Drop parameter list: everything from '(' onward.
         auto paren = full.find('(');
         if (paren != std::string_view::npos)
             full = full.substr(0, paren);
 
-        // Strip anonymous-namespace tokens BEFORE the space-trim because
-        // MSVC writes "`anonymous namespace'::" which contains a space that
-        // would confuse rfind below, leaving "namespace'::Function".
+        // Anon tokens contain spaces; strip before rfind(' ') or names break.
         std::string result(full);
         for (std::string_view anon : {"`anonymous namespace'::", "{anonymous}::"}) {
             std::string::size_type pos;
@@ -18,7 +18,7 @@ namespace webui_log::detail {
                 result.erase(pos, anon.size());
         }
 
-        // Drop return type + calling convention: everything up to the last space
+        // Drop return type + calling convention: everything up to the last space.
         auto space = result.rfind(' ');
         if (space != std::string::npos)
             result = result.substr(space + 1);

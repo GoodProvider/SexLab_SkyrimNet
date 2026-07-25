@@ -10,6 +10,7 @@ namespace ActionCatalog
 {
     namespace
     {
+        /// Case-insensitive string equality for YAML / JSON type and name matching.
         bool EqualsIgnoreCase(std::string_view a, std::string_view b)
         {
             if (a.size() != b.size())
@@ -22,6 +23,7 @@ namespace ActionCatalog
             return true;
         }
 
+        /// True when a UI/defaults dict entry is a typed Actor object.
         bool IsActorDictEntry(const nlohmann::json& entry)
         {
             if (!entry.is_object())
@@ -30,6 +32,7 @@ namespace ActionCatalog
             return EqualsIgnoreCase(t, "Actor");
         }
 
+        /// True when a UI/defaults dict entry is a typed String object.
         bool IsStringDictEntry(const nlohmann::json& entry)
         {
             if (!entry.is_object())
@@ -38,6 +41,7 @@ namespace ActionCatalog
             return EqualsIgnoreCase(t, "String") || EqualsIgnoreCase(t, "string");
         }
 
+        /// Shallow-merges src object keys into dest (src wins on conflict).
         void MergeDict(nlohmann::json& dest, const nlohmann::json& src)
         {
             if (!src.is_object())
@@ -47,7 +51,7 @@ namespace ActionCatalog
             }
         }
 
-        // Normalize flat string "foo" or typed {type,default} into typed entry
+        /// Normalizes a flat UI value or typed {type,default} into a typed dict entry.
         nlohmann::json NormalizeParamValue(const nlohmann::json& v)
         {
             if (v.is_object())
@@ -61,6 +65,7 @@ namespace ActionCatalog
             return nlohmann::json{ { "type", "String" }, { "default", "" } };
         }
 
+        /// Reads a String param from a typed entry; style/direction get safe fallbacks if unset.
         std::string StringValueOf(const nlohmann::json& entry, const std::string& keyForBackup)
         {
             if (entry.is_object()) {
@@ -80,21 +85,21 @@ namespace ActionCatalog
             return "";
         }
 
+        /// Takes the first pipe-separated token from a YAML description (e.g. style choices).
         std::string FirstPipeValue(const std::string& description)
         {
             auto pos = description.find('|');
             if (pos == std::string::npos)
                 return {};
-            // take substring before first |, trim spaces
             std::string first = description.substr(0, pos);
             while (!first.empty() && first.front() == ' ')
                 first.erase(first.begin());
             while (!first.empty() && first.back() == ' ')
                 first.pop_back();
-            // strip leading prose if description is "forcefully|normally|gently"
             return first;
         }
 
+        /// Maps YAML Actor source labels (player / target|focus) to live Actor pointers.
         RE::Actor* ResolveSource(const std::string& source, RE::Actor* player, RE::Actor* focus)
         {
             if (EqualsIgnoreCase(source, "player"))
@@ -105,13 +110,14 @@ namespace ActionCatalog
             return nullptr;
         }
 
+        /// Heuristic: treat a parameterMapping row as an Actor arg for Papyrus dispatch.
         bool MappingLooksLikeActor(const ParamMapping& pm, const nlohmann::json& dict)
         {
             if (EqualsIgnoreCase(pm.type, "speaker") || EqualsIgnoreCase(pm.type, "target"))
                 return true;
             if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name]))
                 return true;
-            // common actor arg names when YAML still uses type: dynamic
+            // Common actor arg names when YAML still uses type: dynamic.
             static const char* kActorNames[] = {
                 "speaker", "target", "victim", "participate", "participate_3",
                 "stripper", "stripped", "actor"
@@ -137,6 +143,7 @@ namespace ActionCatalog
 
             std::vector<Item> items;
 
+            /// Packs resolved Actor/String/Bool items into the Papyrus call argument array.
             bool operator()(RE::BSScrapArray<RE::BSScript::Variable>& a_dst) const override
             {
                 a_dst.resize(static_cast<RE::BSTArrayBase::size_type>(items.size()));
@@ -157,18 +164,21 @@ namespace ActionCatalog
             }
         };
 
+        /// Finds the action's quest by editor ID, else the mod main quest (0x800).
         RE::TESQuest* FindQuest(const std::string& editorId)
         {
             if (!editorId.empty()) {
                 if (auto* q = RE::TESForm::LookupByEditorID<RE::TESQuest>(editorId))
                     return q;
             }
-            // Fallback: this mod's main quest
             return RE::TESDataHandler::GetSingleton()
                 ->LookupForm<RE::TESQuest>(0x800, "SkyrimNet_SexLab.esp");
         }
     }
 
+    /// Dispatches a WebUI-started action to its Papyrus execution function.
+    /// Merges YAML statics → target_options defaults → UI params, then calls on the main thread.
+    /// Returns false if the catalog/action/actors cannot be resolved before dispatch.
     bool ExecuteAction(
         const std::string& actionName,
         const nlohmann::json& uiParameters,
@@ -188,7 +198,7 @@ namespace ActionCatalog
 
         nlohmann::json dict = nlohmann::json::object();
 
-        // 1) YAML statics as String defaults
+        // Merge order: YAML statics → target_options defaults → UI parameters.
         for (auto& pm : def->parameterMapping) {
             if (EqualsIgnoreCase(pm.type, "static") && pm.hasValue) {
                 dict[pm.name] = nlohmann::json{
@@ -198,10 +208,8 @@ namespace ActionCatalog
             }
         }
 
-        // 2) target_options defaults
         MergeDict(dict, TargetOptions().value("defaults", nlohmann::json::object()));
 
-        // 3+4) UI / option parameters (already merged on JS side into payload.parameters)
         if (uiParameters.is_object()) {
             for (auto it = uiParameters.begin(); it != uiParameters.end(); ++it) {
                 dict[it.key()] = NormalizeParamValue(it.value());
@@ -243,7 +251,6 @@ namespace ActionCatalog
                 continue;
             }
 
-            // String / scalar
             std::string value;
             if (EqualsIgnoreCase(pm.type, "static") && pm.hasValue) {
                 value = pm.value;
@@ -268,7 +275,7 @@ namespace ActionCatalog
             args->items.push_back(item);
         }
 
-        // Capture resolved args for the task (Actor* valid until task runs on main thread same frame)
+        // Actor* must remain valid until the main-thread task runs (same frame).
         struct CapturedArg {
             bool isActor = false;
             RE::Actor* actor = nullptr;

@@ -11,6 +11,9 @@ using namespace SKSE;
 
 namespace {
 
+/// SKSE entry: init the plugin, register Papyrus natives, and wire messaging.
+/// On kDataLoaded creates the PrismaUI WebUI; on load/new game enables input.
+/// Returns true so SKSE keeps the DLL loaded.
 SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     SKSE::Init(skse);
 
@@ -25,7 +28,6 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     });
 
     webui_log::info("SkyrimNet_SexLab: Trying to load WebUI plugin...");
-    // Register Papyrus functions
     if (auto papyrus = SKSE::GetPapyrusInterface()) {
         if (!papyrus->Register(PapyrusBindings_WebUI::Register_WebUI_Functions)) {
             webui_log::error("Failed to register WebUI Papyrus functions");
