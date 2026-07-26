@@ -778,7 +778,14 @@ Event OrgasmCombined(int ThreadID, bool HasPlayer)
 EndEvent 
 
 ; Used for SLSO.esp orgasm handling
-Event OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
+; SexLab PushForm sends attached-script type (e.g. WIDeadBodyCleanupScript); receive Form then cast.
+Event OrgasmIndividual(Form akForm, int full_enjoyment, int num_orgasms)
+    Actor akActor = akForm as Actor
+    if !akActor
+        Trace("OrgasmIndividual", "--- akForm is not Actor: "+akForm)
+        return
+    endif
+
     sslSystemConfig config = (SexLab as Quest) as sslSystemConfig
     if !config.SeparateOrgasms 
         return 
