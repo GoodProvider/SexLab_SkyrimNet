@@ -913,9 +913,8 @@ String Function GetThreadsJson(Actor speaker = None)
 
     JMap.setObj(obj, "_threads", threads_array) 
 
-    String json = JValue.toJsonString(obj) 
+    String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj) 
     
-    Trace("getThreadsJson",json)
     JValue.release(obj) 
     JValue.release(threads_dom)
     Miscutil.WriteToFile(threads_filename, json, append=False)

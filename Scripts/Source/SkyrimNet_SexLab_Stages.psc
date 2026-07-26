@@ -169,16 +169,16 @@ String Function AddActorDescriptionActors(String version, Actor[] actors, String
             Trace("AddActorDescriptionActors","Unknown version "+version)
         endif 
         int size = actors.length
-        String actors_json = "" 
+        int actors_arr = JArray.object()
         int i = 0 
         while i < size 
-            if i > 0 
-                actors_json += ","
-            endif 
-            actors_json += "\""+actors[i].GetDisplayName()+"\""
+            JArray.addStr(actors_arr, actors[i].GetDisplayName())
             i += 1 
         endwhile 
-        String json = "{\"actors\":["+actors_json+"]}"
+        int obj = JMap.object()
+        JMap.setObj(obj, "actors", actors_arr)
+        String json = ObjectToLowerCaseKeyJson(obj)
+        JValue.release(obj)
         result = SkyrimNetApi.ParseString(desc, "sl", json)
         Trace("AddActorDescriptionActors","json: "+json+" desc: "+desc+" result: "+result)
     endif 
@@ -674,7 +674,7 @@ int Function GetAnim_Info(sslThreadController thread, Bool force_load=False)
         i -= 1
     endwhile 
     ; setAnimCache(thread, anim_info) 
-    JValue.writeToFile(anim_info, animations_folder+"/anim_info.json")
+    MiscUtil.WriteToFile(animations_folder+"/anim_info.json", ObjectToLowerCaseKeyJson(anim_info), append=False)
     ; Retain the returned object so it is not auto-GC'd while a caller reads it;
     ; every caller must JValue.release(anim_info) once done (rebuilt fresh each call).
     JValue.retain(anim_info)
@@ -707,8 +707,9 @@ Function UpdateAnimInfo(sslThreadController thread, String field, String version
     endif 
 
     Trace("saving "+fname,true)
-    JValue.writeToFile(anim_info, path)
-    JValue.writeToFile(anim_info, animations_folder+"/animation_stage_description_last.json")
+    String json = ObjectToLowerCaseKeyJson(anim_info)
+    MiscUtil.WriteToFile(path, json, append=False)
+    MiscUtil.WriteToFile(animations_folder+"/animation_stage_description_last.json", json, append=False)
     JValue.Release(anim_info)
     manager.SaveThreadsJson()
 EndFunction 

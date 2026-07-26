@@ -1330,7 +1330,7 @@ EndFunction
 String Function GetThreadJson(Actor speaker) 
     DbgEnter("GetThreadJson", "speaker:"+GetDisplayName(speaker))
     GetThreadObj(speaker) 
-    String json = JValue.toJsonString(thread_obj) 
+    String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(thread_obj) 
     DbgReturn("GetThreadJson", "json")
     return json 
 EndFunction 
