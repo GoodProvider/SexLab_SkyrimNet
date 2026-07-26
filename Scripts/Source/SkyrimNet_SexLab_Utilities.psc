@@ -328,16 +328,14 @@ String Function JoinStringsToJson(String[] strings, int num_strings=-1) global
     if num_strings == -1 
         num_strings = strings.length 
     endif 
-    String json = "" 
+    int arr = JArray.object()
     int i = 0
     while i < num_strings 
-        if json != "" 
-            json += ", "
-        endif 
-        json += "\""+strings[i]+"\""
+        JArray.addStr(arr, strings[i])
         i += 1
     endwhile
-    json = "["+json+"]"
+    String json = ObjectToLowerCaseKeyJson(arr)
+    JValue.release(arr)
     return json
 EndFunction 
 
@@ -348,18 +346,16 @@ String Function JoinStringsToJsonMasked(String[] strings, int[] mask=None, int n
     if num_strings == -1 
         num_strings = strings.length 
     endif 
-    String json = "" 
+    int arr = JArray.object()
     int i = 0
     while i < num_strings 
         if mask == None || mask[i] == 1
-            if json != "" 
-                json += ", "
-            endif 
-            json += "\""+strings[i]+"\""
+            JArray.addStr(arr, strings[i])
         endif 
         i += 1
     endwhile
-    json = "["+json+"]"
+    String json = ObjectToLowerCaseKeyJson(arr)
+    JValue.release(arr)
     return json
 EndFunction 
 
@@ -370,20 +366,19 @@ String Function JoinActorsToJson(Actor[] actors, int num_actors=-1) global
     if num_actors == -1 
         num_actors = actors.length 
     endif 
-    String json = ""
+    int arr = JArray.object()
     int i = 0
     while i < num_actors 
-        if json != ""
-            json += ", "
-        endif 
         String name = "none" 
         if actors[i] != None 
             name = actors[i].GetDisplayName()
         endif
-        json += "\""+name+"\""
+        JArray.addStr(arr, name)
         i += 1
     endwhile 
-    return "["+json+"]"
+    String json = ObjectToLowerCaseKeyJson(arr)
+    JValue.release(arr)
+    return json
 EndFunction 
 
 String Function JoinActorsToJsonMasked(Actor[] actors, int[] mask, int num_actors=-1) global
@@ -393,23 +388,21 @@ String Function JoinActorsToJsonMasked(Actor[] actors, int[] mask, int num_actor
     if num_actors == -1 
         num_actors = actors.length 
     endif 
-    String json = ""
+    int arr = JArray.object()
     int i = 0
     while i < num_actors 
         if mask[i] == 1 
-            if json != ""
-                json += ","
-            endif 
-
             String name = "none" 
             if actors[i] != None 
                 name = actors[i].GetDisplayName()
             endif
-            json += "\""+name+"\""
+            JArray.addStr(arr, name)
         endif 
         i += 1
     endwhile 
-    return "["+json+"]"
+    String json = ObjectToLowerCaseKeyJson(arr)
+    JValue.release(arr)
+    return json
 EndFunction 
 
 String Function JoinStrings(String[] strings, int num_strings=-1) global
@@ -438,16 +431,14 @@ String Function JoinIntsToJson(int[] ints, int num_ints=-1) global
     if num_ints == -1 
         num_ints = ints.length 
     endif 
-    String json = "" 
+    int arr = JArray.object()
     int i = 0
     while i < num_ints 
-        if json != "" 
-            json += ", "
-        endif 
-        json += ints[i]
+        JArray.addInt(arr, ints[i])
         i += 1
     endwhile
-    json = "["+json+"]"
+    String json = ObjectToLowerCaseKeyJson(arr)
+    JValue.release(arr)
     return json
 EndFunction 
 
@@ -455,18 +446,7 @@ String Function JoinJArrayStrToJson(int array) global
     if array < 1
         return "none"
     endif 
-    int num_strings = JArray.count(array)
-    int i = 0
-    String json = ""
-    while i < num_strings 
-        if json != "" 
-            json += ", "
-        endif 
-        json += "\""+JArray.getStr(array, i)+"\""
-        i += 1
-    endwhile
-    json = "["+json+"]"
-    return json
+    return ObjectToLowerCaseKeyJson(array)
 EndFunction 
 
 ; ------------------------------------------------------------
@@ -628,6 +608,17 @@ EndFunction
 
 ; Recursively lowercase all JSON object keys (SKSE native). Invalid/empty -> "".
 String Function JsonLowerCaseKeys(String json) global native
+
+; Serialize JValue -> JSON string with all object keys lowercased. Empty/invalid -> "{}".
+; Only project call site for JValue.toJsonString.
+String Function ObjectToLowerCaseKeyJson(int obj) global
+    String json = JValue.toJsonString(obj)
+    json = JsonLowerCaseKeys(json)
+    if !json
+        return "{}"
+    endif
+    return json
+EndFunction
 
 ; ------------------------------------------------------------
 ; Ensure Functions 

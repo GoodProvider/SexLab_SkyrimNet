@@ -33,7 +33,9 @@ String Function Get_Threads(Actor speaker) global
         Trace("Get_Threads","manger is None, aborting")
         return "{}" 
     endif 
-    return manager.GetThreadsJson(speaker) 
+    String json = manager.GetThreadsJson(speaker) 
+    Trace("Get_Threads", "json:"+json)
+    return json
 EndFunction 
 
 String Function Outfit_Options(Actor speaker) global 
@@ -50,7 +52,7 @@ String Function Outfit_Options(Actor speaker) global
         Trace("Outfit_Options",speaker.GetDisplayName()+" has options:"+options)
     endif
     JMap.setStr(obj, "_options", options) 
-    String json = JValue.toJsonString(obj) 
+    String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj) 
     JValue.release(obj) 
     return json 
 EndFunction
@@ -66,7 +68,7 @@ String Function Intent(Actor speaker) global
     if sl_scene != None 
         int obj = JMap.object()
         JMap.setStr(obj, "_intent", sl_scene.intent)
-        String json = JValue.toJsonString(obj)
+        String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj)
         JValue.release(obj)
         return json
     endif 
@@ -84,7 +86,7 @@ String Function Activities(Actor akActor) global
         endif 
     endif 
     JMap.setStr(obj, "_activity", activity)
-    String json = JValue.toJsonString(obj)
+    String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj)
     JValue.release(obj)
     return json
 EndFunction
@@ -104,7 +106,7 @@ String Function Player_LOS_Distance(Actor akActor) global
     int obj = JMap.object() 
     JMap.setFlt(obj,"_distance",distance)
     JMap.setInt(obj,"_los",los) 
-    String json = JValue.toJsonString(obj) 
+    String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj) 
     JValue.release(obj)
     return json 
 EndFunction 
@@ -130,7 +132,7 @@ String Function Is_Nudity(Actor akActor) global
     int obj = JMap.object()
     JMap.setInt(obj, "_topless", topless as Int)
     JMap.setInt(obj, "_bottomless", bottomless as Int)
-    String json = JValue.toJsonString(obj)
+    String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj)
     JValue.release(obj)
     return json
 EndFunction
