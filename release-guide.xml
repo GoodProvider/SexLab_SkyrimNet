@@ -12,9 +12,10 @@
   <files>
   README.md: user facing documentation
   CHANGELOG.md: changelog since last tag
-  Prompts.md: guide for users to tweak the prompts for their own use
-  Actions.md: guide for users to tweak the actions for their own use
-  Code.md: developer facing documentation
+  guides/Prompts.md: guide for users to tweak the prompts for their own use
+  guides/Actions.md: guide for users to tweak the actions for their own use
+  guides/Animations.md: guide for users to author per-stage animation descriptions
+  guides/Code.md: developer facing documentation
   release-checkpoint.xml: checkpoint for the release
   release-guide.xml: this file, and instructions for preparing for the release.
   </files> 

@@ -138,16 +138,16 @@ EndFunction
 ; Setup 
 ; -------------------------------------------------------
 
-Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, String _method="", String setting_name="")
+Bool Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, String _method="", String setting_name="")
     DbgEnter("Setup", "intent:"+_intent+" actors:["+JoinActors(_actors)+"] speaker:"+GetDisplayName(_speaker)+" target:"+GetDisplayName(_target)+" method:"+_method+" setting_name:"+setting_name)
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
         DbgReturn("Setup", "Setup_CheckLinks failed")
-        return
+        return False
     endif
     if !_actors
         DbgReturn("Setup", "actors is None")
-        return
+        return False
     endif
 
     intent = _intent
@@ -185,6 +185,11 @@ Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, S
         i += 1 
     endwhile 
 
+    if num_actors < 1
+        DbgReturn("Setup", "no valid actors")
+        return False
+    endif
+
     status = STATUS_ACTIVE 
     num_tags = 0
     num_tags_suppress = 0 
@@ -204,6 +209,7 @@ Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, S
     SetNames() 
     Trace("Setup", GetString())
     DbgEnd("Setup")
+    return True
 EndFunction 
 
 Bool Function Setup_CheckLinks()

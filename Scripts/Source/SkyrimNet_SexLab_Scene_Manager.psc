@@ -175,11 +175,14 @@ SkyrimNet_SexLab_Scene_Creator Function CreateCreator(String intent, Actor[] act
     int num_creators = creators.length 
     while i < num_creators
         if !creators[i].IsActive()
-            creators[i].Setup(intent, actors, speaker, target, method, setting_name) 
-            return creators[i]
+            if creators[i].Setup(intent, actors, speaker, target, method, setting_name)
+                return creators[i]
+            endif
+            Trace("CreateCreator", "Setup failed for creators["+i+"], trying next slot")
         endif 
         i += 1 
     endwhile
+    Trace("CreateCreator", "no inactive creator available (or all Setup failed)")
     return None
 EndFunction
 
@@ -206,11 +209,13 @@ SkyrimNet_SexLab_Scene Function CreateSceneWithoutCreator(sslThreadController th
         return None
     endif
     SkyrimNet_SexLab_Scene_Creator creator = CreateCreator("", thread.Positions, None, None, "", "")
+    if creator == None
+        Trace("CreateSceneWithoutCreator", "CreateCreator returned None, aborting")
+        return None
+    endif
     SkyrimNet_SexLab_Scene sl_scene = CreateSceneByCreator(creator, thread)
     ; Setup copied all values out of the creator; free the pool slot so it is not leaked.
-    if creator != None
-        creator.Release()
-    endif
+    creator.Release()
     return sl_scene
 EndFunction 
 
@@ -245,11 +250,13 @@ SkyrimNet_SexLab_Scene Function GetSceneByThread(sslThreadController thread, Boo
     endif
 
     SkyrimNet_SexLab_Scene_Creator creator = CreateCreator("", thread.Positions, None, None, "", "")
+    if creator == None
+        Trace("GetSceneByThread", "CreateCreator returned None, aborting")
+        return None
+    endif
     SkyrimNet_SexLab_Scene sl_scene = CreateSceneByCreator(creator, thread)
     ; Setup copied all values out of the creator; free the pool slot so it is not leaked.
-    if creator != None
-        creator.Release()
-    endif
+    creator.Release()
     if sl_scene == None 
         Trace("GetSceneByThread", "CreateSceneByCreator returned None, aborting")
         return None
@@ -398,6 +405,11 @@ SkyrimNet_SexLab_Scene Function GetSceneInactive(sslThreadController thread)
     Trace("GetSceneInactive","Failed to find inactive sl_scene using generic")
     if !ResolveSceneGeneric()
         Trace("GetSceneInactive", "sl_scene_generic is None, aborting")
+        return None
+    endif
+    ; Single shared fallback: do not rebind while it already serves a live thread (no CK pool expand).
+    if sl_scene_generic.GetThreadActive()
+        Trace("GetSceneInactive", "sl_scene_generic already active for another thread, refusing allocate")
         return None
     endif
     EnsureThreadSceneLargeEnough(thread.tid)

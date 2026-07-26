@@ -2,7 +2,7 @@
 
 Adds SkyrimNet support to SexLab.
 
-See also: [CHANGELOG.md](CHANGELOG.md), [Actions.md](Actions.md), [Prompts.md](Prompts.md), [Code.md](Code.md).
+See also: [CHANGELOG.md](CHANGELOG.md), [guides/Actions.md](guides/Actions.md), [guides/Prompts.md](guides/Prompts.md), [guides/Animations.md](guides/Animations.md), [guides/Code.md](guides/Code.md).
 
 ## F.A.Q.
 
@@ -39,7 +39,7 @@ SkyrimNet isn't seeing SkyrimNet_SexLab's Actions' functions.
 
 # Actions
 
-NPC / LLM actions (see [Actions.md](Actions.md) to add your own):
+NPC / LLM actions (see [guides/Actions.md](guides/Actions.md) to add your own):
 
 - **sex** — start sex (forceful / normal / gentle), masturbation, 2- and 3-actor scenes; rape actions when MCM **Add rape actions** is on (toggle, save, reload)
 - **nonsexual / comfort** — kissing, hugging, cuddling, spooning, headpat-style affection; 3-actor nonsexual
@@ -75,11 +75,11 @@ Example (punish-style scene — no orgasm, no strip, pain on position 0, suppres
 | tags | animation must contain these tags |
 | tags_suppress | animation must not contain these tags |
 
-You are encouraged to create and share your own scene settings. Example actions: [SKSE/Plugins/SkyrimNet/config/actions](SKSE/Plugins/SkyrimNet/config/actions). Full authoring rules: [Actions.md](Actions.md).
+You are encouraged to create and share your own scene settings. Example actions: [SKSE/Plugins/SkyrimNet/config/actions](SKSE/Plugins/SkyrimNet/config/actions). Full authoring rules: [guides/Actions.md](guides/Actions.md).
 
 ### Speaking modifiers
 
-Speaking modifiers drive instructions in [0050_sexlab_activity.prompt](SKSE/Plugins/SkyrimNet/prompts/submodules/user_final_instructions/0050_sexlab_activity.prompt). Tokens must be underscore-wrapped (`_pleasure_`, `_pain_`, `_gagged_`, `_kissing_`) so they stay unique under Skyrim's case-insensitive string pool and match case-sensitive prompts. See [Prompts.md](Prompts.md).
+Speaking modifiers drive instructions in [0050_sexlab_activity.prompt](SKSE/Plugins/SkyrimNet/prompts/submodules/user_final_instructions/0050_sexlab_activity.prompt). Tokens must be underscore-wrapped (`_pleasure_`, `_pain_`, `_gagged_`, `_kissing_`) so they stay unique under Skyrim's case-insensitive string pool and match case-sensitive prompts. See [guides/Prompts.md](guides/Prompts.md).
 
 ---
 
@@ -108,56 +108,11 @@ Optional hot key (enable in the MCM). Supports:
 - **Direct Narration Blocking:** Narration cooldown; Narration max distance
 - **OstimNet Integration** (when present): which framework starts sex for the player
 
-## Per Stage Description
+## Per Stage Description / Orgasm Expected / Sex Style
 
-You are strongly encouraged to add and share stage descriptions. When you press the hot key on an actor in sex:
+You are strongly encouraged to add and share per-stage animation descriptions (Inja `{{sl.actors.N}}`, `_local_` vs author packs, case-sensitive JSON keys). The hot key can also set **orgasm expected** per actor and **sex style** for the LLM when Tag Editor dialogs are on.
 
-- If the animation's stage already has a description, you can view or replace it
-- If not, a text field lets you add one; names are filled in and you can accept or reject. Empty results usually mean wrong variable names
-
-Descriptions are stored under `SKSE/Plugins/SkyrimNet_SexLab/animations/_local_/` (one file per animation). Shared packs live in `animations/(author_name)/`. Author name is shown when a description is used. `_local_` is loaded last and wins.
-
-- Edit files with any text editor after creation
-- If no stage description exists, tag-based description is used
-- The last stage with a description is used if the current stage has none
-- Directories are read in order; `_local_` last
-
-**Keys are case-sensitive** (JContainers). Use lowercase `"stage N"` and `"version"` — that is what the in-game editor writes. Prefer:
-
-```json
-{
-    "stage 1": {
-        "description":"{{sl.actors.1}} fingers {{sl.actors.0}}.",
-        "version": "2.0"
-    },
-    "orgasm_expected":[1,0]
-}
-```
-
-Inja format (`version` `2.0`):
-
-- Actors are an array; if there is a victim, it is normally first
-- Type actor indices alone if you need to see who is who
-- `{{sl.actors.0}}`, `{{sl.actors.1}}`, `{{sl.actors.2}}`, …
-
-Examples: `animations/GoodProvider/`.
-
-Please send packs by zipping your `_local_` folder with an author name (anonymous OK): Discord, or email da.good.provider@gmail.com.
-
-## Orgasm Expected
-
-Some animations should not imply every actor orgasms. Stored as an int array matching actor positions in the thread:
-
-- `0` — does not expect an orgasm
-- `1` — expects an orgasm
-
-## Sex Style
-
-If Tag Editor dialogs are enabled, you can set style for how sex is presented to the LLM:
-
-- Forcefully fucking
-- having sex
-- gently making love
+Full authoring rules: **[guides/Animations.md](guides/Animations.md)**.
 
 ---
 
@@ -165,9 +120,10 @@ If Tag Editor dialogs are enabled, you can set style for how sex is presented to
 
 | Guide | Summary |
 |-------|---------|
-| **[Actions.md](Actions.md)** | Create or edit LLM actions under `SKSE/Plugins/SkyrimNet/config/actions/`. Wire `setting_name` to scene JSONs, eligibility rules, and consensual / nonconsensual Papyrus entry points. |
-| **[Prompts.md](Prompts.md)** | Edit SexLab prompt submodules. Bare lowercase JSON keys, `_wrapped_` speaking-modifier value tokens, and the `" is orgasming."` narration contract. |
-| **[Code.md](Code.md)** | Develop Papyrus / SKSE: paths, `compile: pyro`, architecture (Creator → Scene → Manager), review-checkpoint workflow. |
+| **[guides/Actions.md](guides/Actions.md)** | Create or edit LLM actions under `SKSE/Plugins/SkyrimNet/config/actions/`. Wire `setting_name` to scene JSONs, eligibility rules, and consensual / nonconsensual Papyrus entry points. |
+| **[guides/Prompts.md](guides/Prompts.md)** | Edit SexLab prompt submodules. Bare lowercase JSON keys, `_wrapped_` speaking-modifier value tokens, and the `" is orgasming."` narration contract. |
+| **[guides/Animations.md](guides/Animations.md)** | Per-stage animation descriptions, `orgasm_expected`, sex style, and sharing packs under `animations/`. |
+| **[guides/Code.md](guides/Code.md)** | Develop Papyrus / SKSE: paths, `compile: pyro`, architecture (Creator → Scene → Manager), review-checkpoint workflow. |
 
 ---
 

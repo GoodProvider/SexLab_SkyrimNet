@@ -39,14 +39,12 @@
                     {% set speaker = actor_record %}
                     {% set _notice_level = 2 %} 
                     {% set speaker.active = true %}
+                    {% set speaker.notice_level = 2 %}
                {% endif %}
                {% if actor_record.creature_description != "" %} 
                     {% set _includes_creatures = True %} 
                {% endif %} 
-               {{actor_record.uuid}} {{npc.UUID}} {{speaker}}
           {% endfor %} 
-
-          {% set speaker.notice_level = _notice_level %} 
 
           {% if _notice_level == 2 %}
                - {% if thread.location != "" %} On {{thread.location}},{% endif %} {{ thread.description }} {%- 
@@ -60,7 +58,6 @@
           {% endif %}
      {%- endfor -%}
 {% endif %} 
-{{speaker}}
 {% if speaker.notice_level > 1 %} 
 **Reaction must evolve—don't loop on the same observation.**
      {% if speaker.active %}

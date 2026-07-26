@@ -2,7 +2,7 @@
 
 Developer guide for working on SkyrimNet_SexLab (Papyrus, ESP, review workflow).
 
-See also: [README.md](README.md) (players), [Actions.md](Actions.md) (YAML authors), [Prompts.md](Prompts.md) (prompt authors), [KNOWLEDGEBASE.md](KNOWLEDGEBASE.md) (quirks and past fixes).
+See also: [README.md](../README.md) (players), [Actions.md](Actions.md) (YAML authors), [Prompts.md](Prompts.md) (prompt authors), [KNOWLEDGEBASE.md](../KNOWLEDGEBASE.md) (quirks and past fixes), [AGENTS.md](../AGENTS.md) (repo-wide agent rules).
 
 ## Key paths
 
@@ -99,6 +99,6 @@ Hooks / backups under `.claude/` may apply when using Claude Code tooling; still
 
 - YAML actions / scenes → [Actions.md](Actions.md)
 - Prompt files → [Prompts.md](Prompts.md)
-- Animation stage JSON (`"stage N"`, `orgasm_expected`) → [README.md](README.md) (Per Stage Description)
+- Animation stage JSON (`"stage N"`, `orgasm_expected`) → [Animations.md](Animations.md)
 
 Keep code changes that emit prompt protocol strings (`" is orgasming."`, speaking_modifiers values like `_pleasure_`, …) in sync with [Prompts.md](Prompts.md).

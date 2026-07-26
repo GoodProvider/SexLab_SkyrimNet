@@ -2,7 +2,7 @@
 
 How to edit SkyrimNet prompt files shipped with SkyrimNet_SexLab.
 
-See also: [README.md](README.md), [Actions.md](Actions.md) (scene `speaking_modifiers` and action helpers), [Code.md](Code.md).
+See also: [README.md](../README.md), [Actions.md](Actions.md) (scene `speaking_modifiers` and action helpers), [Code.md](Code.md), [AGENTS.md](../AGENTS.md).
 
 ## Where files live
 
@@ -55,7 +55,7 @@ When adding a new speaking modifier:
 
 1. Emit it from scene settings / code as `_yourtoken_`.
 2. Add matching `contains(..., "_yourtoken_")` branches in the activity (and narration) prompts.
-3. Document the token in README / Actions.md so authors use it in scene JSON.
+3. Document the token in README / [Actions.md](Actions.md) so authors use it in scene JSON.
 
 ## Orgasm narration contract (`0550_sexlab_narration.prompt`)
 

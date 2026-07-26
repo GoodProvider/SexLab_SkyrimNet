@@ -19,18 +19,20 @@
       <artifact role="release rules / persona">release-guide.xml</artifact>
       <artifact role="changelog since last tag">CHANGELOG.md</artifact>
       <artifact role="end-user guide">README.md</artifact>
-      <artifact role="action authoring">Actions.md</artifact>
-      <artifact role="prompt authoring">Prompts.md</artifact>
-      <artifact role="developer guide">Code.md</artifact>
+      <artifact role="action authoring">guides/Actions.md</artifact>
+      <artifact role="prompt authoring">guides/Prompts.md</artifact>
+      <artifact role="animation authoring">guides/Animations.md</artifact>
+      <artifact role="developer guide">guides/Code.md</artifact>
     </related_artifacts>
   </metadata>
 
   <doc_files>
     <file>README.md</file>
     <file>CHANGELOG.md</file>
-    <file>Prompts.md</file>
-    <file>Actions.md</file>
-    <file>Code.md</file>
+    <file>guides/Prompts.md</file>
+    <file>guides/Actions.md</file>
+    <file>guides/Animations.md</file>
+    <file>guides/Code.md</file>
     <file>release-checkpoint.xml</file>
     <file>release-guide.xml</file>
   </doc_files>

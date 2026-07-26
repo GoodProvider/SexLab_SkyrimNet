@@ -113,7 +113,7 @@
         {
           "type": "static",
           "name": "intent",
-          "value": "refused"
+          "value": "physically comforting"
         },
         {
           "type": "speaker",
@@ -214,57 +214,6 @@
         }
       ],
       "file": "sexlab_none_change_targets_outfit.yaml"
-    },
-    {
-      "name": "SexLab_Start_Rape",
-      "label": "Rape",
-      "customCategory": "",
-      "questEditorId": "SkyrimNet_SexLab",
-      "scriptName": "SkyrimNet_SexLab_Actions",
-      "executionFunctionName": "StartScene_Nonconsensual_Two",
-      "parameterMapping": [
-        {
-          "type": "static",
-          "name": "intent",
-          "value": "sexual assault"
-        },
-        {
-          "type": "speaker",
-          "name": "speaker",
-          "description": "Speaker Actor parameter (triggering entity)"
-        },
-        {
-          "type": "dynamic",
-          "name": "target",
-          "description": "Object Actor (maybe Speaker)"
-        },
-        {
-          "type": "dynamic",
-          "name": "victim",
-          "description": "Object Actor (Target or Speaker)"
-        },
-        {
-          "type": "dynamic",
-          "name": "style",
-          "description": "forceful|normal|gentle"
-        },
-        {
-          "type": "dynamic",
-          "name": "method",
-          "description": "ass|pussy|mouth|masturbation|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob"
-        },
-        {
-          "type": "dynamic",
-          "name": "direction",
-          "description": "giving|getting|fucking a|fucked in"
-        },
-        {
-          "type": "static",
-          "name": "setting_name",
-          "value": ""
-        }
-      ],
-      "file": "sexlab_none_rape.yaml"
     },
     {
       "name": "SEXLAB_STOP",
@@ -373,13 +322,13 @@
         },
         {
           "type": "dynamic",
-          "name": "direction",
-          "description": "giving|getting"
+          "name": "method",
+          "description": "single hug|hugging|kissing|cuddle"
         },
         {
           "type": "dynamic",
-          "name": "method",
-          "description": "single hug|hugging|kissing|cuddle"
+          "name": "direction",
+          "description": "giving|getting"
         },
         {
           "type": "static",
@@ -405,7 +354,7 @@
         {
           "type": "static",
           "name": "intent",
-          "value": "refused"
+          "value": "showing affection"
         },
         {
           "type": "speaker",
@@ -479,9 +428,9 @@
           "description": "vaginal|anal"
         },
         {
-          "type": "dynamic",
+          "type": "static",
           "name": "direction",
-          "description": "giving|getting"
+          "value": ""
         },
         {
           "type": "static",
@@ -525,9 +474,9 @@
           "description": "vaginal|anal"
         },
         {
-          "type": "dynamic",
+          "type": "static",
           "name": "direction",
-          "description": "giving|getting"
+          "value": ""
         },
         {
           "type": "static",
@@ -856,7 +805,7 @@
     },
     {
       "name": "SexLab_Sexual_Activities_One",
-      "label": "Masturbation",
+      "label": "sex (one)",
       "customCategory": "sexlab_sex1",
       "questEditorId": "",
       "scriptName": "",
@@ -875,7 +824,7 @@
         {
           "type": "static",
           "name": "intent",
-          "value": "sexual assault"
+          "value": "being forced to masturbate"
         },
         {
           "type": "speaker",
@@ -911,7 +860,7 @@
         {
           "type": "static",
           "name": "intent",
-          "value": "sexual activities"
+          "value": "masturbation"
         },
         {
           "type": "speaker",
@@ -938,7 +887,7 @@
     },
     {
       "name": "SexLab_Sexual_Activities_Two",
-      "label": "Sex",
+      "label": "Sex (two)",
       "customCategory": "sexlab_sex2",
       "questEditorId": "",
       "scriptName": "",
@@ -980,9 +929,9 @@
           "description": "oral|vaginal|anal|masturbation|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob"
         },
         {
-          "type": "dynamic",
+          "type": "static",
           "name": "direction",
-          "description": "giving|getting"
+          "value": ""
         },
         {
           "type": "static",
@@ -1026,9 +975,9 @@
           "description": "oral|vaginal|anal|masturbation|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob"
         },
         {
-          "type": "dynamic",
+          "type": "static",
           "name": "direction",
-          "description": "giving|getting"
+          "value": ""
         },
         {
           "type": "static",
@@ -1049,7 +998,7 @@
         {
           "type": "static",
           "name": "intent",
-          "value": "refused"
+          "value": "sexual activities"
         },
         {
           "type": "speaker",
@@ -1081,7 +1030,7 @@
     },
     {
       "name": "SexLab_Start_Fucking",
-      "label": "Sex",
+      "label": "penis fucking",
       "customCategory": "sexlab_sex2",
       "questEditorId": "SkyrimNet_SexLab",
       "scriptName": "SkyrimNet_SexLab_Actions",
@@ -1110,12 +1059,12 @@
         {
           "type": "dynamic",
           "name": "method",
-          "description": "mouth|pussy|ass"
+          "description": "pussy|mouth|ass"
         },
         {
           "type": "dynamic",
           "name": "direction",
-          "description": "fucked in|fucking"
+          "description": "fucking|fucked in"
         },
         {
           "type": "static",
@@ -1127,7 +1076,7 @@
     },
     {
       "name": "SexLab_Start_Giving",
-      "label": "Giving",
+      "label": "by mouth/hand/etc",
       "customCategory": "sexlab_sex2",
       "questEditorId": "SkyrimNet_SexLab",
       "scriptName": "SkyrimNet_SexLab_Actions",
@@ -1161,7 +1110,7 @@
         {
           "type": "dynamic",
           "name": "direction",
-          "description": "giving|getting"
+          "description": "getting|giving"
         },
         {
           "type": "static",
@@ -1211,13 +1160,13 @@
         },
         {
           "type": "dynamic",
-          "name": "direction",
-          "description": "fucked in|fucking"
+          "name": "method",
+          "description": "pussy|mouth|ass"
         },
         {
           "type": "dynamic",
-          "name": "method",
-          "description": "mouth|pussy|ass"
+          "name": "direction",
+          "description": "fucking|fucked in"
         },
         {
           "type": "static",
@@ -1262,13 +1211,13 @@
         },
         {
           "type": "dynamic",
-          "name": "direction",
-          "description": "giving|getting"
+          "name": "method",
+          "description": "oral|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob"
         },
         {
           "type": "dynamic",
-          "name": "method",
-          "description": "oral|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob"
+          "name": "direction",
+          "description": "getting|giving"
         },
         {
           "type": "static",

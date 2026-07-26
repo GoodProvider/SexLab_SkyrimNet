@@ -262,9 +262,9 @@ EndFunction
 Function Change_Outfit(Actor stripper, Actor stripped, String style, String how, String narration)
     Trace("Change_Outfit",stripper.GetDisplayName()+" stripper "+stripped.GetDisplayName()+" style:"+style+" how: "+how+" narration:"+narration)
 
-    if how == "take off" 
+    if how == "take off" || how == "undresses" || how == "undress"
         how = "undress"
-    elseif how == "put on"
+    elseif how == "put on" || how == "dresses" || how == "dress"
         how = "dress"
     endif 
 
@@ -277,7 +277,7 @@ Function Change_Outfit(Actor stripper, Actor stripped, String style, String how,
         else
             Trace("Change_Outfit",Stripped.GetDisplayName()+" has no stripped items")
         endif
-    else
+    elseif how == "undress"
         ;/* StripActor
         * * Strips an actor using SexLab's strip setting as chosen by the user from the SexLab MCM
         * * 
@@ -294,8 +294,14 @@ Function Change_Outfit(Actor stripper, Actor stripped, String style, String how,
             do_animate = False
         endif 
         Form[] forms = sexlab.StripActor(stripped, victim, do_animate, false) 
-        main.StoreStrippedItems(stripped, forms)
-        success = True 
+        if forms && forms.length > 0
+            main.StoreStrippedItems(stripped, forms)
+            success = True 
+        else
+            Trace("Change_Outfit",Stripped.GetDisplayName()+" strip returned no items")
+        endif
+    else
+        Trace("Change_Outfit","unknown how token: "+how)
     endif
 
     if success

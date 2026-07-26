@@ -46,7 +46,6 @@ LABELS: dict[str, str] = {
     "SexLab_Start_Giving_Three": "Giving (three)",
     "change_outfit": "Change outfit",
     "change_outfit_target": "Change target outfit",
-    "SexLab_Start_Rape": "Rape",
     "SEXLAB_STOP": "Stop",
 }
 

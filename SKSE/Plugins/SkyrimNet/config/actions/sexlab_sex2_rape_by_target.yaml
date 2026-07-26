@@ -22,9 +22,9 @@ parameterMapping:
   - type: dynamic
     name: method
     description: oral|vaginal|anal|masturbation|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob
-  - type: dynamic
+  - type: static
     name: direction
-    description: giving|getting
+    value: ""
   - type: static 
     name: setting_name
     value: ""

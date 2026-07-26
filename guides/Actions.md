@@ -1,10 +1,14 @@
-# Actions guide
+# Actions (SkyrimNet YAML)
 
-How to create and edit SkyrimNet LLM actions for SkyrimNet_SexLab.
+Guide for creating and editing SkyrimNet LLM actions for SkyrimNet_SexLab. For agents: read this before changing action YAMLs or `SkyrimNet_SexLab_Actions.psc` signatures.
 
-See also: [README.md](README.md) (end-user features), [Prompts.md](Prompts.md) (prompt contracts), [Code.md](Code.md) (Papyrus developers).
+See also: [README.md](../README.md) (end-user features), [Prompts.md](Prompts.md) (prompt contracts), [Code.md](Code.md) (Papyrus developers), [AGENTS.md](../AGENTS.md) (repo-wide agent rules), [KNOWLEDGEBASE.md](../KNOWLEDGEBASE.md) (quirks).
 
 Upstream schema: [WORKFLOW_ACTIONS.md](https://github.com/MinLL/SkyrimNet-GamePlugin/blob/main/docs/modding/WORKFLOW_ACTIONS.md).
+
+## Hard limit: 8 parameters
+
+**SkyrimNet has a hard maximum of 8 entries in `parameterMapping` per action YAML.** Do not add a 9th mapping. Threesome actions (e.g. `sexlab_sex3_sex_fucking.yaml`) already use all 8 slots (`intent`, `speaker`, `target`, `style`, `method`, `direction`, `setting_name`, `participate`). To add more inputs, fold them into an existing dynamic string, use a scene `setting_name`, or add a dedicated Papyrus wrapper that hard-codes fixed roles (same pattern as `_TargetVictim` / `_SpeakerVictim`).
 
 ## Where files live
 
@@ -13,6 +17,7 @@ Upstream schema: [WORKFLOW_ACTIONS.md](https://github.com/MinLL/SkyrimNet-GamePl
 | `SKSE/Plugins/SkyrimNet/config/actions/` | Action YAML files |
 | `SKSE/Plugins/SkyrimNet_SexLab/scenes/` | Scene setting JSON files referenced by `setting_name` |
 | `SKSE/Plugins/SkyrimNet/prompts/helpers/` | Optional per-action helper prompts |
+| `Scripts/Source/SkyrimNet_SexLab_Actions.psc` | Papyrus entry points named by `executionFunctionName` |
 
 Shipped categories (filename prefix / `customCategory`):
 
@@ -40,7 +45,7 @@ Do **not** put `description_`, `questEditorId`, `scriptName`, or `parameterMappi
 - `questEditorId: SkyrimNet_SexLab`
 - `scriptName: SkyrimNet_SexLab_Actions`
 - `executionFunctionName` — Papyrus function on that script
-- `parameterMapping` — positional args matching the Papyrus signature
+- `parameterMapping` — positional args matching the Papyrus signature (**max 8**)
 - `defaultPriority` (optional)
 - `eligibilityRules` (optional)
 
@@ -135,6 +140,7 @@ MCM **Add rape actions (must toggle/save/reload)** controls whether rape actions
 
 1. Ensure `SkyrimNet_SexLab.esp` is last in the load order.
 2. Start the game → SkyrimNet webUI → Tools → Game Data Explorer → search `_sexlab` → Quests → View Scripts → **Refresh** → Actions (function count &gt; 0).
+3. If you changed action `label`s used by the in-game WebUI target menu, regenerate `actions_index.json` with `tools/generate_actions_index.py` (see [WebUI.md](WebUI.md)).
 
 ## Examples to copy
 
@@ -151,6 +157,7 @@ MCM **Add rape actions (must toggle/save/reload)** controls whether rape actions
 ## Checklist
 
 - [ ] `name` unique across all action YAMLs
+- [ ] `parameterMapping` has **at most 8** entries
 - [ ] `parameterMapping` order matches Papyrus signature
 - [ ] `static` uses `value`; `dynamic` uses `description`
 - [ ] No `speaking_victim`

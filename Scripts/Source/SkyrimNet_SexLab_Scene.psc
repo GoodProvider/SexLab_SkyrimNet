@@ -450,9 +450,9 @@ Function Release()
     endif
 
     if thread != None
-        if !is_generic
-            manager.UnsetThread_scene(thread.tid)
-        endif 
+        ; Always clear thread_scene[tid], including generic — otherwise a reused
+        ; generic leaves a stale tid→generic map until a later mismatch force-Release.
+        manager.UnsetThread_scene(thread.tid)
         thread = None 
     else 
         Trace("Release","Thread is None, continuing cleanup") 
@@ -638,22 +638,24 @@ EndFunction
 bool Function UpdateActor(int i , Actor akActor) 
     DbgEnter("UpdateActor", "i:"+i+" akActor:"+GetDisplayName(akActor))
     bool changed = False 
+    int obj = position_objs[i]
     ; Slot changed if this actor is not bound to this position's metadata obj
     if GetObjFromActor(akActor) != position_objs[i] 
         SetActor(i, akActor) 
         changed = True 
         int total_orgasms = StorageUtil.GetIntValue(akActor, storage_total_orgasms_key, 0) 
         SetTotalOrgasms(akActor, total_orgasms)
-    elseif status == STATUS_ACTIVE
+        obj = position_objs[i]
+    elseif status == STATUS_ACTIVE && obj > 0
         JMap.setStr(obj, "notice_level", "active")
-    endif 
-
-    int obj = position_objs[i]
+    endif
     int wearing_strapon = 0
     if thread.IsUsingStrapon(akActor)
         wearing_strapon = 1
     endif 
-    JMap.setInt(obj, "wearing_strapon", wearing_strapon)
+    if obj > 0
+        JMap.setInt(obj, "wearing_strapon", wearing_strapon)
+    endif
 
     DbgReturn("UpdateActor", "changed")
     return changed 
@@ -796,6 +798,7 @@ EndFunction
 
 ; Builds the prompt-gate clause and updates the actor's orgasm total.
 ; total_orgasms < 0: +1 from current. total_orgasms >= 0: set absolute (SLSO).
+; Tentacles tag: append flavor on the orgasming actor only (do not force-orgasm all positions).
 String Function GetIsOrgasming(Actor akActor, int total_orgasms = -1)
     DbgEnter("GetIsOrgasming", "akActor:"+GetDisplayName(akActor)+" total_orgasms:"+total_orgasms)
     if akActor == None
@@ -807,14 +810,18 @@ String Function GetIsOrgasming(Actor akActor, int total_orgasms = -1)
     else
         SetTotalOrgasms(akActor, total_orgasms)
     endif
-    DbgMsg("GetIsOrgasming", GetDisplayName(akActor)+" total_orgasms:"+GetTotalOrgasms(akActor)) ; debug-total_orgasms
+    int recorded = GetTotalOrgasms(akActor)
+    DbgMsg("GetIsOrgasming", GetDisplayName(akActor)+" total_orgasms:"+recorded) ; debug-total_orgasms
     String name = akActor.GetDisplayName()
-    if total_orgasms > 1
-        DbgReturn("GetIsOrgasming", name+" is orgasming. again. ")
-        return name+" is orgasming. again. "
+    String msg = name+" is orgasming. "
+    if recorded > 1
+        msg = name+" is orgasming. again. "
     endif
-    DbgReturn("GetIsOrgasming", name+" is orgasming. ")
-    return name+" is orgasming. "
+    if thread != None && thread.Animation != None && thread.Animation.HasTag("tentacles")
+        msg += "The tentacles is orgasming and flooding cum both inside and outside. "
+    endif
+    DbgReturn("GetIsOrgasming", msg)
+    return msg
 EndFunction
 
 Function SetThread(sslThreadController _thread) 
@@ -1011,16 +1018,9 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
         DbgMsg("AnimationEnd", "SexLab as sslSystemConfig")
         sslSystemConfig config = (SexLab as Quest) as sslSystemConfig
 
-        ; Leftover Combined orgasm stash → event before purge (not ongoing-activity DN)
+        ; Leftover Combined orgasm stash → event before purge (not ongoing-activity DN).
+        ; Tentacles flavor is appended inside GetIsOrgasming when the animation is tagged.
         String orgasm_narration = OrgasmMessagesToNarration()
-        if thread.Animation.HasTag("tentacles")
-            orgasm_narration += "The tentacles is orgasming and flooding cum both inside and outside. "
-            int t = 0
-            while t < thread.positions.length
-                orgasm_narration += GetIsOrgasming(thread.positions[t])
-                t += 1
-            endwhile
-        endif
         if orgasm_narration != ""
             RegisterEvent("sexlab update", orgasm_narration, sender, receiver)
         endif

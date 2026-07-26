@@ -42,7 +42,16 @@ The **Speaker is always the subject** of LLM-facing sentences. `speaker_position
 
 ## Orgasm totals via GetIsOrgasming (2026-07-24)
 
-`Scene.GetIsOrgasming(Actor, total_orgasms=-1)` is the single place that both bumps per-actor totals (`StorageUtil` + `_total_orgasm`) and returns the `" is orgasming."` prompt-gate clause. Call sites: `OrgasmCombined` (stash), `OrgasmIndividual` (SLSO absolute `num_orgasms`), `OrgasmCustom` (always increment; append only if substring missing), tentacles `AnimationEnd` (flavor prefix + per-position `GetIsOrgasming`). `OrgasmMessagesToNarration` must not increment again on flush.
+`Scene.GetIsOrgasming(Actor, total_orgasms=-1)` is the single place that both bumps per-actor totals (`StorageUtil` + `total_orgasm`) and returns the `" is orgasming."` prompt-gate clause. Call sites: `OrgasmCombined` (stash), `OrgasmIndividual` (SLSO absolute `num_orgasms`), `OrgasmCustom` (always increment; append only if substring missing). When `thread.Animation` has tag `tentacles`, `GetIsOrgasming` appends tentacles flavor on that orgasming actor only — do **not** force-orgasm all positions from `AnimationEnd`. `OrgasmMessagesToNarration` must not increment again on flush. "again" uses the post-update `GetTotalOrgasms` count (not the pre-increment `-1` local).
+
+## Scene pool generic fallback (2026-07-26)
+
+`GetSceneInactive` may bind `sl_scene_generic` only when `!GetThreadActive()`. Concurrent 11th+ scenes refuse allocate (`None`) rather than overwrite a live generic — avoids CK pool expansion. `Scene.Release` always `UnsetThread_scene(tid)` including generic.
+
+## Creator.Setup returns Bool (2026-07-26)
+
+`Scene_Creator.Setup` returns `False` on link/empty-actor failure (no `STATUS_ACTIVE`). `CreateCreator` returns `None` when Setup fails or pool exhausted; all callers must gate on `None` (Action_Start, Menu multitarget, CreateSceneWithoutCreator, GetSceneByThread).
+
 
 ## Pyro / UIExtensions import (2026-07-24)
 
@@ -64,8 +73,11 @@ Creator locks with `skyrimnet_sexlab_scene_actor_lock`. Action YAML eligibility 
 
 ## SkyrimNet action YAML practice (2026-07-18)
 
+Full authoring guide: [guides/Actions.md](guides/Actions.md).
+
 Actions live in `SKSE/Plugins/SkyrimNet/config/actions/`. Executable YAMLs dispatch to `SkyrimNet_SexLab_Actions` via positional `parameterMapping` — order and types must match the Papyrus signature; mapping `name` is LLM-facing only.
 
+- **Hard limit: max 8 `parameterMapping` entries** per action YAML (SkyrimNet). Threesome actions already use all 8; do not add a 9th — fold into an existing dynamic, use `setting_name`, or a fixed-role Papyrus wrapper.
 - `static` requires `value`; `dynamic` requires `description` (not `value`).
 - Prefer Papyrus slot names in mappings (`method`, not `type`; `how` for outfit).
 - Action `name` must be unique across all YAMLs.

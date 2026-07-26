@@ -9,7 +9,7 @@ defaultPriority: 6
 parameterMapping:
   - type: static 
     name: intent 
-    value: refused
+    value: physically comforting
   - type: speaker
     name: speaker
     description: Speaker Actor parameter (triggering entity)

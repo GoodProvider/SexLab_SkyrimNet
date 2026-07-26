@@ -17,7 +17,17 @@ These are the authoritative locations used by the Papyrus project file `skyrimse
 
 ## WebUI / SKSE / PrismaUI
 
-See **[Guides/WebUI.md](Guides/WebUI.md)** for SKSE_Source, PrismaUI view paths, CMake build tasks, and WebUI config (`target_options.json` / `actions_index.json`).
+See **[guides/WebUI.md](guides/WebUI.md)** for SKSE_Source, PrismaUI view paths, CMake build tasks, and WebUI config (`target_options.json` / `actions_index.json`).
+
+## Actions (SkyrimNet YAML)
+
+See **[guides/Actions.md](guides/Actions.md)** for action YAML authoring, `parameterMapping` rules (including SkyrimNet’s hard **8-parameter** limit), scene `setting_name` wiring, eligibility, and Papyrus entry points on `SkyrimNet_SexLab_Actions`.
+
+## Prompts / Code / Animations
+
+- **[guides/Prompts.md](guides/Prompts.md)** — prompt submodules, JSON key / speaking-modifier contracts, orgasm narration gate
+- **[guides/Animations.md](guides/Animations.md)** — per-stage animation descriptions, `orgasm_expected`, sex style, pack sharing
+- **[guides/Code.md](guides/Code.md)** — Papyrus paths, compile, architecture, review workflow
 
 # Papyrus rules 
 - Papyrus is case insensitive, so these are only for human reviewers
@@ -77,7 +87,7 @@ Debug Trace message should always start with "---"  `Trace("FunctionName", "--- 
 
 **Papyrus compile (required)**: use the VS Code/Cursor task **`compile: pyro`** (`.vscode/tasks.json`). It runs Pyro against `skyrimse.ppj` with the project game path. Do not invent alternate Caprica/`papyrus.exe` one-off compile commands for this repo unless the user asks.
 
-**SKSE / WebUI compile**: see **[Guides/WebUI.md](Guides/WebUI.md)**.
+**SKSE / WebUI compile**: see **[guides/WebUI.md](guides/WebUI.md)**.
 
 All under `tools/`:
 
