@@ -19,15 +19,15 @@ parameterMapping:
   - type: dynamic
     name: style
     description: forceful|normal|gentle
-  - type: dynamic 
-    name: direction 
-    description: giving|getting
   - type: dynamic
     name: method
     description: oral|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob
+  - type: dynamic 
+    name: direction 
+    description: getting|giving
   - type: static 
     name: setting_name
     value: ""
   - type: dynamic
     name: participate
-    description: third participating actor 
+    description: third participating actor

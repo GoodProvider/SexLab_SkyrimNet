@@ -51,7 +51,7 @@ String Function Outfit_Options(Actor speaker) global
         endif 
         Trace("Outfit_Options",speaker.GetDisplayName()+" has options:"+options)
     endif
-    JMap.setStr(obj, "_options", options) 
+    JMap.setStr(obj, "options", options) 
     String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj) 
     JValue.release(obj) 
     return json 
@@ -67,7 +67,7 @@ String Function Intent(Actor speaker) global
     SkyrimNet_SexLab_Scene sl_scene = manager.GetSceneByActor(speaker) 
     if sl_scene != None 
         int obj = JMap.object()
-        JMap.setStr(obj, "_intent", sl_scene.intent)
+        JMap.setStr(obj, "intent", sl_scene.intent)
         String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj)
         JValue.release(obj)
         return json
@@ -85,7 +85,7 @@ String Function Activities(Actor akActor) global
             activity = sl_scene.GetDescription()
         endif 
     endif 
-    JMap.setStr(obj, "_activity", activity)
+    JMap.setStr(obj, "activity", activity)
     String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj)
     JValue.release(obj)
     return json
@@ -104,8 +104,8 @@ String Function Player_LOS_Distance(Actor akActor) global
 
   
     int obj = JMap.object() 
-    JMap.setFlt(obj,"_distance",distance)
-    JMap.setInt(obj,"_los",los) 
+    JMap.setFlt(obj,"distance",distance)
+    JMap.setInt(obj,"los",los) 
     String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj) 
     JValue.release(obj)
     return json 
@@ -130,8 +130,8 @@ String Function Is_Nudity(Actor akActor) global
     endif 
     
     int obj = JMap.object()
-    JMap.setInt(obj, "_topless", topless as Int)
-    JMap.setInt(obj, "_bottomless", bottomless as Int)
+    JMap.setInt(obj, "topless", topless as Int)
+    JMap.setInt(obj, "bottomless", bottomless as Int)
     String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj)
     JValue.release(obj)
     return json

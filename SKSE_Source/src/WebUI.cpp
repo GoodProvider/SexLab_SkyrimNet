@@ -272,26 +272,25 @@ void InitWebUI()
             WebUI_Visibility_Hide();
             PapyrusBindings_WebUI::Target_Current = nullptr;
         });
-        // TEMP: disabled — re-enable by uncommenting this Register block
-        // KeyHandler::GetSingleton()->Register(0x2B /* backslash */, []() {
-        //     if (!g_gameReady) {
-        //         webui_log::info("WebUI hotkey blocked — no game loaded.");
-        //         return;
-        //     }
-        //
-        //     RE::Actor* targetActor = nullptr;
-        //     auto* crosshairData = RE::CrosshairPickData::GetSingleton();
-        //     if (crosshairData) {
-        //         if (auto ref = crosshairData->target[0].get()) {
-        //             targetActor = ref->As<RE::Actor>();
-        //         }
-        //     }
-        //
-        //     if (targetActor) {
-        //         PapyrusBindings_WebUI::Target_Menu_Open(nullptr, targetActor);
-        //     } else {
-        //         PapyrusBindings_WebUI::Call_MultiTarget_Menu_Selection();
-        //     }
-        // });
+        KeyHandler::GetSingleton()->Register(0x2B /* backslash */, []() {
+            if (!g_gameReady) {
+                webui_log::info("WebUI hotkey blocked — no game loaded.");
+                return;
+            }
+
+            RE::Actor* targetActor = nullptr;
+            auto* crosshairData = RE::CrosshairPickData::GetSingleton();
+            if (crosshairData) {
+                if (auto ref = crosshairData->target[0].get()) {
+                    targetActor = ref->As<RE::Actor>();
+                }
+            }
+
+            if (targetActor) {
+                PapyrusBindings_WebUI::Target_Menu_Open(nullptr, targetActor);
+            } else {
+                PapyrusBindings_WebUI::Call_MultiTarget_Menu_Selection();
+            }
+        });
     });
 }

@@ -154,8 +154,8 @@ Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager, bool _is_
         actors_objs = JArray.object()
         JValue.retain(actors_objs)
     endif 
-    if !JMap.HasKey(thread_obj, "_actors")
-        JMap.setObj(thread_obj, "_actors", actors_objs)
+    if !JMap.HasKey(thread_obj, "actors")
+        JMap.setObj(thread_obj, "actors", actors_objs)
     endif 
     if victim_faction_forms < 1 
         victim_faction_forms = JArray.object()
@@ -199,7 +199,7 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
     if num_actors != JArray.count(actors_objs)
         JValue.release(actors_objs)
         actors_objs = JArray.objectWithSize(num_actors)
-        JMap.setObj(thread_obj, "_actors", actors_objs)
+        JMap.setObj(thread_obj, "actors", actors_objs)
         JValue.retain(actors_objs)
     endif
 
@@ -391,7 +391,7 @@ Function Release()
             StorageUtil.UnsetIntValue(akActor, storage_total_orgasms_key)
         endif 
         if position_objs && i < position_objs.length && position_objs[i] > 0
-            int speaking_obj = JMap.getObj(position_objs[i], "_speaking_modifiers")
+            int speaking_obj = JMap.getObj(position_objs[i], "speaking_modifiers")
             if speaking_obj > 0
                 JValue.release(speaking_obj)
             endif 
@@ -416,7 +416,7 @@ Function Release()
     if position_objs
         while i < position_objs.length
             if position_objs[i] > 0
-                int speaking_obj = JMap.getObj(position_objs[i], "_speaking_modifiers")
+                int speaking_obj = JMap.getObj(position_objs[i], "speaking_modifiers")
                 if speaking_obj > 0
                     JValue.release(speaking_obj)
                 endif 
@@ -445,7 +445,7 @@ Function Release()
         JMap.clear(thread_obj)
         if actors_objs > 0
             JArray.clear(actors_objs)
-            JMap.setObj(thread_obj, "_actors", actors_objs)
+            JMap.setObj(thread_obj, "actors", actors_objs)
         endif
     endif
 
@@ -494,7 +494,7 @@ Function SetPosition(int index, Actor akActor, int no_orgasm, String speaking_mo
     EnsureActorArraysLargeEnough(index + 1)
 
     int obj = position_objs[index]
-    JMap.setInt(obj, "_no_orgasm", no_orgasm) 
+    JMap.setInt(obj, "no_orgasm", no_orgasm) 
 
     ; Split up speaking modifiers 
     String[] strings = StringUtil.Split(speaking_modifiers,",")
@@ -508,14 +508,14 @@ Function SetPosition(int index, Actor akActor, int no_orgasm, String speaking_mo
         i += 1
     endwhile
 
-    int speaking_obj = JMap.getObj(obj, "_speaking_modifiers") 
+    int speaking_obj = JMap.getObj(obj, "speaking_modifiers") 
     if speaking_obj < 1 || JArray.count(speaking_obj) != num_strings 
         if speaking_obj > 0 
             JValue.release(speaking_obj) 
         endif 
         speaking_obj = JArray.objectWithSize(num_strings) 
         JValue.retain(speaking_obj)
-        JMap.setObj(obj, "_speaking_modifiers",speaking_obj) 
+        JMap.setObj(obj, "speaking_modifiers",speaking_obj) 
     endif 
     i = 0 
     int w = 0 
@@ -527,7 +527,7 @@ Function SetPosition(int index, Actor akActor, int no_orgasm, String speaking_mo
         i += 1 
     endwhile
     SetActor(index, akActor)
-    Trace("SetPosition", "end index:"+index+" name: "+akActor.GetDisplayName()+" no_orgasm: "+JMap.getInt(obj, "_no_orgasm")+" speaking_modifiers: "+JoinJArrayStrToJson(speaking_obj))
+    Trace("SetPosition", "end index:"+index+" name: "+akActor.GetDisplayName()+" no_orgasm: "+JMap.getInt(obj, "no_orgasm")+" speaking_modifiers: "+JoinJArrayStrToJson(speaking_obj))
 Endfunction 
 
 bool Function SetActor(int i, Actor akActor)
@@ -545,9 +545,9 @@ bool Function SetActor(int i, Actor akActor)
 
     StorageUtil.SetIntValue(akActor, storage_obj_key, obj) 
     StorageUtil.SetIntValue(akActor, storage_total_orgasms_key, 0)
-    JMap.setStr(obj, "_uuid", GetUUID(akActor))
-    JMap.setStr(obj, "_formid", akActor.GetFormID())
-    JMap.setStr(obj, "_name", akActor.GetDisplayName())
+    JMap.setStr(obj, "uuid", GetUUID(akActor))
+    JMap.setStr(obj, "formid", akActor.GetFormID())
+    JMap.setStr(obj, "name", akActor.GetDisplayName())
 
     int gender = akActor.GetLeveledActorBase().GetSex() ; actorLib.GetGender(akActor)
     DbgMsg("SetActor", "sexlab.GetGender "+akActor.GetDisplayName())
@@ -568,27 +568,27 @@ bool Function SetActor(int i, Actor akActor)
     endif 
 
 
-    JMap.setInt(obj, "_has_penis", has_penis)
-    JMap.setInt(obj, "_has_pussy", has_pussy)
-    JMap.setInt(obj, "_is_hermaphrodiate", is_hermaphrodiate)
-    JMap.setStr(obj, "_creature_description", GetCreatureDescriptions(akActor))
+    JMap.setInt(obj, "has_penis", has_penis)
+    JMap.setInt(obj, "has_pussy", has_pussy)
+    JMap.setInt(obj, "is_hermaphrodiate", is_hermaphrodiate)
+    JMap.setStr(obj, "creature_description", GetCreatureDescriptions(akActor))
 
-    JMap.setStr(obj,"_notice_level","nothing")
+    JMap.setStr(obj,"notice_level","nothing")
     if status == STATUS_ACTIVE
-        JMap.setStr(obj,"_notice_level","active")
+        JMap.setStr(obj,"notice_level","active")
     endif
-    JMap.setInt(obj,"_total_orgasm",0)
-    JMap.setInt(obj,"_arousal", -1) 
+    JMap.setInt(obj,"total_orgasm",0)
+    JMap.setInt(obj,"arousal", -1) 
     DbgMsg("SetActor", "thread.IsVictim "+akActor.GetDisplayName())
     if thread.IsVictim(akActor) 
-        JMap.setInt(obj, "_victim", 1) 
-        JMap.setInt(obj, "_assailant", 0) 
+        JMap.setInt(obj, "victim", 1) 
+        JMap.setInt(obj, "assailant", 0) 
     elseif num_victims > 0 
-        JMap.setInt(obj, "_victim", 0) 
-        JMap.setInt(obj, "_assailant", 1) 
+        JMap.setInt(obj, "victim", 0) 
+        JMap.setInt(obj, "assailant", 1) 
     else 
-        JMap.setInt(obj, "_victim", 0) 
-        JMap.setInt(obj, "_assailant", 0) 
+        JMap.setInt(obj, "victim", 0) 
+        JMap.setInt(obj, "assailant", 0) 
     endif 
 
     DbgMsg("SetActor", "thread.ActorAlias "+akActor.GetDisplayName())
@@ -605,12 +605,12 @@ bool Function SetActor(int i, Actor akActor)
             enjoyment = actorAlias.GetEnjoyment() 
         endif 
     endif 
-    JMap.setInt(obj, "_enjoyment", enjoyment)
+    JMap.setInt(obj, "enjoyment", enjoyment)
 
     if main.handler_dom.IsDOMSlave(akActor)
-        JMap.setInt(obj, "_dom_slave", 1)
+        JMap.setInt(obj, "dom_slave", 1)
     else
-        JMap.setInt(obj, "_dom_slave", 0)
+        JMap.setInt(obj, "dom_slave", 0)
     endif
 
 
@@ -645,7 +645,7 @@ bool Function UpdateActor(int i , Actor akActor)
         int total_orgasms = StorageUtil.GetIntValue(akActor, storage_total_orgasms_key, 0) 
         SetTotalOrgasms(akActor, total_orgasms)
     elseif status == STATUS_ACTIVE
-        JMap.setStr(obj, "_notice_level", "active")
+        JMap.setStr(obj, "notice_level", "active")
     endif 
 
     int obj = position_objs[i]
@@ -653,7 +653,7 @@ bool Function UpdateActor(int i , Actor akActor)
     if thread.IsUsingStrapon(akActor)
         wearing_strapon = 1
     endif 
-    JMap.setInt(obj, "_wearing_strapon", wearing_strapon)
+    JMap.setInt(obj, "wearing_strapon", wearing_strapon)
 
     DbgReturn("UpdateActor", "changed")
     return changed 
@@ -669,7 +669,7 @@ Function AlignActors()
     if size != JArray.count(actors_objs)
         JValue.release(actors_objs)
         actors_objs = JArray.objectWithSize(size)
-        JMap.setObj(thread_obj, "_actors", actors_objs)
+        JMap.setObj(thread_obj, "actors", actors_objs)
         JValue.retain(actors_objs)
         changed = True
     endif
@@ -705,10 +705,10 @@ Function SetNames()
     DbgEnter("SetNames")
     DbgMsg("SetNames", "thread.positions")
     actor_names = JoinActors(thread.positions)
-    victim_names = GetNames("_victim")
-    assailant_names = GetNames("_assailant")
-    hermaphrodiate_names = GetNames("_is_hermaphrodiate") 
-    strapon_names = GetNames("_wearing_strapon")
+    victim_names = GetNames("victim")
+    assailant_names = GetNames("assailant")
+    hermaphrodiate_names = GetNames("is_hermaphrodiate") 
+    strapon_names = GetNames("wearing_strapon")
     DbgEnd("SetNames")
 EndFunction 
 
@@ -736,7 +736,7 @@ String Function GetNames(String key_)
                     names += ", "
                 endif 
             endif 
-            names += JMap.getStr(position_objs[i], "_name") 
+            names += JMap.getStr(position_objs[i], "name") 
             seen += 1
         endif 
         i += 1 
@@ -789,7 +789,7 @@ Function SetTotalOrgasms(Actor akActor, int total_orgasms)
     StorageUtil.SetIntValue(akActor, storage_total_orgasms_key, total_orgasms) 
     int obj = GetObjFromActor(akActor)
     if obj > 0
-        JMap.setInt(obj, "_total_orgasm", total_orgasms)
+        JMap.setInt(obj, "total_orgasm", total_orgasms)
     endif 
     DbgEnd("SetTotalOrgasms")
 EndFunction 
@@ -1031,8 +1031,8 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
             int[] orgasm_expected = stages.GetOrgasmExpected(thread)
             int j = thread.positions.length - 1 
             while 0 <= j 
-                String name = JMap.getStr(position_objs[j], "_name") 
-                int total_orgasms = JMap.getInt(position_objs[j], "_total_orgasm")
+                String name = JMap.getStr(position_objs[j], "name") 
+                int total_orgasms = JMap.getInt(position_objs[j], "total_orgasm")
                 if total_orgasms < 1 
                     if orgasm_expected.length > j && orgasm_expected[j] == 1
                         afterglow += name+" failed to orgasm. "
@@ -1056,8 +1056,8 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
         endif
         int d = 0
         while d < thread.positions.length
-            String dbg_name = JMap.getStr(position_objs[d], "_name")
-            int dbg_total = JMap.getInt(position_objs[d], "_total_orgasm")
+            String dbg_name = JMap.getStr(position_objs[d], "name")
+            int dbg_total = JMap.getInt(position_objs[d], "total_orgasm")
             DbgMsg("AnimationEnd", dbg_name+" total_orgasms:"+dbg_total) ; debug-total_orgasms
             d += 1
         endwhile
@@ -1089,8 +1089,8 @@ Function OrgasmCombined()
     EnsureActorArraysLargeEnough(num_actors)
     while i < num_actors
         int obj = position_objs[i] 
-        bool no_orgasm = JMap.getInt(obj, "_no_orgasm") == 1
-        bool is_dom_slave = JMap.getInt(obj,"_dom_slave") == 1
+        bool no_orgasm = JMap.getInt(obj, "no_orgasm") == 1
+        bool is_dom_slave = JMap.getInt(obj,"dom_slave") == 1
 
         if orgasm_expected[i] == 1 && !no_orgasm && !is_dom_slave && orgasm_messages[i] == ""
             orgasm_messages_set = true
@@ -1117,12 +1117,12 @@ Function OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
     String name = GetDisplayName(akActor) 
     int obj = GetObjFromActor(akActor) 
     if obj > 0 
-        if JMap.getInt(obj, "_no_orgasm") == 1 
+        if JMap.getInt(obj, "no_orgasm") == 1 
             Trace("OrgasmIndividual",name+" shouldn't orgasm")
             DbgReturn("OrgasmIndividual", "void")
             return 
         endif 
-        JMap.setInt(obj, "_enjoyment", full_enjoyment) 
+        JMap.setInt(obj, "enjoyment", full_enjoyment) 
     endif 
 
     ; Prompt gate + total via GetIsOrgasming (SLSO absolute count).
@@ -1206,17 +1206,17 @@ String Function OrgasmMessagesToNarration()
         int num_orgasmers = 0 
         while k < num_actors && k < orgasm_messages.length
             int obj = JArray.getObj(actors_objs, k)
-            String name = JMap.getStr(obj, "_name")
+            String name = JMap.getStr(obj, "name")
             if orgasm_messages[k] != ""
                 num_orgasmers += 1
                 orgasm_happened = true
                 ; Totals already bumped when GetIsOrgasming built the stashed clause.
-                if JMap.getInt(obj, "_has_penis") == 1 
+                if JMap.getInt(obj, "has_penis") == 1 
                     ejaculation_happened = true
                 endif 
                 narration += orgasm_messages[k]
                 orgasm_messages[k] = ""
-            elseif orgasm_expected.length > k && orgasm_expected[k] == 1 && JMap.getInt(obj, "_dom_slave") == 1
+            elseif orgasm_expected.length > k && orgasm_expected[k] == 1 && JMap.getInt(obj, "dom_slave") == 1
                 narration += main.handler_dom.HandleOrgasmDenied(thread.positions[k])   
             endif 
             k += 1
@@ -1376,13 +1376,13 @@ int Function GetThreadObj(Actor speaker)
     endif 
 
 
-    jmap.setint(thread_obj, "_active", getthreadactive() as int ) 
-    jmap.SetStr(thread_obj, "_status",status) 
-    jmap.SetStr(thread_obj, "_description", getdescription())
-    jmap.SetStr(thread_obj, "_style", style)
-    jmap.setStr(thread_obj, "_speaker_name", speaker_name)
-    jmap.SetFlt(thread_obj, "_speaker_distance", distance)
-    jmap.setint(thread_obj, "_speaker_los", los as int)
+    jmap.setint(thread_obj, "active", getthreadactive() as int ) 
+    jmap.SetStr(thread_obj, "status",status) 
+    jmap.SetStr(thread_obj, "description", getdescription())
+    jmap.SetStr(thread_obj, "style", style)
+    jmap.setStr(thread_obj, "speaker_name", speaker_name)
+    jmap.SetFlt(thread_obj, "speaker_distance", distance)
+    jmap.setint(thread_obj, "speaker_los", los as int)
 
     int names_arr = jarray.object()
     int victims_arr = jarray.object()
@@ -1396,9 +1396,9 @@ int Function GetThreadObj(Actor speaker)
         endif
         i += 1
     endwhile
-    jmap.setobj(thread_obj, "_names", names_arr)
-    jmap.setobj(thread_obj, "_victims", victims_arr)
-    jmap.SetStr(thread_obj, "_location", getlocation())
+    jmap.setobj(thread_obj, "names", names_arr)
+    jmap.setobj(thread_obj, "victims", victims_arr)
+    jmap.SetStr(thread_obj, "location", getlocation())
 
     dbgreturn("getThreadobj", "thread_obj")
     return thread_obj

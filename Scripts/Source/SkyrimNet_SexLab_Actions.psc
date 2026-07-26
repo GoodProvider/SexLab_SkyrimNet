@@ -115,18 +115,14 @@ EndFunction
 ; Threesome
 ;-------------------------------------------
 
-Function StartScene_Consensual_Three(String intent, Actor speaker, Actor target, string style, string direction, string method, String setting_name="", Actor participate)
-    Trace("StartScene_Consensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style+" direction: "+direction+" method: "+method+" participate:"+participate.GetDisplayName()+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
+Function StartScene_Consensual_Three(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="", Actor participate)
+    Trace("StartScene_Consensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style+" method: "+method+" direction: "+direction+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
     StartScene_Event(intent, speaker, target, None, style, method, direction, setting_name=setting_name, participate_3=participate)
 EndFunction
 
 
-Function StartScene_Nonconsensual_Three(String intent, Actor speaker, Actor target, string style, string method, string direction, bool speaker_victim, String setting_name="", Actor participate)
-    Trace("StartScene_Nonconsensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style+" direction: "+direction+" method: "+method+" speaker_victim:"+speaker_victim+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
-    Actor victim = target
-    if speaker_victim 
-        victim = speaker
-    endif 
+Function StartScene_Nonconsensual_Three(String intent, Actor speaker, Actor target, Actor victim, string style="", string method="", String direction="", String setting_name="", Actor participate)
+    Trace("StartScene_Nonconsensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" victim:"+GetDisplayName(victim)+" style: "+style+" method: "+method+" direction: "+direction+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
     StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name, participate_3=participate) 
 EndFunction
 

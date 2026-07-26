@@ -35,7 +35,7 @@ Do **not** invent one-off Caprica / `papyrus.exe` compile commands unless the ma
 - **Debug traces:** start with `"---"` — e.g. `Trace("FunctionName", "--- this is a debug message")`
 - Papyrus log: `Documents\my games\Skyrim Special Edition\Logs\Script\Papyrus.0.log`
 
-Strings matched outside Skyrim (prompts, Inja, JSON keys for external consumers) must use underscore-prefixed keys / underscore-wrapped tokens. See [Prompts.md](Prompts.md).
+JSON **keys** for external consumers: bare lowercase via `ObjectToLowerCaseKeyJson`. Protocol **value** tokens (speaking modifiers): underscore-wrapped (`_pain_`). See [Prompts.md](Prompts.md).
 
 ## Architecture (high level)
 
@@ -101,4 +101,4 @@ Hooks / backups under `.claude/` may apply when using Claude Code tooling; still
 - Prompt files → [Prompts.md](Prompts.md)
 - Animation stage JSON (`"stage N"`, `orgasm_expected`) → [README.md](README.md) (Per Stage Description)
 
-Keep code changes that emit prompt protocol strings (`" is orgasming."`, `_speaking_modifiers`, …) in sync with [Prompts.md](Prompts.md).
+Keep code changes that emit prompt protocol strings (`" is orgasming."`, speaking_modifiers values like `_pleasure_`, …) in sync with [Prompts.md](Prompts.md).

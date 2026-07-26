@@ -28,29 +28,28 @@ There is no `0520_sexlab_dressing_instructions.prompt` (removed). Outfit / dress
 
 You are expected to tune these for your world. Keep protocol literals exact (below) or prompts will stop matching game data.
 
-## Why underscores matter
+## Keys vs values
 
 Skyrim pools string identity **case-insensitively**. The first casing that loads wins; later casings collapse into that pool. The game’s casing is unstable across load orders.
 
-Anything matched **outside** Skyrim (Inja `contains`, JSON tooling, case-sensitive prompt compares) must use a stable unique literal:
-
-- **JSON keys** emitted by Papyrus for external consumers: start with `_`  
-  Examples: `_threads`, `_actors`, `_speaking_modifiers`, `_victim`, `_notice_level`, `_uuid`, `_description`, `_location`, `_speaker_los`, `_speaker_distance`, `_active`, `_arousal`, …
-- **Protocol tokens** in strings: wrap with underscores  
+- **JSON keys** emitted by Papyrus for external consumers: **bare lowercase**  
+  Examples: `threads`, `actors`, `speaking_modifiers`, `victim`, `notice_level`, `uuid`, `description`, `location`, `speaker_los`, `speaker_distance`, `active`, `arousal`, …  
+  Export always goes through `ObjectToLowerCaseKeyJson` / `JsonLowerCaseKeys`.
+- **Protocol tokens** in string **values**: wrap with underscores (not covered by JsonLowerCaseKeys)  
   Examples: `_pain_`, `_pleasure_`, `_gagged_`, `_kissing_`
 
-Plain English words (`pain`, `Actors`) are unsafe as protocol tokens.
+Plain English words (`pain`) are unsafe as protocol **value** tokens. Do not reintroduce leading-`_` on JSON keys.
 
 ## Activity prompt (`0050_sexlab_activity.prompt`)
 
 Typical flow:
 
 1. Load live threads via decorator `sexlab_get_threads(npc.UUID)`, or fall back to `SkyrimNet_SexLab/threads.json` when paused / empty.
-2. Read `sexlab._threads` and each thread’s `_actors`.
-3. Match the speaking NPC by `_uuid`; use `_speaking_modifiers`, `_victim`, `_notice_level`, creature/strapon flags, etc.
+2. Read `sexlab.threads` and each thread’s `actors`.
+3. Match the speaking NPC by `uuid`; use `speaking_modifiers`, `victim`, `notice_level`, creature/strapon flags, etc.
 4. Emit scene context and **Speaking Rules** when modifiers are present.
 
-`contains(speaker._speaking_modifiers, "_pain_")` is case-sensitive. Scene JSON and Papyrus must emit the same underscore tokens (see [Actions.md](Actions.md) scene settings).
+`contains(speaker.speaking_modifiers, "_pain_")` is case-sensitive. Scene JSON and Papyrus must emit the same underscore-wrapped **value** tokens (see [Actions.md](Actions.md) scene settings).
 
 When adding a new speaking modifier:
 
@@ -78,18 +77,18 @@ If you change the gate string in the prompt, you must change every Papyrus narra
 
 ## Safe edit practices
 
-- Prefer small, targeted edits; keep underscore keys and tokens character-for-character.
+- Prefer small, targeted edits; keep bare lowercase JSON keys and `_wrapped_` value tokens character-for-character.
 - Test with **narration enabled** in SkyrimNet.
 - After changing activity / narration prompts, run scenes that hit pleasure, pain, kissing, gagged, orgasm, and denied orgasm.
 - Helper prompts under `helpers/` are optional context for specific actions — keep their names aligned with the actions that reference them.
-- Do not invent bare JSON keys (`speaking_modifiers`, `Actors`) for the Skyrim→prompt pipeline; use `_speaking_modifiers`-style names.
+- Do not invent Title Case or leading-`_` JSON keys (`Actors`, `_actors`) for the Skyrim→prompt pipeline; use lowercase bare keys (`actors`, `speaking_modifiers`).
 
 ## Coupling with actions and scenes
 
 | Source | Consumed by |
 |--------|-------------|
 | Scene `speaking_modifiers` | `0050_sexlab_activity.prompt` |
-| Decorator / `threads.json` `_threads` / `_actors` | activity + narration prompts |
+| Decorator / `threads.json` `threads` / `actors` | activity + narration prompts |
 | DirectNarration text with `" is orgasming."` | `0550_sexlab_narration.prompt` |
 | Action helper prompts | SkyrimNet action workflow |
 
@@ -97,8 +96,8 @@ Changing scene tokens without updating prompts (or the reverse) silently breaks 
 
 ## Checklist
 
-- [ ] New / edited keys use leading `_`
-- [ ] New speaking tokens are `_wrapped_` and matched with `contains` in prompts
+- [ ] New / edited JSON keys are bare lowercase (serialize via `ObjectToLowerCaseKeyJson`)
+- [ ] New speaking **value** tokens are `_wrapped_` and matched with `contains` in prompts
 - [ ] Orgasm gate still uses exact `" is orgasming."` (or Papyrus updated in lockstep)
 - [ ] Denied orgasm text never includes that substring
 - [ ] Narration-enabled in-game smoke test for the paths you changed

@@ -1,6 +1,6 @@
 # Changelog
 
-https://github.com/GoodProvider/SkyrimNet_SexLab/releases/tag/0.31.1
+https://github.com/GoodProvider/SkyrimNet_SexLab/releases/tag/0.31.2
 
-## Orgasm counting
-Added a single function to generate "is orgasming" and increment total_orgasm
+- moved trace calls to SkyrimNet_SexLab.log 
+- Add debugging messages around total_orgasms

@@ -1,7 +1,7 @@
 customCategory: sexlab_sex3
 name: SexLab_Sexual_Activities_Three
 label: Sex (three)
-description: '[type] sexual activities with [Target] and [participate]'
+description: 'PARAMS: {"type":"oral|vaginal|anal|masturbation|other", "intent":"who, why, and how"} - [type] sexual activities with three actors'
 enabled: true
 eligibilityRules:
   - conditions:

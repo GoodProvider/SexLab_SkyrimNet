@@ -166,7 +166,7 @@ If Tag Editor dialogs are enabled, you can set style for how sex is presented to
 | Guide | Summary |
 |-------|---------|
 | **[Actions.md](Actions.md)** | Create or edit LLM actions under `SKSE/Plugins/SkyrimNet/config/actions/`. Wire `setting_name` to scene JSONs, eligibility rules, and consensual / nonconsensual Papyrus entry points. |
-| **[Prompts.md](Prompts.md)** | Edit SexLab prompt submodules. Underscore JSON keys, speaking-modifier tokens, and the `" is orgasming."` narration contract. |
+| **[Prompts.md](Prompts.md)** | Edit SexLab prompt submodules. Bare lowercase JSON keys, `_wrapped_` speaking-modifier value tokens, and the `" is orgasming."` narration contract. |
 | **[Code.md](Code.md)** | Develop Papyrus / SKSE: paths, `compile: pyro`, architecture (Creator → Scene → Manager), review-checkpoint workflow. |
 
 ---

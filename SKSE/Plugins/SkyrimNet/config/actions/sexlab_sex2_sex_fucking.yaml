@@ -21,10 +21,10 @@ parameterMapping:
     description: forceful|normal|gentle
   - type: dynamic
     name: method
-    description: mouth|pussy|ass
+    description: pussy|mouth|ass
   - type: dynamic
     name: direction
-    description: fucked in|fucking
+    description: fucking|fucked in
   - type: static 
     name: setting_name
     value: ""

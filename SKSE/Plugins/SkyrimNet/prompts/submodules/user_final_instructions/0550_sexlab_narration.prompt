@@ -1,7 +1,7 @@
 {% if not isTimePaused %}
      {% set sexlab = sexlab_get_threads(npc.UUID) -%}
      {% set sexlab.source = "sexlab_get_threads" %} 
-     {% if not sexlab._threads %}
+     {% if not sexlab.threads %}
           {% set sexlab = read_json("SkyrimNet_SexLab/threads.json") %} 
           {% set sexlab.source = "file" %} 
      {% endif %}
@@ -10,27 +10,27 @@
      {% set sexlab.source = "file" %}
 {% endif %}
 {# ---------------------------------- #} 
-{% set speaker = {"_speaking_modifiers":[], "_victim":0, "_notice_level":0, "_active":false, "_arousal":0} %}
-{% if existsIn(sexlab,"_threads") and length(sexlab._threads) > 0 %}
-     {% for thread in sexlab._threads %}
-          {% for actor_record in thread._actors %} 
-               {% if to_number(actor_record._uuid) == npc.UUID %}
+{% set speaker = {"speaking_modifiers":[], "victim":0, "notice_level":0, "active":false, "arousal":0} %}
+{% if existsIn(sexlab,"threads") and length(sexlab.threads) > 0 %}
+     {% for thread in sexlab.threads %}
+          {% for actor_record in thread.actors %} 
+               {% if to_number(actor_record.uuid) == npc.UUID %}
                     {% set speaker = actor_record %}
                     {% if get_faction_rank(npc.UUID, "SexLabAnimatingFaction") == 1 %}
-                         {% set speaker._active = true %}
-                         {% set speaker._notice_level = 2 %}
+                         {% set speaker.active = true %}
+                         {% set speaker.notice_level = 2 %}
                     {% endif %}
                {% endif %}
           {% endfor %}
      {% endfor %}
 {% endif %}
 {# ---------------------------------- #}
-{% if speaker._active %} 
+{% if speaker.active %} 
 Don't describe yourself to yourself.
 **WRONG** I lay down on the grass, it felt wet and cold.
 **RIGHT** {% if is_narration_enabled()  %}*{{decnpc(npc.UUID).name}}{% endif %} lays on the grass.* Hah, this grass is cold!
    {% if is_narration_enabled()  %}
-      {% if contains(speaker._speaking_modifiers,"_pleasure_") or contains(speaker._speaking_modifiers, "_pain_") %} 
+      {% if contains(speaker.speaking_modifiers,"_pleasure_") or contains(speaker.speaking_modifiers, "_pain_") %} 
 While experiencing these strong emotional and physical feelsings, Always include a strong emotional and physical narration with each response.
       {% endif %} 
    {% endif %}
@@ -38,11 +38,11 @@ Don't repeat the same vocalizations more then three times in a row.
 Change the words and meaning each time.
 {% endif %} 
 {# ---------------------------------- #} 
-{%  if speaker._arousal > 99 %}
+{%  if speaker.arousal > 99 %}
 Your mind is awash in hormones and neurotransmitters, a painful itch that only sexual release will scratch.
-{% else if speaker._arousal > 95 %}
+{% else if speaker.arousal > 95 %}
 Your mind is awash in hormones and neurotransmitters, your mind is filled with sexual fantasies.
-{% else if speaker._arousal > 90 %}
+{% else if speaker.arousal > 90 %}
 Your mind is awash in hormones and neurotransmitters, your mind keeps turning towards sexual fantasies.
 {% endif %}
 {# ---------------------------------- #} 

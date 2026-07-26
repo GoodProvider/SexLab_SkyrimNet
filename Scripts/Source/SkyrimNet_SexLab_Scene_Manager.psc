@@ -135,6 +135,9 @@ Function Setup()
     endif
     RegisterEventsActions()
     RegisterEventsSexLab()
+
+    ; SexLab always starts with no active threads; clear stale file from prior session
+    GetThreadsJson()
 EndFunction 
 
 Bool Function Setup_CheckLinks()
@@ -848,7 +851,7 @@ String Function GetThreadsJson(Actor speaker = None)
     sslThreadController[] threads = ThreadSlots.Threads
 
     int obj = JMap.object() 
-    JMap.setStr(obj, "_counter", thread_counter)
+    JMap.setStr(obj, "counter", thread_counter)
     thread_counter += 1 
 
     int threads_array = JArray.object() 
@@ -869,16 +872,16 @@ String Function GetThreadsJson(Actor speaker = None)
         i = JArray.count(threads_dom) - 1
         while i >= 0
             int thread = JArray.getObj(threads_dom, i)
-            String description = JMap.getStr(thread, "_description")
+            String description = JMap.getStr(thread, "description")
             if description != ""
                 ; Enrich actors for prompts without SetActor StorageUtil / orgasm side effects
-                int actor_objs = JMap.getObj(thread, "_actors")
+                int actor_objs = JMap.getObj(thread, "actors")
                 int j = JArray.count(actor_objs) - 1
                 Actor akActor = None
                 bool speaker_in_thread = false
                 while j >= 0
                     int actor_obj = JArray.getObj(actor_objs, j)
-                    Actor a = JMap.getForm(actor_obj, "_form") as Actor
+                    Actor a = JMap.getForm(actor_obj, "form") as Actor
                     if a != None
                         akActor = a
                         if speaker != None && a == speaker
@@ -901,17 +904,17 @@ String Function GetThreadsJson(Actor speaker = None)
                     endif
                 endif
 
-                AddStrIfNotDefined(thread, "_location", "floor")
-                AddStrIfNotDefined(thread, "_style", "normal")
-                JMap.setFlt(thread, "_speaker_distance", distance)
-                JMap.setInt(thread, "_speaker_los", los as int)
+                AddStrIfNotDefined(thread, "location", "floor")
+                AddStrIfNotDefined(thread, "style", "normal")
+                JMap.setFlt(thread, "speaker_distance", distance)
+                JMap.setInt(thread, "speaker_los", los as int)
                 JArray.addObj(threads_array, thread)
             endif
             i -= 1
         endwhile
     endif
 
-    JMap.setObj(obj, "_threads", threads_array) 
+    JMap.setObj(obj, "threads", threads_array) 
 
     String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj) 
     
@@ -926,31 +929,31 @@ Function EnrichActorObjForJson(int actor_obj, Actor akActor)
     if actor_obj == 0 || akActor == None
         return
     endif
-    JMap.setStr(actor_obj, "_uuid", UuidToDecimalString(SkyrimNetApi.GetEntityUUID(akActor)))
-    JMap.setStr(actor_obj, "_formid", akActor.GetFormID())
-    AddStrIfNotDefined(actor_obj, "_name", akActor.GetDisplayName())
-    if !JMap.hasKey(actor_obj, "_victim")
-        JMap.setInt(actor_obj, "_victim", 0)
+    JMap.setStr(actor_obj, "uuid", UuidToDecimalString(SkyrimNetApi.GetEntityUUID(akActor)))
+    JMap.setStr(actor_obj, "formid", akActor.GetFormID())
+    AddStrIfNotDefined(actor_obj, "name", akActor.GetDisplayName())
+    if !JMap.hasKey(actor_obj, "victim")
+        JMap.setInt(actor_obj, "victim", 0)
     endif
-    if !JMap.hasKey(actor_obj, "_arousal")
-        JMap.setInt(actor_obj, "_arousal", -1)
+    if !JMap.hasKey(actor_obj, "arousal")
+        JMap.setInt(actor_obj, "arousal", -1)
     endif
-    if !JMap.hasKey(actor_obj, "_notice_level")
-        JMap.setStr(actor_obj, "_notice_level", "nothing")
+    if !JMap.hasKey(actor_obj, "notice_level")
+        JMap.setStr(actor_obj, "notice_level", "nothing")
     endif
-    if !JMap.hasKey(actor_obj, "_creature_description")
-        JMap.setStr(actor_obj, "_creature_description", "")
+    if !JMap.hasKey(actor_obj, "creature_description")
+        JMap.setStr(actor_obj, "creature_description", "")
     endif
-    if !JMap.hasKey(actor_obj, "_is_hermaphrodiate")
-        JMap.setInt(actor_obj, "_is_hermaphrodiate", 0)
+    if !JMap.hasKey(actor_obj, "is_hermaphrodiate")
+        JMap.setInt(actor_obj, "is_hermaphrodiate", 0)
     endif
-    if !JMap.hasKey(actor_obj, "_wearing_strapon")
-        JMap.setInt(actor_obj, "_wearing_strapon", 0)
+    if !JMap.hasKey(actor_obj, "wearing_strapon")
+        JMap.setInt(actor_obj, "wearing_strapon", 0)
     endif
     if main != None && main.handler_dom.IsDOMSlave(akActor)
-        JMap.setInt(actor_obj, "_dom_slave", 1)
+        JMap.setInt(actor_obj, "dom_slave", 1)
     else
-        JMap.setInt(actor_obj, "_dom_slave", 0)
+        JMap.setInt(actor_obj, "dom_slave", 0)
     endif
 EndFunction
 

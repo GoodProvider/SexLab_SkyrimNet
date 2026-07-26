@@ -146,7 +146,7 @@ Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, S
         return
     endif
     if !_actors
-        DbgReturn("Setup", "_actors is None")
+        DbgReturn("Setup", "actors is None")
         return
     endif
 

@@ -43,9 +43,10 @@ if a == None
 - Dom Combined fallback: if `orgasm_expected` and totals > 0 but `customer_orgasm_messages[i]` is empty, still append `name+" is orgasming. "` (custom never arrived / race). Denied path must not use that substring.
 
 ## JSON keys for Skyrim-generated, externally processed JSON
-- Keys in JSON that Skyrim emits and that is consumed outside the game (decorators, threads.json, prompts) **must start with an underscore**, e.g. `_speaking_modifiers`, `_actors`, `_uuid`.
-- Leading `_` keeps keys unique under Skyrim's case-insensitive string pool and stable for case-sensitive external consumers.
-- Do not invent new bare keys (`speaking_modifiers`, `Actors`) for that pipeline; prefer `_speaking_modifiers`-style names.
+- Keys in JSON that Skyrim emits and that is consumed outside the game (decorators, threads.json, prompts) use **bare lowercase** names, e.g. `speaking_modifiers`, `actors`, `uuid`.
+- Always serialize via `ObjectToLowerCaseKeyJson` / `JsonLowerCaseKeys` so export casing is stable regardless of Skyrim's string pool.
+- Do not invent Title Case or leading-`_` keys (`Actors`, `_actors`) for that pipeline; use lowercase bare keys.
+- Protocol **values** (speaking modifiers) are separate: still wrap as `_pleasure_`, `_pain_`, etc. — `JsonLowerCaseKeys` does not protect values.
 
 ## naming convention  
 - Constant variable are all upper case: THIS_IS_A_CONSTANT

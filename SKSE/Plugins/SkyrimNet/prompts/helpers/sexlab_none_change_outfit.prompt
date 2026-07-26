@@ -1,3 +1,3 @@
 {%- set outfit = sexlab_outfit_options(npc.UUID) -%}
-{%- set option = outfit._options -%}
+{%- set option = outfit.options -%}
 [style] {{option}}

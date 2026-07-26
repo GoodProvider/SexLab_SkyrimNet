@@ -1,7 +1,7 @@
 customCategory: sexlab_sex2
 name: SexLab_Sexual_Activities_Two
-label: Sex
-description: '[type] sexual activities with [Target]'
+label: Sex (two)
+description: 'PARAMS: {"type":"oral|vaginal|anal|masturbation|other", "intent":"who, why, and how"} - [type] sexual activities with two actors'
 enabled: true
 eligibilityRules:
   - conditions:

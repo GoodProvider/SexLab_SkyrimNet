@@ -24,7 +24,7 @@ parameterMapping:
     description: oral|handjob|boobjob|thighjob|fisting|dildo|fingering|footjob
   - type: dynamic 
     name: direction 
-    description: giving|getting
+    description: getting|giving
   - type: static 
     name: setting_name
     value: ""
