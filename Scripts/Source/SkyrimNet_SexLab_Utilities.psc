@@ -626,6 +626,9 @@ String Function JsonBool(bool value) global
     return ":false"
 EndFunction
 
+; Recursively lowercase all JSON object keys (SKSE native). Invalid/empty -> "".
+String Function JsonLowerCaseKeys(String json) global native
+
 ; ------------------------------------------------------------
 ; Ensure Functions 
 ; ------------------------------------------------------------

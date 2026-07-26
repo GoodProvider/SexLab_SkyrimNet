@@ -5,6 +5,7 @@
 #include "PCH.h"
 #include "WebUI.h"
 #include "Papyrus_WebUI.h"
+#include "Papyrus_Utilities.h"
 #include "WebUI_Log.h"
 
 using namespace SKSE;
@@ -33,6 +34,11 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
             webui_log::error("Failed to register WebUI Papyrus functions");
         } else {
             webui_log::info("WebUI Papyrus functions registered");
+        }
+        if (!papyrus->Register(PapyrusBindings_Utilities::Register_Utilities_Functions)) {
+            webui_log::error("Failed to register Utilities Papyrus functions");
+        } else {
+            webui_log::info("Utilities Papyrus functions registered");
         }
     } else {
         webui_log::info("Failed to get Papyrus interface.");
