@@ -116,12 +116,68 @@ EndFunction
 ;-------------------------------------------
 
 Function StartScene_Consensual_Three(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="", Actor participate)
+    Int unique = 0
+    if speaker != None
+        unique += 1
+    endif
+    if target != None && target != speaker
+        unique += 1
+    endif
+    if participate != None && participate != speaker && participate != target
+        unique += 1
+    endif
+
+    if unique <= 1
+        Trace("StartScene_Consensual_Three","--- error: only "+unique+" unique actor(s), falling back to One")
+        StartScene_Consensual_One(intent, speaker, style, method, setting_name)
+        return
+    elseif unique == 2
+        Actor second = target
+        if second == None || second == speaker
+            second = participate
+        endif
+        Trace("StartScene_Consensual_Three","--- error: only 2 unique actors, falling back to Two")
+        StartScene_Consensual_Two(intent, speaker, second, style, method, direction, setting_name)
+        return
+    endif
+
     Trace("StartScene_Consensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style+" method: "+method+" direction: "+direction+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
     StartScene_Event(intent, speaker, target, None, style, method, direction, setting_name=setting_name, participate_3=participate)
 EndFunction
 
 
 Function StartScene_Nonconsensual_Three(String intent, Actor speaker, Actor target, Actor victim, string style="", string method="", String direction="", String setting_name="", Actor participate)
+    if victim == None || (victim != speaker && victim != target && victim != participate)
+        Trace("StartScene_Nonconsensual_Three","--- error: victim is not one of the actors, falling back to Consensual_Three")
+        StartScene_Consensual_Three(intent, speaker, target, style, method, direction, setting_name, participate)
+        return
+    endif
+
+    Int unique = 0
+    if speaker != None
+        unique += 1
+    endif
+    if target != None && target != speaker
+        unique += 1
+    endif
+    if participate != None && participate != speaker && participate != target
+        unique += 1
+    endif
+
+    if unique <= 1
+        Trace("StartScene_Nonconsensual_Three","--- error: only "+unique+" unique actor(s), falling back to One")
+        StartScene_Nonconsensual_One(intent, speaker, style, method, setting_name)
+        return
+    elseif unique == 2
+        Actor second = target
+        if second == None || second == speaker
+            second = participate
+        endif
+        Trace("StartScene_Nonconsensual_Three","--- error: only 2 unique actors, falling back to Two")
+        StartScene_Nonconsensual_Two(intent, speaker, second, victim, style, method, direction, setting_name)
+        return
+    endif
+
     Trace("StartScene_Nonconsensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" victim:"+GetDisplayName(victim)+" style: "+style+" method: "+method+" direction: "+direction+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
     StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name, participate_3=participate) 
 EndFunction
