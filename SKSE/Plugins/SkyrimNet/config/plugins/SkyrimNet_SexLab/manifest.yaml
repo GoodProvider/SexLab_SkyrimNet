@@ -1,0 +1,13 @@
+plugin:
+  name: SkyrimNet_SexLab
+  version: 1.0.0
+  description: Sexlab-SkyrimNet integration
+  icon: ⚗️
+
+schema:
+  # General 
+  - name: orgasm delay (sec)
+    path: sexlab.orgasm.delay
+    description: Number of seconds added to stage with orgasm 
+    type: float
+    default: 5.0
