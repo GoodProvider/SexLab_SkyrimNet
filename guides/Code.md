@@ -16,7 +16,7 @@ See also: [README.md](../README.md) (players), [Actions.md](Actions.md) (YAML au
 | `SKSE/Plugins/SkyrimNet/config/actions/` | Action YAMLs |
 | `SKSE/Plugins/SkyrimNet/prompts/` | Prompt files |
 | `SKSE/Plugins/SkyrimNet_SexLab/` | Scenes, animations, group tags, threads output |
-| `SKSE_Source/` | Optional C++ / CommonLib work (separate from Papyrus bridge) |
+| `SKSE_Source/` | C++ PrismaUI WebUI plugin → `SkyrimNet_SexLab.dll` (see [WebUI.md](WebUI.md)) |
 
 Repository root: `c:\Skyrim\dev\mods\SkyrimNet_SexLab`.
 
@@ -60,9 +60,13 @@ Scene_Creator (pooled) ──StartScene──► Scene_Manager.CreateSceneByCrea
 - **Menu:** hotkey UI lives in `SkyrimNet_SexLab_Menu.psc` (split out of MCM).
 - **Init:** Main, Actions, Menu, Manager, Creator, and DOM handlers call `Setup_CheckLinks()` before continuing setup.
 - **Actor lock:** StorageUtil key `skyrimnet_sexlab_scene_actor_lock` (`Main.storage_actor_lock_key`); YAML eligibility must match.
-- **Decorators** (`SkyrimNet_SexLab_Decorators.psc`): expose scene state as underscore-keyed JSON for prompts.
-- **Optional DOM:** `main.handler_dom` is either the Interface stub (no-op / passthrough) or real `SkyrimNet_SexLab_Handler_DOM` when `SkyrimNet_DOM.esp` is loaded. Dom orgasm uses `DOMSlave_Orgasmed` → `OrgasmCustom` (appends `" is orgasming."`).
+- **Decorators** (`SkyrimNet_SexLab_Decorators.psc`): expose scene state as bare-lowercase JSON keys for prompts (via `ObjectToLowerCaseKeyJson`).
+- **Logging:** Papyrus `Trace` → `SkyrimNet_SexLab_WebUI.TraceLog` → `Documents\...\SKSE\SkyrimNet_SexLab.log` (prefix messages with `"---"`).
+- **Creator start order:** `SelectAnimations()` before `sexlab.NewThread()`; on post-`NewThread` abort call `model.Initialize()` then `Release()`.
+- **Scene.Setup** returns `Bool`; `CreateSceneByCreator` Releases and returns `None` on failure.
+- **Optional DOM:** `main.handler_dom` is either the Interface stub (no-op / passthrough) or real `SkyrimNet_SexLab_Handler_DOM` when `SkyrimNet_DOM.esp` is loaded. Dom orgasm uses `DOMSlave_Orgasmed` → `OrgasmCustom` (appends `" is orgasming."`). DOM nonconsensual wrappers omit `style` (8-arg ExecuteQuestFunction limit).
 - **Optional UDNG:** bondage-related hotkey / handler when present.
+- **WebUI / SKSE:** see [WebUI.md](WebUI.md).
 
 Locked decisions and “do not re-report” facts live in `review-checkpoint.xml`.
 

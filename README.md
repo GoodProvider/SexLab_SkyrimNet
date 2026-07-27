@@ -2,7 +2,7 @@
 
 Adds SkyrimNet support to SexLab.
 
-See also: [CHANGELOG.md](CHANGELOG.md), [guides/Actions.md](guides/Actions.md), [guides/Prompts.md](guides/Prompts.md), [guides/Animations.md](guides/Animations.md), [guides/Code.md](guides/Code.md).
+See also: [CHANGELOG.md](CHANGELOG.md), [guides/Actions.md](guides/Actions.md), [guides/Prompts.md](guides/Prompts.md), [guides/Animations.md](guides/Animations.md), [guides/Code.md](guides/Code.md), [guides/WebUI.md](guides/WebUI.md).
 
 ## F.A.Q.
 
@@ -41,16 +41,16 @@ SkyrimNet isn't seeing SkyrimNet_SexLab's Actions' functions.
 
 NPC / LLM actions (see [guides/Actions.md](guides/Actions.md) to add your own):
 
-- **sex** — start sex (forceful / normal / gentle), masturbation, 2- and 3-actor scenes; rape actions when MCM **Add rape actions** is on (toggle, save, reload)
+- **sex1 / sex2 / sex3** — masturbation, two-actor, and threesome; forceful / normal / gentle; **fucking** vs **giving** (giving uses `no_penis` scene); rape actions when MCM **Add rape actions** is on (toggle, save, reload)
 - **nonsexual / comfort** — kissing, hugging, cuddling, spooning, headpat-style affection; 3-actor nonsexual
 - **punish** — spanking, nude spanking, whipping; punish-rape (nonconsensual APIs with an explicit victim)
-- **none** — stop the scene; dress / undress (including silent narration)
+- **none** — stop the scene; dress / undress (`dresses` / `undresses`, including silent narration)
 
 ## Action Scene Settings
 
 When an action is called it may include `setting_name`, which loads `SKSE/Plugins/SkyrimNet_SexLab/scenes/(setting_name).json`. That controls orgasm, stripping, speaking modifiers, and animation tags.
 
-Built-in scenes include: `default`, `pleasure_pain`, `nonsexual`, `nonsexual_kissing`, `nonsexual_male_position_0`–`2`, `punish_spanking`, `punish_spanking_victim_nude`, `punish_whipping_oral`, `punish_pleasure_pain_rape`.
+Built-in scenes include: `default`, `pleasure_pain`, `no_penis`, `nonsexual`, `nonsexual_kissing`, `nonsexual_male_position_0`–`2`, `punish_spanking`, `punish_spanking_victim_nude`, `punish_whipping_oral`, `punish_pleasure_pain_rape`.
 
 Example (punish-style scene — no orgasm, no strip, pain on position 0, suppress sex tags):
 
@@ -124,6 +124,7 @@ Full authoring rules: **[guides/Animations.md](guides/Animations.md)**.
 | **[guides/Prompts.md](guides/Prompts.md)** | Edit SexLab prompt submodules. Bare lowercase JSON keys, `_wrapped_` speaking-modifier value tokens, and the `" is orgasming."` narration contract. |
 | **[guides/Animations.md](guides/Animations.md)** | Per-stage animation descriptions, `orgasm_expected`, sex style, and sharing packs under `animations/`. |
 | **[guides/Code.md](guides/Code.md)** | Develop Papyrus / SKSE: paths, `compile: pyro`, architecture (Creator → Scene → Manager), review-checkpoint workflow. |
+| **[guides/WebUI.md](guides/WebUI.md)** | PrismaUI target / sex menu, CMake SKSE build, `actions_index.json`. |
 
 ---
 

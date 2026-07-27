@@ -30,6 +30,8 @@ When you add a description:
 
 You can also edit the JSON files with any text editor after creation.
 
+ESC / cancel in the in-game editor exits without indexing a bad button. Saving aborts if the existing animation JSON fails to parse (avoids wiping the file with `{}`).
+
 ## Fallback behavior
 
 - If no stage description exists, a tag-based description is used

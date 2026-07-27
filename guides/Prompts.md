@@ -22,9 +22,9 @@ SKSE/Plugins/SkyrimNet/prompts/
 | `submodules/system_head/0020_sexlab_setting.prompt` | System-head SexLab settings |
 | `submodules/user_final_instructions/0050_sexlab_activity.prompt` | Active scene description + speaking rules |
 | `submodules/user_final_instructions/0550_sexlab_narration.prompt` | Direct-narration / orgasm instructions |
-| `helpers/sexlab_*.prompt` | Helpers tied to specific actions (outfit, stop, rape start, orgy, …) |
+| `helpers/sexlab_*.prompt` | Helpers tied to specific actions (outfit, stop, orgy, …) |
 
-There is no `0520_sexlab_dressing_instructions.prompt` (removed). Outfit / dress guidance lives in action helpers and activity prompts.
+There is no `0520_sexlab_dressing_instructions.prompt` (removed). Outfit guidance lives in `helpers/sexlab_none_change_outfit.prompt` (`[style] [how]`; preferred options as a comment) and activity prompts.
 
 You are expected to tune these for your world. Keep protocol literals exact (below) or prompts will stop matching game data.
 
@@ -72,6 +72,7 @@ contains(_direct_narration, " is orgasming.")
 - Dom path: `Handler_DOM.DOMSlave_Orgasmed` → `Scene_Manager.OrgasmCustom` appends `". "+name+" is orgasming."` on purpose — do not strip it without updating this prompt
 - Non-Dom Combined uses `name+" is orgasming. "` for the same gate
 - Dom Combined fallback may append `name+" is orgasming. "` when orgasm was expected but custom text raced empty
+- `OrgasmIndividual` may append `" is not orgasming."` for other thread actors — that substring must **not** match the orgasm gate (keep the gate on `" is orgasming."` only)
 
 If you change the gate string in the prompt, you must change every Papyrus narration site that appends it.
 

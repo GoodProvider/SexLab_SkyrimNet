@@ -76,7 +76,9 @@ Prefer Papyrus slot names in mappings:
 | `StartScene_Refused_Two` | Refusal / aborted approach |
 | `Change_Outfit` | Dress / undress (`stripper`, `stripped`, `how`, `narration`) |
 
-**Never** pass obsolete `speaking_victim` in action YAMLs. Fixed-role assault uses TargetVictim / SpeakerVictim helpers; dynamic victim uses `StartScene_Nonconsensual_Two` with an explicit `victim` mapping.
+For `Change_Outfit`, LLM `how` should be `dresses` / `undresses` (aliases `dress` / `undress` also accepted). Outfit eligibility gates on `OStimActorCountFaction`, not `OStimExcitementFaction`.
+
+**Never** pass obsolete `speaking_victim` in action YAMLs. Fixed-role assault uses TargetVictim / SpeakerVictim helpers; dynamic victim uses `StartScene_Nonconsensual_Two` with an explicit `victim` mapping. There is no `sexlab_none_rape` action.
 
 ## setting_name → scene JSON
 
@@ -90,9 +92,11 @@ Optional static mapping:
 
 Loads `SKSE/Plugins/SkyrimNet_SexLab/scenes/(setting_name).json`.
 
-Built-in scenes include: `default`, `pleasure_pain`, `nonsexual`, `nonsexual_kissing`, `nonsexual_male_position_*`, `punish_spanking`, `punish_spanking_victim_nude`, `punish_whipping_oral`, `punish_pleasure_pain_rape`.
+Built-in scenes include: `default`, `pleasure_pain`, `no_penis`, `nonsexual`, `nonsexual_kissing`, `nonsexual_male_position_*`, `punish_spanking`, `punish_spanking_victim_nude`, `punish_whipping_oral`, `punish_pleasure_pain_rape`.
 
-Old names `punishing_*` are gone — use `punish_*`.
+- **Giving vs fucking (sex2 / sex3):** `sexlab_sex*_sex_fucking` uses empty `setting_name` and penis methods (`pussy|mouth|ass`). `sexlab_sex*_sex_giving` sets `setting_name: no_penis` (suppresses vaginal/anal tags) for oral/hand/etc. methods.
+- Kissing as a method auto-selects `nonsexual_kissing` in Creator even if YAML leaves `setting_name` empty.
+- Old names `punishing_*` are gone — use `punish_*`.
 
 ### Scene JSON keys
 
@@ -146,12 +150,14 @@ MCM **Add rape actions (must toggle/save/reload)** controls whether rape actions
 
 | File | Pattern |
 |------|---------|
-| `sexlab_sex2_sex_fucking.yaml` | Consensual two-actor + style/method |
+| `sexlab_sex2_sex_fucking.yaml` | Consensual two-actor penis methods |
+| `sexlab_sex2_sex_giving.yaml` | Consensual two-actor giving + `no_penis` |
+| `sexlab_sex3_sex_fucking.yaml` / `sexlab_sex3_sex_giving.yaml` | Threesome counterparts |
 | `sexlab_comfort_cuddle.yaml` | Comfort / nonsexual |
 | `sexlab_punish_spanking.yaml` | Fixed TargetVictim (`StartScene_Nonconsensual_Two_TargetVictim`) + `setting_name` |
 | `sexlab_punish_spanking_by_target.yaml` | Fixed SpeakerVictim (`StartScene_Nonconsensual_Two_SpeakerVictim`) + same scene |
 | `sexlab_punish_rape_target.yaml` | Fixed TargetVictim + `punish_pleasure_pain_rape` |
-| `sexlab_none_change_outfit.yaml` | Outfit / silent narration |
+| `sexlab_none_change_outfit.yaml` | Outfit / silent narration (`dresses|undresses`) |
 | `sexlab_none_stop.yaml` | Stop scene |
 
 ## Checklist
