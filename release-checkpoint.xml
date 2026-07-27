@@ -14,13 +14,14 @@
     <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
     <updated>2026-07-27</updated>
     <base_tag>0.30.5</base_tag>
-    <next_version>0.31.2</next_version>
-    <version_status>info.json / fomod / Makefile already report 0.31.2; git tag and package still pending</version_status>
+    <next_version>0.31.3</next_version>
+    <version_status>Makefile VERSION=0.31.3 (authoritative); info.json / FOMOD synced; git tag and package still pending</version_status>
     <related_artifacts>
       <artifact role="release rules / persona">release-guide.xml</artifact>
       <artifact role="portable doc-system template">documentation-guide.xml</artifact>
       <artifact role="agent router">llms.txt</artifact>
       <artifact role="changelog since last tag">CHANGELOG.md</artifact>
+      <artifact role="player changelog summary">CHANGELOG-user.md</artifact>
       <artifact role="end-user front door">README.md</artifact>
       <artifact role="players">docs/players/overview.md</artifact>
       <artifact role="action authoring">docs/authors/actions.md</artifact>
@@ -55,9 +56,8 @@
   </doc_files>
 
   <status>
-    <note>2026-07-27: docs migrated guides/ → docs/ (audience + reference); release-guide rewritten; llms.txt added.</note>
-    <note>Prior: Docs aligned to working tree + commits since tag 0.30.5 (2026-07-26) for planned 0.31.2.</note>
-    <note>Open: commit remaining code + docs, package, git tag 0.31.2 when ready to ship.</note>
+    <note>2026-07-27: Release docs aligned for 0.31.3 since tag 0.30.5. Makefile VERSION set to 0.31.3; info.json / FOMOD synced. Ship all SKSE (incl. untracked no_penis.json + plugins/manifest.yaml). DOM omitted from changelogs; general churn omitted.</note>
+    <note>Open: commit shipping tree (code + SKSE + docs), compile: pyro, make release, git tag 0.31.3, GitHub Release.</note>
   </status>
 
   <conventions>
