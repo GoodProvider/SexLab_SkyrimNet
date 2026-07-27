@@ -13,9 +13,9 @@
     <summary>Bridge mod between SkyrimNet (LLM) and SexLab Framework.</summary>
     <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
     <updated>2026-07-27</updated>
-    <base_tag>0.30.5</base_tag>
-    <next_version>0.31.3</next_version>
-    <version_status>Makefile VERSION=0.31.3 (authoritative); info.json / FOMOD synced; git tag and package still pending</version_status>
+    <base_tag>0.31.3</base_tag>
+    <next_version>0.31.4</next_version>
+    <version_status>Makefile VERSION=0.31.4 (authoritative); info.json / FOMOD synced; git tag and package still pending</version_status>
     <related_artifacts>
       <artifact role="release rules / persona">release-guide.xml</artifact>
       <artifact role="portable doc-system template">documentation-guide.xml</artifact>
@@ -56,8 +56,8 @@
   </doc_files>
 
   <status>
-    <note>2026-07-27: Release docs aligned for 0.31.3 since tag 0.30.5. Makefile VERSION set to 0.31.3; info.json / FOMOD synced. Ship all SKSE (incl. untracked no_penis.json + plugins/manifest.yaml). DOM omitted from changelogs; general churn omitted.</note>
-    <note>Open: commit shipping tree (code + SKSE + docs), compile: pyro, make release, git tag 0.31.3, GitHub Release.</note>
+    <note>2026-07-27: Release docs for 0.31.4 since 0.31.3 (no 0.30.5 in changelogs). Delta: no_penis.json, plugin manifest orgasm delay, docs/ migration. SexLab-repo DOM bridge included if present in window (none this pass); sibling SkyrimNet_DOM excluded. General churn omitted.</note>
+    <note>Open: commit shipping tree, compile: pyro if needed, make release, git tag 0.31.4, GitHub Release.</note>
   </status>
 
   <conventions>
