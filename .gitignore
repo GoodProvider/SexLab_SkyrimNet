@@ -22,3 +22,9 @@ SKSE_Source/install/
 SKSE_Source/.vs/
 SKSE_Source/compile_commands.json
 SKSE_Source/CMakeUserPresets.json
+
+# Local / agent noise (do not commit)
+SSEEdit Cache/
+Papyrus.0.log
+crash-*.log
+*.refcache

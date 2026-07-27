@@ -73,7 +73,7 @@ Creator locks with `skyrimnet_sexlab_scene_actor_lock`. Action YAML eligibility 
 
 ## SkyrimNet action YAML practice (2026-07-18)
 
-Full authoring guide: [guides/Actions.md](guides/Actions.md).
+Full authoring guide: [docs/authors/actions.md](docs/authors/actions.md).
 
 Actions live in `SKSE/Plugins/SkyrimNet/config/actions/`. Executable YAMLs dispatch to `SkyrimNet_SexLab_Actions` via positional `parameterMapping` — order and types must match the Papyrus signature; mapping `name` is LLM-facing only.
 

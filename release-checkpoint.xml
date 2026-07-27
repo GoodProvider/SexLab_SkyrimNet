@@ -12,46 +12,59 @@
     <project>SkyrimNet_SexLab</project>
     <summary>Bridge mod between SkyrimNet (LLM) and SexLab Framework.</summary>
     <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
-    <updated>2026-07-26</updated>
+    <updated>2026-07-27</updated>
     <base_tag>0.30.5</base_tag>
     <next_version>0.31.2</next_version>
     <version_status>info.json / fomod / Makefile already report 0.31.2; git tag and package still pending</version_status>
     <related_artifacts>
       <artifact role="release rules / persona">release-guide.xml</artifact>
+      <artifact role="agent router">llms.txt</artifact>
       <artifact role="changelog since last tag">CHANGELOG.md</artifact>
-      <artifact role="end-user guide">README.md</artifact>
-      <artifact role="action authoring">guides/Actions.md</artifact>
-      <artifact role="prompt authoring">guides/Prompts.md</artifact>
-      <artifact role="animation authoring">guides/Animations.md</artifact>
-      <artifact role="developer guide">guides/Code.md</artifact>
-      <artifact role="WebUI / SKSE">guides/WebUI.md</artifact>
+      <artifact role="end-user front door">README.md</artifact>
+      <artifact role="players">docs/players/overview.md</artifact>
+      <artifact role="action authoring">docs/authors/actions.md</artifact>
+      <artifact role="prompt authoring">docs/authors/prompts.md</artifact>
+      <artifact role="animation authoring">docs/authors/animations.md</artifact>
+      <artifact role="developer guide">docs/developers/papyrus.md</artifact>
+      <artifact role="WebUI / SKSE">docs/developers/webui.md</artifact>
+      <artifact role="contracts">docs/reference/</artifact>
     </related_artifacts>
   </metadata>
 
   <doc_files>
     <file>README.md</file>
+    <file>llms.txt</file>
     <file>CHANGELOG.md</file>
-    <file>guides/Prompts.md</file>
-    <file>guides/Actions.md</file>
-    <file>guides/Animations.md</file>
-    <file>guides/Code.md</file>
-    <file>guides/WebUI.md</file>
+    <file>CHANGELOG-user.md</file>
+    <file>docs/players/overview.md</file>
+    <file>docs/players/hotkeys.md</file>
+    <file>docs/players/requirements.md</file>
+    <file>docs/authors/actions.md</file>
+    <file>docs/authors/prompts.md</file>
+    <file>docs/authors/animations.md</file>
+    <file>docs/developers/papyrus.md</file>
+    <file>docs/developers/webui.md</file>
+    <file>docs/reference/papyrus-rules.md</file>
+    <file>docs/reference/protocol-tokens.md</file>
+    <file>docs/reference/json-keys.md</file>
+    <file>docs/reference/orgasm-narration.md</file>
+    <file>docs/reference/scene-settings.md</file>
     <file>release-checkpoint.xml</file>
     <file>release-guide.xml</file>
   </doc_files>
 
   <status>
-    <note>Docs aligned to working tree + commits since tag 0.30.5 (2026-07-26) for planned 0.31.2.</note>
-    <note>CHANGELOG.md rewritten for 0.31.2; guides/README updated for sex1/2/3, no_penis, TraceLog, WebUI, Creator/Setup fixes.</note>
+    <note>2026-07-27: docs migrated guides/ → docs/ (audience + reference); release-guide rewritten; llms.txt added.</note>
+    <note>Prior: Docs aligned to working tree + commits since tag 0.30.5 (2026-07-26) for planned 0.31.2.</note>
     <note>Open: commit remaining code + docs, package, git tag 0.31.2 when ready to ship.</note>
   </status>
 
   <conventions>
-    <convention>External JSON keys: bare lowercase via ObjectToLowerCaseKeyJson (actors, speaking_modifiers, uuid, …).</convention>
-    <convention>Protocol values (speaking modifiers): underscore-wrapped (_pain_, _pleasure_, _gagged_, _kissing_).</convention>
+    <convention>External JSON keys: bare lowercase via ObjectToLowerCaseKeyJson (actors, speaking_modifiers, uuid, …). Canonical: docs/reference/json-keys.md</convention>
+    <convention>Protocol values (speaking modifiers): underscore-wrapped (_pain_, _pleasure_, _gagged_, _kissing_). Canonical: docs/reference/protocol-tokens.md</convention>
     <convention>Punish scene files use punish_* names (not punishing_*).</convention>
     <convention>Actor lock StorageUtil key: skyrimnet_sexlab_scene_actor_lock.</convention>
-    <convention>Orgasm narration gate substring: " is orgasming."</convention>
+    <convention>Orgasm narration gate substring: " is orgasming." Canonical: docs/reference/orgasm-narration.md</convention>
     <convention>Sex giving actions use setting_name no_penis; fucking uses empty setting_name.</convention>
   </conventions>
 </checkpoint>

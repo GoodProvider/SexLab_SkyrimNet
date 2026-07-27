@@ -1,0 +1,39 @@
+# SkyrimNet_SexLab
+
+> SkyrimNet ↔ SexLab bridge for Skyrim SE. Papyrus + action YAML + prompts + optional SKSE WebUI.
+
+## Read by job
+
+| Job | Start here |
+|-----|------------|
+| Player / FAQ / install | docs/players/overview.md, docs/players/requirements.md, docs/players/hotkeys.md |
+| Author actions / scenes | docs/authors/actions.md, docs/reference/scene-settings.md |
+| Author prompts | docs/authors/prompts.md + docs/reference/{json-keys,protocol-tokens,orgasm-narration}.md |
+| Author animations | docs/authors/animations.md |
+| Develop Papyrus / ESP | docs/developers/papyrus.md, docs/reference/papyrus-rules.md |
+| Develop WebUI / SKSE | docs/developers/webui.md |
+| Agent policy | AGENTS.md (safety, confidence, commits) |
+| Quirks | KNOWLEDGEBASE.md |
+| Release documentation | release-guide.xml, release-checkpoint.xml |
+| Changelog | CHANGELOG.md, CHANGELOG-user.md |
+| Short examples | docs/examples/ (stubs); prefer snippets pointing at SKSE/Plugins/... shipped files |
+
+## Optional examples
+
+- Action YAML: SKSE/Plugins/SkyrimNet/config/actions/sexlab_sex2_sex_giving.yaml
+- Scene JSON: SKSE/Plugins/SkyrimNet_SexLab/scenes/no_penis.json, scenes/punish_spanking.json
+- Synthetic stub: docs/examples/minimal-scene-setting.json
+
+## Do not ingest (unless debugging that area)
+
+- SSEEdit Cache/
+- reviews/ (historical review notes; use review-checkpoint.xml for current constraints)
+- Source/*.pex and other loose .pex copies under Source/
+- crash-*.log, Papyrus.0.log at repo root
+- versions/, dist/, z-ignored/, handler_* unpack dirs if present
+- SKSE_Source/build/, SKSE_Source/lib/CommonLibSSE-NG/ (vendored; huge)
+
+## Compile reminders
+
+- Papyrus: Cursor task `compile: pyro` only
+- SKSE: CMake tasks under SKSE_Source (see docs/developers/webui.md)

@@ -30,7 +30,7 @@
 
 ### Logging / SKSE WebUI
 - Papyrus traces route through `SkyrimNet_SexLab_WebUI.TraceLog` → `SKSE/SkyrimNet_SexLab.log`
-- In-game PrismaUI target / sex menu (SKSE DLL + `guides/WebUI.md`); custom pulldowns; `actions_index.json` catalog
+- In-game PrismaUI target / sex menu (SKSE DLL + `docs/developers/webui.md`); custom pulldowns; `actions_index.json` catalog
 - Native menu open signatures use `Form` where required for unique NPCs / SKSE
 
 ### Editor / DOM
@@ -39,5 +39,5 @@
 - Multi-target menu blank intent defaults to `"sexual activities"`
 
 ### Docs
-- Author guides under `guides/` (`Actions`, `Prompts`, `Animations`, `Code`, `WebUI`); root copies removed
+- Author/developer docs under `docs/` (players, authors, developers, reference); `llms.txt` agent router; root `guides/` removed
 - `CHANGELOG.md` is the authoritative changelog (`update.md` removed)

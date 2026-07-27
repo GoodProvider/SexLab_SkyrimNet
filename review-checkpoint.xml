@@ -97,8 +97,8 @@
       <headline>Findings written; apply pass 01 closed most High/gated items. Remaining: H6 arousal, M5/M7/M8/M9, L2/L3.</headline>
     </pass>
     <pass date="2026-07-22" scope="Docs split + punish-rape setting_name fix" status="applied" compile="n/a">
-      <review_doc>README.md / guides/Actions.md / guides/Prompts.md / guides/Code.md / CHANGELOG.md</review_doc>
-      <headline>Y-RapeSettingName: sexlab_punish_rape_target*.yaml setting_name punish_pain_pleasure_rape → punish_pleasure_pain_rape (matches scenes/punish_pleasure_pain_rape.json + Menu.psc). Docs: README end-user guide; guides/Actions.md / guides/Prompts.md / guides/Code.md author-dev guides; CHANGELOG.md since 0.30.5.</headline>
+      <review_doc>README.md / docs/authors/actions.md / docs/authors/prompts.md / docs/developers/papyrus.md / CHANGELOG.md</review_doc>
+      <headline>Y-RapeSettingName: sexlab_punish_rape_target*.yaml setting_name punish_pain_pleasure_rape → punish_pleasure_pain_rape (matches scenes/punish_pleasure_pain_rape.json + Menu.psc). Docs: README; docs/authors/*; docs/developers/papyrus.md; CHANGELOG.md since 0.30.5.</headline>
     </pass>
     <pass date="2026-07-18" scope="Action YAML practice + parameter audit (all 29 actions vs Actions.psc)" status="applied" compile="clean">
       <review_doc>reviews/2026-07-18-01.review.md</review_doc>
