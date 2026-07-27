@@ -29,6 +29,7 @@ Repo root: `c:\Skyrim\dev\mods\SkyrimNet_SexLab`.
 | Papyrus / ESP | [docs/developers/papyrus.md](docs/developers/papyrus.md) |
 | WebUI / SKSE | [docs/developers/webui.md](docs/developers/webui.md) |
 | Release docs | [release-guide.xml](release-guide.xml) + [release-checkpoint.xml](release-checkpoint.xml) |
+| Portable doc template (other repos) | [documentation-guide.xml](documentation-guide.xml) |
 
 ### Canonical contracts (do not restate elsewhere)
 

@@ -15,6 +15,11 @@ update:
 	updateSpriggit.bat 
 	serialize.bat 
 
+# Rebuild main ESP from Spriggit/ (source of truth). Handlers are not Spriggit-backed yet.
+esp:
+	if not exist "SpriggitCLI\Spriggit.CLI.exe" call updateSpriggit.bat
+	SpriggitCLI\Spriggit.CLI.exe convert-to-plugin -i "Spriggit\SkyrimNet_SexLab" -o "SkyrimNet_SexLab.esp"
+
 dd: 
 	cd headers
 	git clone https://github.com/IHateMyKite/PapyrusSourcesDD
@@ -24,6 +29,7 @@ release:
 	python3 ./python_scripts/info.py -v ${VERSION} -n '${NAME}' -o SKSE/Plugins/SkyrimNet_SexLab/info.json
 	python3 ./python_scripts/fomod-update-name-version.py -v ${VERSION} -n '${NAME}' -o FOMOD/info.xml FOMOD_source/info.xml
 	python3 ./python_scripts/fomod-update-name-version.py -v ${VERSION} -n '${NAME}' -o FOMOD/ModuleConfig.xml FOMOD_source/ModuleConfig.xml
+	$(MAKE) esp
 	if exist '${RELEASE_FILE}' rm /Q /S '${RELEASE_FILE}'
 
 	if exist "$(subst /,\\,core)" rmdir /s /q "$(subst /,\\,core)"	

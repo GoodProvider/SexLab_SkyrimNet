@@ -30,6 +30,7 @@ SkyrimNet ↔ SexLab bridge.
 | Scene settings | [docs/reference/scene-settings.md](docs/reference/scene-settings.md) |
 | Quirks | [KNOWLEDGEBASE.md](KNOWLEDGEBASE.md) |
 | Release | [release-guide.xml](release-guide.xml) |
+| Portable doc template | [documentation-guide.xml](documentation-guide.xml) |
 
 Do not duplicate contract text here — edit the canonical `docs/reference/` file.
 
