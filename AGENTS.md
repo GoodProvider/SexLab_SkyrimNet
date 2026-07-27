@@ -73,7 +73,20 @@ if a == None
 ## Installed Modding Tools
 Always include commented lines when calculating line number.
 
-## 
+## Commit Messages
+the first 72 character of a git must summaries the commit.
+```
+Update docs and adjust YAML eligibility rules:
+- Removed obsolete documentation files (Actions.md, Code.md, 
+  Prompts.md).
+- Updated AGENTS.md and README.md references to reflect the 
+  new guides structure.
+- Replaced `skyrimnet_sexlab_actor_lock` with 
+  `skyrimnet_sexlab_scene_actor_lock` in YAML action files.
+- Enhanced descriptions in punishment YAML files for clarity 
+  and consistency.
+```
+
 
 ## Debug Traces Log files 
 Debug Trace message should always start with "---"  `Trace("FunctionName", "--- this is a debug message")`

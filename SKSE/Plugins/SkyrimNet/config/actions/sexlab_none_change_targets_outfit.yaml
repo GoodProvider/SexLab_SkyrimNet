@@ -16,7 +16,7 @@ parameterMapping:
     description: forcefully|normally|gently
   - type: dynamic
     name: how
-    description: "put on|take off"
+    description: "dresses|undresses"
   - type: static
     name: narration
     value: silent
@@ -43,7 +43,7 @@ eligibilityRules:
         comparisonOperator: ==
         expectedValue: false
       - decoratorName: "is_in_faction"
-        arguments: ["currentActor", "OStimExcitementFaction"]
+        arguments: ["currentActor", "OStimActorCountFaction"]
         comparisonOperator: "=="
         expectedValue: false
       - decoratorName: papyrus_util

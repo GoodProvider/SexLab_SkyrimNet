@@ -27,4 +27,4 @@ parameterMapping:
     description: getting|giving
   - type: static 
     name: setting_name
-    value: ""
+    value: "no_penis"

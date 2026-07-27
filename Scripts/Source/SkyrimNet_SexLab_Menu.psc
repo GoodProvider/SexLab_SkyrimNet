@@ -455,7 +455,12 @@ Function MultiTarget_Menu_Selection(Actor player)
             if intent == "custom"
                 UIExtensions.OpenMenu("UITextEntryMenu")
                 intent = UIExtensions.GetMenuResultString("UITextEntryMenu")
-                Trace("MultiTarget_Menu_Selection","custom intent: " + intent)                
+                Trace("MultiTarget_Menu_Selection","custom intent: " + intent)
+                if intent == ""
+                    intent = "sexual activities"
+                endif
+            elseif intent == ""
+                intent = "sexual activities"
             else 
                 setting_name = ""
             endif 
@@ -509,6 +514,10 @@ Function MultiTarget_Menu_Selection(Actor player)
         i += 1 
     endwhile 
     Trace("MultiTarget_Menu_Selection","intent:"+intent+" next:"+next+" actors_selected:"+SkyrimNet_SexLab_Utilities.JoinActors(actors_selected))
+
+    if intent == ""
+        intent = "sexual activities"
+    endif
 
     Actor speaker = actors_selected[0]
     Actor target = None 

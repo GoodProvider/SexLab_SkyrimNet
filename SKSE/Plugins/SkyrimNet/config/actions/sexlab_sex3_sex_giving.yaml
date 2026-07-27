@@ -27,7 +27,7 @@ parameterMapping:
     description: getting|giving
   - type: static 
     name: setting_name
-    value: ""
+    value: "no_penis"
   - type: dynamic
     name: participate
     description: third participating actor

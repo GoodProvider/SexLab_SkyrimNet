@@ -36,6 +36,8 @@ int Property INTENT_STAGE_START = 0 AutoReadOnly
 int Property INTENT_STAGE_ONGOING = 1 AutoReadOnly
 int Property INTENT_STAGE_END = 2 AutoReadOnly
 
+float Property orgasm_delay = 5.0 Auto
+
 ; -------------------------------------------
 ; Who send the messages to SkyrimNet 
 ; -------------------------------------------
@@ -127,7 +129,7 @@ EndFunction
 ; _is_generic: pass true only for sl_scene_generic from Scene_Manager.
 ; This flag is permanent for the instance lifetime — do not clear on Release.
 Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager, bool _is_generic = false) 
-    debug_mode = True
+    debug_mode = False
     DbgEnter("Initialize", "sid:"+_sid+" is_generic:"+_is_generic)
     parent.Initialize(_sid,_manager, _is_generic) 
     EnsureActorArraysLargeEnough(2)
@@ -166,7 +168,7 @@ EndFunction
 
 ; -----------------------------
 
-Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
+Bool Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
     if creator != None
         DbgEnter("Setup", "creator present")
     else
@@ -174,19 +176,19 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
     endif
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
-        DbgReturn("Setup", "void")
-        return
+        DbgReturn("Setup", "False")
+        return False
     endif
     if thread == None 
         Trace("Setup","thread is none, aborting")
-        DbgReturn("Setup", "void")
-        return 
+        DbgReturn("Setup", "False")
+        return False
     endif 
 
     Actor[] positions = thread.positions
     if !positions
-        DbgReturn("Setup", "void")
-        return
+        DbgReturn("Setup", "False")
+        return False
     endif
     int num_actors = positions.length
     DbgMsg("Setup", "thread.positions count="+num_actors)
@@ -274,6 +276,7 @@ Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
     endif 
     SetNames()
     DbgEnd("Setup")
+    return True
 EndFunction 
 
 Bool Function Setup_CheckLinks()
@@ -937,11 +940,11 @@ Function StageStart()
     endif
 
     String orgasm_narration = OrgasmMessagesToNarration()
+    String desc = GetDescription()
 
     ; Send a DN if its a start and includes a player
     ; if not player send DN if allowed by cool off 
     ; GetDescription: stage JSON, else tag fallback (raw GetStageDescription alone leaves initiates: empty)
-    String desc = GetDescription()
     if status != STATUS_ACTIVE
         status = STATUS_ACTIVE
         String narration = desc + orgasm_narration
@@ -949,11 +952,15 @@ Function StageStart()
             narration = initiator.GetDisplayName()+" initiates: "+desc
             narration += orgasm_narration
         endif
-        if has_player
-            DirectNarration(narration, sender, receiver) 
-        else
-            DirectNarration_Optional("start", narration, sender, receiver) 
-        endif
+        if orgasm_narration != ""
+            RegisterEvent("sexlab update", orgasm_narration, sender, receiver)
+        else 
+            if has_player
+                DirectNarration(narration, sender, receiver) 
+            else
+                DirectNarration_Optional("start", narration, sender, receiver) 
+            endif
+        endif 
     ; Late Dom custom msgs may arrive after Combined; flush any leftovers before send/Release
     else
         String narration = ""
@@ -968,12 +975,8 @@ Function StageStart()
             endif 
         endif 
         if orgasm_narration != ""
-            thread.UpdateTimer(3.0)
-            narration += orgasm_narration
-            if has_player
-                DirectNarration(narration, sender, receiver, purge_dialogue=True)
-            else
-                DirectNarration_optional("orgasm", narration, sender, receiver)
+            if change_scene 
+                RegisterEvent("change", narration, sender, receiver)
             endif 
         else 
             if !change_scene
@@ -981,6 +984,15 @@ Function StageStart()
             else
                 DirectNarration_optional("ChangePosition", narration, sender, receiver) 
             endif 
+        endif 
+    endif 
+
+    if orgasm_narration != ""
+        thread.UpdateTimer(orgasm_delay)
+        if has_player
+            DirectNarration(orgasm_narration, sender, receiver, purge_dialogue=True)
+        else
+            DirectNarration_optional("orgasm", orgasm_narration, sender, receiver)
         endif 
     endif 
     ; Only advance description_last when desc is a real new description; unchanged
@@ -1022,7 +1034,7 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
         ; Tentacles flavor is appended inside GetIsOrgasming when the animation is tagged.
         String orgasm_narration = OrgasmMessagesToNarration()
         if orgasm_narration != ""
-            RegisterEvent("sexlab update", orgasm_narration, sender, receiver)
+            RegisterEvent("orgasm", orgasm_narration, sender, receiver)
         endif
 
         ; Post-activity afterglow (SeparateOrgasms); not ongoing sexual activity
@@ -1046,9 +1058,6 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
             endwhile
         endif 
 
-        ; Stop sexy talk once animations have ended
-        SkyrimNetApi.PurgeDialogue(True)
-
         ; Mirror AnimationStart: "A and B finish <intent>."
         String end_message = GetIntentMessage(INTENT_STAGE_END)
         if afterglow != ""
@@ -1062,7 +1071,11 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
             d += 1
         endwhile
         DbgMsg("AnimationEnd", "end_message:"+end_message) ; debug-total_orgasms
-        RegisterEvent("sexlab update", end_message, sender, receiver) 
+        if has_player
+            DirectNarration(end_message, sender, receiver, purge_dialogue=True)
+        else
+            DirectNarration_optional("end", end_message, sender, receiver)
+        endif 
     endif 
 
     Release() 
@@ -1128,6 +1141,14 @@ Function OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
     ; Prompt gate + total via GetIsOrgasming (SLSO absolute count).
     String msg = GetIsOrgasming(akActor, num_orgasms)
 
+    int num_actors = thread.positions.length
+    int i = 0
+    while i < num_actors
+        if thread.positions[i] != akActor
+            msg += " "+thread.positions[i].GetDisplayName()+" is not orgasming."
+        endif 
+        i += 1 
+    endwhile 
     OrgasmHelper(akActor, msg)
     DbgEnd("OrgasmIndividual")
 EndFunction
@@ -1217,7 +1238,17 @@ String Function OrgasmMessagesToNarration()
                 narration += orgasm_messages[k]
                 orgasm_messages[k] = ""
             elseif orgasm_expected.length > k && orgasm_expected[k] == 1 && JMap.getInt(obj, "dom_slave") == 1
-                narration += main.handler_dom.HandleOrgasmDenied(thread.positions[k])   
+                ; Dom Combined fallback: custom raced past stash but totals already bumped.
+                if GetTotalOrgasms(thread.positions[k]) > 0 || JMap.getInt(obj, "total_orgasm") > 0
+                    num_orgasmers += 1
+                    orgasm_happened = true
+                    if JMap.getInt(obj, "has_penis") == 1
+                        ejaculation_happened = true
+                    endif
+                    narration += name+" is orgasming. "
+                else
+                    narration += main.handler_dom.HandleOrgasmDenied(thread.positions[k])
+                endif
             endif 
             k += 1
         endwhile
@@ -1549,7 +1580,6 @@ String Function GetTagsString(sslBaseAnimation anim) global
         endif 
         i += 1
     endwhile 
-    Debug.Trace("[SkyrimNet_SexLab_Scene.GetTagsString] anim:"+anim.name+" tags:"+tags_string)
     return tags_string
 EndFunction 
 
@@ -1569,7 +1599,6 @@ String Function GetDescriptionFromTags()
         dom_name = positions[1].GetDisplayName()
     endif
 
-    Debug.Trace("[SexLab_SkyrimNet] sub: "+sub_name+" dom: "+dom_name+" count: "+num_actors)
     String buffer
 
     If anim.HasTag("aggressive") && dom_name != ""

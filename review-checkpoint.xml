@@ -76,9 +76,18 @@
     <decision id="YAML-Victim">Fixed-role nonconsensual two-actor actions use StartScene_Nonconsensual_Two_TargetVictim / _SpeakerVictim. Dynamic victim uses StartScene_Nonconsensual_Two with explicit victim. Never pass speaking_victim in action YAMLs.</decision>
     <decision id="YAML-Names">Action YAML name values must be unique; static mappings use value; dynamic mappings use description; prefer Papyrus slot names (method, how).</decision>
     <decision id="Direction-Tokens">Actions.psc accepts fucking|fuck a|fucking a|fucked in|getting|get|giving|give for consensual speaker_position (victim wrappers override).</decision>
+    <decision id="2026-07-26-02">SelectAnimations before NewThread; Initialize only on post-NewThread abort. sex3 giving setting_name "". LLM cuddle/outfit dresses|undresses with Papyrus/tag remap. MultiTarget blank intent → sexual activities.</decision>
   </locked_decisions>
 
   <pass_history note="Newest first. Detailed findings are in the linked review docs.">
+    <pass date="2026-07-26" scope="Deferred M5 kissing / M7 Dom modifiers / L2 Trace" status="applied" compile="clean">
+      <review_doc>reviews/2026-07-26-03.review.md</review_doc>
+      <headline>Creator.Setup kissing→nonsexual_kissing; EnrichActorObjForJson empty speaking_modifiers[]; Stages Trace(func,msg,true).</headline>
+    </pass>
+    <pass date="2026-07-26" scope="Apply H1–H6 M1–M9 bug fixes" status="applied" compile="clean">
+      <review_doc>reviews/2026-07-26-02.review.md</review_doc>
+      <headline>hugging remap removed; SelectAnimations before NewThread; AnimationEnd create_if_missing=False; Dom Combined orgasm fallback; Stages ESC softlocks; cuddle remap; sex3 setting ""; OStimActorCount; Setup Bool rollback; MultiTarget default intent; GetAnim_Info release; UpdateAnimInfo parse-fail abort; outfit [how] dresses|undresses; 0550 active=UUID match.</headline>
+    </pass>
     <pass date="2026-07-26" scope="Apply Q1–Q5 + ungated High/Medium" status="applied" compile="clean">
       <review_doc>reviews/2026-07-26-01.review.md</review_doc>
       <headline>Removed sexlab_none_rape; generic refuse if busy + UnsetThread always; tentacles flavor in GetIsOrgasming; Creator.Setup Bool + gated CreateCreator; outfit dresses/undresses; UpdateActor notice_level; 0050 dumps/clobber; refused intents; assault direction static "". H6 arousal deferred (Q2).</headline>
@@ -121,29 +130,29 @@
     </pass>
   </pass_history>
 
-  <open_backlog note="Deferred / not yet scheduled. 2026-07-26-01 applied Q answers + ungated Highs.">
+  <open_backlog note="Deferred / not yet scheduled. 2026-07-26-03 applied M5/M7/L2.">
     <deferred id="H6-arousal">Populate actor arousal or remove 0550 gates (author Q2: leave for future).</deferred>
     <deferred id="M8">orgasm_expected vs description-walk mismatch (confirm per-stage vs per-animation semantics with author before changing).</deferred>
     <deferred id="M9-M16">Remaining: orgasm editor UX polish; OStim affection path (Menu affection branch is a no-op notification under OStim).</deferred>
     <deferred id="S10b">Convert always-on Trace scaffolding to debug_mode-gated DbgMsg (Scene.psc).</deferred>
-    <deferred id="M5-kissing">LLM kissing setting_name → nonsexual_kissing (or document).</deferred>
-    <deferred id="M7-dom-modifiers">EnrichActorObjForJson add speaking_modifiers[].</deferred>
     <deferred id="M8-notice">Unify notice_level string vs numeric schema.</deferred>
     <deferred id="M9-params">Category parent PARAMS type→method alignment.</deferred>
+    <deferred id="L3-none-cat">sexlab_none_ category / docs.</deferred>
     <informational id="L-D">Registered-but-unconsumed decorators: Intent (intent), Player_LOS_Distance (distance/los).</informational>
     <informational id="A-StageCase">Animation JSON stage keys are case-sensitive in JContainers; loader uses lowercase "stage N" / "version". Some shipped author files may use "Stage N" — prefer lowercase when editing; bulk re-case of GoodProvider not scheduled.</informational>
     <resolved id="Y-RapeSettingName">2026-07-22: punish_pleasure_pain_rape setting_name. Do not re-report.</resolved>
     <resolved id="L-E">Superseded 2026-07-18: fixed-role victim TargetVictim/SpeakerVictim. Do not re-report.</resolved>
     <resolved id="2026-07-23-H1-H3">Direction vocab + spank TargetVictim — do not re-open as High.</resolved>
     <resolved id="2026-07-26-H1-H5-H7">Outfit tokens, UpdateActor notice_level, generic refuse, 0050 dumps/clobber, none_rape removed — reviews/2026-07-26-01.review.md.</resolved>
+    <resolved id="2026-07-26-02">H1–H6 M1–M9 applied — reviews/2026-07-26-02.review.md.</resolved>
+    <resolved id="2026-07-26-03">M5 kissing setting, M7 Dom speaking_modifiers, L2 Trace — reviews/2026-07-26-03.review.md.</resolved>
   </open_backlog>
 
   <current_status>
-    <state>2026-07-26-01 applied: none_rape removed; generic busy refuse; GetIsOrgasming tentacles flavor; CreateCreator Setup Bool + gated callers; outfit/UpdateActor/0050/refused/assault-direction. pyro clean. Arousal (H6) deferred per Q2.</state>
+    <state>2026-07-26-03 applied: kissing→nonsexual_kissing; Dom speaking_modifiers[]; Stages Trace arg order. pyro clean. Prior 02 still applied.</state>
     <pending>
-      <item>In-game smoke tests from reviews/2026-07-26-01.review.md.</item>
-      <item>Prior in-game smoke tests still outstanding (2026-07-16 through 2026-07-18).</item>
-      <item>Schedule deferred: H6 arousal, M5 kissing, M7 Dom modifiers, M8 notice schema, M9 PARAMS, legacy M8/M9-M16/S10b.</item>
+      <item>In-game smoke tests from reviews/2026-07-26-03.review.md.</item>
+      <item>Schedule deferred: H6 arousal, M8-legacy, notice schema, PARAMS, L3, S10b, M9-M16.</item>
     </pending>
   </current_status>
 

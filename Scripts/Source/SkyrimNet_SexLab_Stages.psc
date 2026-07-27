@@ -114,7 +114,7 @@ EndFunction
 
 String Function GetStageDescription(sslThreadController thread, int stage_override = -1 )
     if thread == None 
-        Trace("GetStageDescription: thread is None", true)
+        Trace("GetStageDescription", "thread is None", true)
         return ""
     endif 
     int stage = thread.stage
@@ -295,6 +295,10 @@ Function EditDescriptions(sslThreadController thread)
         endif 
         button = SkyMessage.ShowArray(msg, buttons, getIndex = true) as int  
 
+        if button < 0 || button > done
+            Trace("EditDecriptions","-- h cancel/ESC button:"+button)
+            return
+        endif
     Trace("EditDecriptions","-- h button: "+ buttons[button] )
         if button == desc_prev
             if thread.stage > 1 
@@ -560,7 +564,13 @@ Function SetOrgasmExpected(sslThreadController thread)
         endwhile
 
         button = SkyMessage.ShowArray(msg, buttons, getIndex = true) as int
-        if go_back < button && button < done
+        if button < 0
+            ; ESC/cancel: exit without save unless already toggled.
+            if changed
+                UpdateAnimInfo(thread, "orgasm_expected", VERSION_2_0, orgasm_expected)
+            endif
+            return
+        elseif go_back < button && button < done
             changed = true
             i = button - 1
             if orgasm_expected[i] == 1
@@ -667,8 +677,10 @@ int Function GetAnim_Info(sslThreadController thread, Bool force_load=False)
                     endif 
                     k -= 1
                 endwhile 
+                ; setObj retained children into anim_info; release the file root.
+                JValue.release(info)
             else 
-                Trace("Parse error for '"+fn+"'",true)
+                Trace("GetAnim_Info", "Parse error for '"+fn+"'", true)
             endif 
         endif
         i -= 1
@@ -687,6 +699,10 @@ Function UpdateAnimInfo(sslThreadController thread, String field, String version
     int anim_info = 0
     if MiscUtil.FileExists(path)
         anim_info = JValue.readFromFile(path)
+        if anim_info == 0
+            Trace("UpdateAnimInfo", "Parse error for '"+path+"', aborting save to avoid wiping file")
+            return
+        endif
     else 
         anim_info = JMap.object()
     endif 
@@ -706,7 +722,7 @@ Function UpdateAnimInfo(sslThreadController thread, String field, String version
         JMap.setObj(anim_info, "orgasm_expected", orgasm_expected_id)
     endif 
 
-    Trace("saving "+fname,true)
+    Trace("UpdateAnimInfo", "saving "+fname, true)
     String json = ObjectToLowerCaseKeyJson(anim_info)
     MiscUtil.WriteToFile(path, json, append=False)
     MiscUtil.WriteToFile(animations_folder+"/animation_stage_description_last.json", json, append=False)

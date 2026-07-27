@@ -199,7 +199,11 @@ SkyrimNet_SexLab_Scene Function CreateSceneByCreator(SkyrimNet_SexLab_Scene_Crea
         Trace("CreateSceneByCreator", "GetSceneInactive returned None, aborting")
         return None
     endif
-    sl_scene.Setup(creator)
+    if !sl_scene.Setup(creator)
+        Trace("CreateSceneByCreator", "Setup failed, releasing scene")
+        sl_scene.Release()
+        return None
+    endif
     return sl_scene 
 EndFunction 
 
@@ -265,7 +269,7 @@ SkyrimNet_SexLab_Scene Function GetSceneByThread(sslThreadController thread, Boo
 EndFunction
 
 
-SkyrimNet_SexLab_Scene Function GetSceneByThreadId(int tid, bool any_state=False)
+SkyrimNet_SexLab_Scene Function GetSceneByThreadId(int tid, bool any_state=False, Bool create_if_missing=True)
     if sexlab == None 
         Trace("GetSceneBythreadId","Sexlab is None, aborting")
         return None
@@ -275,7 +279,7 @@ SkyrimNet_SexLab_Scene Function GetSceneByThreadId(int tid, bool any_state=False
         Trace("GetSceneBythreadId", "thread is None, aborting")
         return None 
     endif 
-    return GetSceneByThread(thread, any_state) 
+    return GetSceneByThread(thread, any_state, create_if_missing) 
 EndFunction 
 
 ; ----------------------------------------
@@ -718,7 +722,8 @@ EndEvent
 
 ; ----------------------------------------------------------
 event AnimationEnd(int ThreadID, bool HasPlayer)
-    SkyrimNet_SexLab_Scene sl_scene = GetSceneByThreadId(ThreadID, any_state=True)
+    ; create_if_missing=False: Action_Stop may already have AnimationEnd+Release; do not allocate a new scene.
+    SkyrimNet_SexLab_Scene sl_scene = GetSceneByThreadId(ThreadID, any_state=True, create_if_missing=False)
     if sl_scene == None 
         Trace("AnimationEnd","Scene is None for ThreadID "+ThreadID)
     else 
@@ -797,7 +802,6 @@ EndEvent
 Event OrgasmIndividual(Form akForm, int full_enjoyment, int num_orgasms)
     Actor akActor = akForm as Actor
     if !akActor
-        Trace("OrgasmIndividual", "--- akForm is not Actor: "+akForm)
         return
     endif
 
@@ -961,6 +965,9 @@ Function EnrichActorObjForJson(int actor_obj, Actor akActor)
     endif
     if !JMap.hasKey(actor_obj, "wearing_strapon")
         JMap.setInt(actor_obj, "wearing_strapon", 0)
+    endif
+    if !JMap.hasKey(actor_obj, "speaking_modifiers")
+        JMap.setObj(actor_obj, "speaking_modifiers", JArray.object())
     endif
     if main != None && main.handler_dom.IsDOMSlave(akActor)
         JMap.setInt(actor_obj, "dom_slave", 1)

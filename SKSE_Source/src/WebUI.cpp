@@ -25,7 +25,7 @@ KeyHandler* KeyHandler::GetSingleton()
 }
 
 /// Registers this KeyHandler as a BSInputDeviceManager event sink.
-/// Required before Escape / backslash (and other) hotkeys can fire.
+/// Required before Escape (and other) hotkeys can fire.
 void KeyHandler::RegisterSink()
 {
     auto inputMgr = RE::BSInputDeviceManager::GetSingleton();
@@ -174,7 +174,7 @@ void Reset_To_Default()
 
 /// One-shot WebUI bootstrap: PrismaUI API, action catalog, view, JS listeners, hotkeys.
 /// View path must exist under Data/PrismaUI/views/SkyrimNet_SexLab/index.html.
-/// Escape hides UI; backslash opens target menu (crosshair) or multi-target picker.
+/// Escape hides UI. Open via Papyrus Target_Menu_Open / Sex_Menu_Open.
 void InitWebUI()
 {
     static std::once_flag s_initFlag;
@@ -271,26 +271,6 @@ void InitWebUI()
             webui_log::info("Escape key pressed.");
             WebUI_Visibility_Hide();
             PapyrusBindings_WebUI::Target_Current = nullptr;
-        });
-        KeyHandler::GetSingleton()->Register(0x2B /* backslash */, []() {
-            if (!g_gameReady) {
-                webui_log::info("WebUI hotkey blocked — no game loaded.");
-                return;
-            }
-
-            RE::Actor* targetActor = nullptr;
-            auto* crosshairData = RE::CrosshairPickData::GetSingleton();
-            if (crosshairData) {
-                if (auto ref = crosshairData->target[0].get()) {
-                    targetActor = ref->As<RE::Actor>();
-                }
-            }
-
-            if (targetActor) {
-                PapyrusBindings_WebUI::Target_Menu_Open(nullptr, targetActor);
-            } else {
-                PapyrusBindings_WebUI::Call_MultiTarget_Menu_Selection();
-            }
         });
     });
 }

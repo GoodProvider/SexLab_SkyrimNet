@@ -1,6 +1,6 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/Cutleast/FOMOD-Creation-Kit/master/res/schemas/ModConfig5.0.xsd">
   	<!-- this file is generated from FOMOD_source/ModuleConfig.xml -->
-	<moduleName>SkyrimNet SexLab (0.31.2)</moduleName>
+	<moduleName>SkyrimNet SexLab (0.31.3)</moduleName>
 	<moduleImage path="images\sexlab_logo.png"/>
 	<requiredInstallFiles>
 		<folder source="core" destination="" alwaysInstall="true" priority="0"/>

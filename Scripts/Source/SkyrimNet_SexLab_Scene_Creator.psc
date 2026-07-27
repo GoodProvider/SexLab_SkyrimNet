@@ -198,6 +198,10 @@ Bool Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _targ
     if (_method == "tentacles" || _method == "tentacle") && setting_name == "" 
         setting_name =  "pleasure_pain"
     endif 
+    ; LLM comfort/nonsexual general hard-code nonsexual_male_position_1; Menu already uses this for kissing.
+    if _method == "kissing"
+        setting_name = "nonsexual_kissing"
+    endif 
 
     LoadSetting("default")
     if setting_name != ""
@@ -257,6 +261,15 @@ SkyrimNet_SexLab_Scene Function StartScene()
 
     Trace("StartScene",GetString()) 
 
+    ; Select animations before NewThread so cancel/UI never claims a SexLab Making slot.
+    sslBaseAnimation[] animations = SelectAnimations() 
+    if animations == manager.cancel
+        Trace("StartScene","SelectAnimations returned cancel")
+        Release() 
+        DbgReturn("StartScene", "None")
+        return None
+    endif
+
     DbgMsg("StartScene", "sexlab.NewThread()")
     sslThreadModel model = sexlab.NewThread()
     DbgMsg("StartScene", "sexlab.NewThread() returned model="+model)
@@ -267,13 +280,6 @@ SkyrimNet_SexLab_Scene Function StartScene()
         return None 
     endif
 
-    sslBaseAnimation[] animations = SelectAnimations() 
-    if animations == manager.cancel
-        Trace("StartScene","SelectAnimations returned cancel")
-        Release() 
-        DbgReturn("StartScene", "None")
-        return None
-    endif
     ; If no animation list is provided (empty), SexLab randomly selects.
     DbgMsg("StartScene", "model.SetAnimations count="+animations.length)
     if animations != manager.empty && animations.length > 0
@@ -313,6 +319,8 @@ SkyrimNet_SexLab_Scene Function StartScene()
     endwhile 
 
     if failed 
+        ; Unlock SexLab Making slot claimed by NewThread (not Creator.Release).
+        model.Initialize()
         Release() 
         DbgReturn("StartScene", "None")
         return  None 
@@ -356,6 +364,7 @@ SkyrimNet_SexLab_Scene Function StartScene()
     DbgMsg("StartScene", "model.StartThread() returned thread="+thread)
     if thread == None 
         Trace("StartScene","StartThread returned None, releasing sl_scene.sid")
+        model.Initialize()
         Release() 
         DbgReturn("StartScene", "None")
         return None 
