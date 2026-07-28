@@ -16,13 +16,15 @@ SexLab/SLSO `SexLabOrgasm` uses `ModEvent.PushForm(eid, ActorRef)`. Handlers tha
 
 `CreateView("SkyrimNet_SexLab/index.html")` loads from **`Data/PrismaUI/views/`**, not from `SKSE/Plugins/`. This mod ships the overlay at `PrismaUI/views/SkyrimNet_SexLab/index.html` (restored from commit `a8c9440`). Missing that file → valid-looking C++ open path (hotkey / `Target_Menu_Open`) but **no visible UI**. C++ Invokes use panel ids `target_menu_panel` / `sex_menu_panel`; the HTML maps those via `showPanel` / `hidePanel` adapters onto `#target-panel` / `#sex-menu-panel`.
 
-## WebUI target menu catalog (2026-07-24)
+## WebUI target menu catalog (2026-07-28)
 
 Target panel UI is driven by:
-- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/target_options.json` — typed parameter dictionary + category options
-- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/actions_index.json` — generated from SkyrimNet action YAMLs (`tools/generate_actions_index.py`)
+- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/target_options.json` — `defaults` + typed recursive `options` (`parameter` | `pulldown` | `action`). Pulldowns nest via `options[]`; each `action` needs `name` (SkyrimNet id) + `label` (WebUI display only).
+- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/actions_index.json` — generated from SkyrimNet action YAMLs (`tools/generate_actions_index.py`); `{ "actions": [...] }` only (no `by_category`).
 
-Regenerate the index after editing action YAML `label`s. C++ `ActionCatalog` loads both at init / open; Start merges dictionary onto YAML `parameterMapping` and `DispatchMethodCall`s `scriptName`/`executionFunctionName`. Actor slots use dictionary `type: Actor` + `source: player|target` (menu focus). Do not change SkyrimNet mapping types for WebUI — only add `label` fields.
+Regenerate the index after editing action YAMLs. C++ `ActionCatalog` loads at WebUI init and **reloads on every `kPostLoadGame` / `kNewGame`** (`WebUI_SetGameReady`); Start merges dictionary onto YAML `parameterMapping` and `DispatchMethodCall`s `scriptName`/`executionFunctionName`. Actor slots use dictionary `type: Actor` + `source: player|target` (menu focus). Do not change SkyrimNet mapping types for WebUI — only add `label` fields on YAML for the index/LLM; target menu labels come from `target_options.json`.
+
+Guideline: if a pulldown would have only one child, promote that child to a top-level `action`.
 
 ## SexLab position slots and speaker_position (2026-07-23)
 

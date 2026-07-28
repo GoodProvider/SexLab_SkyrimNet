@@ -11,7 +11,6 @@ namespace ActionCatalog
     {
         std::vector<ActionDef> g_actions;
         std::unordered_map<std::string, std::size_t> g_byName;
-        std::unordered_map<std::string, std::vector<std::size_t>> g_byCategory;
         nlohmann::json g_targetOptions = nlohmann::json::object();
         bool g_loaded = false;
 
@@ -57,12 +56,11 @@ namespace ActionCatalog
     }
 
     /// Loads actions_index.json and target_options.json into the in-memory catalog.
-    /// Builds name/category indexes used by the target menu and ExecuteAction.
+    /// Builds name index used by the target menu and ExecuteAction.
     bool Load()
     {
         g_actions.clear();
         g_byName.clear();
-        g_byCategory.clear();
         g_targetOptions = nlohmann::json::object();
         g_loaded = false;
 
@@ -117,9 +115,6 @@ namespace ActionCatalog
                     continue;
                 auto idx = g_actions.size();
                 g_byName[def.name] = idx;
-                if (!def.customCategory.empty() && !def.executionFunctionName.empty()) {
-                    g_byCategory[def.customCategory].push_back(idx);
-                }
                 g_actions.push_back(std::move(def));
             }
 
@@ -147,25 +142,13 @@ namespace ActionCatalog
         return &g_actions[it->second];
     }
 
-    /// Returns executable actions registered under a customCategory for menu grouping.
-    std::vector<const ActionDef*> ChildrenOfCategory(const std::string& category)
-    {
-        std::vector<const ActionDef*> out;
-        auto it = g_byCategory.find(category);
-        if (it == g_byCategory.end())
-            return out;
-        for (auto idx : it->second)
-            out.push_back(&g_actions[idx]);
-        return out;
-    }
-
     /// Raw target_options.json object (defaults + options) used when building UI params.
     const nlohmann::json& TargetOptions()
     {
         return g_targetOptions;
     }
 
-    /// Builds the JSON catalog JS configureTargetMenu expects (defaults, options, actions, by_category).
+    /// Builds the JSON catalog JS configureTargetMenu expects (defaults, options, actions).
     /// Loads the catalog first if it is not already loaded.
     nlohmann::json BuildUICatalog()
     {
@@ -177,7 +160,6 @@ namespace ActionCatalog
         catalog["options"] = g_targetOptions.value("options", nlohmann::json::array());
 
         nlohmann::json actionsObj = nlohmann::json::object();
-        nlohmann::json byCat = nlohmann::json::object();
 
         for (auto& def : g_actions) {
             nlohmann::json a;
@@ -200,16 +182,9 @@ namespace ActionCatalog
             }
             a["parameterMapping"] = mapping;
             actionsObj[def.name] = a;
-
-            if (!def.customCategory.empty() && !def.executionFunctionName.empty()) {
-                if (!byCat.contains(def.customCategory))
-                    byCat[def.customCategory] = nlohmann::json::array();
-                byCat[def.customCategory].push_back(def.name);
-            }
         }
 
         catalog["actions"] = actionsObj;
-        catalog["by_category"] = byCat;
         return catalog;
     }
 }

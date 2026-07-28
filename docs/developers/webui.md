@@ -18,9 +18,23 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 ## Lifecycle
 
 - `kDataLoaded`: PrismaUI API, `CreateView("SkyrimNet_SexLab/index.html")`, JS listeners.
-- `kPostLoadGame` / `kNewGame`: `WebUI_SetGameReady()`.
+- `kPostLoadGame` / `kNewGame`: `WebUI_SetGameReady()` (enables input; reloads ActionCatalog from `webui/`).
 - Papyrus → C++ open; C++ → JS panels `target_menu_panel` / `sex_menu_panel`.
-- Catalog: `target_options.json` + `actions_index.json`; Start merges params onto YAML and dispatches via SkyrimNet.
+- Catalog: `target_options.json` (typed recursive menu tree) + `actions_index.json`; Start merges params onto YAML and dispatches via SkyrimNet.
+
+### `target_options.json`
+
+Root: `defaults` + `options[]`. Every option node has `type`:
+
+| type | Fields | Role |
+|------|--------|------|
+| `parameter` | `name`, `default`, `values` | Global param pulldown |
+| `action` | `name`, `label` | Starts SkyrimNet action `name`; UI text = `label` |
+| `pulldown` | `label`, `options[]` | Group; children are `action` and/or nested `pulldown` |
+
+Menu labels live only in `target_options.json` (not YAML / index). Prefer promoting a single-child pulldown to a top-level `action`. Nested pulldowns use a middle-column nav stack (`‹` header pops).
+
+`actions_index.json` is `{ "actions": [...] }` only — no `by_category`.
 
 ## Build
 

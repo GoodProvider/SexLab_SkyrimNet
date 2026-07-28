@@ -1,15 +1,15 @@
 customCategory: sexlab_nonsexual
-name: SexLab_Nonsexual_General
-label: Affection (general)
-description: "[direction] [style] [method] showing physical affection"
+name: SexLab_Nonsexual_Cuddle
+label: Cuddle
+description: "[direction] [style] cuddling while [method]"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
 executionFunctionName: StartScene_Consensual_Two
 defaultPriority: 7
 parameterMapping:
-  - type: static 
+  - type: static
     name: intent
-    value: showing physical affection
+    value: "affectionate cuddling"
   - type: speaker
     name: speaker
     description: Speaker Actor parameter (triggering entity)
@@ -21,7 +21,7 @@ parameterMapping:
     description: forcefully|normally|gently
   - type: dynamic
     name: method
-    description: single hug|hugging|kissing|cuddle
+    description: sitting|laying
   - type: dynamic
     name: direction
     description: "giving|getting"

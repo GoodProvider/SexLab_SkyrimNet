@@ -23,7 +23,8 @@ LABELS: dict[str, str] = {
     "SexLabComfortCuddle": "Cuddle",
     "SexLabComfortGeneral": "Comfort (general)",
     "SexLabComfortRefused": "Comfort refused",
-    "SexLab_Nonsexual_Accepted": "Affection (accepted)",
+    "SexLab_Nonsexual_Cuddle": "Cuddle",
+    "SexLab_Nonsexual_General": "Affection (general)",
     "SexLab_Nonsexual_Refused": "Affection refused",
     "SexLab_Start_Nonsexual_Three": "Affection (three)",
     "SexLab_Punish_Spanking_Target": "Spanking",
@@ -93,7 +94,6 @@ def mapping_to_json(mapping: list | None) -> list[dict]:
 
 def main() -> None:
     actions: list[dict] = []
-    by_category: dict[str, list[str]] = {}
 
     for path in sorted(ACTIONS_DIR.glob("*.yaml")):
         with path.open(encoding="utf-8") as f:
@@ -128,13 +128,9 @@ def main() -> None:
         }
         actions.append(entry)
 
-        cat = entry["customCategory"]
-        if cat and entry["executionFunctionName"]:
-            by_category.setdefault(cat, []).append(name)
-
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(
-        json.dumps({"actions": actions, "by_category": by_category}, indent=2),
+        json.dumps({"actions": actions}, indent=2),
         encoding="utf-8",
     )
     print(f"wrote {OUT_JSON} ({len(actions)} actions)")

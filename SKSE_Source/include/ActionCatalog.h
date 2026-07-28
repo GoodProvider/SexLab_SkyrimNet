@@ -32,7 +32,6 @@ namespace ActionCatalog
     bool IsLoaded();
 
     const ActionDef* FindByName(const std::string& name);
-    std::vector<const ActionDef*> ChildrenOfCategory(const std::string& category);
 
     // Full catalog for JS configureTargetMenu(...)
     nlohmann::json BuildUICatalog();
