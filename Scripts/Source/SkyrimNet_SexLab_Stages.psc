@@ -114,7 +114,7 @@ EndFunction
 
 String Function GetStageDescription(sslThreadController thread, int stage_override = -1 )
     if thread == None 
-        Trace("GetStageDescription", "thread is None", true)
+        Trace("GetStageDescription", "thread is None")
         return ""
     endif 
     int stage = thread.stage

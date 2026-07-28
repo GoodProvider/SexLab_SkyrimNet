@@ -917,6 +917,11 @@ Function AnimationStart()
         orgasm_messages_set = false
     endif
     DbgEnter("AnimationStart")
+    if thread == None
+        Trace("AnimationStart","thread is None | actors:"+actor_names)
+        DbgReturn("AnimationStart", "void")
+        return
+    endif
     AlignActors() 
     manager.SaveThreadsJson() 
     String msg = GetIntentMessage(INTENT_STAGE_START) + GetDescription()
@@ -1351,6 +1356,10 @@ EndFunction
 ; --------------------------------------------
 String Function GetDescription()
     DbgEnter("GetDescription")
+    if thread == None
+        DbgReturn("GetDescription", "")
+        return ""
+    endif
     String desc = stages.GetStageDescription(thread)
     if desc == "" 
         desc = GetDescriptionFromTags()
@@ -1368,6 +1377,10 @@ EndFunction
 
 int Function GetThreadObj(Actor speaker)
     DbgEnter("GetThreadObj", "speaker:"+GetDisplayName(speaker))
+    if thread == None
+        DbgReturn("GetThreadObj", "thread_obj (no thread)")
+        return thread_obj
+    endif
     alignactors()
 
     float distance = 0.0

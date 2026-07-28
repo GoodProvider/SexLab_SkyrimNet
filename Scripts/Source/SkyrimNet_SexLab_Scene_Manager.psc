@@ -238,15 +238,25 @@ SkyrimNet_SexLab_Scene Function GetSceneByThread(sslThreadController thread, Boo
     int tid = thread.tid
     if tid < thread_scene.length && thread_scene[tid] != None 
         SkyrimNet_SexLab_Scene sl_scene = thread_scene[tid] as SkyrimNet_SexLab_Scene
-        ; SETUP and ACTIVE both count as IsActive(); only reclaim on wrong thread or dead scene
-        if sl_scene.GetThread() == thread && sl_scene.IsActive()
-            return sl_scene
-        endif 
+        ; thread_scene[tid] is authoritative — return or rebind; never Release solely because
+        ; GetThread() is temporarily None (reentrant bind race during GetSceneInactive Setup).
+        if sl_scene != None && sl_scene.IsActive()
+            sslThreadController bound = sl_scene.GetThread()
+            if bound == None || bound.tid == thread.tid
+                if bound != thread
+                    sl_scene.SetThread(thread)
+                endif
+                return sl_scene
+            endif
+            Trace("GetSceneByThread", "stale thread_scene["+tid+"] bound to tid:"+bound.tid+", releasing sid:"+sl_scene.sid)
+        endif
         if !create_if_missing
             return None
         endif
-        thread_scene[tid] = None
-        sl_scene.Release() 
+        if sl_scene != None
+            thread_scene[tid] = None
+            sl_scene.Release()
+        endif
     endif 
 
     if !create_if_missing
@@ -281,6 +291,11 @@ SkyrimNet_SexLab_Scene Function GetSceneByThreadId(int tid, bool any_state=False
     endif 
     return GetSceneByThread(thread, any_state, create_if_missing) 
 EndFunction 
+
+; Bind or create a scene for an external / DOM-started SexLab thread (HookAnimationStart path).
+SkyrimNet_SexLab_Scene Function EnsureSceneForThread(sslThreadController thread)
+    return GetSceneByThread(thread, any_state=False, create_if_missing=True)
+EndFunction
 
 ; ----------------------------------------
 ; Rebuild pool/creator refs from plugin FormIDs. Required after property renames
@@ -398,8 +413,8 @@ SkyrimNet_SexLab_Scene Function GetSceneInactive(sslThreadController thread)
                     candidate.Release()
                 endif
                 EnsureThreadSceneLargeEnough(thread.tid) 
-                thread_scene[thread.tid] = candidate
                 candidate.SetThread(thread)
+                thread_scene[thread.tid] = candidate
                 return candidate
             endif
         else
@@ -417,8 +432,8 @@ SkyrimNet_SexLab_Scene Function GetSceneInactive(sslThreadController thread)
         return None
     endif
     EnsureThreadSceneLargeEnough(thread.tid)
-    thread_scene[thread.tid] = sl_scene_generic
     sl_scene_generic.SetThread(thread) 
+    thread_scene[thread.tid] = sl_scene_generic
     return sl_scene_generic
 EndFunction 
 
@@ -700,7 +715,16 @@ EndFunction
 
 ; ----------------------------------------------------------
 Event AnimationStart(int ThreadID, bool HasPlayer)
-    SkyrimNet_SexLab_Scene sl_scene = GetSceneByThreadId(ThreadID)
+    if sexlab == None
+        Trace("AnimationStart","Sexlab is None, aborting")
+        return
+    endif
+    sslThreadController thread = SexLab.GetController(ThreadID)
+    if thread == None
+        Trace("AnimationStart","Thread is None for ThreadID "+ThreadID)
+        return
+    endif
+    SkyrimNet_SexLab_Scene sl_scene = EnsureSceneForThread(thread)
     if sl_scene == None 
         Trace("AnimationStart","Scene is None for ThreadID "+ThreadID)
         return
@@ -711,7 +735,16 @@ EndEvent
 
 ; ----------------------------------------------------------
 Event StageStart(int ThreadID, bool HasPlayer)
-    SkyrimNet_SexLab_Scene sl_scene = GetSceneByThreadId(ThreadID)
+    if sexlab == None
+        Trace("StageStart","Sexlab is None, aborting")
+        return
+    endif
+    sslThreadController thread = SexLab.GetController(ThreadID)
+    if thread == None
+        Trace("StageStart","Thread is None for ThreadID "+ThreadID)
+        return
+    endif
+    SkyrimNet_SexLab_Scene sl_scene = EnsureSceneForThread(thread)
     if sl_scene == None 
         Trace("StageStart","Scene is None for ThreadID "+ThreadID)
         return
