@@ -151,6 +151,41 @@
         }
 
         /* ── Clickable options ────────────────────────────────── */
+        .option-row {
+            display: flex;
+            align-items: stretch;
+            gap: 4px;
+        }
+
+        .option-row .option {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .option-expand {
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.75);
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 7px 10px;
+            flex-shrink: 0;
+            transition: color 0.15s ease, background 0.15s ease;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.70);
+        }
+
+        .option-expand:hover {
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .option-expand:active {
+            color: var(--text-muted);
+        }
+
+        .option-row.selected .option-expand {
+            color: var(--accent);
+        }
+
         .option {
             font-family: var(--font-body);
             font-size: var(--fs);
@@ -471,6 +506,7 @@
     <div id="target-panel" class="panel" style="min-width:auto; width:auto; max-width:none;">
 
         <div id="target-name" class="target-row">Target</div>
+        <div id="framework-row" class="field-row" style="display:none"></div>
 
         <div class="cascade-row">
             <div id="col-left" class="cascade-col">
@@ -485,9 +521,6 @@
             <div id="col-right" class="cascade-col hidden">
                 <div class="section-header" id="right-header">Parameters</div>
                 <div id="right-dynamics"></div>
-                <div class="bottom-bar">
-                    <div id="target-start-btn" class="action-btn disabled" onclick="targetMenuStart()">Start</div>
-                </div>
             </div>
         </div>
 
@@ -534,6 +567,27 @@
             }
         }
 
+        /// OStimNet-gated SexLab/OStim toggle under the target name.
+        /// enabled=false hides the row; current should be "sexlab" or "ostim".
+        function setFrameworkToggle(enabled, current) {
+            const row = document.getElementById('framework-row');
+            if (!row) return;
+            row.innerHTML = '';
+            if (!enabled) {
+                row.style.display = 'none';
+                return;
+            }
+            const values = ['sexlab', 'ostim'];
+            const seed = (current === 'ostim') ? 'ostim' : 'sexlab';
+            const label = document.createElement('span');
+            label.textContent = 'framework';
+            row.appendChild(label);
+            row.appendChild(createPulldown(values, seed, (v) => {
+                dispatchFrameworkChange(v);
+            }));
+            row.style.display = '';
+        }
+
         // C++ Invoke adapters (Papyrus_WebUI / WebUI.cpp panel names)
         function showPanel(id) {
             if (id === 'target_menu_panel' || id === 'target-panel') {
@@ -553,10 +607,12 @@
         }
 
         // ── Target menu (JSON/YAML catalog) ───────────────────────
-        let TARGET_CATALOG = { defaults: {}, options: [], actions: {}, by_category: {} };
+        let TARGET_CATALOG = { defaults: {}, options: [], actions: {} };
         let paramDict = {};           // typed parameter dictionary (mutable)
-        let selectedCategory = null;  // option object
+        let navStack = [];            // stack of pulldown option objects
         let selectedActionName = null;
+        let selectedActionLabel = null;
+        let leftSelectedOpt = null;   // root left-column selection (for highlight)
 
         function displayLabel(obj) {
             if (!obj) return '';
@@ -573,6 +629,128 @@
                 into[k] = v;
             }
             return into;
+        }
+
+        const PARAM_STORE_PREFIX = 'sns_tm_param:';
+
+        function loadRememberedParam(name) {
+            if (!name) return null;
+            try {
+                const v = localStorage.getItem(PARAM_STORE_PREFIX + name);
+                return (v !== null && v !== undefined) ? v : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function saveRememberedParam(name, value) {
+            if (!name) return;
+            try {
+                localStorage.setItem(PARAM_STORE_PREFIX + name, String(value == null ? '' : value));
+            } catch (e) { /* ignore quota / private mode */ }
+        }
+
+        function resolveParamValue(name, fallback) {
+            const remembered = loadRememberedParam(name);
+            if (remembered !== null) return remembered;
+            if (paramDict[name] && paramDict[name].default != null && paramDict[name].default !== '') {
+                return paramDict[name].default;
+            }
+            return fallback != null ? fallback : '';
+        }
+
+        function setParamValue(name, value) {
+            paramDict[name] = { type: 'String', default: value };
+            saveRememberedParam(name, value);
+        }
+
+        function seedActionParams(actionName) {
+            const action = TARGET_CATALOG.actions && TARGET_CATALOG.actions[actionName];
+            if (!action) return;
+            const mapping = action.parameterMapping || [];
+            for (const m of mapping) {
+                if (isActorMapping(m) || isStaticMapping(m)) continue;
+                const name = m.name;
+                if (!name) continue;
+                const pipes = pipeValues(m.description || '');
+                const fallback = pipes ? pipes[0] : '';
+                const value = resolveParamValue(name, fallback);
+                paramDict[name] = { type: 'String', default: value };
+            }
+        }
+
+        function selectAction(name, label) {
+            selectedActionName = name;
+            selectedActionLabel = label || name;
+            seedActionParams(name);
+            renderTargetMenu();
+        }
+
+        function startAction(name, label) {
+            selectedActionName = name;
+            selectedActionLabel = label || name;
+            seedActionParams(name);
+            targetMenuStart();
+        }
+
+        function makeActionRow(label, name, selected, onBefore) {
+            const row = document.createElement('div');
+            row.className = 'option-row' + (selected ? ' selected' : '');
+
+            const main = document.createElement('div');
+            main.className = 'option' + (selected ? ' selected' : '');
+            main.textContent = label;
+            main.onclick = (e) => {
+                e.stopPropagation();
+                if (onBefore) onBefore();
+                startAction(name, label);
+            };
+
+            const expand = document.createElement('div');
+            expand.className = 'option-expand';
+            expand.textContent = '❯';
+            expand.title = 'Parameters';
+            expand.onclick = (e) => {
+                e.stopPropagation();
+                if (onBefore) onBefore();
+                selectAction(name, label);
+            };
+
+            row.appendChild(main);
+            row.appendChild(expand);
+            return row;
+        }
+
+        function makeNestedPulldownRow(opt) {
+            const row = document.createElement('div');
+            row.className = 'option-row';
+
+            const main = document.createElement('div');
+            main.className = 'option';
+            main.textContent = displayLabel(opt);
+            const drill = () => {
+                navStack.push(opt);
+                selectedActionName = null;
+                selectedActionLabel = null;
+                renderTargetMenu();
+            };
+            main.onclick = (e) => {
+                e.stopPropagation();
+                drill();
+            };
+
+            const expand = document.createElement('div');
+            expand.className = 'option-expand';
+            expand.textContent = '❯';
+            expand.title = 'Open';
+            expand.onclick = (e) => {
+                e.stopPropagation();
+                drill();
+            };
+
+            row.appendChild(main);
+            row.appendChild(expand);
+            return row;
         }
 
         function closeAllPulldowns(except) {
@@ -623,24 +801,27 @@
         document.addEventListener('click', () => closeAllPulldowns());
 
         function configureTargetMenu(catalog) {
-            TARGET_CATALOG = catalog || { defaults: {}, options: [], actions: {}, by_category: {} };
+            TARGET_CATALOG = catalog || { defaults: {}, options: [], actions: {} };
             resetTargetMenuState();
             renderTargetMenu();
         }
 
         function resetTargetMenuState() {
             paramDict = deepClone(TARGET_CATALOG.defaults || {});
-            selectedCategory = null;
+            navStack = [];
+            leftSelectedOpt = null;
             selectedActionName = null;
-            // Apply top-level parameter option defaults into dict
+            selectedActionLabel = null;
+            // Apply top-level parameter option defaults, then overlay remembered values
             for (const opt of (TARGET_CATALOG.options || [])) {
                 if (opt.type === 'parameter' && opt.name) {
                     const cur = paramDict[opt.name];
                     const defVal = opt.default != null ? opt.default
                         : (cur && cur.default != null ? cur.default : '');
+                    const remembered = loadRememberedParam(opt.name);
                     paramDict[opt.name] = {
                         type: 'String',
-                        default: defVal
+                        default: remembered !== null ? remembered : defVal
                     };
                 }
             }
@@ -683,24 +864,37 @@
                 const label = document.createElement('span');
                 label.textContent = opt.name;
                 const values = opt.values || [];
-                const current = (paramDict[opt.name] && paramDict[opt.name].default != null)
-                    ? paramDict[opt.name].default
-                    : (opt.default || '');
+                const current = resolveParamValue(opt.name, opt.default || (values[0] || ''));
+                paramDict[opt.name] = { type: 'String', default: current };
                 row.appendChild(label);
                 row.appendChild(createPulldown(values, current, (v) => {
-                    paramDict[opt.name] = { type: 'String', default: v };
+                    setParamValue(opt.name, v);
                 }));
                 globals.appendChild(row);
             }
 
-            // Category / action rows
+            // Root pulldown / action rows
             left.innerHTML = '';
             for (const opt of (TARGET_CATALOG.options || [])) {
                 if (opt.type === 'parameter') continue;
+                if (opt.type === 'action' && opt.name) {
+                    const lbl = displayLabel(opt);
+                    left.appendChild(makeActionRow(
+                        lbl,
+                        opt.name,
+                        selectedActionName === opt.name && leftSelectedOpt === opt,
+                        () => {
+                            leftSelectedOpt = opt;
+                            navStack = [];
+                        }
+                    ));
+                    continue;
+                }
+                if (opt.type !== 'pulldown') continue;
                 const row = document.createElement('div');
-                row.className = 'option' + (selectedCategory === opt ? ' selected' : '');
+                row.className = 'option' + (leftSelectedOpt === opt ? ' selected' : '');
                 row.textContent = displayLabel(opt);
-                row.onclick = () => selectLeftOption(opt);
+                row.onclick = () => selectLeftPulldown(opt);
                 left.appendChild(row);
             }
 
@@ -708,11 +902,20 @@
             renderRight();
         }
 
-        function selectLeftOption(opt) {
-            selectedCategory = opt;
+        function selectLeftPulldown(opt) {
+            leftSelectedOpt = opt;
+            navStack = [opt];
             selectedActionName = null;
-            // Merge option-level parameters into dict
+            selectedActionLabel = null;
             if (opt.parameters) mergeParams(paramDict, deepClone(opt.parameters));
+            renderTargetMenu();
+        }
+
+        function popNavStack() {
+            if (navStack.length <= 1) return;
+            navStack.pop();
+            selectedActionName = null;
+            selectedActionLabel = null;
             renderTargetMenu();
         }
 
@@ -720,40 +923,51 @@
             const col = document.getElementById('col-middle');
             const list = document.getElementById('middle-options');
             const header = document.getElementById('middle-header');
-            if (!col || !list) return;
+            if (!col || !list || !header) return;
 
-            if (!selectedCategory || (selectedCategory.type !== 'category' && selectedCategory.type !== 'action')) {
+            if (!navStack.length) {
                 col.classList.add('hidden');
                 list.innerHTML = '';
                 return;
             }
-            col.classList.remove('hidden');
 
-            if (selectedCategory.type === 'action') {
-                header.textContent = displayLabel(selectedCategory);
+            const current = navStack[navStack.length - 1];
+            if (!current || current.type !== 'pulldown') {
+                col.classList.add('hidden');
                 list.innerHTML = '';
-                selectedActionName = selectedCategory.name;
-                renderRight();
                 return;
             }
 
-            header.textContent = displayLabel(selectedCategory);
-            const names = (TARGET_CATALOG.by_category && TARGET_CATALOG.by_category[selectedCategory.name]) || [];
-            const exclude = new Set(selectedCategory.filter || []);
-            list.innerHTML = '';
-            for (const name of names) {
-                if (exclude.has(name)) continue;
-                const action = TARGET_CATALOG.actions[name];
-                if (!action || !action.executionFunctionName) continue;
-                const row = document.createElement('div');
-                row.className = 'option' + (selectedActionName === name ? ' selected' : '');
-                row.textContent = displayLabel(action);
-                row.onclick = () => {
-                    selectedActionName = name;
-                    renderMiddle();
-                    renderRight();
+            col.classList.remove('hidden');
+            const title = displayLabel(current);
+            if (navStack.length > 1) {
+                header.textContent = '‹ ' + title;
+                header.style.cursor = 'pointer';
+                header.onclick = (e) => {
+                    e.stopPropagation();
+                    popNavStack();
                 };
-                list.appendChild(row);
+            } else {
+                header.textContent = title;
+                header.style.cursor = '';
+                header.onclick = null;
+            }
+
+            list.innerHTML = '';
+            for (const entry of (current.options || [])) {
+                if (entry.type === 'pulldown') {
+                    list.appendChild(makeNestedPulldownRow(entry));
+                    continue;
+                }
+                if (entry.type !== 'action' || !entry.name) continue;
+                const action = TARGET_CATALOG.actions && TARGET_CATALOG.actions[entry.name];
+                if (!action || !action.executionFunctionName) continue;
+                const lbl = (entry.label && String(entry.label).length) ? entry.label : entry.name;
+                list.appendChild(makeActionRow(
+                    lbl,
+                    entry.name,
+                    selectedActionName === entry.name
+                ));
             }
         }
 
@@ -761,19 +975,17 @@
             const col = document.getElementById('col-right');
             const dyn = document.getElementById('right-dynamics');
             const header = document.getElementById('right-header');
-            const startBtn = document.getElementById('target-start-btn');
-            if (!col || !dyn || !startBtn) return;
+            if (!col || !dyn) return;
 
             if (!selectedActionName || !TARGET_CATALOG.actions[selectedActionName]) {
                 col.classList.add('hidden');
                 dyn.innerHTML = '';
-                startBtn.classList.add('disabled');
                 return;
             }
 
             const action = TARGET_CATALOG.actions[selectedActionName];
             col.classList.remove('hidden');
-            header.textContent = displayLabel(action);
+            header.textContent = selectedActionLabel || selectedActionName;
             dyn.innerHTML = '';
 
             const mapping = action.parameterMapping || [];
@@ -789,15 +1001,13 @@
                 field.appendChild(lab);
 
                 const pipes = pipeValues(m.description || '');
-                const current = (paramDict[name] && paramDict[name].default != null)
-                    ? paramDict[name].default
-                    : (pipes ? pipes[0] : '');
+                const fallback = pipes ? pipes[0] : '';
+                const current = resolveParamValue(name, fallback);
 
                 if (pipes) {
-                    const seed = current || pipes[0];
-                    paramDict[name] = { type: 'String', default: seed };
-                    field.appendChild(createPulldown(pipes, seed, (v) => {
-                        paramDict[name] = { type: 'String', default: v };
+                    paramDict[name] = { type: 'String', default: current || pipes[0] };
+                    field.appendChild(createPulldown(pipes, current || pipes[0], (v) => {
+                        setParamValue(name, v);
                     }));
                 } else {
                     const inp = document.createElement('input');
@@ -805,21 +1015,18 @@
                     inp.placeholder = m.description || name;
                     inp.value = current || '';
                     inp.oninput = () => {
-                        paramDict[name] = { type: 'String', default: inp.value };
+                        setParamValue(name, inp.value);
                     };
                     paramDict[name] = { type: 'String', default: inp.value };
                     field.appendChild(inp);
                 }
                 dyn.appendChild(field);
             }
-
-            startBtn.classList.remove('disabled');
         }
 
         function targetMenuStart() {
             if (!selectedActionName) return;
             if (typeof window.onAction !== 'function') return;
-            // Ensure style from global select is in dict
             window.onAction(JSON.stringify({
                 action: 'start',
                 name: selectedActionName,

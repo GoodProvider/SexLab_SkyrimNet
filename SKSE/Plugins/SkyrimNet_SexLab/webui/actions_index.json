@@ -169,7 +169,7 @@
         {
           "type": "dynamic",
           "name": "how",
-          "description": "put on|take off"
+          "description": "dresses|undresses"
         },
         {
           "type": "static",
@@ -205,7 +205,7 @@
         {
           "type": "dynamic",
           "name": "how",
-          "description": "put on|take off"
+          "description": "dresses|undresses"
         },
         {
           "type": "static",
@@ -247,8 +247,54 @@
       "file": "sexlab_nonsexual_.yaml"
     },
     {
-      "name": "SexLab_Nonsexual_Accepted",
-      "label": "Affection (accepted)",
+      "name": "SexLab_Nonsexual_Cuddle",
+      "label": "Cuddle",
+      "customCategory": "sexlab_nonsexual",
+      "questEditorId": "SkyrimNet_SexLab",
+      "scriptName": "SkyrimNet_SexLab_Actions",
+      "executionFunctionName": "StartScene_Consensual_Two",
+      "parameterMapping": [
+        {
+          "type": "static",
+          "name": "intent",
+          "value": "affectionate cuddling"
+        },
+        {
+          "type": "speaker",
+          "name": "speaker",
+          "description": "Speaker Actor parameter (triggering entity)"
+        },
+        {
+          "type": "dynamic",
+          "name": "target",
+          "description": "accepting actor"
+        },
+        {
+          "type": "dynamic",
+          "name": "style",
+          "description": "forcefully|normally|gently"
+        },
+        {
+          "type": "dynamic",
+          "name": "method",
+          "description": "sitting|laying"
+        },
+        {
+          "type": "dynamic",
+          "name": "direction",
+          "description": "giving|getting"
+        },
+        {
+          "type": "static",
+          "name": "setting_name",
+          "value": "nonsexual_male_position_1"
+        }
+      ],
+      "file": "sexlab_nonsexual_cuddle.yaml"
+    },
+    {
+      "name": "SexLab_Nonsexual_General",
+      "label": "Affection (general)",
       "customCategory": "sexlab_nonsexual",
       "questEditorId": "SkyrimNet_SexLab",
       "scriptName": "SkyrimNet_SexLab_Actions",
@@ -1115,7 +1161,7 @@
         {
           "type": "static",
           "name": "setting_name",
-          "value": ""
+          "value": "no_penis"
         }
       ],
       "file": "sexlab_sex2_sex_giving.yaml"
@@ -1222,7 +1268,7 @@
         {
           "type": "static",
           "name": "setting_name",
-          "value": ""
+          "value": "no_penis"
         },
         {
           "type": "dynamic",
@@ -1232,43 +1278,5 @@
       ],
       "file": "sexlab_sex3_sex_giving.yaml"
     }
-  ],
-  "by_category": {
-    "sexlab_comfort": [
-      "SexLabComfortCuddle",
-      "SexLabComfortGeneral",
-      "SexLabComfortRefused"
-    ],
-    "sexlab_nonsexual": [
-      "SexLab_Nonsexual_Accepted",
-      "SexLab_Start_Nonsexual_Three",
-      "SexLab_Nonsexual_Refused"
-    ],
-    "sexlab_punish": [
-      "SexLab_Punish_Rape_Target",
-      "SexLab_Punish_Rape_Target_By_Target",
-      "SexLab_Punish_Refused",
-      "SexLab_Punish_Spanking_Target",
-      "SexLab_Punish_Spanking_Speaker",
-      "SexLab_Punish_Spanking_Victim_Nude_Target",
-      "SexLab_Punish_Spanking_Victim_Nude_Speaker",
-      "SexLab_Punish_Whipping_Oral_Target",
-      "SexLab_Punish_Whipping_Oral_Speaker"
-    ],
-    "sexlab_sex1": [
-      "SexLab_Masturbation_Forced",
-      "SexLab_Masturbation_Start"
-    ],
-    "sexlab_sex2": [
-      "SexLab_Sexual_Assault_Speaker",
-      "SexLab_Sexual_Assault_Target",
-      "SexLab_Sexual_Refused",
-      "SexLab_Start_Fucking",
-      "SexLab_Start_Giving"
-    ],
-    "sexlab_sex3": [
-      "SexLab_Start_Fucking_Three",
-      "SexLab_Start_Giving_Three"
-    ]
-  }
+  ]
 }

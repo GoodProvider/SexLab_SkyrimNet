@@ -54,6 +54,16 @@ namespace PapyrusBindings_WebUI
         auto catalog = ActionCatalog::BuildUICatalog();
         WebUI_Invoke("configureTargetMenu(" + catalog.dump() + ");");
         WebUI_Invoke(std::format("setTargetActor('{}', '{}');", uuid, EscapeJsString(name)));
+
+        // OStimNet-gated framework pulldown: seed from skyrimnet_sexlab_ostim_player
+        bool ostimnet = RE::TESDataHandler::GetSingleton()->LookupModByName("TT_OStimNet.esp") != nullptr;
+        const char* fw = "sexlab";
+        if (auto* g = RE::TESForm::LookupByEditorID<RE::TESGlobal>("skyrimnet_sexlab_ostim_player")) {
+            if (g->value == 1.0f)
+                fw = "ostim";
+        }
+        WebUI_Invoke(std::format("setFrameworkToggle({}, '{}');", ostimnet ? "true" : "false", fw));
+
         WebUI_Invoke("showPanel('target_menu_panel');");
         WebUI_Visibility_Show();
     }
