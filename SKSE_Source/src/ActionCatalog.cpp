@@ -1,4 +1,5 @@
 #include "ActionCatalog.h"
+#include "TargetMenuRegistry.h"
 #include "WebUI_Log.h"
 
 #include <Windows.h>
@@ -134,12 +135,13 @@ namespace ActionCatalog
     }
 
     /// Looks up a loaded ActionDef by SkyrimNet action name; nullptr if missing.
+    /// Also resolves runtime-registered TargetMenuRegistry options.
     const ActionDef* FindByName(const std::string& name)
     {
         auto it = g_byName.find(name);
-        if (it == g_byName.end())
-            return nullptr;
-        return &g_actions[it->second];
+        if (it != g_byName.end())
+            return &g_actions[it->second];
+        return TargetMenuRegistry::FindActionDef(name);
     }
 
     /// Raw target_options.json object (defaults + options) used when building UI params.
@@ -182,6 +184,31 @@ namespace ActionCatalog
             }
             a["parameterMapping"] = mapping;
             actionsObj[def.name] = a;
+        }
+
+        // Runtime-registered external options at the end of the root options list.
+        for (auto& ext : TargetMenuRegistry::All()) {
+            nlohmann::json opt = nlohmann::json::object();
+            opt["type"] = "action";
+            opt["name"] = ext.actionName;
+            opt["label"] = ext.label;
+            catalog["options"].push_back(opt);
+
+            nlohmann::json a = nlohmann::json::object();
+            a["name"] = ext.actionName;
+            a["label"] = ext.label;
+            a["customCategory"] = "";
+            a["executionFunctionName"] = ext.executionFunctionName;
+            a["questEditorId"] = ext.questEditorId;
+            a["scriptName"] = ext.scriptName;
+            nlohmann::json mapping = nlohmann::json::array();
+            nlohmann::json m = nlohmann::json::object();
+            m["type"] = "target";
+            m["name"] = "target";
+            m["description"] = "";
+            mapping.push_back(m);
+            a["parameterMapping"] = mapping;
+            actionsObj[ext.actionName] = a;
         }
 
         catalog["actions"] = actionsObj;

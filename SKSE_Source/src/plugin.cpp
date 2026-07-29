@@ -6,6 +6,8 @@
 #include "WebUI.h"
 #include "Papyrus_WebUI.h"
 #include "Papyrus_Utilities.h"
+#include "Papyrus_API.h"
+#include "TargetMenuRegistry.h"
 #include "WebUI_Log.h"
 
 using namespace SKSE;
@@ -24,6 +26,7 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
             InitWebUI();
         } else if (message->type == SKSE::MessagingInterface::kPostLoadGame ||
                    message->type == SKSE::MessagingInterface::kNewGame) {
+            TargetMenuRegistry::Clear();
             WebUI_SetGameReady();
         }
     });
@@ -39,6 +42,11 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
             webui_log::error("Failed to register Utilities Papyrus functions");
         } else {
             webui_log::info("Utilities Papyrus functions registered");
+        }
+        if (!papyrus->Register(PapyrusBindings_API::Register_API_Functions)) {
+            webui_log::error("Failed to register API Papyrus functions");
+        } else {
+            webui_log::info("API Papyrus functions registered");
         }
     } else {
         webui_log::info("Failed to get Papyrus interface.");

@@ -1,5 +1,13 @@
 # Knowledgebase
 
+## Caprica rejects formal param name `scriptName` (2026-07-29)
+
+Caprica fails natives that declare a parameter named `scriptName` with `no viable alternative at input 'String'` (even a one-arg stub). Callers are unaffected (positional). Use a different formal name (e.g. `sName`) and document the slot in a comment — see `SkyrimNet_SexLab_API.RegisterTargetMenuOption`.
+
+## TargetMenuRegistry external options (2026-07-29)
+
+`SkyrimNet_SexLab_API.RegisterTargetMenuOption` appends runtime actions to the WebUI Target Menu (end of `options` + `actions` in `BuildUICatalog`). Cleared on `kPostLoadGame` / `kNewGame`; handlers must re-register in `Setup`. Click dispatches via `ExecuteAction` with a single `target` Actor arg.
+
 ## SKSE native params must use engine types (2026-07-25)
 
 CommonLib `RegisterFunction` derives the Papyrus signature from C++ types (`RE::TESForm*` → `Form`, `RE::Actor*` → `Actor`, etc.) and refuses to bind if the `.pex` differs. Declaring a specific script type on a native (e.g. `sslThreadController`) causes: `Native static function … does not match existing signature … Function will not be bound.`
