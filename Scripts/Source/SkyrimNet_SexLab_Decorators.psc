@@ -20,7 +20,6 @@ EndFunction
 Function RegisterDecorators() global
     SkyrimNetApi.RegisterDecorator("sexlab_get_threads", "SkyrimNet_SexLab_Decorators", "Get_Threads")
     SkyrimNetApi.RegisterDecorator("sexlab_get_player_los_distance", "SkyrimNet_SexLab_Decorators", "Player_LOS_Distance")
-    SkyrimNetApi.RegisterDecorator("sexlab_outfit_options", "SkyrimNet_SexLab_Decorators", "Outfit_Options")
     SkyrimNetApi.RegisterDecorator("sexlab_intent", "SkyrimNet_SexLab_Decorators", "Intent")
     SkyrimNetApi.RegisterDecorator("sexlab_activities", "SkyrimNet_SexLab_Decorators", "Activities")
     ;SkyrimNetApi.RegisterDecorator("sexlab_nudity", "SkyrimNet_SexLab_Decorators", "Is_Nudity")
@@ -38,20 +37,22 @@ String Function Get_Threads(Actor speaker) global
     return json
 EndFunction 
 
-String Function Outfit_Options(Actor speaker) global 
+String Function Outfit_HasStrippedItems(Actor speaker) global 
     int obj = JMap.object() 
-    String options = "undresses"
+    bool has_stripped_items = False
     SkyrimNet_SexLab_Main main = Game.GetFormFromFile(0x800, "SkyrimNet_SexLab.esp") as SkyrimNet_SexLab_Main
     if main == None
-        Trace("Outfit_Options", "ERROR: Failed to get SkyrimNet_SexLab_Main form", True)
+        Trace("Outfit_HasStrippedItems", "ERROR: Failed to get SkyrimNet_SexLab_Main form", True)
     else
         ; Check if the actor has undressed items, they could put on 
         if main.HasStrippedItems(speaker) 
-            options = "dresses"
+            has_stripped_items = True
+        else
+            has_stripped_items = False
         endif 
-        Trace("Outfit_Options",speaker.GetDisplayName()+" has options:"+options)
+        Trace("Outfit_HasStrippedItems",speaker.GetDisplayName()+" has stripped items:"+has_stripped_items)
     endif
-    JMap.setStr(obj, "options", options) 
+    JMap.setInt(obj, "has_stripped_items", has_stripped_items as Int) 
     String json = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(obj) 
     JValue.release(obj) 
     return json 

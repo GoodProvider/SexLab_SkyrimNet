@@ -1,10 +1,8 @@
 {
-  "defaults": {
+  "defaultsParameters": {
     "style": { "type": "String", "default": "normally" },
-    "speaker": { "type": "Actor", "source": "player" },
-    "target": { "type": "Actor", "source": "target" },
-    "stripper": { "type": "Actor", "source": "player" },
-    "stripped": { "type": "Actor", "source": "target" }
+    "speaker": { "type": "Actor", "source": "playerActor" },
+    "target": { "type": "Actor", "source": "currentActor" }
   },
   "options": [
     {
@@ -62,11 +60,47 @@
       ]
     },
     {
-      "type": "pulldown",
+      "type": "actionSwitch",
       "label": "outfit",
       "options": [
-        { "type": "action", "name": "change_outfit", "label": "self" },
-        { "type": "action", "name": "change_outfit_target", "label": "target" }
+        {
+          "type": "action",
+          "name": "outfit_undress",
+          "label": "undress",
+          "eligibilityRules": [
+            {
+              "conditions": [
+                {
+                  "decoratorName": "papyrus_util",
+                  "arguments": ["FormListCount", "currentActor", "skyrimnet_sexlab_storage_items"],
+                  "comparisonOperator": "==",
+                  "expectedValue": 0
+                }
+              ],
+              "logicalOperator": "AND",
+              "required": true
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "name": "outfit_dress",
+          "label": "dress",
+          "eligibilityRules": [
+            {
+              "conditions": [
+                {
+                  "decoratorName": "papyrus_util",
+                  "arguments": ["FormListCount", "currentActor", "skyrimnet_sexlab_storage_items"],
+                  "comparisonOperator": "!=",
+                  "expectedValue": 0
+                }
+              ],
+              "logicalOperator": "AND",
+              "required": true
+            }
+          ]
+        }
       ]
     }
   ]

@@ -308,66 +308,61 @@ EndFunction
 
 ; -------------------------------------------------
 ; Dress and Undress
-; Narration: direct, silent, none (notification or event)
+; Speaker = who performs (stripper); Target = whose outfit changes (stripped).
+; Narration: direct, silent (RegisterEvent), none
 ; -------------------------------------------------
-Function Change_Outfit(Actor stripper, Actor stripped, String style, String how, String narration)
-    Trace("Change_Outfit",stripper.GetDisplayName()+" stripper "+stripped.GetDisplayName()+" style:"+style+" how: "+how+" narration:"+narration)
-
-    if how == "take off" || how == "undresses" || how == "undress"
-        how = "undress"
-    elseif how == "put on" || how == "dresses" || how == "dress"
-        how = "dress"
-    endif 
-
-    bool success = False
-    if how == "dress"
-        Form[] forms = main.UnStoreStrippedItems(Stripped)
-        if forms.length > 0
-            sexlab.UnStripActor(Stripped, forms, false)
-            success = True
-        else
-            Trace("Change_Outfit",Stripped.GetDisplayName()+" has no stripped items")
-        endif
-    elseif how == "undress"
-        ;/* StripActor
-        * * Strips an actor using SexLab's strip setting as chosen by the user from the SexLab MCM
-        * * 
-        * * @param: Actor ActorRef - The actor whose equipment shall be unequipped.
-        * * @param: Actor VictimRef [OPTIONAL] - If ActorRef matches VictimRef victim strip setting are used. If VictimRef is set but doesn't match, aggressor setting are used.
-        * * @param: bool DoAnimate [OPTIONAL true by default] - Whether or not to play the actor stripping animations during the strip
-        * * @param: bool LeadIn [OPTIONAL false by default] - If TRUE and VictimRef == none, Foreplay strip setting will be used.
-        * * @return: Form[] - An array of all equipment stripped from ActorRef
-        */;
-        Actor victim = None 
-        Bool do_animate = True
-        if stripper != stripped
-            victim = stripped 
-            do_animate = False
-        endif 
-        Form[] forms = sexlab.StripActor(stripped, victim, do_animate, false) 
-        if forms && forms.length > 0
-            main.StoreStrippedItems(stripped, forms)
-            success = True 
-        else
-            Trace("Change_Outfit",Stripped.GetDisplayName()+" strip returned no items")
-        endif
-    else
-        Trace("Change_Outfit","unknown how token: "+how)
+Function Outfit_Narrate(Actor Speaker, Actor Target, String style, String token, String narration)
+    Actor listener = Target
+    if listener == Speaker
+        listener = None
     endif
+    String msg = Speaker.GetDisplayName()+" "+style+" "+token+"es "+Target.GetDisplayName()+"."
+    if narration == "direct"
+        DirectNarration(msg, Speaker, listener)
+    elseif narration == "silent"
+        RegisterEvent(token, msg, Speaker, listener)
+    endif
+EndFunction
 
-    if success
-        Actor listener = Stripped 
-        if listener == Stripper 
-            listener = None 
-        endif 
+; Refresh WebUI actionSwitch if the target menu is open on this actor.
+Function Outfit_RefreshWebUI(Actor Target)
+    if Target == None
+        return
+    endif
+    SkyrimNet_SexLab_WebUI.Target_Menu_Refresh(main.HasStrippedItems(Target))
+EndFunction
 
-        String msg = stripper.GetDisplayName()+" "+style+" "+how+"es "+stripped.GetDisplayName()+"."
-        if narration == "direct"
-            DirectNarration(msg, stripper, listener) 
-        elseif narration == "silent"
-            RegisterEvent(how,msg, stripper, listener) 
-        endif 
-    endif 
+Function Outfit_Dress(Actor Speaker, Actor Target, String style, String narration)
+    Trace("Outfit_Dress", Speaker.GetDisplayName()+" speaker "+Target.GetDisplayName()+" style:"+style+" narration:"+narration)
+    Form[] forms = main.UnStoreStrippedItems(Target)
+    if forms.length > 0
+        sexlab.UnStripActor(Target, forms, false)
+        Outfit_Narrate(Speaker, Target, style, "dress", narration)
+        Outfit_RefreshWebUI(Target)
+    else
+        Trace("Outfit_Dress", Target.GetDisplayName()+" has no stripped items")
+    endif
+EndFunction
+
+Function Outfit_Undress(Actor Speaker, Actor Target, String style, String narration)
+    Trace("Outfit_Undress", Speaker.GetDisplayName()+" speaker "+Target.GetDisplayName()+" style:"+style+" narration:"+narration)
+    ;/* StripActor — SexLab MCM strip settings; VictimRef selects victim vs aggressor strip.
+     * DoAnimate default true; LeadIn false here.
+     */;
+    Actor victim = None
+    Bool do_animate = True
+    if Speaker != Target
+        victim = Target
+        do_animate = False
+    endif
+    Form[] forms = sexlab.StripActor(Target, victim, do_animate, false)
+    if forms && forms.length > 0
+        main.StoreStrippedItems(Target, forms)
+        Outfit_Narrate(Speaker, Target, style, "undress", narration)
+        Outfit_RefreshWebUI(Target)
+    else
+        Trace("Outfit_Undress", Target.GetDisplayName()+" strip returned no items")
+    endif
 EndFunction
 
 ; -------------------------------------------------

@@ -46,9 +46,9 @@ Prefer Papyrus slot names: `method`, `how` (outfit), `victim` when needed.
 | `StartScene_Nonconsensual_Two_TargetVictim` | Target is victim |
 | `StartScene_Nonconsensual_Two_SpeakerVictim` | Speaker is victim |
 | `StartScene_Refused_Two` | Refusal |
-| `Change_Outfit` | `dresses` / `undresses` |
+| `Outfit_Dress` / `Outfit_Undress` | Speaker dresses/undresses Target; narration `silent` → RegisterEvent |
 
-No `speaking_victim`. No `sexlab_none_rape`. Outfit eligibility uses `OStimActorCountFaction`.
+No `speaking_victim`. No `sexlab_none_rape`. Outfit: StorageUtil on Target (`FormListCount` == 0 undress / != 0 dress); eligibility also uses `OStimActorCountFaction`.
 
 ## setting_name
 
@@ -79,7 +79,7 @@ parameterMapping:
   # ... speaker, target, style, method, direction (≤ 8 total)
 ```
 
-Copy patterns: `sexlab_sex2_sex_fucking.yaml`, `sexlab_punish_spanking.yaml`, `sexlab_none_change_outfit.yaml`, `sexlab_none_stop.yaml`.
+Copy patterns: `sexlab_sex2_sex_fucking.yaml`, `sexlab_punish_spanking.yaml`, `sexlab_none_outfit_undress.yaml` / `sexlab_none_outfit_dress.yaml`, `sexlab_none_stop.yaml`.
 
 ## Eligibility
 

@@ -23,10 +23,19 @@ namespace PapyrusBindings_WebUI
         return out;
     }
 
+    static RE::TESQuest* FindMainQuest()
+    {
+        RE::TESQuest* quest = RE::TESForm::LookupByEditorID<RE::TESQuest>("SkyrimNet_SexLab");
+        if (!quest) {
+            quest = RE::TESDataHandler::GetSingleton()
+                ->LookupForm<RE::TESQuest>(0x800, "SkyrimNet_SexLab.esp");
+        }
+        return quest;
+    }
+
     /// Opens the target menu for the given actor and focuses the PrismaUI view.
-    /// Reloads the action catalog if needed and pushes configure/setTarget/show JS.
     /// Same target again toggles visibility instead of rebuilding.
-    void Target_Menu_Open(RE::StaticFunctionTag*, RE::Actor* Target_Input)
+    void Target_Menu_Open(RE::StaticFunctionTag*, RE::Actor* Target_Input, bool hasStrippedItems)
     {
         if (!Target_Input) {
             webui_log::warn("Target_Menu_Open called with null Actor.");
@@ -49,13 +58,15 @@ namespace PapyrusBindings_WebUI
         const char* targetName = !skyrimNetName.empty() ? skyrimNetName.c_str() : Target_Current->GetName();
         const char* name = (targetName && targetName[0]) ? targetName : "Unknown";
 
-        webui_log::info("Target_Menu_Open triggered. Target: {}", name);
+        webui_log::info(
+            "Target_Menu_Open triggered. Target: {} hasStrippedItems={}",
+            name,
+            hasStrippedItems);
 
-        auto catalog = ActionCatalog::BuildUICatalog();
+        auto catalog = ActionCatalog::BuildUICatalog(hasStrippedItems);
         WebUI_Invoke("configureTargetMenu(" + catalog.dump() + ");");
         WebUI_Invoke(std::format("setTargetActor('{}', '{}');", uuid, EscapeJsString(name)));
 
-        // OStimNet-gated framework pulldown: seed from skyrimnet_sexlab_ostim_player
         bool ostimnet = RE::TESDataHandler::GetSingleton()->LookupModByName("TT_OStimNet.esp") != nullptr;
         const char* fw = "sexlab";
         if (auto* g = RE::TESForm::LookupByEditorID<RE::TESGlobal>("skyrimnet_sexlab_ostim_player")) {
@@ -68,8 +79,22 @@ namespace PapyrusBindings_WebUI
         WebUI_Visibility_Show();
     }
 
+    /// Re-resolve actionSwitch while the target menu stays open on Target_Current.
+    void Target_Menu_Refresh(RE::StaticFunctionTag*, bool hasStrippedItems)
+    {
+        if (!Target_Current) {
+            // LLM / non-WebUI Outfit_* calls refresh harmlessly when menu is closed.
+            return;
+        }
+        if (!ActionCatalog::IsLoaded())
+            ActionCatalog::Load();
+
+        webui_log::info("Target_Menu_Refresh hasStrippedItems={}", hasStrippedItems);
+        auto catalog = ActionCatalog::BuildUICatalog(hasStrippedItems);
+        WebUI_Invoke("configureTargetMenu(" + catalog.dump() + ");");
+    }
+
     /// Resets the overlay and shows the sex_menu_panel for an active sex thread.
-    /// thread / has_player are accepted for Papyrus signature parity; panel JS owns layout.
     void Sex_Menu_Open(RE::StaticFunctionTag*, RE::TESForm* thread, bool has_player)
     {
         webui_log::info("Sex_Menu_Open triggered. has_player={}", has_player);
@@ -90,8 +115,6 @@ namespace PapyrusBindings_WebUI
         return RE::BSFixedString(formatted);
     }
 
-    /// Sends setPlayerActor / setNearbyActors JS from SkyrimNet engagement data.
-    /// Called from WebUI_Visibility_Show so the target menu has actor pick lists.
     void PopulateNearbyActors()
     {
         auto* player = RE::PlayerCharacter::GetSingleton();
@@ -122,8 +145,6 @@ namespace PapyrusBindings_WebUI
         }
     }
 
-    /// Main-thread Papyrus call into SkyrimNet_SexLab_Menu.MultiTarget_Menu_Selection.
-    /// Used when the WebUI hotkey has no crosshair actor to open against.
     void Call_MultiTarget_Menu_Selection()
     {
         auto* player = RE::PlayerCharacter::GetSingleton();
@@ -141,11 +162,7 @@ namespace PapyrusBindings_WebUI
                 return;
             }
 
-            RE::TESQuest* quest = RE::TESForm::LookupByEditorID<RE::TESQuest>("SkyrimNet_SexLab");
-            if (!quest) {
-                quest = RE::TESDataHandler::GetSingleton()
-                    ->LookupForm<RE::TESQuest>(0x800, "SkyrimNet_SexLab.esp");
-            }
+            RE::TESQuest* quest = FindMainQuest();
             if (!quest) {
                 webui_log::error("Call_MultiTarget_Menu_Selection: quest SkyrimNet_SexLab not found");
                 return;
@@ -167,7 +184,43 @@ namespace PapyrusBindings_WebUI
         });
     }
 
-    /// Binds Target_Menu_Open, Sex_Menu_Open, and TraceLog on SkyrimNet_SexLab_WebUI.
+    /// Hotkey: Menu.Open_WebUI_Target so Papyrus can pass HasStrippedItems.
+    void Call_Open_WebUI_Target(RE::Actor* target)
+    {
+        if (!target) {
+            webui_log::warn("Call_Open_WebUI_Target: null target");
+            return;
+        }
+
+        SKSE::GetTaskInterface()->AddTask([target]() {
+            auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+            if (!vm) {
+                webui_log::error("Call_Open_WebUI_Target: no VM");
+                return;
+            }
+
+            RE::TESQuest* quest = FindMainQuest();
+            if (!quest) {
+                webui_log::error("Call_Open_WebUI_Target: quest not found");
+                return;
+            }
+
+            auto handle = vm->GetObjectHandlePolicy()->GetHandleForObject(
+                static_cast<RE::VMTypeID>(quest->GetFormType()), quest);
+            RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
+            vm->FindBoundObject(handle, "SkyrimNet_SexLab_Menu", scriptObject);
+            if (!scriptObject) {
+                webui_log::error("Call_Open_WebUI_Target: Menu script not bound");
+                return;
+            }
+
+            auto* args = RE::MakeFunctionArguments(static_cast<RE::Actor*>(target));
+            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
+            vm->DispatchMethodCall(scriptObject, RE::BSFixedString("Open_WebUI_Target"), args, callback);
+            webui_log::info("Call_Open_WebUI_Target: dispatched");
+        });
+    }
+
     bool Register_WebUI_Functions(RE::BSScript::IVirtualMachine* a_vm)
     {
         if (!a_vm) {
@@ -178,6 +231,7 @@ namespace PapyrusBindings_WebUI
         constexpr std::string_view scriptName = "SkyrimNet_SexLab_WebUI";
 
         a_vm->RegisterFunction("Target_Menu_Open", scriptName, Target_Menu_Open);
+        a_vm->RegisterFunction("Target_Menu_Refresh", scriptName, Target_Menu_Refresh);
         a_vm->RegisterFunction("Sex_Menu_Open", scriptName, Sex_Menu_Open);
         a_vm->RegisterFunction("TraceLog", scriptName, TraceLog);
 

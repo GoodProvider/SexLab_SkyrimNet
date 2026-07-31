@@ -244,15 +244,19 @@ void InitWebUI()
 
             webui_log::info("onAction start name={}", name);
 
-            WebUI_Invoke("hidePanel('target_menu_panel');");
-            WebUI_Invoke("hidePanel('sex_menu_panel');");
-            WebUI_Visibility_Hide();
+            const bool stayOpen = ActionCatalog::IsStayOpenAction(name);
+            if (!stayOpen) {
+                WebUI_Invoke("hidePanel('target_menu_panel');");
+                WebUI_Invoke("hidePanel('sex_menu_panel');");
+                WebUI_Visibility_Hide();
+                PapyrusBindings_WebUI::Target_Current = nullptr;
+            }
 
             bool ok = ActionCatalog::ExecuteAction(name, params, player, target);
-            PapyrusBindings_WebUI::Target_Current = nullptr;
             if (!ok) {
                 webui_log::error("onAction: ExecuteAction failed for {}", name);
             }
+            // Outfit stay-open: Papyrus Outfit_* calls Target_Menu_Refresh after storage updates.
         });
 
         PrismaUI->RegisterJSListener(g_view, "onFrameworkChange", [](const char* value) {
@@ -292,7 +296,7 @@ void InitWebUI()
             }
 
             if (targetActor) {
-                PapyrusBindings_WebUI::Target_Menu_Open(nullptr, targetActor);
+                PapyrusBindings_WebUI::Call_Open_WebUI_Target(targetActor);
             } else {
                 PapyrusBindings_WebUI::Call_MultiTarget_Menu_Selection();
             }

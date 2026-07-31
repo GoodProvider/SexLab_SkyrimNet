@@ -85,14 +85,18 @@ Function ProcessHotkey(int key_code)
     endif 
 EndFunction
 
+; WebUI hotkey / stay-open refresh: pass StorageUtil strip state for actionSwitch.
+Function Open_WebUI_Target(Actor target)
+    if target == None
+        Trace("Open_WebUI_Target", "target is None")
+        return
+    endif
+    bool hasStripped = main.HasStrippedItems(target)
+    Trace("Open_WebUI_Target", target.GetDisplayName()+" hasStripped:"+hasStripped)
+    SkyrimNet_SexLab_WebUI.Target_Menu_Open(target, hasStripped)
+EndFunction
+
 Function Target_Menu_Selection(Actor target, Actor player)
-    bool target_is_undressed = false 
-    target_is_undressed = main.HasStrippedItems(target)
-    String clothing_string = "undress"
-    if target_is_undressed 
-        clothing_string = "dress"
-    endif 
-    
     int cancel = 0 
     int sexlab_ostim = -1
     
@@ -107,9 +111,8 @@ Function Target_Menu_Selection(Actor target, Actor player)
     int sex = cancel+3
     int raped_by_player = cancel+4
     int rapes_player = cancel+5
-    int clothing = cancel+6
     
-    cancel += 7 
+    cancel += 6 
 
     int bondage = -1
     if mcm.udng_found
@@ -128,7 +131,6 @@ Function Target_Menu_Selection(Actor target, Actor player)
     buttons[sex] = "sex"
     buttons[raped_by_player] = "player rapes"
     buttons[rapes_player] = "rapes player"
-    buttons[clothing] = clothing_string
     if bondage != -1 
         buttons[bondage] = "bondage"
     endif 
@@ -229,45 +231,6 @@ Function Target_Menu_Selection(Actor target, Actor player)
         else
             actions.StartScene_Nonconsensual_Two_TargetVictim("sexual assault",player, target)
         endif 
-    elseif button == clothing
-        if clothing_string == "undress"
-            clothing_string = "take off"
-        Else
-            clothing_string = "put on"
-        endif 
-
-        ;--------------------------------------------------
-        ; How would they like it appear? 
-        int forcefully = 0
-        int normally = 1
-        int gently = 2
-        int silently = 3
-        buttons = new String[4] 
-        buttons[forcefully] = "Forcefully by player "
-        buttons[normally] = "By player"
-        buttons[gently] = "Gently by player"
-        buttons[silently] = "( Silently )"
-
-        button = SkyMessage.ShowArray(msg, buttons, getIndex = true) as int 
-        if button < 0
-            Trace("Target_Menu_Selection","cancelled clothing appearance selection")
-            return
-        endif
-        String narration = "direct"
-        String style = "" 
-        if button == gently
-            style = "gently"
-        elseif button == forcefully
-            style = "forcefully"
-        elseif button == silently
-            narration = "none"
-        endif 
-        
-        ;--------------------------------------------------
-        ; Now do the action 
-        Trace("Target_Menu_Selection","style:"+style+" clothing_string:"+clothing_string)
-        actions.Change_Outfit(player, target, style, clothing_string, narration)
-
     elseif button == bondage 
         EventSend_UDNG("MenuOpen", target)
     endif 

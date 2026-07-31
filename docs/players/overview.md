@@ -36,7 +36,7 @@ SkyrimNet is not seeing Actions functions.
 | sex1 / sex2 / sex3 | Masturbation, two-actor, threesome; forceful/normal/gentle; **fucking** vs **giving** (`no_penis`); rape if MCM **Add rape actions** on |
 | nonsexual / comfort | Kiss, hug, cuddle, spoon, headpat; 3-actor nonsexual |
 | punish | Spanking, nude spanking, whipping; punish-rape |
-| none | Stop; dress/undress (`dresses`/`undresses`, silent OK) |
+| none | Stop; dress/undress actions (silent RegisterEvent OK) |
 
 Scene files via `setting_name`: [../reference/scene-settings.md](../reference/scene-settings.md).
 

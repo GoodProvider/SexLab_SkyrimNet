@@ -24,7 +24,7 @@ SKSE/Plugins/SkyrimNet/prompts/
 | `user_final_instructions/0550_sexlab_narration.prompt` | Direct narration / orgasm gate |
 | `helpers/sexlab_*.prompt` | Per-action helpers |
 
-Outfit guidance: `helpers/sexlab_none_change_outfit.prompt` (`[style] [how]`). No `0520_sexlab_dressing_instructions.prompt`.
+Outfit: separate actions `outfit_dress` / `outfit_undress` (no shared `how` helper). No `0520_sexlab_dressing_instructions.prompt`.
 
 ## Keys vs values
 
