@@ -1,5 +1,7 @@
 # SkyrimNet_SexLab
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/goodprovider) 
+
 Adds SkyrimNet (LLM) support to SexLab Framework.
 
 - **Players:** [docs/players/overview.md](docs/players/overview.md) · [hotkeys](docs/players/hotkeys.md) · [requirements](docs/players/requirements.md)
