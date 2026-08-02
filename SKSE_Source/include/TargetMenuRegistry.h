@@ -2,13 +2,16 @@
 
 #include "ActionCatalog.h"
 
+#include "RE/Skyrim.h"
+
+#include <cstdint>
 #include <string>
 #include <vector>
 
 namespace TargetMenuRegistry
 {
     struct ExternalOption {
-        std::string questEditorId;
+        std::uint32_t questFormId = 0;
         std::string scriptName;
         std::string executionFunctionName;
         std::string label;
@@ -21,9 +24,9 @@ namespace TargetMenuRegistry
     void Clear();
 
     /// Appends an option, or replaces an existing entry with the same
-    /// questEditorId + scriptName + executionFunctionName.
+    /// questFormId + scriptName + executionFunctionName.
     void Register(
-        const std::string& questEditorId,
+        RE::TESForm* quest,
         const std::string& scriptName,
         const std::string& executionFunctionName,
         const std::string& label);

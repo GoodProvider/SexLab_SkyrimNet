@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -21,22 +22,28 @@ namespace ActionCatalog
         std::string label;
         std::string customCategory;
         std::string questEditorId;
+        /// Session FormID for runtime-registered options (0 = use questEditorId).
+        std::uint32_t questFormId = 0;
         std::string scriptName;
         std::string executionFunctionName;
         std::vector<ParamMapping> parameterMapping;
         std::string file;
     };
 
-    // Load actions_index.json + target_options.json from Data/SKSE/Plugins/SkyrimNet_SexLab/webui/
+    // Load actions_index.json + menu/target/ from Data/SKSE/Plugins/SkyrimNet_SexLab/webui/
     bool Load();
     bool IsLoaded();
 
     const ActionDef* FindByName(const std::string& name);
 
-    // Full catalog for JS configureTargetMenu(...)
-    nlohmann::json BuildUICatalog();
+    /// True for outfit_dress / outfit_undress (menu stays open after start).
+    bool IsStayOpenAction(const std::string& actionName);
 
-    // target_options.json defaults + options
+    // Full catalog for JS configureTargetMenu(...).
+    // focusHasStrippedItems: StorageUtil strip-store on focus (currentActor) for actionSwitch.
+    nlohmann::json BuildUICatalog(bool focusHasStrippedItems = false);
+
+    // Assembled menu/target defaultsParameters + options
     const nlohmann::json& TargetOptions();
 
     std::filesystem::path WebUIDir();

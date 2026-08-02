@@ -16,6 +16,7 @@ public:
     static KeyHandler* GetSingleton();
     static void RegisterSink();
     void Register(uint32_t dxScanCode, KeyCallback callback);
+    void Unregister(uint32_t dxScanCode);
 
 private:
     KeyHandler() = default;
@@ -40,3 +41,5 @@ void WebUI_Visibility_Toggle();
 void WebUI_Invoke(const std::string& script);
 void WebUI_Reset();
 void Reset_To_Default();
+/// MCM-driven menu hotkey: register dxScanCode when enabled, else unregister.
+void WebUI_SetMenuHotkey(uint32_t dxScanCode, bool enabled);

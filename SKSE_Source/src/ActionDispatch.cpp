@@ -1,10 +1,19 @@
 #include "ActionDispatch.h"
 #include "WebUI_Log.h"
+#include "WebUI.h"
+#include "Papyrus_WebUI.h"
 
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
 
 #include <cctype>
+#include <unordered_map>
+
+// Declared (and defined) in PublicAPI.h — included once from Papyrus_WebUI.cpp.
+extern "C" {
+    extern uint64_t (*PublicFormIDToUUID)(uint32_t formId);
+    extern std::string (*PublicGetActorNameByUUID)(uint64_t uuid);
+}
 
 namespace ActionCatalog
 {
@@ -49,6 +58,38 @@ namespace ActionCatalog
             for (auto it = src.begin(); it != src.end(); ++it) {
                 dest[it.key()] = it.value();
             }
+        }
+
+        /// Root defaults dict: prefer defaultsParameters, fall back to legacy defaults.
+        nlohmann::json DefaultsParametersOf(const nlohmann::json& opts)
+        {
+            if (opts.contains("defaultsParameters") && opts["defaultsParameters"].is_object())
+                return opts["defaultsParameters"];
+            return opts.value("defaults", nlohmann::json::object());
+        }
+
+        /// Recursively finds parameters on an action node matching actionName in options[].
+        const nlohmann::json* FindActionParameters(const nlohmann::json& node, const std::string& actionName)
+        {
+            if (node.is_array()) {
+                for (auto& child : node) {
+                    if (auto* found = FindActionParameters(child, actionName))
+                        return found;
+                }
+                return nullptr;
+            }
+            if (!node.is_object())
+                return nullptr;
+
+            auto type = node.value("type", "");
+            if (EqualsIgnoreCase(type, "action") && node.value("name", "") == actionName) {
+                if (node.contains("parameters") && node["parameters"].is_object())
+                    return &node["parameters"];
+                return nullptr;
+            }
+            if (node.contains("options"))
+                return FindActionParameters(node["options"], actionName);
+            return nullptr;
         }
 
         /// Normalizes a flat UI value or typed {type,default} into a typed dict entry.
@@ -99,12 +140,14 @@ namespace ActionCatalog
             return first;
         }
 
-        /// Maps YAML Actor source labels (player / target|focus) to live Actor pointers.
+        /// Maps Actor source labels to live Actor pointers.
+        /// playerActor|player → player; currentActor|target|focus → menu focus.
         RE::Actor* ResolveSource(const std::string& source, RE::Actor* player, RE::Actor* focus)
         {
-            if (EqualsIgnoreCase(source, "player"))
+            if (EqualsIgnoreCase(source, "player") || EqualsIgnoreCase(source, "playerActor"))
                 return player;
-            if (EqualsIgnoreCase(source, "target") || EqualsIgnoreCase(source, "focus"))
+            if (EqualsIgnoreCase(source, "target") || EqualsIgnoreCase(source, "focus") ||
+                EqualsIgnoreCase(source, "currentActor"))
                 return focus;
             webui_log::error("ActionDispatch: unknown Actor source '{}'", source);
             return nullptr;
@@ -164,9 +207,14 @@ namespace ActionCatalog
             }
         };
 
-        /// Finds the action's quest by editor ID, else the mod main quest (0x800).
-        RE::TESQuest* FindQuest(const std::string& editorId)
+        /// Finds the action's quest by FormID (runtime registry), else editor ID, else main quest (0x800).
+        RE::TESQuest* FindQuest(std::uint32_t questFormId, const std::string& editorId)
         {
+            if (questFormId != 0) {
+                if (auto* q = RE::TESForm::LookupByID<RE::TESQuest>(questFormId))
+                    return q;
+                webui_log::warn("FindQuest: FormID {:08X} not a quest", questFormId);
+            }
             if (!editorId.empty()) {
                 if (auto* q = RE::TESForm::LookupByEditorID<RE::TESQuest>(editorId))
                     return q;
@@ -177,7 +225,7 @@ namespace ActionCatalog
     }
 
     /// Dispatches a WebUI-started action to its Papyrus execution function.
-    /// Merges YAML statics → target_options defaults → UI params, then calls on the main thread.
+    /// Merges YAML statics → defaultsParameters → action-node parameters → UI params, then calls on the main thread.
     /// Returns false if the catalog/action/actors cannot be resolved before dispatch.
     bool ExecuteAction(
         const std::string& actionName,
@@ -198,7 +246,7 @@ namespace ActionCatalog
 
         nlohmann::json dict = nlohmann::json::object();
 
-        // Merge order: YAML statics → target_options defaults → UI parameters.
+        // Merge order: YAML statics → defaultsParameters → action-node parameters → UI parameters.
         for (auto& pm : def->parameterMapping) {
             if (EqualsIgnoreCase(pm.type, "static") && pm.hasValue) {
                 dict[pm.name] = nlohmann::json{
@@ -208,7 +256,12 @@ namespace ActionCatalog
             }
         }
 
-        MergeDict(dict, TargetOptions().value("defaults", nlohmann::json::object()));
+        const auto& opts = TargetOptions();
+        MergeDict(dict, DefaultsParametersOf(opts));
+        if (opts.contains("options")) {
+            if (auto* actionParams = FindActionParameters(opts["options"], actionName))
+                MergeDict(dict, *actionParams);
+        }
 
         if (uiParameters.is_object()) {
             for (auto it = uiParameters.begin(); it != uiParameters.end(); ++it) {
@@ -297,14 +350,15 @@ namespace ActionCatalog
         const std::string scriptName = def->scriptName.empty() ? "SkyrimNet_SexLab_Actions" : def->scriptName;
         const std::string functionName = def->executionFunctionName;
         const std::string questEditorId = def->questEditorId;
+        const std::uint32_t questFormId = def->questFormId;
 
-        SKSE::GetTaskInterface()->AddTask([captured, scriptName, functionName, questEditorId, actionName]() {
+        SKSE::GetTaskInterface()->AddTask([captured, scriptName, functionName, questEditorId, questFormId, actionName]() {
             auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
             if (!vm) {
                 webui_log::error("ExecuteAction: no VM");
                 return;
             }
-            auto* quest = FindQuest(questEditorId);
+            auto* quest = FindQuest(questFormId, questEditorId);
             if (!quest) {
                 webui_log::error("ExecuteAction: quest not found for {}", actionName);
                 return;
@@ -337,6 +391,329 @@ namespace ActionCatalog
                 scriptName, functionName, raw->items.size(), actionName);
         });
 
+        return true;
+    }
+
+    namespace
+    {
+        struct ResolvedSceneParams {
+            std::string executionFunctionName;
+            std::string intent;
+            std::string style = "normally";
+            std::string method;
+            std::string direction;
+            std::string setting_name;
+            RE::Actor* speaker = nullptr;
+            RE::Actor* target = nullptr;
+            RE::Actor* victim = nullptr;
+            RE::Actor* participate = nullptr;
+            std::vector<RE::Actor*> actorsResolved;
+            bool hasPlayer = false;
+        };
+
+        bool IsSceneStartExecution(const std::string& fn)
+        {
+            if (fn.size() < 11)
+                return false;
+            if (!EqualsIgnoreCase(fn.substr(0, 11), "StartScene_"))
+                return false;
+            // StartScene_Refused_* is narration-only, not a creator open.
+            return fn.find("Refused") == std::string::npos && fn.find("refused") == std::string::npos;
+        }
+
+        std::string RemapMethod(std::string method)
+        {
+            if (EqualsIgnoreCase(method, "pussy"))
+                return "vaginal";
+            if (EqualsIgnoreCase(method, "mouth"))
+                return "oral";
+            if (EqualsIgnoreCase(method, "ass"))
+                return "anal";
+            if (EqualsIgnoreCase(method, "whipping"))
+                return "whip";
+            if (EqualsIgnoreCase(method, "hugging"))
+                return "hug";
+            return method;
+        }
+
+        int SpeakerPositionFromDirection(const std::string& direction, RE::Actor* speaker, RE::Actor* target,
+            RE::Actor* victim)
+        {
+            if (!target)
+                return 0;
+            if (victim && speaker && victim == speaker)
+                return 0;
+            if (victim && target && victim == target)
+                return 1;
+            if (EqualsIgnoreCase(direction, "fucking") || EqualsIgnoreCase(direction, "fuck a") ||
+                EqualsIgnoreCase(direction, "fucking a"))
+                return 1;
+            if (EqualsIgnoreCase(direction, "fucked in"))
+                return 0;
+            if (EqualsIgnoreCase(direction, "getting") || EqualsIgnoreCase(direction, "get"))
+                return 1;
+            if (EqualsIgnoreCase(direction, "giving") || EqualsIgnoreCase(direction, "give"))
+                return 0;
+            return 0;
+        }
+
+        void ApplyVictimFromExecution(ResolvedSceneParams& p)
+        {
+            const auto& fn = p.executionFunctionName;
+            if (fn.find("SpeakerVictim") != std::string::npos ||
+                EqualsIgnoreCase(fn, "StartScene_Nonconsensual_One")) {
+                p.victim = p.speaker;
+            } else if (fn.find("TargetVictim") != std::string::npos) {
+                p.victim = p.target;
+            } else if (fn.find("Nonconsensual") != std::string::npos && !p.victim) {
+                // Nonconsensual_Two with explicit victim already set from mapping.
+                if (!p.victim && p.target)
+                    p.victim = p.target;
+            }
+        }
+
+        void BuildActorOrder(ResolvedSceneParams& p)
+        {
+            p.actorsResolved.clear();
+            if (!p.speaker)
+                return;
+            if (!p.target) {
+                p.actorsResolved.push_back(p.speaker);
+            } else {
+                const int speakerPos = SpeakerPositionFromDirection(p.direction, p.speaker, p.target, p.victim);
+                if (speakerPos == 0) {
+                    p.actorsResolved.push_back(p.speaker);
+                    p.actorsResolved.push_back(p.target);
+                } else {
+                    p.actorsResolved.push_back(p.target);
+                    p.actorsResolved.push_back(p.speaker);
+                }
+                if (p.participate)
+                    p.actorsResolved.push_back(p.participate);
+            }
+            p.hasPlayer = false;
+            auto* player = RE::PlayerCharacter::GetSingleton();
+            for (auto* a : p.actorsResolved) {
+                if (a && player && a == player) {
+                    p.hasPlayer = true;
+                    break;
+                }
+            }
+        }
+
+        bool ResolveSceneParams(
+            const std::string& actionName,
+            const nlohmann::json& uiParameters,
+            RE::Actor* player,
+            RE::Actor* focusTarget,
+            ResolvedSceneParams& out)
+        {
+            if (!IsLoaded() && !Load())
+                return false;
+            const ActionDef* def = FindByName(actionName);
+            if (!def || def->executionFunctionName.empty())
+                return false;
+            if (!IsSceneStartExecution(def->executionFunctionName))
+                return false;
+
+            out.executionFunctionName = def->executionFunctionName;
+
+            nlohmann::json dict = nlohmann::json::object();
+            for (auto& pm : def->parameterMapping) {
+                if (EqualsIgnoreCase(pm.type, "static") && pm.hasValue) {
+                    dict[pm.name] = nlohmann::json{ { "type", "String" }, { "default", pm.value } };
+                }
+            }
+            const auto& opts = TargetOptions();
+            MergeDict(dict, DefaultsParametersOf(opts));
+            if (opts.contains("options")) {
+                if (auto* actionParams = FindActionParameters(opts["options"], actionName))
+                    MergeDict(dict, *actionParams);
+            }
+            if (uiParameters.is_object()) {
+                for (auto it = uiParameters.begin(); it != uiParameters.end(); ++it)
+                    dict[it.key()] = NormalizeParamValue(it.value());
+            }
+
+            std::unordered_map<std::string, RE::Actor*> actorsByName;
+            for (auto& pm : def->parameterMapping) {
+                if (pm.name.empty())
+                    continue;
+                if (MappingLooksLikeActor(pm, dict)) {
+                    std::string source = "player";
+                    if (EqualsIgnoreCase(pm.type, "target") || EqualsIgnoreCase(pm.name, "target") ||
+                        EqualsIgnoreCase(pm.name, "stripped") || EqualsIgnoreCase(pm.name, "victim") ||
+                        EqualsIgnoreCase(pm.name, "participate") || EqualsIgnoreCase(pm.name, "participate_3")) {
+                        source = "target";
+                    }
+                    if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name]))
+                        source = dict[pm.name].value("source", source);
+                    else if (EqualsIgnoreCase(pm.type, "speaker") || EqualsIgnoreCase(pm.name, "speaker") ||
+                             EqualsIgnoreCase(pm.name, "stripper")) {
+                        source = "player";
+                        if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name]))
+                            source = dict[pm.name].value("source", "player");
+                    }
+                    // participate often uses nearby / currentActor-like sources from defaults.
+                    if (EqualsIgnoreCase(pm.name, "participate") || EqualsIgnoreCase(pm.name, "participate_3")) {
+                        if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name]))
+                            source = dict[pm.name].value("source", source);
+                    }
+                    RE::Actor* actor = ResolveSource(source, player, focusTarget);
+                    actorsByName[pm.name] = actor;
+                    continue;
+                }
+
+                std::string value;
+                if (EqualsIgnoreCase(pm.type, "static") && pm.hasValue) {
+                    value = pm.value;
+                    if (dict.contains(pm.name))
+                        value = StringValueOf(dict[pm.name], pm.name);
+                } else if (dict.contains(pm.name)) {
+                    value = StringValueOf(dict[pm.name], pm.name);
+                } else {
+                    value = FirstPipeValue(pm.description);
+                    if (value.empty()) {
+                        if (pm.name == "style")
+                            value = "normally";
+                        else if (pm.name == "direction")
+                            value = "giving";
+                    }
+                }
+                if (EqualsIgnoreCase(pm.name, "intent"))
+                    out.intent = value;
+                else if (EqualsIgnoreCase(pm.name, "style"))
+                    out.style = value.empty() ? "normally" : value;
+                else if (EqualsIgnoreCase(pm.name, "method"))
+                    out.method = value;
+                else if (EqualsIgnoreCase(pm.name, "direction"))
+                    out.direction = value;
+                else if (EqualsIgnoreCase(pm.name, "setting_name"))
+                    out.setting_name = value;
+            }
+
+            out.speaker = actorsByName.count("speaker") ? actorsByName["speaker"] : player;
+            out.target = actorsByName.count("target") ? actorsByName["target"] : nullptr;
+            if (!out.target && actorsByName.count("stripped"))
+                out.target = actorsByName["stripped"];
+            out.victim = actorsByName.count("victim") ? actorsByName["victim"] : nullptr;
+            out.participate = actorsByName.count("participate") ? actorsByName["participate"] : nullptr;
+            if (!out.participate && actorsByName.count("participate_3"))
+                out.participate = actorsByName["participate_3"];
+
+            ApplyVictimFromExecution(out);
+            out.method = RemapMethod(out.method);
+            BuildActorOrder(out);
+            return out.speaker != nullptr && !out.actorsResolved.empty();
+        }
+
+        int ActorGenderSexLab(RE::Actor* actor)
+        {
+            if (!actor)
+                return 0;
+            if (auto* base = actor->GetActorBase())
+                return static_cast<int>(base->GetSex()); // 0 male, 1 female — SexLab human mapping
+            return 0;
+        }
+
+        std::string ActorUuidDecimal(RE::Actor* actor)
+        {
+            if (!actor || !PublicFormIDToUUID)
+                return "0";
+            return std::to_string(PublicFormIDToUUID(actor->GetFormID()));
+        }
+
+        std::string ActorDisplayName(RE::Actor* actor)
+        {
+            if (!actor)
+                return "Unknown";
+            uint64_t uuid = PublicFormIDToUUID ? PublicFormIDToUUID(actor->GetFormID()) : 0;
+            if (uuid && PublicGetActorNameByUUID) {
+                std::string n = PublicGetActorNameByUUID(uuid);
+                if (!n.empty())
+                    return n;
+            }
+            const char* name = actor->GetName();
+            return (name && name[0]) ? name : "Unknown";
+        }
+    }
+
+    bool ShouldOpenSceneCreatorFromTargetMenu(
+        const std::string& actionName,
+        const nlohmann::json& uiParameters,
+        RE::Actor* player,
+        RE::Actor* focusTarget,
+        bool editTagsPlayer,
+        bool editTagsNonPlayer)
+    {
+        ResolvedSceneParams params;
+        if (!ResolveSceneParams(actionName, uiParameters, player, focusTarget, params))
+            return false;
+        if (params.hasPlayer)
+            return editTagsPlayer;
+        return editTagsNonPlayer;
+    }
+
+    bool OpenSceneCreatorFromTargetMenu(
+        const std::string& actionName,
+        const nlohmann::json& uiParameters,
+        RE::Actor* player,
+        RE::Actor* focusTarget)
+    {
+        if (PapyrusBindings_WebUI::SceneCreatorOpenedForPending) {
+            webui_log::info("OpenSceneCreatorFromTargetMenu: already pending, skipping");
+            return false;
+        }
+
+        ResolvedSceneParams params;
+        if (!ResolveSceneParams(actionName, uiParameters, player, focusTarget, params)) {
+            webui_log::error("OpenSceneCreatorFromTargetMenu: resolve failed for {}", actionName);
+            return false;
+        }
+
+        nlohmann::json state;
+        state["_creator_sid"] = 0;
+        state["_from_target_menu"] = true;
+        state["_intent"] = params.intent;
+        state["_style"] = params.style.empty() ? "normally" : params.style;
+        state["_method"] = params.method;
+        state["_event_hook"] = "";
+        state["_num_actors"] = static_cast<int>(params.actorsResolved.size());
+        state["_tags"] = params.method;
+        state["_tags_suppress"] = "";
+        state["_scene_presets"] = nlohmann::json::array({ "default" });
+        state["_group_tags"] = nlohmann::json::object();
+        state["_group_order"] = nlohmann::json::array();
+
+        nlohmann::json positions = nlohmann::json::array();
+        for (auto* a : params.actorsResolved) {
+            nlohmann::json po;
+            po["_name"] = ActorDisplayName(a);
+            po["_uuid"] = ActorUuidDecimal(a);
+            po["_form_id"] = a ? static_cast<int>(a->GetFormID()) : 0;
+            po["_dressed"] = 0;
+            po["_no_orgasm"] = 0;
+            po["_victim"] = (params.victim && a == params.victim) ? 1 : 0;
+            po["_speaking"] = "_pleasure_";
+            po["_gender"] = ActorGenderSexLab(a);
+            po["_race_key"] = "";
+            positions.push_back(std::move(po));
+        }
+        state["_positions"] = positions;
+
+        PapyrusBindings_WebUI::SceneCreatorOpenedForPending = true;
+        WebUI_Invoke("hidePanel('target_menu_panel');");
+        WebUI_Invoke("hidePanel('sex_menu_panel');");
+        WebUI_Invoke("hidePanel('yesno_panel');");
+        WebUI_Invoke("hidePanel('scene_menu_panel');");
+        WebUI_Invoke(std::string("configureSceneCreator(") + state.dump() + ");");
+        WebUI_Invoke("showPanel('scene_creator_panel');");
+        WebUI_Visibility_Show();
+        webui_log::info(
+            "OpenSceneCreatorFromTargetMenu: opened for {} actors={} method={}",
+            actionName,
+            params.actorsResolved.size(),
+            params.method);
         return true;
     }
 }

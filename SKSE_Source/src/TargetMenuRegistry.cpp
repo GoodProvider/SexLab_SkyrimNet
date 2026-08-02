@@ -15,7 +15,7 @@ namespace TargetMenuRegistry
             ActionCatalog::ActionDef def;
             def.name = opt.actionName;
             def.label = opt.label;
-            def.questEditorId = opt.questEditorId;
+            def.questFormId = opt.questFormId;
             def.scriptName = opt.scriptName;
             def.executionFunctionName = opt.executionFunctionName;
             ActionCatalog::ParamMapping pm;
@@ -34,32 +34,38 @@ namespace TargetMenuRegistry
     }
 
     void Register(
-        const std::string& questEditorId,
+        RE::TESForm* quest,
         const std::string& scriptName,
         const std::string& executionFunctionName,
         const std::string& label)
     {
+        if (!quest) {
+            webui_log::warn("TargetMenuRegistry::Register ignored (null quest)");
+            return;
+        }
         if (scriptName.empty() || executionFunctionName.empty()) {
             webui_log::warn(
                 "TargetMenuRegistry::Register ignored (empty scriptName or executionFunctionName)");
             return;
         }
 
+        const std::uint32_t formId = quest->GetFormID();
+
         for (auto& existing : g_options) {
-            if (existing.questEditorId == questEditorId &&
+            if (existing.questFormId == formId &&
                 existing.scriptName == scriptName &&
                 existing.executionFunctionName == executionFunctionName) {
                 existing.label = label.empty() ? executionFunctionName : label;
                 existing.def = MakeDef(existing);
                 webui_log::info(
-                    "TargetMenuRegistry replaced {}::{} label='{}'",
-                    scriptName, executionFunctionName, existing.label);
+                    "TargetMenuRegistry replaced {}::{} formId={:08X} label='{}'",
+                    scriptName, executionFunctionName, formId, existing.label);
                 return;
             }
         }
 
         ExternalOption opt;
-        opt.questEditorId = questEditorId;
+        opt.questFormId = formId;
         opt.scriptName = scriptName;
         opt.executionFunctionName = executionFunctionName;
         opt.label = label.empty() ? executionFunctionName : label;
@@ -68,8 +74,8 @@ namespace TargetMenuRegistry
         g_options.push_back(std::move(opt));
 
         webui_log::info(
-            "TargetMenuRegistry registered {}::{} as '{}' label='{}'",
-            scriptName, executionFunctionName, g_options.back().actionName, g_options.back().label);
+            "TargetMenuRegistry registered {}::{} as '{}' formId={:08X} label='{}'",
+            scriptName, executionFunctionName, g_options.back().actionName, formId, g_options.back().label);
     }
 
     const std::vector<ExternalOption>& All()

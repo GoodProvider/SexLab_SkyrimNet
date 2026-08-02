@@ -77,17 +77,17 @@ Match your feelings of desire, vulnerability, playfulness, intensity, connection
          
 **Speaking Rules**:
                {% if contains(speaker.speaking_modifiers,"_pleasure_") or contains(speaker.speaking_modifiers, "_pain_") %}
-- Your mind is overwelmed by physical {% if contains(speaker.speaking_modifiers, "_pleasure_") %} pleasure {% endif %} {% if contains(speaker.speaking_modifiers,"_pain_") %} pain {% endif %} 
+- Your mind is filled with intense physical {% if contains(speaker.speaking_modifiers, "_pleasure_") %} pleasure {% endif %} {% if contains(speaker.speaking_modifiers,"_pain_") %} pain {% endif %} 
                {% endif %} 
                {% if contains(speaker.speaking_modifiers,"_gagged_") %} 
 - Your mouth is blocked, you can only communictate 1 to 3 vocalizations ahh, hahh, hoooh, huh, ahh!, or similair
                {% else if contains(speaker.speaking_modifiers,"_pleasure_") or contains(speaker.speaking_modifiers, "_pain_") %}
                       {% if contains(speaker.speaking_modifiers,"_pleasure_") %}
-    - Your dialog contain at least one to two vocalizations ( hahh!, huuhh, hooh, ahh ) every random 1,2,or 3 words
+    - Your dialog should contain one to two vocalizations ( hahh!, huuhh, hooh, ahh ) 
                       {% else %} 
-    - Your dialog contain at least one to two vocalizations ( hahh!, ow!, iyaa!, huh!, hooohh, ouch! ) every random 1,2,or 3 words
+    - Your dialog contain one to two  vocalizations ( hahh!, ow!, iyaa!, huh!, hooohh, ouch! )
                       {% endif %} 
-- You are distracted, you can only speak 8 words or less (vocalizations don't count).
+- You are focus on feeling, you can only speak 8 words or less (vocalizations don't count).
                {% else if contains(speaker.speaking_modifiers, "_kissing_") %} 
 - Your mouth is busy kissing, rephrase spoken words down to 5 words or less!
                 {% else %} 
@@ -95,7 +95,7 @@ Match your feelings of desire, vulnerability, playfulness, intensity, connection
                {% endif %} 
         {% endif %}
      {% else %} 
-After your first acknowledgment, either act on it, dismiss it, or let it color your responses subtly—don't keep narrating that it's happening.
+Describe what you are feeling and thinking, let it color your response—don't keep narrating that it's happening.
      {% endif %}
 
     {% if get_global_value("SkyrimNet_SexLab_hide_dialogue_historic_instructions") != 1.0 %}
@@ -109,9 +109,8 @@ After your first acknowledgment, either act on it, dismiss it, or let it color y
 ** Length Remember Reminder
 {% if is_narration_enabled() and speaker.active %}
 - The final response can include only 2 sentences. One narration (no more then 12 words) and  dialoge sentence (it can be only vocalizations).
-- Never more then 2 vocalizations in a row, never the same vocalization in a row.
+- Never more then 2 vocalizations
 {% endif %} 
-- If dialog has nothing new to say, replace with non-verbals.
 - Your dialog must NEVER use dots ".", only commas "," , the Text-To-Speech fails to pronounce them correctly
 - Your response must be a clear understandable idea
 - Internal Dialogue must never just repeat the spoken dialogue

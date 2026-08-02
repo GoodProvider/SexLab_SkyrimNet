@@ -4,7 +4,7 @@
   "VirtualMachineAdapter": {
     "Scripts": [
       {
-        "Name": "SkyrimNet_SexLab_Stages",
+        "Name": "SkyrimNet_SexLab_AnimDb",
         "Properties": [
           {
             "MutagenObjectType": "ScriptObjectProperty",
@@ -13,18 +13,8 @@
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "actions",
-            "Object": "000800:SkyrimNet_Sexlab.esp"
-          },
-          {
-            "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "ActorLib",
+            "Name": "sexlab",
             "Object": "000D62:SexLab.esm"
-          },
-          {
-            "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "manager",
-            "Object": "000800:SkyrimNet_Sexlab.esp"
           }
         ]
       },

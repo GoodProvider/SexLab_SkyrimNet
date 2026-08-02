@@ -1,7 +1,7 @@
 Scriptname SkyrimNet_SexLab_MCM extends SKI_ConfigBase
 
 SkyrimNet_SexLab_Main Property main Auto  
-SkyrimNet_SexLab_Stages Property stages Auto 
+SkyrimNet_SexLab_AnimDb Property animdb Auto
 SkyrimNet_SexLab_Scene_Manager Property manager Auto 
 SkyrimNet_SexLab_Actions Property actions Auto 
 SkyrimNet_SexLab_Menu Property menu Auto ; New connection to the Menu script
@@ -56,7 +56,7 @@ string newline = ""
 Function Trace(String func, String msg, Bool notification=False) global
     String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_MCM", func, msg)
     if notification
-        Debug.Notification(logged)
+        Debug.Notification(msg)
     endif 
 EndFunction
 
@@ -78,6 +78,7 @@ Function Setup()
         udng_found = False 
     endif 
 
+    SkyrimNet_SexLab_WebUI.WebUI_SetHotkey(sex_edit_key, hot_key_toggle)
     Trace("Setup", "complete")
 EndFunction 
 
@@ -91,9 +92,9 @@ Bool Function Setup_CheckLinks()
         endif
     endif
 
-    if stages == None
-        stages = (self as Quest) as SkyrimNet_SexLab_Stages
-        if stages == None
+    if animdb == None
+        animdb = (self as Quest) as SkyrimNet_SexLab_AnimDb
+        if animdb == None
             links_ok = false
         endif
     endif
@@ -160,7 +161,8 @@ Function PageOptions()
     SetCursorPosition(16)
     AddToggleOptionST("HotKeyToggle","Enable the Start Sex / Edit Stage hot key",hot_key_toggle)
     AddKeyMapOptionST("SexEditKeySet", "Start Sex / Edit Stage Description", sex_edit_key)
-    AddToggleOptionST("SexEdithelpToggle","Hide Edit Stage Description Help",stages.hide_help)
+    AddToggleOptionST("SexEdithelpToggle","Hide Edit Stage Description Help",animdb.hide_help)
+    AddTextOptionST("RebuildAnimDb","Rebuild Animation Database","CLICK")
     
     SetCursorPosition(18)
     AddHeaderOption("Direction Narration Blocking")
@@ -169,7 +171,9 @@ Function PageOptions()
     AddSliderOptionST("NarrationMaxDistance", "Narration max distance", main.direct_narration_max_distance)
 
     if hot_key_toggle 
-        RegisterForKey(sex_edit_key)
+        SkyrimNet_SexLab_WebUI.WebUI_SetHotkey(sex_edit_key, True)
+    else
+        SkyrimNet_SexLab_WebUI.WebUI_SetHotkey(sex_edit_key, False)
     endif 
 
     if main.ostimnet_found 
@@ -273,15 +277,11 @@ State HotKeyToggle
     Event OnSelectST()
         hot_key_toggle = !hot_key_toggle
         SetToggleOptionValueST(hot_key_toggle)
-        if !hot_key_toggle
-            UnregisterForKey(sex_edit_key)
-        else
-            RegisterForKey(sex_edit_key)
-        endif
+        SkyrimNet_SexLab_WebUI.WebUI_SetHotkey(sex_edit_key, hot_key_toggle)
         ForcePageReset()
     EndEvent
     Event OnHighlightST()
-        SetInfoText("Enables the Sex Edit Hotkey."+newline)
+        SetInfoText("Enables the PrismaUI Start Sex / Edit Stage hotkey."+newline)
     EndEvent
 EndState
 
@@ -302,9 +302,8 @@ State SexEditKeySet
             continue = ShowMessage(msg, true, "$Yes", "$No")
         endif 
         if continue 
-            UnregisterForKey(sex_edit_key)
             sex_edit_key = keyCode
-            RegisterForKey(sex_edit_key)
+            SkyrimNet_SexLab_WebUI.WebUI_SetHotkey(sex_edit_key, hot_key_toggle)
             SetKeymapOptionValueST(sex_edit_key)
         endif 
     EndEvent
@@ -319,12 +318,33 @@ EndState
 
 State SexEditHelpToggle
     Event OnSelectST()
-        stages.hide_help = !stages.hide_help
-        SetToggleOptionValueST(stages.hide_help)
+        if !animdb
+            animdb = (self as Quest) as SkyrimNet_SexLab_AnimDb
+        endif
+        if animdb
+            animdb.hide_help = !animdb.hide_help
+            SetToggleOptionValueST(animdb.hide_help)
+        endif
         ForcePageReset()
     EndEvent
     Event OnHighlightST()
         SetInfoText("Hides the help dialogue that appears if no stage description is found."+newline)
+    EndEvent
+EndState
+
+State RebuildAnimDb
+    Event OnSelectST()
+        SkyrimNet_SexLab_AnimDb adb = (main as Quest) as SkyrimNet_SexLab_AnimDb
+        if adb
+            adb.RebuildDatabase()
+            ShowMessage("Animation database rebuild started in the background.", false)
+        else
+            ShowMessage("AnimDb script not found on quest.", false)
+        endif
+        SetTextOptionValueST("STARTED")
+    EndEvent
+    Event OnHighlightST()
+        SetInfoText("Force a full rebuild of the AnimationDB from SexLab registered animations.")
     EndEvent
 EndState
 
@@ -387,20 +407,4 @@ event OnOptionMenuAccept(int menu_id, int index)
     endif 
 endEvent
 
-; --------------------------------------------
-; Handles OnKeyDown 
-; --------------------------------------------
-
-Event OnKeyDown(int key_code)
-    Trace("OnKeyDown", "key_code: "+key_code)
-    if UI.IsTextInputEnabled()
-        return 
-    endif 
-    if sex_edit_key == key_code
-        if !menu
-            Trace("OnKeyDown", "menu is None; hotkey ignored", true)
-            return
-        endif
-        menu.ProcessHotkey(key_code)
-    endif 
-EndEvent
+; Papyrus key sink removed — menu hotkey is C++ KeyHandler via WebUI_SetHotkey.

@@ -54,6 +54,271 @@
             width: 920px;
         }
 
+        #scene-creator-panel {
+            width: 80vw;
+            height: 80vh;
+            max-height: 80vh;
+            margin-top: -10vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #scene-menu-panel {
+            width: 980px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .sc-split-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .sc-split-row > * + * {
+            border-left: 1px solid var(--border);
+            padding-left: 16px;
+        }
+
+        .sc-col-positions {
+            flex: 0 1 37%;
+            min-width: 0;
+        }
+
+        .sc-col-tags {
+            flex: 1 1 63%;
+            min-width: 0;
+        }
+
+        .sc-anims-section {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #scene-creator-panel > .bottom-bar {
+            flex-shrink: 0;
+        }
+
+        #yesno-panel {
+            min-width: 520px;
+        }
+
+        .yesno-question {
+            font-family: var(--font-body);
+            font-size: calc(var(--fs) * 0.85);
+            color: var(--text);
+            margin: 12px 0 24px;
+            line-height: 1.35;
+        }
+
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.55);
+            color: var(--text);
+            margin: 8px 0;
+        }
+
+        .data-table th {
+            text-align: left;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            padding: 4px 6px;
+        }
+
+        .data-table td {
+            padding: 4px 6px;
+            border-bottom: 1px solid rgba(201, 168, 76, 0.08);
+        }
+
+        .data-table tr.current td {
+            color: var(--accent);
+        }
+
+        .cell-toggle {
+            cursor: pointer;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0 6px;
+        }
+
+        .cell-toggle.on {
+            color: var(--accent);
+            border-color: rgba(201, 168, 76, 0.45);
+        }
+
+        .compact-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 8px 0;
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.65);
+            color: var(--text-muted);
+        }
+
+        .scroll-list {
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 6px;
+        }
+
+        #sc-anims-list {
+            padding: 0;
+            flex: 1;
+            min-height: 0;
+            max-height: none;
+            overflow-y: auto;
+        }
+
+        #sc-filter-positions,
+        #sc-filter-has-description {
+            transform: scale(2);
+            transform-origin: left center;
+            margin-right: 1.2em;
+        }
+
+        #sc-positions-table {
+            table-layout: auto;
+            width: 100%;
+        }
+
+        #sc-positions-table .col-idx,
+        #sc-positions-table .col-move,
+        #sc-positions-table .col-name,
+        #sc-positions-table .col-dressed,
+        #sc-positions-table .col-o,
+        #sc-positions-table .col-v {
+            width: 1%;
+            white-space: nowrap;
+        }
+
+        #sc-positions-table .col-mods {
+            width: auto;
+        }
+
+        #sc-positions-table .pos-move {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 2px;
+            font-family: var(--font-ui);
+            font-size: calc(var(--fs) * 0.45);
+            line-height: 1;
+            color: var(--accent);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #sc-positions-table .pos-move span {
+            padding: 0 4px;
+        }
+
+        #sc-positions-table .pos-move span:hover {
+            background: var(--accent-glow);
+        }
+
+        #sc-positions-table tr.pos-unselected td {
+            color: var(--text-muted);
+            opacity: 0.75;
+        }
+
+        #sc-positions-table td.col-name {
+            cursor: pointer;
+        }
+
+        #sc-positions-table td.col-name:hover {
+            color: var(--accent);
+        }
+
+        .mod-chip-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        #sc-positions-table .mod-chip-list .pulldown {
+            min-width: auto;
+            font-size: calc(var(--fs) * 0.55);
+        }
+
+        #sc-positions-table .mod-chip-list .pulldown-value {
+            padding: 1px 8px;
+            color: var(--accent);
+            border-color: rgba(201, 168, 76, 0.45);
+            border-radius: 6px;
+        }
+
+        #sc-positions-table .mod-chip-list .pulldown-option {
+            font-size: calc(var(--fs) * 0.55);
+        }
+
+        .anim-table {
+            margin: 0;
+            font-size: calc(var(--fs) * 0.60);
+            table-layout: auto;
+            width: 100%;
+        }
+
+        .anim-table th,
+        .anim-table td {
+            border-right: 1px solid rgba(201, 168, 76, 0.18);
+            vertical-align: top;
+        }
+
+        .anim-table th:last-child,
+        .anim-table td:last-child {
+            border-right: none;
+        }
+
+        .anim-table thead th {
+            position: sticky;
+            top: 0;
+            background: var(--bg, #1a1814);
+            z-index: 1;
+        }
+
+        .anim-table tbody tr {
+            cursor: pointer;
+        }
+
+        .anim-table tbody tr.selected td {
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .anim-table .col-genders,
+        .anim-table .col-mods,
+        .anim-table .col-name,
+        .anim-table .col-stages {
+            width: 1%;
+            white-space: nowrap;
+        }
+
+        .anim-table .col-stages { text-align: center; }
+
+        .anim-table .col-desc {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         @keyframes panelIn {
             from { opacity: 0; transform: translateY(10px); }
             to   { opacity: 1; transform: translateY(0);    }
@@ -204,6 +469,18 @@
         .option:active {
             color: var(--text-muted);
             box-shadow: inset 2px 0 0 var(--text-muted);
+        }
+
+        .option.disabled {
+            color: var(--text-muted);
+            cursor: default;
+            pointer-events: none;
+            opacity: 0.55;
+        }
+
+        .option-row.disabled .option-expand {
+            pointer-events: none;
+            opacity: 0.4;
         }
 
         /* ── Cancel ───────────────────────────────────────────── */
@@ -503,7 +780,7 @@
 </head>
 <body>
     <div id="panels-container">
-    <div id="target-panel" class="panel" style="min-width:auto; width:auto; max-width:none;">
+    <div id="target-panel" class="panel" style="display:none; min-width:auto; width:auto; max-width:none;">
 
         <div id="target-name" class="target-row">Target</div>
         <div id="framework-row" class="field-row" style="display:none"></div>
@@ -526,7 +803,7 @@
 
     </div>
 
-    <div id="sex-menu-panel" class="panel">
+    <div id="sex-menu-panel" class="panel" style="display:none">
 
         <div class="target-row">Sex Menu</div>
 
@@ -557,6 +834,111 @@
             <div class="option-cancel" onclick="window.onCancel()">Cancel</div>
         </div>
 
+    </div>
+
+    <div id="yesno-panel" class="panel" style="display:none">
+        <div class="target-row">Confirm</div>
+        <div id="yesno-question" class="yesno-question"></div>
+        <div class="btn-row">
+            <div class="action-btn" onclick="yesNoClick(0)">Yes</div>
+            <div class="action-btn" onclick="yesNoClick(1)">Yes (Random)</div>
+            <div class="option-cancel" onclick="yesNoClick(2)">No (Silent)</div>
+            <div class="option-cancel" onclick="yesNoClick(3)">No</div>
+        </div>
+    </div>
+
+    <div id="scene-creator-panel" class="panel" style="display:none">
+        <div class="target-row">Scene Creator</div>
+        <div class="bottom-bar" style="margin-top:0; padding-top:0; border-top:none; margin-bottom:12px">
+            <div class="action-btn" onclick="scStart()">Start</div>
+            <div class="option-cancel" onclick="scCancel()">Cancel</div>
+        </div>
+        <div class="compact-row">
+            <span>activity</span>
+            <input id="sc-intent" type="text" style="flex:1; min-width:200px" />
+            <span>preset</span>
+            <div id="sc-preset-pulldown"></div>
+            <input id="sc-preset-name" type="text" placeholder="name" style="width:110px" />
+            <div class="action-btn" onclick="scLoadPreset()">Load</div>
+            <div class="action-btn" onclick="scSavePreset()">Save</div>
+        </div>
+        <div class="sc-split-row">
+            <div class="sc-col-positions">
+                <div class="section-header">Positions</div>
+                <table class="data-table" id="sc-positions-table"><thead><tr>
+                    <th class="col-idx">#</th>
+                    <th class="col-move"></th>
+                    <th class="col-name">name</th>
+                    <th class="col-dressed">dressed</th>
+                    <th class="col-o">O</th>
+                    <th class="col-v">V</th>
+                    <th class="col-mods">modifiers</th>
+                </tr></thead><tbody></tbody></table>
+                <div class="compact-row">
+                    <span>style</span>
+                    <div id="sc-style-pulldown"></div>
+                </div>
+            </div>
+            <div class="sc-col-tags">
+                <div class="section-header">Filter</div>
+                <div class="tag-mode-row">
+                    <span class="tag-mode-btn active" id="sc-btn-include" onclick="scSetTagMode('include')">tags</span>
+                    <div id="sc-include-tags" class="active-tag-list"></div>
+                </div>
+                <div class="tag-mode-row">
+                    <span class="tag-mode-btn" id="sc-btn-exclude" onclick="scSetTagMode('exclude')">suppress</span>
+                    <div id="sc-exclude-tags" class="active-tag-list"></div>
+                </div>
+                <div class="compact-row">
+                    <input id="sc-tag-filter" type="text" placeholder="filter tags" oninput="scRenderAvailableTags()" />
+                    <div id="sc-type-pulldown"></div>
+                </div>
+                <div id="sc-available-tags" class="scroll-list"></div>
+                <div class="compact-row">
+                    <label><input id="sc-filter-positions" type="checkbox" checked onchange="scRefreshAnims()" /> filter by positions</label>
+                    <label><input id="sc-filter-has-description" type="checkbox" onchange="scOnHasDescriptionChange()" /> has description</label>
+                </div>
+            </div>
+        </div>
+        <div class="sc-anims-section">
+            <div class="section-header">Animations</div>
+            <div class="compact-row">
+                <span id="sc-anim-count"></span>
+                <span id="sc-selected-count"></span>
+                <div class="action-btn" onclick="scClearAnims()">All</div>
+                <div class="action-btn" onclick="scNoneAnims()">None</div>
+            </div>
+            <div id="sc-anims-list" class="scroll-list"></div>
+        </div>
+    </div>
+
+    <div id="scene-menu-panel" class="panel" style="display:none">
+        <div id="sm-title" class="target-row">Scene</div>
+        <div id="sm-subtitle" class="compact-row" style="opacity:0.7"></div>
+        <div class="compact-row">
+            <span id="sm-activity"></span>
+            <span>style</span>
+            <div id="sm-style-pulldown"></div>
+        </div>
+        <div class="section-header">Positions</div>
+        <table class="data-table" id="sm-positions-table"><thead><tr>
+            <th>#</th><th>name</th><th>dressed</th><th>O</th><th>V</th><th>speaking</th>
+        </tr></thead><tbody></tbody></table>
+        <div class="section-header">Tags</div>
+        <div id="sm-tags" class="active-tag-list"></div>
+        <div class="compact-row">
+            <div class="action-btn" onclick="smPrevNext(-1)">Previous</div>
+            <div class="action-btn" onclick="smPrevNext(1)">Next</div>
+            <span id="sm-stage-label"></span>
+        </div>
+        <div class="section-header">Stage descriptions</div>
+        <table class="data-table" id="sm-stages-table"><thead><tr>
+            <th>stage</th><th>template</th><th>preview</th>
+        </tr></thead><tbody></tbody></table>
+        <div class="bottom-bar">
+            <div class="option-cancel" onclick="smStop()">Stop</div>
+            <div class="action-btn" onclick="smDone()">Done</div>
+        </div>
     </div>
     </div><!-- #panels-container -->
 
@@ -589,12 +971,31 @@
         }
 
         // C++ Invoke adapters (Papyrus_WebUI / WebUI.cpp panel names)
+        const PANEL_IDS = [
+            'target-panel', 'sex-menu-panel', 'yesno-panel',
+            'scene-creator-panel', 'scene-menu-panel'
+        ];
+
+        function hideAllPanelsDom() {
+            for (const pid of PANEL_IDS) {
+                const el = document.getElementById(pid);
+                if (el) el.style.display = 'none';
+            }
+        }
+
         function showPanel(id) {
+            hideAllPanelsDom();
             if (id === 'target_menu_panel' || id === 'target-panel') {
-                document.getElementById('target-panel').style.display = '';
+                document.getElementById('target-panel').style.display = 'block';
                 renderTargetMenu();
             } else if (id === 'sex_menu_panel' || id === 'sex-menu-panel') {
                 showSexMenu();
+            } else if (id === 'yesno_panel' || id === 'yesno-panel') {
+                document.getElementById('yesno-panel').style.display = 'block';
+            } else if (id === 'scene_creator_panel' || id === 'scene-creator-panel') {
+                document.getElementById('scene-creator-panel').style.display = 'block';
+            } else if (id === 'scene_menu_panel' || id === 'scene-menu-panel') {
+                document.getElementById('scene-menu-panel').style.display = 'block';
             }
         }
 
@@ -603,16 +1004,55 @@
                 document.getElementById('target-panel').style.display = 'none';
             } else if (id === 'sex_menu_panel' || id === 'sex-menu-panel') {
                 hideSexMenu();
+            } else if (id === 'yesno_panel' || id === 'yesno-panel') {
+                document.getElementById('yesno-panel').style.display = 'none';
+            } else if (id === 'scene_creator_panel' || id === 'scene-creator-panel') {
+                document.getElementById('scene-creator-panel').style.display = 'none';
+            } else if (id === 'scene_menu_panel' || id === 'scene-menu-panel') {
+                document.getElementById('scene-menu-panel').style.display = 'none';
+            }
+        }
+
+        function visiblePanelId() {
+            for (const pid of ['yesno-panel', 'scene-creator-panel', 'scene-menu-panel', 'target-panel', 'sex-menu-panel']) {
+                const el = document.getElementById(pid);
+                if (el && el.style.display === 'block') return pid;
+            }
+            return null;
+        }
+
+        function handleGlobalEscape() {
+            const pid = visiblePanelId();
+            if (pid === 'yesno-panel') {
+                yesNoClick(2);
+            } else if (pid === 'scene-creator-panel') {
+                scCancel();
+            } else if (pid === 'scene-menu-panel') {
+                smDone();
+            } else {
+                if (typeof window.onCancel === 'function') window.onCancel();
+                else {
+                    hidePanel('target_menu_panel');
+                    hidePanel('sex_menu_panel');
+                }
             }
         }
 
         // ── Target menu (JSON/YAML catalog) ───────────────────────
-        let TARGET_CATALOG = { defaults: {}, options: [], actions: {} };
+        let TARGET_CATALOG = { defaultsParameters: {}, options: [], actions: {} };
         let paramDict = {};           // typed parameter dictionary (mutable)
         let navStack = [];            // stack of pulldown option objects
         let selectedActionName = null;
         let selectedActionLabel = null;
         let leftSelectedOpt = null;   // root left-column selection (for highlight)
+
+        /// Hierarchical param remember-store (parent-linked tree → localStorage).
+        let paramTreeRoot = null;
+        let paramTreeByAction = {};
+        let paramTreeNextId = 1;
+
+        const NODE_STORE_PREFIX = 'sns_tm_node:';
+        const LEGACY_PARAM_STORE_PREFIX = 'sns_tm_param:';
 
         function displayLabel(obj) {
             if (!obj) return '';
@@ -631,90 +1071,303 @@
             return into;
         }
 
-        const PARAM_STORE_PREFIX = 'sns_tm_param:';
+        function catalogDefaults() {
+            const c = TARGET_CATALOG || {};
+            if (c.defaultsParameters && typeof c.defaultsParameters === 'object')
+                return c.defaultsParameters;
+            return c.defaults || {};
+        }
 
-        function loadRememberedParam(name) {
-            if (!name) return null;
+        function pipeValues(description) {
+            if (!description || description.indexOf('|') < 0) return null;
+            return description.split('|').map(s => s.trim()).filter(Boolean);
+        }
+
+        function yamlAllowedValues(description) {
+            const pipes = pipeValues(description || '');
+            if (pipes && pipes.length) return pipes;
+            const s = (description || '').trim();
+            return s ? [s] : [];
+        }
+
+        function yamlDefaultFromDescription(description) {
+            const allowed = yamlAllowedValues(description);
+            return allowed.length ? allowed[0] : '';
+        }
+
+        function styleSynonyms(v) {
+            const s = String(v == null ? '' : v).toLowerCase();
+            if (s === 'gently' || s === 'gentle') return ['gently', 'gentle'];
+            if (s === 'normally' || s === 'normal') return ['normally', 'normal'];
+            if (s === 'forcefully' || s === 'forceful') return ['forcefully', 'forceful'];
+            return [String(v == null ? '' : v)];
+        }
+
+        /// Return an allowed token matching value (incl. style synonyms), or null.
+        function coerceToAllowed(value, allowed) {
+            if (!allowed || !allowed.length) return value != null ? String(value) : null;
+            const raw = String(value == null ? '' : value);
+            if (allowed.indexOf(raw) >= 0) return raw;
+            const syns = styleSynonyms(raw);
+            for (let i = 0; i < allowed.length; i++) {
+                const a = allowed[i];
+                if (syns.indexOf(a) >= 0) return a;
+                const aSyns = styleSynonyms(a);
+                if (aSyns.indexOf(raw) >= 0) return a;
+            }
+            return null;
+        }
+
+        function nodeStorageKey(node, key) {
+            const parts = [String(node.id)];
+            if (node.path) parts.push(node.path);
+            parts.push(key);
+            return NODE_STORE_PREFIX + parts.join('.');
+        }
+
+        function loadNodeParam(node, key) {
+            if (!node || !key) return null;
             try {
-                const v = localStorage.getItem(PARAM_STORE_PREFIX + name);
+                const v = localStorage.getItem(nodeStorageKey(node, key));
                 return (v !== null && v !== undefined) ? v : null;
             } catch (e) {
                 return null;
             }
         }
 
-        function saveRememberedParam(name, value) {
-            if (!name) return;
+        function saveNodeParam(node, key, value) {
+            if (!node || !key) return;
             try {
-                localStorage.setItem(PARAM_STORE_PREFIX + name, String(value == null ? '' : value));
+                localStorage.setItem(nodeStorageKey(node, key), String(value == null ? '' : value));
             } catch (e) { /* ignore quota / private mode */ }
         }
 
-        function resolveParamValue(name, fallback) {
-            const remembered = loadRememberedParam(name);
-            if (remembered !== null) return remembered;
-            if (paramDict[name] && paramDict[name].default != null && paramDict[name].default !== '') {
-                return paramDict[name].default;
+        function clearLegacyParamStore() {
+            try {
+                const toRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && k.indexOf(LEGACY_PARAM_STORE_PREFIX) === 0) toRemove.push(k);
+                }
+                for (let j = 0; j < toRemove.length; j++) localStorage.removeItem(toRemove[j]);
+            } catch (e) { /* ignore */ }
+        }
+
+        function nodeLabelForOption(opt) {
+            if (!opt) return '';
+            if (opt.type === 'parameter') return opt.name || '';
+            return displayLabel(opt);
+        }
+
+        function addParamTreeChild(parent, opt) {
+            if (!opt || !opt.type || !parent) return null;
+            const label = nodeLabelForOption(opt);
+            const path = parent.path === '' ? label : (parent.path + '.' + label);
+            const node = {
+                id: paramTreeNextId++,
+                path: path,
+                label: label,
+                kind: opt.type,
+                parent: parent,
+                actionName: (opt.type === 'action') ? (opt.name || null) : null,
+                children: [],
+                optionParameters: opt.parameters || null
+            };
+            parent.children.push(node);
+            if (node.kind === 'action' && node.actionName) {
+                paramTreeByAction[node.actionName] = node;
             }
-            return fallback != null ? fallback : '';
+            if (opt.type === 'pulldown' || opt.type === 'actionSwitch') {
+                const kids = opt.options || [];
+                for (let i = 0; i < kids.length; i++) addParamTreeChild(node, kids[i]);
+            }
+            return node;
         }
 
-        function setParamValue(name, value) {
-            paramDict[name] = { type: 'String', default: value };
-            saveRememberedParam(name, value);
+        function findActionNode(actionName) {
+            if (!actionName) return null;
+            return paramTreeByAction[actionName] || null;
         }
 
-        function seedActionParams(actionName) {
-            const action = TARGET_CATALOG.actions && TARGET_CATALOG.actions[actionName];
+        function ensureRootParams() {
+            if (!paramTreeRoot) return;
+            const defaults = catalogDefaults();
+            for (const name of Object.keys(defaults)) {
+                const spec = defaults[name];
+                if (!spec || typeof spec !== 'object') continue;
+                if (spec.source) continue; // actor placeholders — not remembered strings
+                if (spec.default == null) continue;
+                if (loadNodeParam(paramTreeRoot, name) !== null) continue;
+                saveNodeParam(paramTreeRoot, name, spec.default);
+            }
+            for (const opt of (TARGET_CATALOG.options || [])) {
+                if (opt.type !== 'parameter' || !opt.name) continue;
+                if (loadNodeParam(paramTreeRoot, opt.name) !== null) continue;
+                const cur = defaults[opt.name];
+                const defVal = opt.default != null ? opt.default
+                    : (cur && cur.default != null ? cur.default
+                        : ((opt.values && opt.values[0]) || ''));
+                saveNodeParam(paramTreeRoot, opt.name, defVal);
+            }
+        }
+
+        /// Fill missing action-node keys: walk parents for an allowed match, else YAML default.
+        function ensureActionParams(node) {
+            if (!node || node.kind !== 'action' || !node.actionName) return;
+            const action = TARGET_CATALOG.actions && TARGET_CATALOG.actions[node.actionName];
             if (!action) return;
             const mapping = action.parameterMapping || [];
-            for (const m of mapping) {
+            for (let i = 0; i < mapping.length; i++) {
+                const m = mapping[i];
                 if (isActorMapping(m) || isStaticMapping(m)) continue;
                 const name = m.name;
                 if (!name) continue;
-                const pipes = pipeValues(m.description || '');
-                const fallback = pipes ? pipes[0] : '';
-                const value = resolveParamValue(name, fallback);
+                if (loadNodeParam(node, name) !== null) continue;
+                const allowed = yamlAllowedValues(m.description || '');
+                const yamlDef = yamlDefaultFromDescription(m.description || '');
+                let chosen = null;
+                let p = node.parent;
+                while (p) {
+                    const raw = loadNodeParam(p, name);
+                    if (raw !== null) {
+                        const coerced = coerceToAllowed(raw, allowed);
+                        if (coerced !== null) {
+                            chosen = coerced;
+                            break;
+                        }
+                    }
+                    p = p.parent;
+                }
+                if (chosen === null) chosen = yamlDef;
+                saveNodeParam(node, name, chosen);
+            }
+            if (node.optionParameters && typeof node.optionParameters === 'object') {
+                for (const name of Object.keys(node.optionParameters)) {
+                    if (loadNodeParam(node, name) !== null) continue;
+                    const spec = node.optionParameters[name];
+                    const defVal = (spec && typeof spec === 'object' && spec.default != null)
+                        ? spec.default : '';
+                    if (defVal === '' || defVal == null) continue;
+                    saveNodeParam(node, name, defVal);
+                }
+            }
+        }
+
+        function buildParamTree() {
+            paramTreeByAction = {};
+            paramTreeNextId = 1;
+            paramTreeRoot = {
+                id: 0,
+                path: '',
+                label: '',
+                kind: 'root',
+                parent: null,
+                actionName: null,
+                children: [],
+                optionParameters: null
+            };
+            for (const opt of (TARGET_CATALOG.options || [])) {
+                addParamTreeChild(paramTreeRoot, opt);
+            }
+            clearLegacyParamStore();
+            ensureRootParams();
+            function walk(n) {
+                if (n.kind === 'action') ensureActionParams(n);
+                const kids = n.children || [];
+                for (let i = 0; i < kids.length; i++) walk(kids[i]);
+            }
+            walk(paramTreeRoot);
+        }
+
+        /// Clone defaults → apply root-remembered global parameters → merge extra.
+        function rebuildParamDict(extra) {
+            paramDict = deepClone(catalogDefaults());
+            for (const opt of (TARGET_CATALOG.options || [])) {
+                if (opt.type === 'parameter' && opt.name) {
+                    const cur = paramDict[opt.name];
+                    const defVal = opt.default != null ? opt.default
+                        : (cur && cur.default != null ? cur.default : '');
+                    const remembered = paramTreeRoot ? loadNodeParam(paramTreeRoot, opt.name) : null;
+                    paramDict[opt.name] = {
+                        type: 'String',
+                        default: remembered !== null ? remembered : defVal
+                    };
+                }
+            }
+            if (extra) mergeParams(paramDict, deepClone(extra));
+            return paramDict;
+        }
+
+        /// Write paramDict + node store. opts.global → root; else selected action node; else root.
+        function setParamValue(name, value, opts) {
+            paramDict[name] = { type: 'String', default: value };
+            let node = null;
+            if (opts && opts.node) node = opts.node;
+            else if (opts && opts.global) node = paramTreeRoot;
+            else if (selectedActionName) node = findActionNode(selectedActionName);
+            if (!node) node = paramTreeRoot;
+            if (node) saveNodeParam(node, name, value);
+        }
+
+        function seedActionParams(actionName) {
+            const node = findActionNode(actionName);
+            if (node) ensureActionParams(node);
+            const action = TARGET_CATALOG.actions && TARGET_CATALOG.actions[actionName];
+            if (!action) return;
+            const mapping = action.parameterMapping || [];
+            for (let i = 0; i < mapping.length; i++) {
+                const m = mapping[i];
+                if (isActorMapping(m) || isStaticMapping(m)) continue;
+                const name = m.name;
+                if (!name) continue;
+                let value = node ? loadNodeParam(node, name) : null;
+                if (value === null) value = yamlDefaultFromDescription(m.description || '');
                 paramDict[name] = { type: 'String', default: value };
             }
         }
 
-        function selectAction(name, label) {
+        function selectAction(name, label, optionParameters) {
+            rebuildParamDict(optionParameters);
             selectedActionName = name;
             selectedActionLabel = label || name;
             seedActionParams(name);
             renderTargetMenu();
         }
 
-        function startAction(name, label) {
+        function startAction(name, label, optionParameters) {
+            rebuildParamDict(optionParameters);
             selectedActionName = name;
             selectedActionLabel = label || name;
             seedActionParams(name);
             targetMenuStart();
         }
 
-        function makeActionRow(label, name, selected, onBefore) {
+        function makeActionRow(label, name, selected, onBefore, optionParameters, disabled) {
             const row = document.createElement('div');
-            row.className = 'option-row' + (selected ? ' selected' : '');
+            row.className = 'option-row' + (selected ? ' selected' : '') + (disabled ? ' disabled' : '');
 
             const main = document.createElement('div');
-            main.className = 'option' + (selected ? ' selected' : '');
+            main.className = 'option' + (selected ? ' selected' : '') + (disabled ? ' disabled' : '');
             main.textContent = label;
-            main.onclick = (e) => {
-                e.stopPropagation();
-                if (onBefore) onBefore();
-                startAction(name, label);
-            };
+            if (!disabled) {
+                main.onclick = (e) => {
+                    e.stopPropagation();
+                    if (onBefore) onBefore();
+                    startAction(name, label, optionParameters);
+                };
+            }
 
             const expand = document.createElement('div');
             expand.className = 'option-expand';
             expand.textContent = '❯';
             expand.title = 'Parameters';
-            expand.onclick = (e) => {
-                e.stopPropagation();
-                if (onBefore) onBefore();
-                selectAction(name, label);
-            };
+            if (!disabled) {
+                expand.onclick = (e) => {
+                    e.stopPropagation();
+                    if (onBefore) onBefore();
+                    selectAction(name, label, optionParameters);
+                };
+            }
 
             row.appendChild(main);
             row.appendChild(expand);
@@ -801,30 +1454,18 @@
         document.addEventListener('click', () => closeAllPulldowns());
 
         function configureTargetMenu(catalog) {
-            TARGET_CATALOG = catalog || { defaults: {}, options: [], actions: {} };
+            TARGET_CATALOG = catalog || { defaultsParameters: {}, options: [], actions: {} };
+            buildParamTree();
             resetTargetMenuState();
             renderTargetMenu();
         }
 
         function resetTargetMenuState() {
-            paramDict = deepClone(TARGET_CATALOG.defaults || {});
+            rebuildParamDict(null);
             navStack = [];
             leftSelectedOpt = null;
             selectedActionName = null;
             selectedActionLabel = null;
-            // Apply top-level parameter option defaults, then overlay remembered values
-            for (const opt of (TARGET_CATALOG.options || [])) {
-                if (opt.type === 'parameter' && opt.name) {
-                    const cur = paramDict[opt.name];
-                    const defVal = opt.default != null ? opt.default
-                        : (cur && cur.default != null ? cur.default : '');
-                    const remembered = loadRememberedParam(opt.name);
-                    paramDict[opt.name] = {
-                        type: 'String',
-                        default: remembered !== null ? remembered : defVal
-                    };
-                }
-            }
         }
 
         function setTargetActor(uuid, name) {
@@ -832,11 +1473,6 @@
             actorNames[uuid] = name;
             const el = document.getElementById('target-name');
             if (el) el.textContent = name || 'Target';
-        }
-
-        function pipeValues(description) {
-            if (!description || description.indexOf('|') < 0) return null;
-            return description.split('|').map(s => s.trim()).filter(Boolean);
         }
 
         function isActorMapping(m) {
@@ -864,11 +1500,13 @@
                 const label = document.createElement('span');
                 label.textContent = opt.name;
                 const values = opt.values || [];
-                const current = resolveParamValue(opt.name, opt.default || (values[0] || ''));
+                const fallback = opt.default || (values[0] || '');
+                const remembered = paramTreeRoot ? loadNodeParam(paramTreeRoot, opt.name) : null;
+                const current = remembered !== null ? remembered : fallback;
                 paramDict[opt.name] = { type: 'String', default: current };
                 row.appendChild(label);
                 row.appendChild(createPulldown(values, current, (v) => {
-                    setParamValue(opt.name, v);
+                    setParamValue(opt.name, v, { global: true });
                 }));
                 globals.appendChild(row);
             }
@@ -877,16 +1515,18 @@
             left.innerHTML = '';
             for (const opt of (TARGET_CATALOG.options || [])) {
                 if (opt.type === 'parameter') continue;
-                if (opt.type === 'action' && opt.name) {
+                if (opt.type === 'action' && (opt.name || opt.disabled)) {
                     const lbl = displayLabel(opt);
                     left.appendChild(makeActionRow(
                         lbl,
-                        opt.name,
+                        opt.name || '',
                         selectedActionName === opt.name && leftSelectedOpt === opt,
                         () => {
                             leftSelectedOpt = opt;
                             navStack = [];
-                        }
+                        },
+                        opt.parameters || null,
+                        !!opt.disabled
                     ));
                     continue;
                 }
@@ -907,7 +1547,7 @@
             navStack = [opt];
             selectedActionName = null;
             selectedActionLabel = null;
-            if (opt.parameters) mergeParams(paramDict, deepClone(opt.parameters));
+            rebuildParamDict(opt.parameters || null);
             renderTargetMenu();
         }
 
@@ -966,7 +1606,9 @@
                 list.appendChild(makeActionRow(
                     lbl,
                     entry.name,
-                    selectedActionName === entry.name
+                    selectedActionName === entry.name,
+                    null,
+                    entry.parameters || null
                 ));
             }
         }
@@ -984,6 +1626,8 @@
             }
 
             const action = TARGET_CATALOG.actions[selectedActionName];
+            const actionNode = findActionNode(selectedActionName);
+            if (actionNode) ensureActionParams(actionNode);
             col.classList.remove('hidden');
             header.textContent = selectedActionLabel || selectedActionName;
             dyn.innerHTML = '';
@@ -1001,12 +1645,14 @@
                 field.appendChild(lab);
 
                 const pipes = pipeValues(m.description || '');
-                const fallback = pipes ? pipes[0] : '';
-                const current = resolveParamValue(name, fallback);
+                const yamlDef = yamlDefaultFromDescription(m.description || '');
+                let current = actionNode ? loadNodeParam(actionNode, name) : null;
+                if (current === null) current = yamlDef;
 
                 if (pipes) {
-                    paramDict[name] = { type: 'String', default: current || pipes[0] };
-                    field.appendChild(createPulldown(pipes, current || pipes[0], (v) => {
+                    const shown = current || pipes[0];
+                    paramDict[name] = { type: 'String', default: shown };
+                    field.appendChild(createPulldown(pipes, shown, (v) => {
                         setParamValue(name, v);
                     }));
                 } else {
@@ -1067,16 +1713,23 @@
 
         // ── C++-callable actor setters ────────────────────────────
         function setNearbyActors(actors) {
-            nearbyActors = actors;
+            nearbyActors = (actors || []).map(a => ({
+                name: a.name || '',
+                uuid: String(a.uuid != null ? a.uuid : ''),
+                formId: a.formId != null ? a.formId : (a.form_id != null ? a.form_id : 0)
+            }));
             actorNames = {};
             for (const a of nearbyActors) actorNames[a.uuid] = a.name;
+            if (playerActor && playerActor.uuid) actorNames[playerActor.uuid] = playerActor.name;
             renderNearby();
+            if (typeof scRenderPositions === 'function') scRenderPositions();
         }
 
-        function setPlayerActor(uuid, name) {
-            playerActor = { uuid, name };
-            actorNames[uuid] = name;
-            playerName = name;
+        function setPlayerActor(uuid, name, formId) {
+            playerActor = { uuid: String(uuid), name: name || 'Player', formId: formId != null ? formId : 0 };
+            actorNames[playerActor.uuid] = playerActor.name;
+            playerName = playerActor.name;
+            if (typeof scRenderPositions === 'function') scRenderPositions();
         }
 
         // ── Actors ────────────────────────────────────────────────
@@ -1207,7 +1860,7 @@
             renderTagLists();
             await loadTagData();
             initTagGroups(); renderGroupDropdown();
-            document.getElementById('sex-menu-panel').style.display = '';
+            document.getElementById('sex-menu-panel').style.display = 'block';
         }
 
         async function showSexMenuForSex() {
@@ -1226,6 +1879,803 @@
 
         hideSexMenu();
         document.getElementById('target-panel').style.display = 'none';
+        hidePanel('yesno_panel');
+        hidePanel('scene_creator_panel');
+        hidePanel('scene_menu_panel');
+
+        // ── Yes / No ─────────────────────────────────────────────
+        let YESNO = { question: '', creator_sid: 0 };
+
+        function configureYesNo(cfg) {
+            YESNO = cfg || {};
+            document.getElementById('yesno-question').textContent = YESNO._question || YESNO.question || '';
+        }
+
+        function yesNoClick(button) {
+            if (typeof window.onYesNoResult !== 'function') return;
+            window.onYesNoResult(JSON.stringify({
+                button,
+                creator_sid: YESNO._creator_sid != null ? YESNO._creator_sid : YESNO.creator_sid
+            }));
+        }
+
+        // ── Scene Creator ─────────────────────────────────────────
+        let SC = {
+            creator_sid: 0,
+            from_target_menu: false,
+            intent: '',
+            style: 'normally',
+            method: '',
+            positions: [],
+            tags: [],
+            suppress: [],
+            deselectedRegistries: [],
+            lastAnimRegistries: [],
+            lastAnims: [],
+            lastTags: [],
+            tagMode: 'include',
+            tagType: 'any',
+            groupTags: {},
+            groupOrder: [],
+            presets: [],
+            animQueryId: 0,
+            tagQueryId: 0,
+            metaQueryId: 0,
+            pendingNearby: null
+        };
+
+        function configureSceneCreator(state) {
+            SC.creator_sid = state._creator_sid != null ? state._creator_sid : 0;
+            SC.from_target_menu = !!state._from_target_menu;
+            SC.intent = state._intent || '';
+            SC.style = state._style || 'normally';
+            SC.method = state._method || '';
+            SC.positions = state._positions || [];
+            SC.tags = (state._tags || '').split(',').map(s => s.trim()).filter(Boolean);
+            SC.suppress = (state._tags_suppress || '').split(',').map(s => s.trim()).filter(Boolean);
+            SC.deselectedRegistries = [];
+            SC.lastAnimRegistries = [];
+            SC.lastAnims = [];
+            SC.tagType = 'any';
+            SC.event_hook = state._event_hook || '';
+            SC.pendingNearby = null;
+            const presetsRaw = state._scene_presets || [];
+            SC.presets = Array.isArray(presetsRaw)
+                ? presetsRaw.map(p => (typeof p === 'string' ? p : (p && p._name) || String(p)))
+                : [];
+            SC.groupTags = state._group_tags || {};
+            const orderRaw = state._group_order;
+            SC.groupOrder = Array.isArray(orderRaw)
+                ? orderRaw.map(String)
+                : Object.keys(SC.groupTags);
+            document.getElementById('sc-intent').value = SC.intent;
+            const seedPreset = SC.presets[0] || 'default';
+            document.getElementById('sc-preset-name').value = seedPreset;
+            const presetHost = document.getElementById('sc-preset-pulldown');
+            presetHost.innerHTML = '';
+            presetHost.appendChild(createPulldown(SC.presets.length ? SC.presets : ['default'], seedPreset, v => {
+                document.getElementById('sc-preset-name').value = v;
+            }));
+            const styleHost = document.getElementById('sc-style-pulldown');
+            styleHost.innerHTML = '';
+            styleHost.appendChild(createPulldown(['forcefully', 'normally', 'gently'], SC.style, v => { SC.style = v; }));
+            const typeHost = document.getElementById('sc-type-pulldown');
+            typeHost.innerHTML = '';
+            const typeValues = ['any'].concat(SC.groupOrder);
+            typeHost.appendChild(createPulldown(typeValues, 'any', v => { SC.tagType = v; scRefreshTags(); }));
+            scRenderPositions();
+            scRenderTagChips();
+            scEnrichActorMeta();
+        }
+
+        function scParseMods(p) {
+            const raw = (p && (p._speaking != null ? p._speaking : p.speaking)) || '';
+            return String(raw).split(',').map(s => s.trim()).filter(Boolean);
+        }
+
+        function scSetMods(p, arr) {
+            p._speaking = (arr || []).join(',');
+        }
+
+        const SC_SPEAKING_MODS = ['_pleasure_', '_pain_', '_gagged_', '_kissing_'];
+
+        function scPosUuid(p) {
+            return String((p && (p._uuid != null ? p._uuid : p.uuid)) || '');
+        }
+
+        function scSelectedUuidSet() {
+            const set = new Set();
+            (SC.positions || []).forEach(p => {
+                const u = scPosUuid(p);
+                if (u) set.add(u);
+            });
+            return set;
+        }
+
+        function scNearbyPool() {
+            const byUuid = new Map();
+            if (playerActor && playerActor.uuid && playerActor.uuid !== '0') {
+                byUuid.set(String(playerActor.uuid), {
+                    name: playerActor.name || 'Player',
+                    uuid: String(playerActor.uuid),
+                    formId: playerActor.formId || 0
+                });
+            }
+            (nearbyActors || []).forEach(a => {
+                const u = String(a.uuid || '');
+                if (!u || u === '0') return;
+                byUuid.set(u, {
+                    name: a.name || actorNames[u] || u,
+                    uuid: u,
+                    formId: a.formId != null ? a.formId : 0
+                });
+            });
+            return [...byUuid.values()];
+        }
+
+        function scOnActorCountChanged() {
+            SC.deselectedRegistries = [];
+            scRefreshTags();
+            scRefreshAnims();
+        }
+
+        function scMovePos(i, dir) {
+            const j = i + dir;
+            if (j < 0 || j >= SC.positions.length) return;
+            const tmp = SC.positions[i];
+            SC.positions[i] = SC.positions[j];
+            SC.positions[j] = tmp;
+            scRenderPositions();
+            scRefreshAnims();
+        }
+
+        function scUnselectPos(i) {
+            if (i < 0 || i >= SC.positions.length) return;
+            SC.positions.splice(i, 1);
+            scRenderPositions();
+            scOnActorCountChanged();
+        }
+
+        function scSelectNearby(uuid) {
+            const u = String(uuid || '');
+            if (!u || scSelectedUuidSet().has(u)) return;
+            const pool = scNearbyPool().find(a => a.uuid === u);
+            if (!pool) return;
+            const formId = pool.formId || 0;
+            SC.pendingNearby = {
+                _name: pool.name,
+                _uuid: pool.uuid,
+                _form_id: formId,
+                _dressed: 0,
+                _no_orgasm: 0,
+                _victim: 0,
+                _speaking: '_pleasure_',
+                _gender: 0,
+                _race_key: ''
+            };
+            if (formId && typeof window.onResolveActorMeta === 'function') {
+                const id = 'n' + (++SC.metaQueryId);
+                window.onResolveActorMeta(JSON.stringify({
+                    _request_id: id,
+                    _form_ids: [formId]
+                }));
+                return;
+            }
+            SC.positions.push(SC.pendingNearby);
+            SC.pendingNearby = null;
+            scRenderPositions();
+            scOnActorCountChanged();
+        }
+
+        function scRequestActorMeta(formIds, requestId) {
+            if (typeof window.onResolveActorMeta !== 'function') return false;
+            const ids = (formIds || []).filter(id => id);
+            if (!ids.length) return false;
+            window.onResolveActorMeta(JSON.stringify({
+                _request_id: requestId,
+                _form_ids: ids
+            }));
+            return true;
+        }
+
+        function scEnrichActorMeta() {
+            const ids = (SC.positions || []).map(p => p._form_id || 0).filter(id => id);
+            const id = 'e' + (++SC.metaQueryId);
+            if (!scRequestActorMeta(ids, id)) {
+                scRefreshTags();
+                scRefreshAnims();
+            }
+        }
+
+        function actorAnimMetaResult(payload) {
+            const rid = String((payload && payload._request_id) || '');
+            const actors = (payload && payload._actors) || [];
+            const byForm = new Map();
+            actors.forEach(a => {
+                const fid = a._form_id != null ? a._form_id : 0;
+                if (fid) byForm.set(fid, a);
+            });
+            if (rid.startsWith('n') && SC.pendingNearby) {
+                const meta = byForm.get(SC.pendingNearby._form_id) || actors[0];
+                if (meta) {
+                    if (meta._gender != null) SC.pendingNearby._gender = meta._gender;
+                    if (meta._race_key != null) SC.pendingNearby._race_key = meta._race_key;
+                    if (meta._name) SC.pendingNearby._name = meta._name;
+                }
+                SC.positions.push(SC.pendingNearby);
+                SC.pendingNearby = null;
+                scRenderPositions();
+                scOnActorCountChanged();
+                return;
+            }
+            let changed = false;
+            (SC.positions || []).forEach(p => {
+                const meta = byForm.get(p._form_id || 0);
+                if (!meta) return;
+                if (meta._gender != null && p._gender !== meta._gender) {
+                    p._gender = meta._gender;
+                    changed = true;
+                }
+                const rk = meta._race_key != null ? meta._race_key : '';
+                if (p._race_key !== rk) {
+                    p._race_key = rk;
+                    changed = true;
+                }
+            });
+            if (changed) scRenderPositions();
+            scRefreshTags();
+            scRefreshAnims();
+        }
+
+        function scRenderPositions() {
+            const tbody = document.querySelector('#sc-positions-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            const selectedSet = scSelectedUuidSet();
+
+            SC.positions.forEach((p, i) => {
+                const mods = scParseMods(p);
+                const tr = document.createElement('tr');
+
+                const tdIdx = document.createElement('td');
+                tdIdx.className = 'col-idx';
+                tdIdx.textContent = String(i);
+
+                const tdMove = document.createElement('td');
+                tdMove.className = 'col-move';
+                const move = document.createElement('div');
+                move.className = 'pos-move';
+                if (i > 0) {
+                    const up = document.createElement('span');
+                    up.textContent = '▲';
+                    up.onclick = (e) => { e.stopPropagation(); scMovePos(i, -1); };
+                    move.appendChild(up);
+                }
+                if (i < SC.positions.length - 1) {
+                    const down = document.createElement('span');
+                    down.textContent = '▼';
+                    down.onclick = (e) => { e.stopPropagation(); scMovePos(i, 1); };
+                    move.appendChild(down);
+                }
+                tdMove.appendChild(move);
+
+                const tdName = document.createElement('td');
+                tdName.className = 'col-name';
+                tdName.textContent = p._name || p.name || '';
+                tdName.onclick = (e) => { e.stopPropagation(); scUnselectPos(i); };
+
+                const tdDressed = document.createElement('td');
+                tdDressed.className = 'col-dressed';
+                tdDressed.innerHTML = `<span class="cell-toggle ${p._dressed ? 'on' : ''}" onclick="event.stopPropagation(); scTogglePos(${i}, 'dressed')">${p._dressed ? '👕' : '—'}</span>`;
+
+                const tdO = document.createElement('td');
+                tdO.className = 'col-o';
+                tdO.innerHTML = `<span class="cell-toggle ${p._no_orgasm ? 'on' : ''}" onclick="event.stopPropagation(); scTogglePos(${i}, 'no_orgasm')">O</span>`;
+
+                const tdV = document.createElement('td');
+                tdV.className = 'col-v';
+                tdV.innerHTML = `<span class="cell-toggle ${p._victim ? 'on' : ''}" onclick="event.stopPropagation(); scTogglePos(${i}, 'victim')">${p._victim ? 'V' : '—'}</span>`;
+
+                const tdMods = document.createElement('td');
+                tdMods.className = 'col-mods';
+                const list = document.createElement('div');
+                list.className = 'mod-chip-list';
+                mods.forEach(m => {
+                    const chip = document.createElement('span');
+                    chip.className = 'tag-chip';
+                    chip.textContent = m;
+                    chip.onclick = (e) => {
+                        e.stopPropagation();
+                        scRemoveMod(i, m);
+                    };
+                    list.appendChild(chip);
+                });
+                const available = SC_SPEAKING_MODS.filter(m => !mods.includes(m));
+                if (available.length) {
+                    list.appendChild(createPulldown(available, 'add', v => {
+                        scAddMod(i, v);
+                    }));
+                }
+                tdMods.appendChild(list);
+
+                tr.appendChild(tdIdx);
+                tr.appendChild(tdMove);
+                tr.appendChild(tdName);
+                tr.appendChild(tdDressed);
+                tr.appendChild(tdO);
+                tr.appendChild(tdV);
+                tr.appendChild(tdMods);
+                tbody.appendChild(tr);
+            });
+
+            scNearbyPool().forEach(a => {
+                if (selectedSet.has(a.uuid)) return;
+                const tr = document.createElement('tr');
+                tr.className = 'pos-unselected';
+                const empty = () => {
+                    const td = document.createElement('td');
+                    td.textContent = '';
+                    return td;
+                };
+                const tdIdx = document.createElement('td');
+                tdIdx.className = 'col-idx';
+                tdIdx.textContent = '';
+                const tdMove = empty();
+                tdMove.className = 'col-move';
+                const tdName = document.createElement('td');
+                tdName.className = 'col-name';
+                tdName.colSpan = 1;
+                tdName.textContent = a.name;
+                tdName.onclick = () => scSelectNearby(a.uuid);
+                const tdDressed = empty();
+                tdDressed.className = 'col-dressed';
+                const tdO = empty();
+                tdO.className = 'col-o';
+                const tdV = empty();
+                tdV.className = 'col-v';
+                const tdMods = empty();
+                tdMods.className = 'col-mods';
+                tr.appendChild(tdIdx);
+                tr.appendChild(tdMove);
+                tr.appendChild(tdName);
+                tr.appendChild(tdDressed);
+                tr.appendChild(tdO);
+                tr.appendChild(tdV);
+                tr.appendChild(tdMods);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function scTogglePos(i, key) {
+            const p = SC.positions[i];
+            if (!p) return;
+            if (key === 'dressed') p._dressed = p._dressed ? 0 : 1;
+            if (key === 'no_orgasm') p._no_orgasm = p._no_orgasm ? 0 : 1;
+            if (key === 'victim') p._victim = p._victim ? 0 : 1;
+            scRenderPositions();
+            scRefreshAnims();
+        }
+
+        function scRemoveMod(i, token) {
+            const p = SC.positions[i];
+            if (!p) return;
+            scSetMods(p, scParseMods(p).filter(m => m !== token));
+            scRenderPositions();
+        }
+
+        function scAddMod(i, token) {
+            const p = SC.positions[i];
+            if (!p || !token) return;
+            const mods = scParseMods(p);
+            if (mods.includes(token)) return;
+            mods.push(token);
+            scSetMods(p, mods);
+            scRenderPositions();
+        }
+
+        function scSetTagMode(mode) {
+            SC.tagMode = mode;
+            document.getElementById('sc-btn-include').classList.toggle('active', mode === 'include');
+            document.getElementById('sc-btn-exclude').classList.toggle('active', mode === 'exclude');
+        }
+
+        function scRenderTagChips() {
+            document.getElementById('sc-include-tags').innerHTML = SC.tags.map(t =>
+                `<span class="tag-chip" onclick="scRemoveTag('include','${t}')">${t}</span>`).join('');
+            document.getElementById('sc-exclude-tags').innerHTML = SC.suppress.map(t =>
+                `<span class="tag-chip" onclick="scRemoveTag('exclude','${t}')">${t}</span>`).join('');
+        }
+
+        function scRemoveTag(list, tag) {
+            if (list === 'include') SC.tags = SC.tags.filter(t => t !== tag);
+            else SC.suppress = SC.suppress.filter(t => t !== tag);
+            scRenderTagChips();
+            scRefreshTags();
+            scRefreshAnims();
+        }
+
+        function scAddTag(tag, list) {
+            const arr = list === 'include' ? SC.tags : SC.suppress;
+            if (!arr.includes(tag)) arr.push(tag);
+            scRenderTagChips();
+            scRefreshTags();
+            scRefreshAnims();
+        }
+
+        function scBuildFilter() {
+            const filter = { _actor_count: SC.positions.length, _must_tags: SC.tags, _suppress_tags: SC.suppress, _require_all: SC.tags.length > 0 };
+            const hasCreature = SC.positions.some(p => (p._gender | 0) >= 2 || (p._race_key || ''));
+            filter._creature = hasCreature ? 'require' : 'exclude';
+            if (hasCreature || document.getElementById('sc-filter-positions').checked) {
+                filter._position_match = true;
+                filter._pos_genders = SC.positions.map(p => (p._gender != null ? p._gender : 0));
+            }
+            if (hasCreature) {
+                filter._pos_race_keys = SC.positions.map(p => (p._race_key || '').toLowerCase());
+            }
+            if (document.getElementById('sc-filter-has-description').checked) {
+                filter._has_description = true;
+            }
+            return filter;
+        }
+
+        function scOnHasDescriptionChange() {
+            scRefreshAnims();
+            scRefreshTags();
+        }
+
+        function scRefreshTags() {
+            if (typeof window.onAnimDbQuery !== 'function') return;
+            const id = ++SC.tagQueryId;
+            window.onAnimDbQuery(JSON.stringify({ _request_id: String(id), _type: 'tags', _filter: scBuildFilter(), _n: 0 }));
+        }
+
+        function scRenderAvailableTags() {
+            let tags = SC.lastTags || [];
+            if (SC.tagType && SC.tagType !== 'any') {
+                const members = SC.groupTags[SC.tagType] || [];
+                const set = new Set(Array.isArray(members) ? members : Object.keys(members || {}));
+                tags = tags.filter(t => set.has(t._tag));
+            }
+            const q = (document.getElementById('sc-tag-filter').value || '').toLowerCase();
+            if (q) {
+                tags = tags.filter(t => (t._tag || '').toLowerCase().startsWith(q));
+            } else {
+                tags = tags.slice(0, 30);
+            }
+            document.getElementById('sc-available-tags').innerHTML = tags.map(t =>
+                `<span class="tag-member" onclick="scAddTag('${t._tag}', SC.tagMode)">${t._tag} (${t._count})</span>`
+            ).join(' ');
+        }
+
+        function scSelectedRegistries() {
+            return SC.lastAnimRegistries.filter(r => !SC.deselectedRegistries.includes(r));
+        }
+
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function abbrevMod(token) {
+            const t = String(token || '').replace(/_/g, '').trim();
+            return t.length >= 2 ? t.slice(0, 2).toLowerCase() : (t || '');
+        }
+
+        function formatMods(a) {
+            const mods = a._pos_speaking_modifiers || [];
+            const n = Math.max(mods.length, (a._pos_genders || []).length, a._position_count || 0);
+            if (n <= 0) return '-';
+            const parts = [];
+            for (let i = 0; i < n; i++) {
+                const raw = mods[i];
+                if (raw == null || String(raw).trim() === '') {
+                    parts.push('-');
+                    continue;
+                }
+                const tokens = String(raw).split(',').map(s => s.trim()).filter(Boolean);
+                const abbr = tokens.map(abbrevMod).filter(Boolean);
+                parts.push(abbr.length ? abbr.join(',') : '-');
+            }
+            return parts.join(' ');
+        }
+
+        function previewDescription(a) {
+            const sd = a._stage_descriptions || {};
+            const keys = Object.keys(sd).sort((x, y) => Number(x) - Number(y));
+            let text = '';
+            for (const k of keys) {
+                const v = sd[k];
+                if (v != null && String(v).trim() !== '') {
+                    text = String(v);
+                    break;
+                }
+            }
+            if (!text) return '';
+            const names = (SC.positions || []).map(p => p._name || p.name || '');
+            for (let i = 0; i < names.length; i++) {
+                const token = '{{sl.actors.' + i + '}}';
+                if (!names[i]) continue;
+                text = text.split(token).join(names[i]);
+            }
+            return text;
+        }
+
+        function scAnimHasDescription(a) {
+            const flags = a._stage_has_description || [];
+            for (let i = 0; i < flags.length; i++) {
+                if (flags[i]) return true;
+            }
+            const sd = a._stage_descriptions || {};
+            for (const k of Object.keys(sd)) {
+                const v = sd[k];
+                if (v != null && String(v).trim() !== '') return true;
+            }
+            return false;
+        }
+
+        function scRenderAnimList() {
+            const anims = SC.lastAnims || [];
+            const selectedCount = scSelectedRegistries().length;
+            document.getElementById('sc-selected-count').textContent = `selected ${selectedCount}`;
+            const indices = anims.map((_, i) => i);
+            indices.sort((ia, ib) => {
+                const a = anims[ia];
+                const b = anims[ib];
+                const sa = SC.deselectedRegistries.includes(a._registry || '') ? 0 : 1;
+                const sb = SC.deselectedRegistries.includes(b._registry || '') ? 0 : 1;
+                if (sb !== sa) return sb - sa;
+                const da = scAnimHasDescription(a) ? 1 : 0;
+                const db = scAnimHasDescription(b) ? 1 : 0;
+                return db - da;
+            });
+            const rows = indices.map((i) => {
+                const a = anims[i];
+                const reg = a._registry || '';
+                const sel = !SC.deselectedRegistries.includes(reg);
+                const genders = (a._pos_genders || []).map((g, gi) => {
+                    const letter = (g === 0 || g === 2) ? 'm' : 'f';
+                    const no = (a._pos_no_orgasm || [])[gi];
+                    return no ? letter : letter.toUpperCase();
+                }).join(' ');
+                const mods = formatMods(a);
+                const name = a._name || '(unnamed)';
+                const stages = (a._stage_count != null) ? a._stage_count : '';
+                const desc = previewDescription(a);
+                return `<tr class="${sel ? 'selected' : ''}" onclick="scToggleAnim(${i})">` +
+                    `<td class="col-genders">${escapeHtml(genders)}</td>` +
+                    `<td class="col-mods">${escapeHtml(mods)}</td>` +
+                    `<td class="col-name">${escapeHtml(name)}</td>` +
+                    `<td class="col-stages">${escapeHtml(stages)}</td>` +
+                    `<td class="col-desc" title="${escapeHtml(desc)}">${escapeHtml(desc)}</td>` +
+                    `</tr>`;
+            }).join('');
+            document.getElementById('sc-anims-list').innerHTML =
+                `<table class="data-table anim-table"><thead><tr>` +
+                `<th class="col-genders">genders</th>` +
+                `<th class="col-mods">modifiers</th>` +
+                `<th class="col-name">name</th>` +
+                `<th class="col-stages">num stages</th>` +
+                `<th class="col-desc">description</th>` +
+                `</tr></thead><tbody>${rows}</tbody></table>`;
+        }
+
+        function scRefreshAnims() {
+            if (typeof window.onAnimDbQuery !== 'function') return;
+            const id = ++SC.animQueryId;
+            window.onAnimDbQuery(JSON.stringify({ _request_id: 'a' + id, _type: 'anims', _filter: scBuildFilter(), _n: 125 }));
+        }
+
+        function animDbQueryResult(payload) {
+            const rid = payload._request_id || '';
+            if (String(rid).startsWith('a')) {
+                const anims = payload._anims || [];
+                SC.lastAnims = anims;
+                SC.lastAnimRegistries = anims.map(a => a._registry).filter(Boolean);
+                document.getElementById('sc-anim-count').textContent = `animations ${anims.length}/${payload._total_enabled || '?'}`;
+                scRenderAnimList();
+                return;
+            }
+            let tags = payload._tags || [];
+            SC.lastTags = tags;
+            scRenderAvailableTags();
+        }
+
+        function scToggleAnim(idx) {
+            const a = SC.lastAnims[idx];
+            const reg = a && a._registry;
+            if (!reg) return;
+            if (SC.deselectedRegistries.includes(reg)) {
+                SC.deselectedRegistries = SC.deselectedRegistries.filter(r => r !== reg);
+                const no = a._pos_no_orgasm || [];
+                const sp = a._pos_speaking_modifiers || [];
+                SC.positions.forEach((p, i) => {
+                    if (i < no.length) p._no_orgasm = no[i] ? 1 : 0;
+                    if (i < sp.length && sp[i]) p._speaking = Array.isArray(sp[i]) ? sp[i].join(',') : String(sp[i]);
+                });
+                scRenderPositions();
+            } else {
+                SC.deselectedRegistries.push(reg);
+            }
+            scRenderAnimList();
+        }
+
+        function scClearAnims() {
+            SC.deselectedRegistries = [];
+            scRenderAnimList();
+        }
+
+        function scNoneAnims() {
+            SC.deselectedRegistries = (SC.lastAnimRegistries || []).slice();
+            scRenderAnimList();
+        }
+
+        function scCurrentPresetName() {
+            const typed = (document.getElementById('sc-preset-name').value || '').trim();
+            if (typed) return typed;
+            const val = document.querySelector('#sc-preset-pulldown .pulldown-value');
+            return val ? val.textContent.trim() : 'default';
+        }
+
+        function scLoadPreset() {
+            if (SC.from_target_menu) {
+                return;
+            }
+            if (typeof window.onSceneCreatorLoad !== 'function') return;
+            window.onSceneCreatorLoad(JSON.stringify({
+                _creator_sid: SC.creator_sid,
+                _scene_preset: scCurrentPresetName()
+            }));
+        }
+
+        function scSavePreset() {
+            if (SC.from_target_menu) {
+                return;
+            }
+            if (typeof window.onSceneCreatorSave !== 'function') return;
+            const payload = scBuildResult('save');
+            payload._scene_preset = scCurrentPresetName();
+            window.onSceneCreatorSave(JSON.stringify(payload));
+        }
+
+        function scBuildResult(action) {
+            return {
+                _action: action,
+                _creator_sid: SC.creator_sid,
+                _from_target_menu: !!SC.from_target_menu,
+                _intent: document.getElementById('sc-intent').value || SC.intent,
+                _style: SC.style,
+                _method: SC.method || '',
+                _tags: SC.tags.join(','),
+                _tags_suppress: SC.suppress.join(','),
+                _positions: SC.positions,
+                _selected_registries: scSelectedRegistries(),
+                _event_hook: SC.event_hook || ''
+            };
+        }
+
+        function scStart() {
+            if (typeof window.onSceneCreatorResult !== 'function') return;
+            window.onSceneCreatorResult(JSON.stringify(scBuildResult('start')));
+        }
+
+        function scCancel() {
+            if (typeof window.onSceneCreatorResult !== 'function') return;
+            window.onSceneCreatorResult(JSON.stringify(scBuildResult('cancel')));
+        }
+
+        // ── Scene Menu (live thread) ──────────────────────────────
+        let SM = { scene_sid: 0, dirty: false, registry: '', style: 'normally', positions: [], stages: [], tags: '' };
+
+        function configureSceneMenu(state) {
+            SM = Object.assign(SM, state);
+            SM.dirty = false;
+            SM.positions = state._positions || [];
+            SM.stages = state._stages || [];
+            document.getElementById('sm-title').textContent = state._title || state._registry || 'Scene';
+            document.getElementById('sm-subtitle').textContent = state._subtitle || state._anim_name || '';
+            document.getElementById('sm-activity').textContent = state._activity || state._intent || '';
+            document.getElementById('sm-tags').innerHTML = (state._tags || '').split(',').filter(Boolean)
+                .map(t => `<span class="tag-chip">${t}</span>`).join('');
+            document.getElementById('sm-stage-label').textContent = `stage ${state._stage || 1}/${state._stage_count || '?'}`;
+            const styleHost = document.getElementById('sm-style-pulldown');
+            styleHost.innerHTML = '';
+            styleHost.appendChild(createPulldown(['forcefully', 'normally', 'gently'], state._style || 'normally', v => {
+                SM.style = v;
+                smLiveUpdate();
+            }));
+            smRenderPositions();
+            smRenderStages();
+        }
+
+        function smRenderPositions() {
+            const tbody = document.querySelector('#sm-positions-table tbody');
+            tbody.innerHTML = SM.positions.map((p, i) => `<tr>
+                <td>${i}</td><td>${p._name || ''}</td>
+                <td><span class="cell-toggle ${p._dressed ? 'on' : ''}" onclick="smTogglePos(${i}, 'dressed')">${p._dressed ? '👕' : '—'}</span></td>
+                <td><span class="cell-toggle ${p._no_orgasm ? 'on' : ''}" onclick="smTogglePos(${i}, 'no_orgasm')">O</span></td>
+                <td>${p._victim ? 'V' : ''}</td>
+                <td><span class="cell-toggle" onclick="smCycleSpeaking(${i})">${p._speaking || '—'}</span></td>
+            </tr>`).join('');
+        }
+
+        function smTogglePos(i, key) {
+            const p = SM.positions[i];
+            if (!p) return;
+            if (key === 'dressed') p._dressed = p._dressed ? 0 : 1;
+            if (key === 'no_orgasm') {
+                p._no_orgasm = p._no_orgasm ? 0 : 1;
+                SM.dirty = true;
+            }
+            smRenderPositions();
+            smLiveUpdate();
+        }
+
+        function smCycleSpeaking(i) {
+            const mods = ['_pleasure_', '_pain_', '_gagged_', '_kissing_'];
+            const p = SM.positions[i];
+            if (!p) return;
+            const cur = p._speaking || '_pleasure_';
+            p._speaking = mods[(mods.indexOf(cur) + 1) % mods.length];
+            smRenderPositions();
+            smLiveUpdate();
+        }
+
+        function smLiveUpdate() {
+            if (typeof window.onSceneMenuLiveUpdate !== 'function') return;
+            window.onSceneMenuLiveUpdate(JSON.stringify({
+                _scene_sid: SM._scene_sid || SM.scene_sid,
+                _style: SM.style,
+                _positions: SM.positions
+            }));
+        }
+
+        function smRenderStages() {
+            const tbody = document.querySelector('#sm-stages-table tbody');
+            tbody.innerHTML = SM.stages.map(st => {
+                const n = st._stage;
+                const cur = st._current ? ' current' : '';
+                return `<tr class="${cur}">
+                    <td>${n}</td>
+                    <td><input type="text" value="${(st._template || '').replace(/"/g, '&quot;')}" style="width:100%" oninput="smStageEdit(${n}, this.value)" /></td>
+                    <td>${st._preview || ''}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function smStageEdit(stage, val) {
+            const st = SM.stages.find(s => s._stage === stage);
+            if (st) {
+                st._template = val;
+                SM.dirty = true;
+            }
+        }
+
+        function smPrevNext(dir) {
+            if (typeof window.onSceneMenuPrevNext !== 'function') return;
+            window.onSceneMenuPrevNext(JSON.stringify({ _scene_sid: SM._scene_sid || SM.scene_sid, _direction: dir }));
+        }
+
+        function smDone(markDirty) {
+            if (typeof window.onSceneMenuClose !== 'function') return;
+            if (markDirty === false) SM.dirty = false;
+            window.onSceneMenuClose(JSON.stringify({
+                _scene_sid: SM._scene_sid || SM.scene_sid,
+                _dirty: !!SM.dirty,
+                _style: SM.style,
+                _positions: SM.positions,
+                _stages: SM.stages,
+                _registry: SM._registry || SM.registry
+            }));
+        }
+
+        function smStop() {
+            if (typeof window.onSceneMenuStop !== 'function') return;
+            window.onSceneMenuStop(JSON.stringify({ _scene_sid: SM._scene_sid || SM.scene_sid }));
+        }
     </script>
 </body>
 </html>

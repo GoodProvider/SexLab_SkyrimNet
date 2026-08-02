@@ -7,7 +7,7 @@ namespace PapyrusBindings_API
     /// Papyrus native: register an external Target Menu action for this game run.
     void RegisterTargetMenuOption(
         RE::StaticFunctionTag*,
-        RE::BSFixedString questEditorId,
+        RE::TESForm* quest,
         RE::BSFixedString scriptName,
         RE::BSFixedString executionFunctionName,
         RE::BSFixedString label);

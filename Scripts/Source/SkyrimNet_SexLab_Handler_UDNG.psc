@@ -6,7 +6,7 @@ SkyrimNet_UDNG_Groups Property udng_groups = None Auto
 Function Trace(String func, String msg, Bool notification=False) global
     String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Handler_UDNG", func, msg)
     if notification
-        Debug.Notification(logged)
+        Debug.Notification(msg)
     endif
 EndFunction
 
@@ -21,7 +21,7 @@ Function Setup()
     UnRegisterForModEvent(key_)
     if udng_groups != None 
         RegisterForModEvent(key_, "MenuOpen")
-        SkyrimNet_SexLab_API.RegisterTargetMenuOption("SkyrimNet_SexLab_Handler_UDNG", "SkyrimNet_SexLab_Handler_UDNG", "OpenMenu", "bondage")
+        SkyrimNet_SexLab_API.RegisterTargetMenuOption(self as Form, "SkyrimNet_SexLab_Handler_UDNG", "OpenMenu", "bondage")
         Trace("Setup",file+" found registering for "+key_) 
     else 
         Trace("Setup",file+" not found")

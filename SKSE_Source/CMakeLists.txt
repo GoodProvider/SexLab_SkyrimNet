@@ -14,7 +14,7 @@ project(SkyrimNet_SexLab VERSION 0.0.1 LANGUAGES CXX)
 #
 # To do this automatically, set the `SKYRIM_FOLDER` environment variable
 # to the path of your Skyrim Special Edition folder
-set(MOD_FOLDER_NAME "TT Lover's Ledger")
+set(MOD_FOLDER_NAME "SkyrimNet SexLab")
 # set(SKYRIM_MODS_FOLDER "C:\\path\\to\\your\\mods\\folder")
 
 # If you're using Mod Organizer 2 or Vortex, you might want this to go inside
@@ -54,6 +54,8 @@ include("${CommonLibPath}/cmake/CommonLibSSE.cmake")
 # Setup your SKSE plugin as an SKSE plugin!
 # find_package(CommonLibSSE CONFIG REQUIRED)
 
+find_package(unofficial-sqlite3 CONFIG REQUIRED)
+
 # Collect all source files
 file(GLOB SOURCES
     "src/*.cpp"
@@ -65,6 +67,7 @@ file(GLOB SOURCES
 add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${SOURCES})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 standard
 target_precompile_headers(${PROJECT_NAME} PRIVATE src/PCH.h) # <--- PCH.h is required!
+target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::sqlite3::sqlite3)
 
 # include/ for public headers, src/ for PCH, lib/PrismaUI for PrismaUI_API.h
 target_include_directories(${PROJECT_NAME} PRIVATE

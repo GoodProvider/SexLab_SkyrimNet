@@ -1,4 +1,0 @@
-{%- set outfit = sexlab_outfit_options(npc.UUID) -%}
-{%- set option = outfit.options -%}
-[style] [how]
-{# Preferred how for this actor (LLM may choose dresses|undresses): {{option}} #}

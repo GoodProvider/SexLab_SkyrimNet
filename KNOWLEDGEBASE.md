@@ -1,12 +1,33 @@
 # Knowledgebase
 
+## AnimationDB creature / race-key filter (2026-08-02)
+
+- Scene Creator forces `_creature: require|exclude` from SexLab classification only (`GetGender` 2/3 + `sslCreatureAnimationSlots.GetRaceKey`). Do **not** treat non-creature as “human.”
+- When any position is a SexLab creature, force `_position_match` + `_pos_race_keys` (exact lowercase match vs AnimationDB `pos_race_keys`). Dog → only `"Dogs"` (primary GetRaceKey), not `creatures.json` display names.
+- Positions carry `_race_key` from Papyrus `BuildWebUIState` / `GetRaceKeyForActor`. TargetMenu C++ open and nearby-add enrich via `onResolveActorMeta` → `WebUI_OnResolveActorMeta` → `actorAnimMetaResult`.
+- WebUI `ParseFilterJson` must accept `_creature` and `_pos_race_keys` (parity with Papyrus AnimationDB parse).
+
+## AnimationDB + PrismaUI scene panels (2026-08-01)
+
+- **DB file**: `Data/SKSE/Plugins/SkyrimNet_SexLab/animationdb.sql` (SQLite via vcpkg `unofficial-sqlite3`). Registry / tags / race keys stored lowercase for matching; PK = SexLab `registry`. Display `name` (and `animations/(name).json`) keep SexLab casing.
+- **Ingest**: Papyrus `SkyrimNet_SexLab_AnimDb` walks `GetBySlot` in batches (not SexLab `GetByTags` — 125-cap lossy). C++ `InferOrgasmExpected` seeds `pos_no_orgasm` / speaking mods; stage descriptions from `animations/**/*.json` (`_local_` last wins).
+- **YesNo / SceneCreator are async**: PrismaUI cannot block like SkyMessage. `SelectAnimations` returns `manager.ui_pending`; C++ JS listeners dispatch `Scene_Manager.WebUI_OnYesNoResult` / `WebUI_OnSceneCreatorResult` → `ContinueAfterYesNo` / `ContinueAfterSceneCreator` → `FinishStartScene`.
+- **Yes always opens SceneCreatorMenu**; **Yes (Random)** skips editor; NPC–NPC opens creator when MCM `sex_edit_tags_nonplayer` is on. Escape on YesNo = No (Silent).
+- **TargetMenu + Tag Edit**: when MCM Tag Edit applies (player in scene + `sex_edit_tags_player`, or NPC-only + `sex_edit_tags_nonplayer`), TargetMenu **does not** `ExecuteAction` / Papyrus. C++ builds Scene Creator JSON (`_from_target_menu`, `_creator_sid:0`) and opens the panel. Start → `WebUI_OnSceneCreatorHandoff` (CreateCreator + ApplyWebUIState + FinishStartScene). Cancel with no creator Release.
+- **`scene_creator_menu_called`**: once per creator / SexLab thread; `TryOpenSceneCreatorMenu` gates Papyrus first-open; Load/Save refresh still calls `SceneCreator_Open` directly. C++ `SceneCreatorOpenedForPending` blocks stacking TargetMenu opens.
+- **Scene Creator anim list**: query cap is 125 (SexLab `GetList`). Do **not** embed `JSON.stringify(anim)` in each row `onclick` — with 125 rows that freezes CEF during `configureSceneCreator` and the panel never paints. Keep rows in `SC.lastAnims` and pass an index. Rendered as a 5-column table (genders / modifiers / name / num stages / description); WebUI `AnimRowToJson` includes `_stage_descriptions` so the description column can substitute `{{sl.actors.N}}` from Scene Creator positions.
+- **Scene presets**: Load/Save write `scenes/<name>.json` (no OS dialog); preserve `event_hook`. Do not `LoadSetting` on Start after UI edits — that overwrites tags.
+- **Victim mask**: After WebUI V toggles, call `RebuildVictimsFromMask` — never `SetNames`/`SetMasks` (those rebuild the mask from `victims[]` and wipe UI).
+- **SceneMenu**: hotkey → `Scene_Menu_Open`; close saves `_local_` anim JSON **only if dirty**; live 👕/O/speaking via `WebUI_OnMenuLiveUpdate`; V display-only; no tracking toggle.
+- **Legacy**: `SkyrimNet_SexLab_Stages` is an empty stub for save compatibility; all callers use AnimDb.
+
 ## Caprica rejects formal param name `scriptName` (2026-07-29)
 
 Caprica fails natives that declare a parameter named `scriptName` with `no viable alternative at input 'String'` (even a one-arg stub). Callers are unaffected (positional). Use a different formal name (e.g. `sName`) and document the slot in a comment — see `SkyrimNet_SexLab_API.RegisterTargetMenuOption`.
 
 ## TargetMenuRegistry external options (2026-07-29)
 
-`SkyrimNet_SexLab_API.RegisterTargetMenuOption` appends runtime actions to the WebUI Target Menu (end of `options` + `actions` in `BuildUICatalog`). Cleared on `kPostLoadGame` / `kNewGame`; handlers must re-register in `Setup`. Click dispatches via `ExecuteAction` with a single `target` Actor arg.
+`SkyrimNet_SexLab_API.RegisterTargetMenuOption(Form quest, …)` appends runtime actions to the WebUI Target Menu (end of `options` + `actions` in `BuildUICatalog`). Stores the quest **FormID** (not EditorID) — EditorID lookup often fails for optional handler ESPs and `FindQuest` would fall back to the main quest. Cleared on `kPostLoadGame` / `kNewGame`; handlers must re-register in `Setup` with `self as Form`. Click dispatches via `ExecuteAction` with a single `target` Actor arg.
 
 ## SKSE native params must use engine types (2026-07-25)
 
@@ -24,15 +45,28 @@ SexLab/SLSO `SexLabOrgasm` uses `ModEvent.PushForm(eid, ActorRef)`. Handlers tha
 
 `CreateView("SkyrimNet_SexLab/index.html")` loads from **`Data/PrismaUI/views/`**, not from `SKSE/Plugins/`. This mod ships the overlay at `PrismaUI/views/SkyrimNet_SexLab/index.html` (restored from commit `a8c9440`). Missing that file → valid-looking C++ open path (hotkey / `Target_Menu_Open`) but **no visible UI**. C++ Invokes use panel ids `target_menu_panel` / `sex_menu_panel`; the HTML maps those via `showPanel` / `hidePanel` adapters onto `#target-panel` / `#sex-menu-panel`.
 
-## WebUI target menu catalog (2026-07-28)
+**Menu hotkey (2026-08-01):** MCM no longer `RegisterForKey`. Toggle + keymap call `WebUI_SetHotkey(dx, enabled)` so C++ `KeyHandler` owns the menu key; Escape stays always registered. Hotkey → `Menu.ProcessHotkey` → WebUI Target / Scene / MultiTarget.
+
+## WebUI target menu catalog (2026-07-28, outfit/actionSwitch 2026-07-31, split layout 2026-07-31)
 
 Target panel UI is driven by:
-- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/target_options.json` — `defaults` + typed recursive `options` (`parameter` | `pulldown` | `action`). Pulldowns nest via `options[]`; each `action` needs `name` (SkyrimNet id) + `label` (WebUI display only).
+- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/menu/target/defaults.json` — `{ "defaultsParameters": { ... } }` (legacy root key `defaults` still accepted).
+- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/menu/target/options/*.json` — one top-level option object per file (`parameter` | `pulldown` | `action` | `actionSwitch`). **Order = lexicographic filename** (numeric prefixes). All JSON keys lowercase. Pulldowns / switches nest via `options[]`; each `action` needs `name` (SkyrimNet id) + `label` (WebUI display only). Optional `parameters` on `action`/`pulldown` overrides defaults. C++ assembles into the in-memory `defaultsParameters` + `options[]` catalog.
 - `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/actions_index.json` — generated from SkyrimNet action YAMLs (`tools/generate_actions_index.py`); `{ "actions": [...] }` only (no `by_category`).
 
-Regenerate the index after editing action YAMLs. C++ `ActionCatalog` loads at WebUI init and **reloads on every `kPostLoadGame` / `kNewGame`** (`WebUI_SetGameReady`); Start merges dictionary onto YAML `parameterMapping` and `DispatchMethodCall`s `scriptName`/`executionFunctionName`. Actor slots use dictionary `type: Actor` + `source: player|target` (menu focus). Do not change SkyrimNet mapping types for WebUI — only add `label` fields on YAML for the index/LLM; target menu labels come from `target_options.json`.
+**Actor sources** in `defaultsParameters`: prefer `playerActor` (player) and `currentActor` (menu focus). `ActionDispatch::ResolveSource` also accepts legacy `player` / `target` / `focus`.
+
+**`actionSwitch`**: `options[]` of `action` children, each with SkyrimNet-shaped `eligibilityRules`. C++ evaluates in order, takes the **first** true branch, logs the winner. No match → emit disabled/greyed row using switch `label` or first child’s `label`. Menu focus is `currentActor` for `FormListCount` / strip storage.
+
+**Outfit roles**: Papyrus `Outfit_Dress` / `Outfit_Undress(Speaker, Target, style, narration)` — Speaker performs, Target’s outfit changes; StorageUtil key `skyrimnet_sexlab_storage_items` is on **Target**. Narration `silent` → `RegisterEvent`. WebUI stay-open for outfit actions; Papyrus refreshes catalog via `Target_Menu_Refresh` after storage updates. Hotkey opens via `Menu.Open_WebUI_Target` (passes `HasStrippedItems`).
+
+Regenerate the index after editing action YAMLs. C++ `ActionCatalog` loads at WebUI init and **reloads on every `kPostLoadGame` / `kNewGame`** (`WebUI_SetGameReady`); Start merges dictionary onto YAML `parameterMapping` and `DispatchMethodCall`s `scriptName`/`executionFunctionName`. Do not change SkyrimNet YAML schema — only action content within existing fields.
 
 Guideline: if a pulldown would have only one child, promote that child to a top-level `action`.
+
+## TargetMenu hierarchical param store (2026-08-02)
+
+Do **not** remember dynamic fields under flat `sns_tm_param:<name>` — shared names (`method`, `direction`) leaked across actions (e.g. comfort `hugging` onto fucking). JS builds a parent-linked tree from the catalog (synthetic root `id=0`; DFS creation ids; `path = parent.path + '.' + label`). Values live at `sns_tm_node:{id}.{path}.{key}` (empty path → `sns_tm_node:0.style`). Global `parameter` options (e.g. `style`) read/write the **root**. Action dynamics initialize fill-if-absent by walking parents for an **allowed** YAML pipe match (style synonyms `gently↔gentle`, `normally↔normal`, `forcefully↔forceful`), else first pipe / full non-pipe description; then store on that action node. `configureTargetMenu` clears legacy `sns_tm_param:*`.
 
 ## SexLab position slots and speaker_position (2026-07-23)
 

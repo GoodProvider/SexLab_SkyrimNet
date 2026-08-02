@@ -6,13 +6,17 @@ namespace PapyrusBindings_API
 {
     void RegisterTargetMenuOption(
         RE::StaticFunctionTag*,
-        RE::BSFixedString questEditorId,
+        RE::TESForm* quest,
         RE::BSFixedString scriptName,
         RE::BSFixedString executionFunctionName,
         RE::BSFixedString label)
     {
+        if (!quest) {
+            webui_log::warn("RegisterTargetMenuOption: quest Form is None");
+            return;
+        }
         TargetMenuRegistry::Register(
-            questEditorId.c_str() ? questEditorId.c_str() : "",
+            quest,
             scriptName.c_str() ? scriptName.c_str() : "",
             executionFunctionName.c_str() ? executionFunctionName.c_str() : "",
             label.c_str() ? label.c_str() : "");

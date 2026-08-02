@@ -13,7 +13,7 @@ Faction OStimActorCountFaction = None
 Function Trace(String func, String msg, Bool notification=False) global
     String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Actions", func, msg)
     if notification
-        Debug.Notification(logged)
+        Debug.Notification(msg)
     endif 
 EndFunction
 

@@ -144,22 +144,22 @@
       "file": "sexlab_comfort_refused.yaml"
     },
     {
-      "name": "change_outfit",
-      "label": "Change outfit",
+      "name": "outfit_dress",
+      "label": "Dress",
       "customCategory": "",
       "questEditorId": "SkyrimNet_SexLab",
       "scriptName": "SkyrimNet_SexLab_Actions",
-      "executionFunctionName": "Change_Outfit",
+      "executionFunctionName": "Outfit_Dress",
       "parameterMapping": [
         {
           "type": "speaker",
-          "name": "stripper",
-          "description": "Speaker Actor parameter (triggering entity)"
+          "name": "speaker",
+          "description": "Actor who dresses the target (can be target)"
         },
         {
-          "type": "speaker",
-          "name": "stripped",
-          "description": "Speaker Actor parameter (triggering entity)"
+          "type": "dynamic",
+          "name": "target",
+          "description": "Actor being dressed (can be speaker)"
         },
         {
           "type": "dynamic",
@@ -167,35 +167,30 @@
           "description": "forcefully|normally|gently"
         },
         {
-          "type": "dynamic",
-          "name": "how",
-          "description": "dresses|undresses"
-        },
-        {
           "type": "static",
           "name": "narration",
           "value": "silent"
         }
       ],
-      "file": "sexlab_none_change_outfit.yaml"
+      "file": "sexlab_none_outfit_dress.yaml"
     },
     {
-      "name": "change_outfit_target",
-      "label": "Change target outfit",
+      "name": "outfit_undress",
+      "label": "Undress",
       "customCategory": "",
       "questEditorId": "SkyrimNet_SexLab",
       "scriptName": "SkyrimNet_SexLab_Actions",
-      "executionFunctionName": "Change_Outfit",
+      "executionFunctionName": "Outfit_Undress",
       "parameterMapping": [
         {
           "type": "speaker",
-          "name": "stripper",
-          "description": "Speaker Actor parameter (triggering entity)"
+          "name": "speaker",
+          "description": "Actor who undresses the target (can be target)"
         },
         {
           "type": "dynamic",
-          "name": "stripped",
-          "description": "Stripped Actor"
+          "name": "target",
+          "description": "Actor being undressed (can be speaker)"
         },
         {
           "type": "dynamic",
@@ -203,17 +198,12 @@
           "description": "forcefully|normally|gently"
         },
         {
-          "type": "dynamic",
-          "name": "how",
-          "description": "dresses|undresses"
-        },
-        {
           "type": "static",
           "name": "narration",
           "value": "silent"
         }
       ],
-      "file": "sexlab_none_change_targets_outfit.yaml"
+      "file": "sexlab_none_outfit_undress.yaml"
     },
     {
       "name": "SEXLAB_STOP",

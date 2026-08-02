@@ -52,6 +52,9 @@ Actor initiator = None
 ; --------------------------------------------
 bool Property tracking = False Auto
 
+; True if Scene Creator was already shown for this SexLab thread (once-per-thread gate).
+bool Property scene_creator_menu_called = False Auto
+
 ; --------------------------------------------
 ; Description of the scene
 ; --------------------------------------------
@@ -71,10 +74,11 @@ sslThreadController thread
 bool is_generic
 
 Function Trace(String func, String msg="", Bool notification=False)
-    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Scene", func, "sid:"+sid+" "+msg)
+    String body = "sid:"+sid+" "+msg
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Scene", func, body)
     if notification
-        Debug.Notification(logged)
-    endif 
+        Debug.Notification(body)
+    endif
 EndFunction
 
 bool debug_mode = false
@@ -230,8 +234,10 @@ Bool Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
         while i < num_actors 
             if i < creator.num_actors
                 SetPosition(i, positions[i], creator.no_orgasm_mask[i], creator.speaking_modifiers[i]) 
+                JMap.setInt(position_objs[i], "dressed", creator.no_stripping_mask[i])
             else 
                 SetPosition(i, positions[i], 0, creator.speaking_modifiers_default_current)
+                JMap.setInt(position_objs[i], "dressed", 0)
             endif 
             i += 1 
         endwhile 
@@ -290,7 +296,7 @@ Bool Function Setup_CheckLinks()
         links_ok = false
     endif
 
-    if stages == None
+    if animdb == None
         links_ok = false
     endif
 
@@ -443,6 +449,7 @@ Function Release()
     receiver = None 
     initiator = None
     tracking = False
+    scene_creator_menu_called = False
 
     if thread_obj > 0
         JMap.clear(thread_obj)
@@ -1008,7 +1015,7 @@ Function StageStart()
 
     ; If this thread is being tracked print the thread's status 
     if tracking
-        bool[] desc_orgasm = stages.GetHasDescriptionOrgasmExpected(thread)
+        bool[] desc_orgasm = animdb.GetHasDescriptionOrgasmExpected(thread)
         String msg = "" 
         if desc_orgasm[0]
             msg = "has description"
@@ -1045,7 +1052,7 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
         ; Post-activity afterglow (SeparateOrgasms); not ongoing sexual activity
         String afterglow = ""
         if config.SeparateOrgasms
-            int[] orgasm_expected = stages.GetOrgasmExpected(thread)
+            int[] orgasm_expected = animdb.GetOrgasmExpected(thread)
             int j = thread.positions.length - 1 
             while 0 <= j 
                 String name = JMap.getStr(position_objs[j], "name") 
@@ -1101,7 +1108,7 @@ EndFunction
 Function OrgasmCombined()
     DbgEnter("OrgasmCombined")
     AlignActors() 
-    int[] orgasm_expected = stages.GetOrgasmExpected(thread)
+    int[] orgasm_expected = animdb.GetOrgasmExpected(thread)
     int i = 0
     int num_actors = thread.positions.length
     EnsureActorArraysLargeEnough(num_actors)
@@ -1228,7 +1235,7 @@ String Function OrgasmMessagesToNarration()
     if orgasm_messages_set
         orgasm_messages_set = false
         int k = 0
-        int[] orgasm_expected = stages.GetOrgasmExpected(thread)
+        int[] orgasm_expected = animdb.GetOrgasmExpected(thread)
         int num_orgasmers = 0 
         while k < num_actors && k < orgasm_messages.length
             int obj = JArray.getObj(actors_objs, k)
@@ -1360,7 +1367,7 @@ String Function GetDescription()
         DbgReturn("GetDescription", "")
         return ""
     endif
-    String desc = stages.GetStageDescription(thread)
+    String desc = animdb.GetThreadStageDescription(thread)
     if desc == "" 
         desc = GetDescriptionFromTags()
     endif 
@@ -1693,3 +1700,238 @@ Function SetStyleDialog()
     endif 
     DbgReturn("SetStyleDialog")
 endFunction
+
+Function WebUI_ExportMenuState(sslThreadController _thread)
+    if _thread != None
+        thread = _thread
+    endif
+    SkyrimNet_SexLab_WebUI.Scene_Menu_Show(BuildWebUIMenuState())
+EndFunction
+
+String Function BuildWebUIMenuState()
+    if thread == None
+        return "{}"
+    endif
+    sslBaseAnimation anim = thread.animation
+    int obj = JMap.object()
+    JMap.setInt(obj, "_scene_sid", sid)
+    JMap.setInt(obj, "_stage", thread.stage)
+    if anim != None
+        String registry = anim.Registry
+        JMap.setStr(obj, "_registry", registry)
+        ; Prefer meaningful registry as title; keep display name as subtitle.
+        if registry != "" && StringUtil.GetLength(registry) > 2
+            JMap.setStr(obj, "_title", registry)
+            JMap.setStr(obj, "_subtitle", anim.name)
+        else
+            JMap.setStr(obj, "_title", anim.name)
+            JMap.setStr(obj, "_subtitle", registry)
+        endif
+        JMap.setStr(obj, "_anim_name", anim.name)
+        JMap.setInt(obj, "_stage_count", anim.StageCount())
+        JMap.setStr(obj, "_tags", GetTagsString(anim))
+    endif
+    JMap.setStr(obj, "_intent", intent)
+    JMap.setStr(obj, "_style", style)
+    JMap.setStr(obj, "_activity", intent)
+    Actor[] positions = thread.Positions
+    int n = 0
+    if positions
+        n = positions.length
+    endif
+    int[] orgasm = animdb.GetOrgasmExpected(thread)
+    int pos_arr = JArray.object()
+    int i = 0
+    while i < n
+        int po = JMap.object()
+        Actor ak = positions[i]
+        JMap.setStr(po, "_name", ak.GetDisplayName())
+        JMap.setStr(po, "_uuid", GetUUID(ak))
+        int no_org = 0
+        int dressed = 0
+        String speaking = ""
+        if i < position_objs.length && position_objs[i] > 0
+            no_org = JMap.getInt(position_objs[i], "no_orgasm", 0)
+            dressed = JMap.getInt(position_objs[i], "dressed", 0)
+            int speaking_obj = JMap.getObj(position_objs[i], "speaking_modifiers")
+            if speaking_obj > 0
+                int sc = JArray.count(speaking_obj)
+                int si = 0
+                while si < sc
+                    String tok = JArray.getStr(speaking_obj, si, "")
+                    if tok != ""
+                        if speaking != ""
+                            speaking += ","
+                        endif
+                        speaking += tok
+                    endif
+                    si += 1
+                endwhile
+            endif
+        endif
+        JMap.setInt(po, "_no_orgasm", no_org)
+        JMap.setInt(po, "_dressed", dressed)
+        JMap.setInt(po, "_victim", ak.IsInFaction(SkyrimNet_SexLab_Faction_Victim) as int)
+        JMap.setStr(po, "_speaking", speaking)
+        if i < orgasm.length
+            JMap.setInt(po, "_orgasm_expected", orgasm[i])
+        endif
+        JArray.addObj(pos_arr, po)
+        i += 1
+    endwhile
+    JMap.setObj(obj, "_positions", pos_arr)
+    if anim != None
+        int stage_count = anim.StageCount()
+        int stages_arr = JArray.object()
+        i = 1
+        while i <= stage_count
+            int st = JMap.object()
+            JMap.setInt(st, "_stage", i)
+            String template = animdb.GetStageDescription(anim.Registry, i)
+            JMap.setStr(st, "_template", template)
+            String preview = animdb.GetThreadStageDescription(thread, i)
+            JMap.setStr(st, "_preview", preview)
+            JMap.setInt(st, "_current", (i == thread.stage) as int)
+            JArray.addObj(stages_arr, st)
+            i += 1
+        endwhile
+        JMap.setObj(obj, "_stages", stages_arr)
+    endif
+    String json = ObjectToLowerCaseKeyJson(obj)
+    JValue.release(obj)
+    return json
+EndFunction
+
+Function WebUI_OnMenuClose(String json)
+    int obj = JValue.objectFromPrototype(json)
+    if obj == 0
+        return
+    endif
+    bool dirty = JMap.getInt(obj, "_dirty", 0) == 1
+    if JMap.hasKey(obj, "_style")
+        String style_old = style
+        SetStyle(JMap.getStr(obj, "_style", style))
+        if style_old != style && has_player
+            DirectNarration(GetDisplayName(Game.GetPlayer())+" changes from '"+style_old+"' to '"+style+"'", sender, receiver)
+        endif
+    endif
+    ; Apply final position state; AnimDb write only when description/orgasm dirty.
+    WebUI_ApplyLivePositions(obj)
+    if dirty
+        WebUI_SaveMenuState(obj)
+    endif
+    JValue.release(obj)
+EndFunction
+
+Function WebUI_OnMenuLiveUpdate(String json)
+    int obj = JValue.objectFromPrototype(json)
+    if obj == 0
+        return
+    endif
+    if JMap.hasKey(obj, "_style")
+        SetStyle(JMap.getStr(obj, "_style", style))
+    endif
+    WebUI_ApplyLivePositions(obj)
+    JValue.release(obj)
+EndFunction
+
+Function WebUI_ApplyLivePositions(int obj)
+    if thread == None || !JMap.hasKey(obj, "_positions")
+        return
+    endif
+    Actor[] positions = thread.Positions
+    if !positions
+        return
+    endif
+    int pos_arr = JMap.getObj(obj, "_positions")
+    int count = JArray.count(pos_arr)
+    int n = positions.length
+    if count < n
+        n = count
+    endif
+    EnsureActorArraysLargeEnough(n)
+    int i = 0
+    while i < n
+        int po = JArray.getObj(pos_arr, i)
+        if po > 0
+            int no_org = JMap.getInt(po, "_no_orgasm", 0)
+            int dressed = JMap.getInt(po, "_dressed", 0)
+            String speaking = JMap.getStr(po, "_speaking", "")
+            SetPosition(i, positions[i], no_org, speaking)
+            JMap.setInt(position_objs[i], "dressed", dressed)
+            thread.DisableOrgasm(positions[i], no_org == 1)
+        endif
+        i += 1
+    endwhile
+EndFunction
+
+Function WebUI_SaveMenuState(int obj)
+    if thread == None || thread.animation == None
+        return
+    endif
+    String registry = thread.animation.Registry
+    int payload = JMap.object()
+    if JMap.hasKey(obj, "_stages")
+        int stages_arr = JMap.getObj(obj, "_stages")
+        int count = JArray.count(stages_arr)
+        int i = 0
+        while i < count
+            int st = JArray.getObj(stages_arr, i)
+            if st > 0
+                int stage_no = JMap.getInt(st, "_stage", i + 1)
+                String template = JMap.getStr(st, "_template", "")
+                if template != ""
+                    int stage_obj = JMap.object()
+                    JMap.setStr(stage_obj, "description", template)
+                    JMap.setStr(stage_obj, "version", "2.0")
+                    JMap.setObj(payload, "stage "+stage_no, stage_obj)
+                endif
+            endif
+            i += 1
+        endwhile
+    endif
+    ; Persist O column as orgasm_expected (inverse of no_orgasm) with the animation.
+    if JMap.hasKey(obj, "_positions")
+        int pos_arr = JMap.getObj(obj, "_positions")
+        int count = JArray.count(pos_arr)
+        int orgasm_arr = JArray.objectWithSize(count)
+        int i = 0
+        while i < count
+            int po = JArray.getObj(pos_arr, i)
+            int no_org = 0
+            if po > 0
+                no_org = JMap.getInt(po, "_no_orgasm", 0)
+            endif
+            JArray.setInt(orgasm_arr, i, 1 - no_org)
+            i += 1
+        endwhile
+        JMap.setObj(payload, "orgasm_expected", orgasm_arr)
+    endif
+    String save_json = ObjectToLowerCaseKeyJson(payload)
+    JValue.release(payload)
+    animdb.SaveAnimLocal(registry, save_json)
+EndFunction
+
+Function WebUI_OnMenuPrevNext(int direction)
+    if thread == None || thread.animation == None
+        return
+    endif
+    int stage = thread.stage
+    if direction < 0 && stage > 1
+        thread.GoToStage(stage - 1)
+    elseif direction > 0 && stage < thread.animation.StageCount()
+        thread.GoToStage(stage + 1)
+    endif
+    SkyrimNet_SexLab_WebUI.Scene_Menu_Show(BuildWebUIMenuState())
+EndFunction
+
+Function WebUI_OnMenuStop()
+    if thread == None || !thread.Positions || thread.Positions.length < 1
+        return
+    endif
+    Actor player = Game.GetPlayer()
+    SkyrimNet_SexLab_Actions actions = (manager as Quest) as SkyrimNet_SexLab_Actions
+    if actions
+        actions.SceneStop_Target(player, thread.Positions[0], "silently")
+    endif
+EndFunction

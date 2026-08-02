@@ -1,6 +1,6 @@
 # Hotkeys and in-scene controls
 
-Enable the optional hot key in the MCM (**Sex Description Editor** / related bindings).
+Enable the hot key in the MCM (**Sex Description Editor** → Enable the Start Sex / Edit Stage hot key) and optionally remap it. MCM only toggles the PrismaUI WebUI hotkey in the SKSE plugin; there is no separate Papyrus key sink.
 
 ## Out of animation
 
@@ -14,12 +14,11 @@ Enable the optional hot key in the MCM (**Sex Description Editor** / related bin
 
 ## In SexLab animation
 
-- Change sex style (Tag Editor dialogs on)
-- Add / edit per-stage description
-- Set whether a given actor expects an orgasm
+- Open Scene Menu (stage descriptions, dressed / orgasm / speaking live updates)
+- Change sex style when Tag Editor dialogs are on
 
 Stage JSON format: [../authors/animations.md](../authors/animations.md).
 
 ## WebUI menus
 
-In-game PrismaUI target / sex menus (SKSE DLL). Build and paths: [../developers/webui.md](../developers/webui.md).
+In-game PrismaUI target / sex / YesNo / Scene Creator menus (SKSE DLL). Build and paths: [../developers/webui.md](../developers/webui.md).

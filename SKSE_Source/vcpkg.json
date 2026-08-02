@@ -7,6 +7,7 @@
         "nlohmann-json",
         "spdlog",
         "directxtk",
-        "rapidcsv"
+        "rapidcsv",
+        "sqlite3"
     ]
 }

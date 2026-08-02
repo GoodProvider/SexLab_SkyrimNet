@@ -3,7 +3,7 @@ Scriptname SkyrimNet_SexLab_Scene_Manager extends Quest
 Import SkyrimNet_SexLab_Utilities
 
 SkyrimNet_SexLab_Main Property main Auto
-SkyrimNet_SexLab_Stages Property stages Auto
+SkyrimNet_SexLab_AnimDb Property animdb Auto
 
 SexLabFramework Property sexlab Auto
 sslThreadSlots Property threadSlots Auto
@@ -53,11 +53,12 @@ Actor speaker_last = None
 ; --------------------------------------------
 sslBaseAnimation[] Property empty = None Auto
 sslBaseAnimation[] Property cancel = None Auto
+sslBaseAnimation[] Property ui_pending = None Auto
 
 Function Trace(String func, String msg="", Bool notification=False)
     String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Scene_Manager", func, msg)
     if notification
-        Debug.Notification(logged)
+        Debug.Notification(msg)
     endif 
 EndFunction
 
@@ -92,6 +93,10 @@ Function Setup()
         empty = new sslBaseAnimation[2]
         empty[0] = None 
         empty[1] = None 
+    endif 
+    if !ui_pending 
+        ui_pending = new sslBaseAnimation[1]
+        ui_pending[0] = None 
     endif 
     bool empty_equals_cancel = empty == cancel
     Trace("Initialize", "empty == cancel: "+empty_equals_cancel)
@@ -147,7 +152,8 @@ Bool Function Setup_CheckLinks()
         links_ok = false
     endif
 
-    if stages == None
+    animdb = (self as Quest) as SkyrimNet_SexLab_AnimDb
+    if animdb == None
         links_ok = false
     endif
 
@@ -540,6 +546,245 @@ String[] function GetSceneSettings()
     ; 4. Return the clean array of setting names
     return setting_names
 endFunction
+
+SkyrimNet_SexLab_Scene_Creator Function GetCreatorBySid(int creator_sid)
+    int i = 0
+    while i < creators.length
+        if creators[i] && creators[i].IsActive() && creators[i].sid == creator_sid
+            return creators[i]
+        endif
+        i += 1
+    endwhile
+    return None
+EndFunction
+
+SkyrimNet_SexLab_Scene Function GetSceneBySid(int scene_sid)
+    if scene_sid >= 0 && scene_sid < sl_scenes.length
+        return sl_scenes[scene_sid]
+    endif
+    return None
+EndFunction
+
+Function WebUI_OnYesNoResult(int creator_sid, int button)
+    SkyrimNet_SexLab_Scene_Creator creator = GetCreatorBySid(creator_sid)
+    if creator
+        creator.ContinueAfterYesNo(button)
+    else
+        Trace("WebUI_OnYesNoResult", "no active creator for sid:"+creator_sid, true)
+    endif
+EndFunction
+
+Function WebUI_OnSceneCreatorResult(int creator_sid, String json)
+    SkyrimNet_SexLab_Scene_Creator creator = GetCreatorBySid(creator_sid)
+    if creator
+        creator.ContinueAfterSceneCreator(json)
+    endif
+EndFunction
+
+; TargetMenu → C++ Scene Creator Start: no pooled creator yet; build one from JSON and finish.
+Function WebUI_OnSceneCreatorHandoff(String json)
+    Trace("WebUI_OnSceneCreatorHandoff", "")
+    int obj = JValue.objectFromPrototype(json)
+    if obj == 0
+        Trace("WebUI_OnSceneCreatorHandoff", "bad json", true)
+        return
+    endif
+    String ui_action = JMap.getStr(obj, "_action", "cancel")
+    if ui_action != "start"
+        JValue.release(obj)
+        Trace("WebUI_OnSceneCreatorHandoff", "cancel/ignored action:"+ui_action)
+        return
+    endif
+
+    int pos_arr = JMap.getObj(obj, "_positions")
+    int count = JArray.count(pos_arr)
+    if count < 1
+        JValue.release(obj)
+        Trace("WebUI_OnSceneCreatorHandoff", "no positions", true)
+        return
+    endif
+
+    Actor[] actors = PapyrusUtil.ActorArray(count)
+    int i = 0
+    int valid = 0
+    while i < count
+        int po = JArray.getObj(pos_arr, i)
+        Actor ak = None
+        if po > 0
+            int form_id = JMap.getInt(po, "_form_id", 0)
+            if form_id != 0
+                ak = Game.GetFormEx(form_id) as Actor
+            endif
+        endif
+        if ak != None
+            actors[valid] = ak
+            valid += 1
+        else
+            Trace("WebUI_OnSceneCreatorHandoff", "missing actor at index:"+i+" form_id:"+JMap.getInt(po, "_form_id", 0), true)
+        endif
+        i += 1
+    endwhile
+    if valid < 1
+        JValue.release(obj)
+        Trace("WebUI_OnSceneCreatorHandoff", "no valid actors", true)
+        return
+    endif
+    if valid != count
+        Actor[] trimmed = PapyrusUtil.ActorArray(valid)
+        i = 0
+        while i < valid
+            trimmed[i] = actors[i]
+            i += 1
+        endwhile
+        actors = trimmed
+    endif
+
+    String intent = JMap.getStr(obj, "_intent", "sexual activities")
+    String method = JMap.getStr(obj, "_method", "")
+    if method == ""
+        String tags_str = JMap.getStr(obj, "_tags", "")
+        if tags_str != ""
+            String[] parts = StringUtil.Split(tags_str, ",")
+            if parts && parts.length > 0
+                method = parts[0]
+            endif
+        endif
+    endif
+    String style = JMap.getStr(obj, "_style", "normally")
+    Actor speaker = actors[0]
+    Actor target = None
+    if actors.length >= 2
+        target = actors[1]
+    endif
+
+    SkyrimNet_SexLab_Scene_Creator creator = CreateCreator(intent, actors, speaker, target, method, "")
+    if creator == None
+        JValue.release(obj)
+        Trace("WebUI_OnSceneCreatorHandoff", "CreateCreator returned None", true)
+        return
+    endif
+
+    ; Scene Creator already shown via C++ TargetMenu path.
+    creator.scene_creator_menu_called = true
+
+    if style != ""
+        creator.SetStyle(style)
+    endif
+
+    if !creator.LockAllActorLock()
+        JValue.release(obj)
+        creator.Release()
+        Trace("WebUI_OnSceneCreatorHandoff", "LockAllActorLock failed", true)
+        return
+    endif
+
+    creator.ApplyWebUIState(obj)
+    JValue.release(obj)
+
+    sslBaseAnimation[] animations = creator.ResolveAnimationsFromUI()
+    SkyrimNet_SexLab_Scene sl_scene = creator.FinishStartScene(animations)
+    if sl_scene == None
+        Trace("WebUI_OnSceneCreatorHandoff", "FinishStartScene returned None", true)
+    endif
+EndFunction
+
+Function WebUI_OnSceneCreatorLoad(int creator_sid, String setting_name)
+    SkyrimNet_SexLab_Scene_Creator creator = GetCreatorBySid(creator_sid)
+    if creator
+        creator.LoadPresetFromWebUI(setting_name)
+    endif
+EndFunction
+
+Function WebUI_OnSceneCreatorSave(int creator_sid, String json)
+    SkyrimNet_SexLab_Scene_Creator creator = GetCreatorBySid(creator_sid)
+    if creator
+        creator.SavePresetFromWebUI(json)
+    endif
+EndFunction
+
+Function WebUI_OnSceneMenuClose(int scene_sid, String json)
+    SkyrimNet_SexLab_Scene sl_scene = GetSceneBySid(scene_sid)
+    if sl_scene
+        sl_scene.WebUI_OnMenuClose(json)
+    endif
+EndFunction
+
+Function WebUI_OnSceneMenuPrevNext(int scene_sid, int direction)
+    SkyrimNet_SexLab_Scene sl_scene = GetSceneBySid(scene_sid)
+    if sl_scene
+        sl_scene.WebUI_OnMenuPrevNext(direction)
+    endif
+EndFunction
+
+Function WebUI_OnSceneMenuStop(int scene_sid, int direction)
+    SkyrimNet_SexLab_Scene sl_scene = GetSceneBySid(scene_sid)
+    if sl_scene
+        sl_scene.WebUI_OnMenuStop()
+    endif
+EndFunction
+
+Function WebUI_OnSceneMenuLiveUpdate(int scene_sid, String json)
+    SkyrimNet_SexLab_Scene sl_scene = GetSceneBySid(scene_sid)
+    if sl_scene
+        sl_scene.WebUI_OnMenuLiveUpdate(json)
+    endif
+EndFunction
+
+; JS onResolveActorMeta → enrich Scene Creator positions with SexLab gender + race key.
+Function WebUI_OnResolveActorMeta(String json)
+    int req = JValue.objectFromPrototype(json)
+    if req == 0
+        Trace("WebUI_OnResolveActorMeta", "bad json", true)
+        return
+    endif
+    String request_id = JMap.getStr(req, "_request_id", "")
+    int form_ids = JMap.getObj(req, "_form_ids")
+    bool owned_form_ids = false
+    if form_ids == 0
+        form_ids = JArray.object()
+        owned_form_ids = true
+        int single = JMap.getInt(req, "_form_id", 0)
+        if single != 0
+            JArray.addInt(form_ids, single)
+        endif
+    endif
+    int actors_arr = JArray.object()
+    int i = 0
+    int n = JArray.count(form_ids)
+    while i < n
+        int form_id = JArray.getInt(form_ids, i)
+        Actor ak = None
+        if form_id != 0
+            ak = Game.GetFormEx(form_id) as Actor
+        endif
+        int po = JMap.object()
+        JMap.setInt(po, "_form_id", form_id)
+        if ak
+            int gender = 0
+            if sexlab
+                gender = sexlab.GetGender(ak)
+            endif
+            JMap.setInt(po, "_gender", gender)
+            JMap.setStr(po, "_race_key", GetRaceKeyForActor(sexlab, ak))
+            JMap.setStr(po, "_name", ak.GetDisplayName())
+        else
+            JMap.setInt(po, "_gender", 0)
+            JMap.setStr(po, "_race_key", "")
+        endif
+        JArray.addObj(actors_arr, po)
+        i += 1
+    endwhile
+    int out = JMap.object()
+    JMap.setStr(out, "_request_id", request_id)
+    JMap.setObj(out, "_actors", actors_arr)
+    String out_json = ObjectToLowerCaseKeyJson(out)
+    JValue.release(req)
+    JValue.release(out)
+    if owned_form_ids
+        JValue.release(form_ids)
+    endif
+    SkyrimNet_SexLab_WebUI.ActorAnimMeta_Result(out_json)
+EndFunction
    
 ;----------------------------------------------------------------------------------------------------
 ; Action Events

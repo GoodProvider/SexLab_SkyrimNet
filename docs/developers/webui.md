@@ -11,28 +11,42 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 | `SKSE_Source/` | C++ → `SkyrimNet_SexLab.dll` |
 | `SKSE/Plugins/SkyrimNet_SexLab.dll` | Built plugin |
 | `PrismaUI/views/SkyrimNet_SexLab/index.html` | Overlay HTML under `Data/PrismaUI/views/` |
-| `SKSE/Plugins/SkyrimNet_SexLab/webui/` | `target_options.json`, `actions_index.json` |
+| `SKSE/Plugins/SkyrimNet_SexLab/webui/` | `actions_index.json`, `menu/target/` (defaults + options) |
 | `SKSE/Plugins/SkyrimNet/config/plugins/SkyrimNet_SexLab/manifest.yaml` | SkyrimNet plugin schema (e.g. `sexlab.orgasm.delay`) |
-| `Scripts/Source/SkyrimNet_SexLab_WebUI.psc` | `Target_Menu_Open` / `Sex_Menu_Open` natives |
+| `Scripts/Source/SkyrimNet_SexLab_WebUI.psc` | `Target_Menu_Open(target, hasStrippedItems, editTagsPlayer, editTagsNonPlayer)` / `Target_Menu_Refresh` / `Sex_Menu_Open` natives |
 
 ## Lifecycle
 
 - `kDataLoaded`: PrismaUI API, `CreateView("SkyrimNet_SexLab/index.html")`, JS listeners.
 - `kPostLoadGame` / `kNewGame`: `WebUI_SetGameReady()` (enables input; reloads ActionCatalog from `webui/`).
 - Papyrus → C++ open; C++ → JS panels `target_menu_panel` / `sex_menu_panel`.
-- Catalog: `target_options.json` (typed recursive menu tree) + `actions_index.json`; Start merges params onto YAML and dispatches via SkyrimNet.
+- Catalog: `menu/target/` (typed recursive menu tree with `defaultsParameters`) + `actions_index.json`; Start merges params onto YAML and dispatches via SkyrimNet.
 
-### `target_options.json`
+### `menu/target/`
 
-Root: `defaults` + `options[]`. Every option node has `type`:
+Layout under `webui/menu/target/`:
+
+| Path | Role |
+|------|------|
+| `defaults.json` | `{ "defaultsParameters": { ... } }` (legacy root key `defaults` still accepted) |
+| `options/*.json` | One top-level option object per file; **order = lexicographic filename** (use numeric prefixes, e.g. `0000_…`, `0100_…`) |
+
+C++ assembles these into the same in-memory shape JS expects: `defaultsParameters` + `options[]`. Keys are lowercase. Every option node has `type`:
 
 | type | Fields | Role |
 |------|--------|------|
 | `parameter` | `name`, `default`, `values` | Global param pulldown |
-| `action` | `name`, `label` | Starts SkyrimNet action `name`; UI text = `label` |
-| `pulldown` | `label`, `options[]` | Group; children are `action` and/or nested `pulldown` |
+| `action` | `name`, `label`, optional `parameters`, optional `disabled` | Starts SkyrimNet action `name`; UI text = `label`; `disabled` = greyed non-clickable |
+| `pulldown` | `label`, `options[]`, optional `parameters` | Group; children are `action` and/or nested `pulldown` |
+| `actionSwitch` | `label`, `options[]` of `action` + `eligibilityRules` | C++ picks first eligible child (or disabled fallback label) |
 
-Menu labels live only in `target_options.json` (not YAML / index). Prefer promoting a single-child pulldown to a top-level `action`. Nested pulldowns use a middle-column nav stack (`‹` header pops).
+Actor sources: `playerActor` / `currentActor` (aliases `player` / `target` / `focus` still work).
+
+Outfit stay-open: `outfit_dress` / `outfit_undress` do not hide the panel; Papyrus calls `Target_Menu_Refresh` after StorageUtil updates.
+
+Menu labels for the target panel come from `menu/target/`. Nested pulldowns use a middle-column nav stack (`‹` header pops).
+
+Start merge order: YAML statics → `defaultsParameters` → matching action-node `parameters` → UI dictionary (UI wins).
 
 `actions_index.json` is `{ "actions": [...] }` only — no `by_category`.
 

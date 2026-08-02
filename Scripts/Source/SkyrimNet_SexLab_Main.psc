@@ -4,11 +4,10 @@ Scriptname SkyrimNet_SexLab_Main extends Quest
 import JContainers
 import UIExtensions
 import SkyrimNet_SexLab_Decorators
-import SkyrimNet_SexLab_Stages
 import SkyrimNet_SexLab_Utilities
 import StorageUtil
 
-SkyrimNet_SexLab_Stages Property stages Auto
+SkyrimNet_SexLab_AnimDb Property animdb Auto
 SkyrimNet_SexLab_Handler_DOM_Interface Property handler_dom Auto 
 
 ; ---------------------------
@@ -50,7 +49,7 @@ EndProperty
 Function Trace(String func, String msg, Bool notification=False) global
     String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Main", func, msg)
     if notification
-        Debug.Notification(logged)
+        Debug.Notification(msg)
     endif 
 EndFunction
 
@@ -119,10 +118,12 @@ Function Setup()
     else
         Trace("Setup", "ERROR: Failed to get Menu.", true)
     endif
-    if stages != None
-        stages.Setup()
+    animdb = (self as Quest) as SkyrimNet_SexLab_AnimDb
+    if animdb != None
+        animdb.Setup()
+        animdb.StartSync(False)
     else
-        Trace("Setup", "ERROR: Failed to get Stages.", true)
+        Trace("Setup", "ERROR: Failed to get AnimDb.", true)
     endif
     SkyrimNet_SexLab_Scene_Manager sceneManager = (self as Quest) as SkyrimNet_SexLab_Scene_Manager
     if sceneManager != None
@@ -191,9 +192,9 @@ Bool Function Setup_CheckLinks()
         links_ok = false
     endif
 
-    if stages == None
-        stages = (self as Quest) as SkyrimNet_SexLab_Stages
-        if stages == None
+    if animdb == None
+        animdb = (self as Quest) as SkyrimNet_SexLab_AnimDb
+        if animdb == None
             links_ok = false
         endif
     endif

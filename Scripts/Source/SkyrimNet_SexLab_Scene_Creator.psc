@@ -31,13 +31,21 @@ Actor target
 int[] victim_mask
 int[] assailant_mask
 int[] Property no_orgasm_mask Auto
-int[] no_stripping_mask
+int[] Property no_stripping_mask Auto
 
 int no_orgasm_default_current = 0
 int no_stripping_default_current = 0
 String Property speaking_modifiers_default_current = "_pleasure_" AUTO
 
 String[] Property speaking_modifiers AUTO
+
+String pending_rejection = ""
+bool start_scene_pending = false
+; True after Scene Creator was opened for this creator; blocks a second open.
+; Copied onto SkyrimNet_SexLab_Scene when FinishStartScene binds the SexLab thread.
+bool Property scene_creator_menu_called = false Auto
+String[] pending_registries = None
+int num_pending_registries = 0
 
 String no_orgasm_names = ""
 String no_stripping_names = "" 
@@ -66,10 +74,11 @@ int actorLock = 0
 float actorLockTimeout = 0.00069444444 ;  1 day / (24 hours  * 60 minutes )  
 
 Function Trace(String func, String msg="", Bool notification=False)
-    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Scene_Creator", func, "sid:"+sid+" "+msg)
+    String body = "sid:"+sid+" "+msg
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Scene_Creator", func, body)
     if notification
-        Debug.Notification(logged)
-    endif 
+        Debug.Notification(body)
+    endif
 EndFunction
 
 bool debug_mode = false
@@ -194,6 +203,8 @@ Bool Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _targ
     num_tags = 0
     num_tags_suppress = 0 
     style = STYLE_NORMALLY
+    scene_creator_menu_called = false
+    start_scene_pending = false
 
     if (_method == "tentacles" || _method == "tentacle") && setting_name == "" 
         setting_name =  "pleasure_pain"
@@ -246,8 +257,22 @@ Function Release()
     method = ""
     no_orgasm_names = ""
     no_stripping_names = ""
+    scene_creator_menu_called = false
+    start_scene_pending = false
     parent.Release() 
     DbgEnd("Release")
+EndFunction
+
+; First open of Scene Creator for this creator session. Load/Save refresh bypasses this.
+Bool Function TryOpenSceneCreatorMenu()
+    if scene_creator_menu_called
+        Trace("TryOpenSceneCreatorMenu", "already called for sid:"+sid+", skipping")
+        return False
+    endif
+    scene_creator_menu_called = true
+    start_scene_pending = true
+    SkyrimNet_SexLab_WebUI.SceneCreator_Open(BuildWebUIState())
+    return True
 EndFunction
 
 ; --------------------------------------------
@@ -261,8 +286,12 @@ SkyrimNet_SexLab_Scene Function StartScene()
 
     Trace("StartScene",GetString()) 
 
-    ; Select animations before NewThread so cancel/UI never claims a SexLab Making slot.
     sslBaseAnimation[] animations = SelectAnimations() 
+    if animations == manager.ui_pending
+        start_scene_pending = true
+        DbgReturn("StartScene", "ui_pending")
+        return None
+    endif
     if animations == manager.cancel
         Trace("StartScene","SelectAnimations returned cancel")
         Release() 
@@ -270,7 +299,11 @@ SkyrimNet_SexLab_Scene Function StartScene()
         return None
     endif
 
-    DbgMsg("StartScene", "sexlab.NewThread()")
+    return FinishStartScene(animations)
+EndFunction
+
+SkyrimNet_SexLab_Scene Function FinishStartScene(sslBaseAnimation[] animations)
+    DbgEnter("FinishStartScene")
     sslThreadModel model = sexlab.NewThread()
     DbgMsg("StartScene", "sexlab.NewThread() returned model="+model)
     if model == None
@@ -378,8 +411,9 @@ SkyrimNet_SexLab_Scene Function StartScene()
         DbgReturn("StartScene", "None")
         return None
     endif
+    sl_scene.scene_creator_menu_called = scene_creator_menu_called
     Release() 
-    DbgReturn("StartScene", "sl_scene")
+    DbgReturn("FinishStartScene", "sl_scene")
     return sl_scene 
 EndFunction
 
@@ -507,13 +541,49 @@ Function SetNames()
 
     no_orgasm_names = JoinActorsMasked(actors, no_orgasm_mask, num_actors)
     no_stripping_names = JoinActorsMasked(actors, no_stripping_mask, num_actors)
-;    Trace("SexNames",sid+" actors:"+JoinActors(actors,num_actors)+" num_actors:"+num_actors+\
-;        " actor_names:"+actor_names+" actor_names_json:"+actor_names_json+\
-;        " hermaphrodiate_names:"+hermaphrodiate_names+" strapon_names:"+strapon_names+\
-;        " victim_names:"+victim_names+" victim_names_json:"+victim_names_json+\
-;        " assailant_names:"+assailant_names)
     DbgEnd("SetNames")
-EndFunction 
+EndFunction
+
+; Rebuild victims[] / assailant_mask from victim_mask (WebUI V toggles).
+Function RebuildVictimsFromMask()
+    DbgEnter("RebuildVictimsFromMask")
+    Actor player = Game.GetPlayer()
+    player_is_victim = False
+    int count = 0
+    int i = 0
+    while i < num_actors
+        if victim_mask[i] == 1
+            count += 1
+        endif
+        i += 1
+    endwhile
+    num_victims = count
+    if num_victims > 0
+        victims = EnsureActorsLargeEnough(victims, num_victims)
+    endif
+    int j = 0
+    i = 0
+    while i < num_actors
+        if victim_mask[i] == 1
+            victims[j] = actors[i]
+            if actors[i] == player
+                player_is_victim = True
+            endif
+            assailant_mask[i] = 0
+            j += 1
+        else
+            assailant_mask[i] = 1
+        endif
+        i += 1
+    endwhile
+    actor_names = JoinActors(actors, num_actors)
+    actor_names_json = JoinActorsToJson(actors, num_actors)
+    victim_names = JoinActorsMasked(actors, victim_mask, num_actors)
+    assailant_names = JoinActorsMasked(actors, assailant_mask, num_actors)
+    no_orgasm_names = JoinActorsMasked(actors, no_orgasm_mask, num_actors)
+    no_stripping_names = JoinActorsMasked(actors, no_stripping_mask, num_actors)
+    DbgEnd("RebuildVictimsFromMask")
+EndFunction
 
 ; -------------------------------------------------
 ; Victim and Assailant setters 
@@ -812,6 +882,15 @@ Function LoadSetting(String setting_name)
         method = JMap.getStr(setting_id, "method") 
     endif 
 
+    if JMap.HasKey(setting_id, "style")
+        SetStyle(JMap.getStr(setting_id, "style", style))
+    endif
+
+    ; Preserve plugin hooks from presets without clearing an in-memory hook when absent.
+    if JMap.HasKey(setting_id, "event_hook")
+        event_hook = JMap.getStr(setting_id, "event_hook", event_hook)
+    endif
+
     ; ------------------------------
     ; Array values 
     ; ------------------------------
@@ -900,6 +979,19 @@ Function LoadSetting(String setting_name)
         endif 
         i += 1 
     endwhile 
+
+    if JMap.HasKey(setting_id, "victim")
+        int victim_arr = JMap.getObj(setting_id, "victim")
+        int[] values = JArray.asIntArray(victim_arr)
+        int num_values = values.length
+        EnsureActorsArraysLargeEnough(num_values)
+        int j = 0
+        while j < num_values
+            victim_mask[j] = values[j]
+            j += 1
+        endwhile
+        RebuildVictimsFromMask()
+    endif
 
     int tags_key = 0 
     int tags_suppress_key = 1 
@@ -1045,33 +1137,15 @@ EndFunction
 ;---------------------------------------------------------------------------------------------------------------------
 ;---------------------------------------------------------------------------------------------------------------------
 
-; Allows the user to choose to accept the sex act chosen by the LLM.
-; Return values match BUTTON_* constants:
-; 0 BUTTON_YES — Yes (may open tag editor)
-; 1 BUTTON_YES_RANDOM — Yes without tag editor
-; 2 BUTTON_NO_SILENT — refuse, do not tell the LLM
-; 3 BUTTON_NO — refuse and narrate rejection to the LLM
-int function YesNoDialog()
-    
-    DbgEnter("YesNoDialog")
+String Function BuildYesNoQuestion()
     Actor player = Game.GetPlayer() 
     String player_name = player.GetDisplayName()
-
-    String[] buttons = new String[4]
-    buttons[BUTTON_YES] = "Yes"
-    buttons[BUTTON_YES_RANDOM] = "Yes (Random)"
-    buttons[BUTTON_NO_SILENT] = "No (Silent)"
-    buttons[BUTTON_NO] = "No"
-
     String question = ""
-    String rejection = ""
-
+    pending_rejection = ""
     String intent_method = intent 
     if method != "" 
         intent_method += " by "+method 
     endif 
-
-    Trace("YesNoDialog","intent:"+intent+" num_victims:"+num_victims)
     if num_victims == 0
         int[] player_mask = Utility.CreateIntArray(num_actors, 1)
         int i = 0
@@ -1083,27 +1157,378 @@ int function YesNoDialog()
         endwhile
         String names = JoinActorsMasked(actors, player_mask, num_actors)
         question = "Would you like to start "+intent_method+" with "+names+"?"
-        rejection = player_name+" refuses to start "+intent_method+" with "+names+"."
+        pending_rejection = player_name+" refuses to start "+intent_method+" with "+names+"."
     else
         if player_is_victim
             question = "Will you allow "+assailant_names+" to start "+intent_method+" with you?"
-            rejection = player_name+" prevents "+assailant_names+" from starting "+intent_method+" with them."
+            pending_rejection = player_name+" prevents "+assailant_names+" from starting "+intent_method+" with them."
         else 
             question = "Would you like to start "+intent_method+" "+victim_names+"?"
-            rejection = player_name+" refuses to start "+intent_method+" "+victim_names+"."
+            pending_rejection = player_name+" refuses to start "+intent_method+" "+victim_names+"."
         endif 
     endif 
-    
-    DbgMsg("YesNoDialog", "SkyMessage.ShowArray question="+question)
-    int button = SkyMessage.ShowArray(question, buttons, getIndex = true) as int  
-    DbgMsg("YesNoDialog", "SkyMessage.ShowArray returned button="+button)
+    return question
+EndFunction
+
+Function ContinueAfterYesNo(int button)
+    DbgEnter("ContinueAfterYesNo", "button:"+button)
+    start_scene_pending = false
     if button == BUTTON_NO || button == BUTTON_NO_SILENT
-        if button == BUTTON_NO 
-            DirectNarration(rejection, player, actors[0])
-        endif 
+        if button == BUTTON_NO && pending_rejection != ""
+            DirectNarration(pending_rejection, Game.GetPlayer(), actors[0])
+        endif
+        Release()
+        DbgEnd("ContinueAfterYesNo")
+        return
+    endif
+    ; Yes → always open SceneCreatorMenu; Yes (Random) skips editor.
+    if button == BUTTON_YES
+        if !TryOpenSceneCreatorMenu()
+            Trace("ContinueAfterYesNo", "SceneCreator already opened, resolving from tags")
+            sslBaseAnimation[] animationsFallback = ResolveAnimationsFromTags()
+            SkyrimNet_SexLab_Scene sl_scene_fb = FinishStartScene(animationsFallback)
+            if sl_scene_fb == None
+                Trace("ContinueAfterYesNo", "FinishStartScene returned None after gated open")
+            endif
+        endif
+        DbgEnd("ContinueAfterYesNo")
+        return
+    endif
+    sslBaseAnimation[] animations = ResolveAnimationsFromTags()
+    SkyrimNet_SexLab_Scene sl_scene = FinishStartScene(animations)
+    if sl_scene == None
+        Trace("ContinueAfterYesNo", "FinishStartScene returned None")
+    endif
+    DbgEnd("ContinueAfterYesNo")
+EndFunction
+
+Function ContinueAfterSceneCreator(String json)
+    DbgEnter("ContinueAfterSceneCreator")
+    start_scene_pending = false
+    int obj = JValue.objectFromPrototype(json)
+    if obj == 0
+        Release()
+        DbgEnd("ContinueAfterSceneCreator")
+        return
+    endif
+    String ui_action = JMap.getStr(obj, "_action", "cancel")
+    if ui_action != "start"
+        JValue.release(obj)
+        Release()
+        DbgEnd("ContinueAfterSceneCreator")
+        return
+    endif
+    ApplyWebUIState(obj)
+    JValue.release(obj)
+    sslBaseAnimation[] animations = ResolveAnimationsFromUI()
+    SkyrimNet_SexLab_Scene sl_scene = FinishStartScene(animations)
+    if sl_scene == None
+        Trace("ContinueAfterSceneCreator", "FinishStartScene returned None")
+    endif
+    DbgEnd("ContinueAfterSceneCreator")
+EndFunction
+
+String Function BuildWebUIState()
+    int obj = JMap.object()
+    JMap.setInt(obj, "_creator_sid", sid)
+    JMap.setStr(obj, "_intent", intent)
+    JMap.setStr(obj, "_style", style)
+    JMap.setStr(obj, "_method", method)
+    JMap.setStr(obj, "_event_hook", event_hook)
+    JMap.setInt(obj, "_num_actors", num_actors)
+    int pos_arr = JArray.object()
+    int i = 0
+    while i < num_actors
+        int po = JMap.object()
+        JMap.setStr(po, "_name", actors[i].GetDisplayName())
+        JMap.setStr(po, "_uuid", UuidToDecimalString(SkyrimNetApi.GetEntityUUID(actors[i])))
+        JMap.setInt(po, "_form_id", actors[i].GetFormID())
+        JMap.setInt(po, "_dressed", no_stripping_mask[i])
+        JMap.setInt(po, "_no_orgasm", no_orgasm_mask[i])
+        JMap.setInt(po, "_victim", victim_mask[i])
+        JMap.setStr(po, "_speaking", speaking_modifiers[i])
+        JMap.setInt(po, "_gender", sexlab.GetGender(actors[i]))
+        JMap.setStr(po, "_race_key", GetRaceKeyForActor(sexlab, actors[i]))
+        JArray.addObj(pos_arr, po)
+        i += 1
+    endwhile
+    JMap.setObj(obj, "_positions", pos_arr)
+    JMap.setStr(obj, "_tags", JoinStrings(tags, num_tags))
+    JMap.setStr(obj, "_tags_suppress", JoinStrings(tags_suppress, num_tags_suppress))
+    String[] presets = manager.GetSceneSettings()
+    int preset_arr = JArray.object()
+    i = 0
+    while i < presets.length
+        JArray.addStr(preset_arr, presets[i])
+        i += 1
+    endwhile
+    JMap.setObj(obj, "_scene_presets", preset_arr)
+    if manager.group_info > 0
+        int group_tags = JMap.getObj(manager.group_info, "group_tags", 0)
+        if group_tags > 0
+            JMap.setObj(obj, "_group_tags", group_tags)
+        endif
+        int groups = JMap.getObj(manager.group_info, "groups", 0)
+        if groups > 0
+            JMap.setObj(obj, "_group_order", groups)
+        endif
+    endif
+    String json = ObjectToLowerCaseKeyJson(obj)
+    JValue.release(obj)
+    return json
+EndFunction
+
+Function ApplyWebUIState(int obj)
+    if obj == 0
+        return
+    endif
+    if JMap.hasKey(obj, "_style")
+        SetStyle(JMap.getStr(obj, "_style", style))
+    endif
+    if JMap.hasKey(obj, "_intent")
+        intent = JMap.getStr(obj, "_intent", intent)
+    endif
+    if JMap.hasKey(obj, "_tags")
+        String[] parts = StringUtil.Split(JMap.getStr(obj, "_tags", ""), ",")
+        if !parts
+            parts = Utility.CreateStringArray(0)
+        endif
+        num_tags = parts.length
+        tags = EnsureStringsLargeEnough(tags, num_tags)
+        int ti = 0
+        while ti < num_tags
+            tags[ti] = RemapTag(parts[ti])
+            ti += 1
+        endwhile
+    endif
+    if JMap.hasKey(obj, "_tags_suppress")
+        String[] parts = StringUtil.Split(JMap.getStr(obj, "_tags_suppress", ""), ",")
+        if !parts
+            parts = Utility.CreateStringArray(0)
+        endif
+        num_tags_suppress = parts.length
+        tags_suppress = EnsureStringsLargeEnough(tags_suppress, num_tags_suppress)
+        int ti = 0
+        while ti < num_tags_suppress
+            tags_suppress[ti] = parts[ti]
+            ti += 1
+        endwhile
+    endif
+    if JMap.hasKey(obj, "_positions")
+        int pos_arr = JMap.getObj(obj, "_positions")
+        int count = JArray.count(pos_arr)
+        Actor[] resolved = PapyrusUtil.ActorArray(count)
+        int[] new_dressed = Utility.CreateIntArray(count)
+        int[] new_no_orgasm = Utility.CreateIntArray(count)
+        int[] new_victim = Utility.CreateIntArray(count)
+        String[] new_speaking = Utility.CreateStringArray(count)
+        int valid = 0
+        int i = 0
+        while i < count
+            int po = JArray.getObj(pos_arr, i)
+            Actor ak = None
+            if po > 0
+                int form_id = JMap.getInt(po, "_form_id", 0)
+                if form_id != 0
+                    ak = Game.GetFormEx(form_id) as Actor
+                endif
+                if ak == None
+                    String uuid_dec = JMap.getStr(po, "_uuid", "")
+                    ; Match against current actors by decimal UUID
+                    int j = 0
+                    while j < num_actors && ak == None
+                        if actors[j] != None
+                            String cur = UuidToDecimalString(SkyrimNetApi.GetEntityUUID(actors[j]))
+                            if cur != "" && cur == uuid_dec
+                                ak = actors[j]
+                            endif
+                        endif
+                        j += 1
+                    endwhile
+                endif
+                if ak == None
+                    String uuid_raw = JMap.getStr(po, "_uuid", "")
+                    if uuid_raw != ""
+                        ak = SkyrimNetApi.GetActorByUUID(uuid_raw)
+                    endif
+                endif
+            endif
+            if ak != None
+                resolved[valid] = ak
+                if po > 0
+                    new_dressed[valid] = JMap.getInt(po, "_dressed", no_stripping_default_current)
+                    new_no_orgasm[valid] = JMap.getInt(po, "_no_orgasm", no_orgasm_default_current)
+                    new_victim[valid] = JMap.getInt(po, "_victim", 0)
+                    new_speaking[valid] = JMap.getStr(po, "_speaking", speaking_modifiers_default_current)
+                else
+                    new_dressed[valid] = no_stripping_default_current
+                    new_no_orgasm[valid] = no_orgasm_default_current
+                    new_victim[valid] = 0
+                    new_speaking[valid] = speaking_modifiers_default_current
+                endif
+                valid += 1
+            else
+                Trace("ApplyWebUIState", "missing actor at index:"+i+" form_id:"+JMap.getInt(po, "_form_id", 0), True)
+            endif
+            i += 1
+        endwhile
+        EnsureActorsArraysLargeEnough(valid)
+        num_actors = valid
+        i = 0
+        while i < valid
+            actors[i] = resolved[i]
+            no_stripping_mask[i] = new_dressed[i]
+            no_orgasm_mask[i] = new_no_orgasm[i]
+            victim_mask[i] = new_victim[i]
+            speaking_modifiers[i] = new_speaking[i]
+            i += 1
+        endwhile
+        SetNames()
+    endif
+    if JMap.hasKey(obj, "_event_hook")
+        String hook = JMap.getStr(obj, "_event_hook", "")
+        if hook != ""
+            event_hook = hook
+        endif
+    endif
+    if JMap.hasKey(obj, "_selected_registries")
+        int reg_arr = JMap.getObj(obj, "_selected_registries")
+        num_pending_registries = JArray.count(reg_arr)
+        pending_registries = EnsureStringsLargeEnough(pending_registries, num_pending_registries)
+        int i = 0
+        while i < num_pending_registries
+            pending_registries[i] = JArray.getStr(reg_arr, i, "")
+            i += 1
+        endwhile
+    else
+        num_pending_registries = 0
+    endif
+    ; Rebuild victims from V column — do not SetNames/SetMasks (would wipe UI mask).
+    RebuildVictimsFromMask()
+EndFunction
+
+Function LoadPresetFromWebUI(String setting_name)
+    DbgEnter("LoadPresetFromWebUI", "name:"+setting_name)
+    if setting_name != ""
+        LoadSetting(setting_name)
+        SetNames()
+    endif
+    SkyrimNet_SexLab_WebUI.SceneCreator_Open(BuildWebUIState())
+    DbgEnd("LoadPresetFromWebUI")
+EndFunction
+
+Function SavePresetFromWebUI(String json)
+    DbgEnter("SavePresetFromWebUI")
+    int obj = JValue.objectFromPrototype(json)
+    if obj == 0
+        DbgEnd("SavePresetFromWebUI")
+        return
+    endif
+    ApplyWebUIState(obj)
+    String setting_name = JMap.getStr(obj, "_scene_preset", "")
+    JValue.release(obj)
+    if setting_name == ""
+        Trace("SavePresetFromWebUI", "empty preset name", True)
+        DbgEnd("SavePresetFromWebUI")
+        return
+    endif
+    SaveSetting(setting_name)
+    SkyrimNet_SexLab_WebUI.SceneCreator_Open(BuildWebUIState())
+    DbgEnd("SavePresetFromWebUI")
+EndFunction
+
+Function SaveSetting(String setting_name)
+    if setting_name == ""
+        Trace("SaveSetting", "setting_name is '', aborting")
+        return
+    endif
+    String filename = manager.GetSceneSettingFilename(setting_name)
+    int setting_id = JMap.object()
+    if style != "" && style != "normally"
+        JMap.setStr(setting_id, "style", style)
+    endif
+    if method != ""
+        JMap.setStr(setting_id, "method", method)
+    endif
+    ; Preserve plugin hook so reloads keep SetHook wiring.
+    if event_hook != ""
+        JMap.setStr(setting_id, "event_hook", event_hook)
+    endif
+    if num_tags > 0
+        JMap.setStr(setting_id, "tags", JoinStrings(tags, num_tags))
+    endif
+    if num_tags_suppress > 0
+        JMap.setStr(setting_id, "tags_suppress", JoinStrings(tags_suppress, num_tags_suppress))
+    endif
+    int no_strip_arr = JArray.objectWithSize(num_actors)
+    int no_org_arr = JArray.objectWithSize(num_actors)
+    int speak_arr = JArray.objectWithSize(num_actors)
+    int i = 0
+    while i < num_actors
+        JArray.setInt(no_strip_arr, i, no_stripping_mask[i])
+        JArray.setInt(no_org_arr, i, no_orgasm_mask[i])
+        JArray.setStr(speak_arr, i, speaking_modifiers[i])
+        i += 1
+    endwhile
+    JMap.setObj(setting_id, "no_stripping", no_strip_arr)
+    JMap.setObj(setting_id, "no_orgasm", no_org_arr)
+    JMap.setObj(setting_id, "speaking_modifiers", speak_arr)
+    int victim_arr = JArray.objectWithSize(num_actors)
+    i = 0
+    while i < num_actors
+        JArray.setInt(victim_arr, i, victim_mask[i])
+        i += 1
+    endwhile
+    JMap.setObj(setting_id, "victim", victim_arr)
+    JValue.writeToFile(setting_id, filename)
+    JValue.release(setting_id)
+    Trace("SaveSetting", "wrote "+filename)
+EndFunction
+
+sslBaseAnimation[] Function ResolveAnimationsFromUI()
+    if num_pending_registries <= 0
+        return ResolveAnimationsFromTags()
+    endif
+    sslBaseAnimation[] animations = sslUtility.EmptyAnimationArray()
+    int i = 0
+    while i < num_pending_registries
+        String reg = pending_registries[i]
+        sslBaseAnimation anim = sexlab.GetAnimationByRegistry(reg)
+        if anim == None
+            anim = sexlab.GetCreatureAnimationByRegistry(reg)
+        endif
+        if anim != None
+            animations = sslUtility.PushAnimation(anim, animations)
+        endif
+        i += 1
+    endwhile
+    if !animations || animations.length == 0
+        Trace("ResolveAnimationsFromUI", "no registries resolved — using tag lookup")
+        return ResolveAnimationsFromTags()
+    endif
+    return animations
+EndFunction
+
+sslBaseAnimation[] Function ResolveAnimationsFromTags()
+    String tags_string = JoinStrings(tags, num_tags)
+    String tags_suppress_string = JoinStrings(tags_suppress, num_tags_suppress)
+    bool require = false 
+    if num_tags > 0 || num_tags_suppress > 0
+        require = true 
     endif 
-    DbgReturn("YesNoDialog", "button")
-    return button
+    sslBaseAnimation[] animations = sexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, require)
+    if animations == manager.empty || !animations || animations.length == 0
+        return manager.empty
+    endif
+    return animations
+EndFunction
+
+; Allows the user to choose to accept the sex act chosen by the LLM.
+int function YesNoDialog()
+    String question = BuildYesNoQuestion()
+    Trace("YesNoDialog","intent:"+intent+" num_victims:"+num_victims)
+    SkyrimNet_SexLab_WebUI.YesNo_Open(question, sid)
+    return -1
 EndFunction
 
 ; ------------------------------------------------------------------------
@@ -1118,16 +1543,26 @@ sslBaseAnimation[] Function SelectAnimations()
     else 
         Trace("SelectAnimations"," actors:"+actor_names)
     endif 
-    sslBaseAnimation[] animations = manager.empty
-    int button = BUTTON_YES
+    int button = BUTTON_YES_RANDOM
     if has_player
         button = YesNoDialog()
+        if button == -1
+            DbgReturn("SelectAnimations", "ui_pending")
+            return manager.ui_pending
+        endif
         if button == BUTTON_NO || button == BUTTON_NO_SILENT
             DbgReturn("SelectAnimations", "cancel")
             return manager.cancel 
         endif 
+    elseif main.sex_edit_tags_nonplayer
+        if TryOpenSceneCreatorMenu()
+            DbgReturn("SelectAnimations", "ui_pending")
+            return manager.ui_pending
+        endif
+        Trace("SelectAnimations", "SceneCreator already opened for nonplayer; falling through")
     endif  
 
+    sslBaseAnimation[] animations = manager.empty
     if button != BUTTON_YES_RANDOM
         if (main.sex_edit_tags_player && has_player) || (main.sex_edit_tags_nonplayer && !has_player)
             animations = SelectAnimationsDialog()

@@ -2,7 +2,7 @@ Scriptname SkyrimNet_SexLab_Menu extends Quest  ; Can extend Quest or Form depen
 
 SkyrimNet_SexLab_MCM Property mcm Auto
 SkyrimNet_SexLab_Main Property main Auto  
-SkyrimNet_SexLab_Stages Property stages Auto 
+SkyrimNet_SexLab_AnimDb Property animdb Auto
 SkyrimNet_SexLab_Scene_Manager Property manager Auto 
 SkyrimNet_SexLab_Actions Property actions Auto 
 
@@ -11,7 +11,7 @@ bool debug_mode = false
 Function Trace(String func, String msg, Bool notification=False) global
     String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Menu", func, msg)
     if notification
-        Debug.Notification(logged)
+        Debug.Notification(msg)
     endif 
 EndFunction
 
@@ -36,8 +36,8 @@ Bool Function Setup_CheckLinks()
         links_ok = false
     endif
 
-    stages = (self as Quest) as SkyrimNet_SexLab_Stages
-    if stages == None
+    animdb = (self as Quest) as SkyrimNet_SexLab_AnimDb
+    if animdb == None
         links_ok = false
     endif
 
@@ -73,12 +73,13 @@ Function ProcessHotkey(int key_code)
             sslThreadController thread = manager.GetThreadbyActor(target)
             if thread != None
                 Trace("ProcessHotkey", "thread found "+thread.tid+" for target:"+target.GetDisplayName())
-                stages.EditDescriptions(thread)
+                SkyrimNet_SexLab_Scene sl_scene = manager.GetSceneByThread(thread)
+                SkyrimNet_SexLab_WebUI.Scene_Menu_Open(thread, sl_scene)
             else
                 Trace("ProcessHotkey","failed to find thread for target:"+target.GetDisplayName())
             endif
         elseif actions.BodyAnimation_IsEligible(target, "", "") && main.sexlab.IsValidActor(target)
-            Target_Menu_Selection(target, player)
+            Open_WebUI_Target(target)
         endif 
     else 
         MultiTarget_Menu_Selection(player)
@@ -92,8 +93,9 @@ Function Open_WebUI_Target(Actor target)
         return
     endif
     bool hasStripped = main.HasStrippedItems(target)
-    Trace("Open_WebUI_Target", target.GetDisplayName()+" hasStripped:"+hasStripped)
-    SkyrimNet_SexLab_WebUI.Target_Menu_Open(target, hasStripped)
+    Trace("Open_WebUI_Target", target.GetDisplayName()+" hasStripped:"+hasStripped \
+        +" editTagsPlayer:"+main.sex_edit_tags_player+" editTagsNonPlayer:"+main.sex_edit_tags_nonplayer)
+    SkyrimNet_SexLab_WebUI.Target_Menu_Open(target, hasStripped, main.sex_edit_tags_player, main.sex_edit_tags_nonplayer)
 EndFunction
 
 Function Target_Menu_Selection(Actor target, Actor player)

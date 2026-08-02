@@ -3,7 +3,7 @@ Scriptname SkyrimNet_SexLab_Scene_Interface extends Quest
 Import SkyrimNet_SexLab_Utilities
 
 SkyrimNet_SexLab_Main Property main Auto
-SkyrimNet_SexLab_Stages Property stages Auto
+SkyrimNet_SexLab_AnimDb Property animdb Auto
 SkyrimNet_SexLab_Scene_Manager Property manager Auto 
 
 ; --------------------------------------------
@@ -71,10 +71,11 @@ String Property INTENT_DEFAULT = "sexual activities" Auto
 
 
 Function Trace(String func, String msg="", Bool notification=False)
-    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Scene_Interface", func, "sid:"+sid+" "+msg)
+    String body = "sid:"+sid+" "+msg
+    String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Scene_Interface", func, body)
     if notification
-        Debug.Notification(logged)
-    endif 
+        Debug.Notification(body)
+    endif
 EndFunction
 
 String Function GetString() 
@@ -90,7 +91,7 @@ Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager, bool _is_
     sid = _sid
     manager = _manager 
     main = manager.main
-    stages = manager.stages 
+    animdb = manager.animdb
 
     intent = INTENT_DEFAULT
     ; Always reclaim pool slots on manager Setup / load — status is Auto and survives saves.

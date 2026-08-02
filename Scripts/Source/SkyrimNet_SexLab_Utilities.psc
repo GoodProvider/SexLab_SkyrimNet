@@ -3,7 +3,7 @@ Scriptname SkyrimNet_SexLab_Utilities
 Function Trace(String func, String msg, Bool notification=False) global
     String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_Utilities", func, msg)
     if notification
-        Debug.Notification(logged)
+        Debug.Notification(msg)
     endif 
 EndFunction
 
@@ -13,6 +13,30 @@ String Function GetDisplayName(Actor akActor) global
     endif 
     return akActor.GetDisplayName()
 EndFunction 
+
+; SexLab owns creature vs non-creature. Race key only for SexLab creature genders (2/3).
+String Function GetRaceKeyForActor(SexLabFramework sexlab, Actor akActor) global
+    if akActor == None || sexlab == None
+        return ""
+    endif
+    int gender = sexlab.GetGender(akActor)
+    if gender < 2
+        return ""
+    endif
+    ActorBase base = akActor.GetLeveledActorBase()
+    if base == None
+        return ""
+    endif
+    Race r = base.GetRace()
+    if r == None
+        return ""
+    endif
+    String rk = sslCreatureAnimationSlots.GetRaceKey(r)
+    if !rk
+        return ""
+    endif
+    return rk
+EndFunction
 
 String Function IntToHex(int value) global
     if value == 0
