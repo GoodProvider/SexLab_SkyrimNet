@@ -14,4 +14,6 @@ Function WebUI_HideAllPanels() global native
 Function WebUI_SetHotkey(int dxScanCode, bool enabled) global native
 ; Push SexLab gender + race_key enrich result to Scene Creator JS (actorAnimMetaResult).
 Function ActorAnimMeta_Result(String json) global native
+; TargetMenu Start: consume one-shot skip so this scene does not open Scene Creator.
+Bool Function ConsumeSkipSceneCreator() global native
 String Function TraceLog(String script_name, String func, String msg) global native

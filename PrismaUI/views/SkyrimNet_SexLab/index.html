@@ -31,11 +31,43 @@
         /* ── Panels container ─────────────────────────────────── */
         #panels-container {
             position: absolute;
-            top: 20%;
-            left: 10%;
+            top: 12%;
+            left: 5%;
             display: flex;
+            flex-direction: column;
             align-items: flex-start;
             gap: 16px;
+            max-width: 95vw;
+            max-height: 88vh;
+        }
+
+        #target-menu-row {
+            display: none;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+            max-width: 95vw;
+        }
+
+        #target-cascade-host {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        #target-panel {
+            min-width: auto;
+            width: auto;
+            max-width: none;
+        }
+
+        .target-pulldown-panel,
+        .target-params-panel {
+            min-width: 220px;
+            max-width: 420px;
         }
 
         /* ── Panel ────────────────────────────────────────────── */
@@ -56,9 +88,8 @@
 
         #scene-creator-panel {
             width: 80vw;
-            height: 80vh;
-            max-height: 80vh;
-            margin-top: -10vh;
+            height: 70vh;
+            max-height: 70vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -727,20 +758,6 @@
             background: var(--accent-glow);
         }
         /* ── Cascading target menu ─────────────────────────────── */
-        .cascade-row {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .cascade-col {
-            min-width: 220px;
-        }
-
-        .cascade-col.hidden {
-            display: none;
-        }
-
         .option.selected {
             color: var(--accent);
             box-shadow: inset 2px 0 0 var(--accent);
@@ -780,27 +797,18 @@
 </head>
 <body>
     <div id="panels-container">
-    <div id="target-panel" class="panel" style="display:none; min-width:auto; width:auto; max-width:none;">
+    <div id="target-menu-row" style="display:none">
+        <div id="target-panel" class="panel">
 
-        <div id="target-name" class="target-row">Target</div>
-        <div id="framework-row" class="field-row" style="display:none"></div>
+            <div id="target-name" class="target-row">Target</div>
+            <div id="framework-row" class="field-row" style="display:none"></div>
 
-        <div class="cascade-row">
-            <div id="col-left" class="cascade-col">
-                <div id="global-params"></div>
-                <div id="left-options"></div>
-                <div class="option-cancel" onclick="window.onCancel && window.onCancel()">Cancel</div>
-            </div>
-            <div id="col-middle" class="cascade-col hidden">
-                <div class="section-header" id="middle-header">Actions</div>
-                <div id="middle-options"></div>
-            </div>
-            <div id="col-right" class="cascade-col hidden">
-                <div class="section-header" id="right-header">Parameters</div>
-                <div id="right-dynamics"></div>
-            </div>
+            <div id="global-params"></div>
+            <div id="left-options"></div>
+            <div class="option-cancel" onclick="window.onCancel && window.onCancel()">Cancel</div>
+
         </div>
-
+        <div id="target-cascade-host"></div>
     </div>
 
     <div id="sex-menu-panel" class="panel" style="display:none">
@@ -972,7 +980,7 @@
 
         // C++ Invoke adapters (Papyrus_WebUI / WebUI.cpp panel names)
         const PANEL_IDS = [
-            'target-panel', 'sex-menu-panel', 'yesno-panel',
+            'target-menu-row', 'sex-menu-panel', 'yesno-panel',
             'scene-creator-panel', 'scene-menu-panel'
         ];
 
@@ -983,11 +991,32 @@
             }
         }
 
+        function showTargetMenuRow() {
+            const row = document.getElementById('target-menu-row');
+            if (row) row.style.display = 'flex';
+            const panel = document.getElementById('target-panel');
+            if (panel) panel.style.display = '';
+            renderTargetMenu();
+        }
+
+        function hideTargetMenuRow() {
+            const row = document.getElementById('target-menu-row');
+            if (row) row.style.display = 'none';
+            closeTargetPulldowns();
+        }
+
         function showPanel(id) {
-            hideAllPanelsDom();
-            if (id === 'target_menu_panel' || id === 'target-panel') {
-                document.getElementById('target-panel').style.display = 'block';
-                renderTargetMenu();
+            // Spare TargetMenu row when opening Scene Creator / YesNo beside it.
+            const spareTarget =
+                id === 'scene_creator_panel' || id === 'scene-creator-panel' ||
+                id === 'yesno_panel' || id === 'yesno-panel';
+            for (const pid of PANEL_IDS) {
+                if (spareTarget && pid === 'target-menu-row') continue;
+                const el = document.getElementById(pid);
+                if (el) el.style.display = 'none';
+            }
+            if (id === 'target_menu_panel' || id === 'target-panel' || id === 'target-menu-row') {
+                showTargetMenuRow();
             } else if (id === 'sex_menu_panel' || id === 'sex-menu-panel') {
                 showSexMenu();
             } else if (id === 'yesno_panel' || id === 'yesno-panel') {
@@ -1000,8 +1029,8 @@
         }
 
         function hidePanel(id) {
-            if (id === 'target_menu_panel' || id === 'target-panel') {
-                document.getElementById('target-panel').style.display = 'none';
+            if (id === 'target_menu_panel' || id === 'target-panel' || id === 'target-menu-row') {
+                hideTargetMenuRow();
             } else if (id === 'sex_menu_panel' || id === 'sex-menu-panel') {
                 hideSexMenu();
             } else if (id === 'yesno_panel' || id === 'yesno-panel') {
@@ -1014,9 +1043,11 @@
         }
 
         function visiblePanelId() {
-            for (const pid of ['yesno-panel', 'scene-creator-panel', 'scene-menu-panel', 'target-panel', 'sex-menu-panel']) {
+            for (const pid of ['yesno-panel', 'scene-creator-panel', 'scene-menu-panel', 'target-menu-row', 'sex-menu-panel']) {
                 const el = document.getElementById(pid);
-                if (el && el.style.display === 'block') return pid;
+                if (!el) continue;
+                const d = el.style.display;
+                if (d === 'block' || d === 'flex') return pid;
             }
             return null;
         }
@@ -1334,12 +1365,24 @@
             renderTargetMenu();
         }
 
-        function startAction(name, label, optionParameters) {
-            rebuildParamDict(optionParameters);
-            selectedActionName = name;
-            selectedActionLabel = label || name;
-            seedActionParams(name);
-            targetMenuStart();
+        /// Mirror C++ IsSceneStartExecution: StartScene_* and not *Refused*.
+        function isSceneStartAction(actionName) {
+            const action = TARGET_CATALOG.actions && TARGET_CATALOG.actions[actionName];
+            if (!action) return false;
+            const fn = String(action.executionFunctionName || '');
+            if (fn.length < 11) return false;
+            if (fn.substring(0, 11).toLowerCase() !== 'startscene_') return false;
+            if (fn.toLowerCase().indexOf('refused') >= 0) return false;
+            return true;
+        }
+
+        function updateTargetConfirmButtons() {
+            const startBtn = document.getElementById('target-start-btn');
+            const customBtn = document.getElementById('target-custom-btn');
+            if (!startBtn || !customBtn) return;
+            const hasAction = !!selectedActionName && !!(TARGET_CATALOG.actions && TARGET_CATALOG.actions[selectedActionName]);
+            startBtn.classList.toggle('disabled', !hasAction);
+            customBtn.classList.toggle('disabled', !hasAction || !isSceneStartAction(selectedActionName));
         }
 
         function makeActionRow(label, name, selected, onBefore, optionParameters, disabled) {
@@ -1353,28 +1396,15 @@
                 main.onclick = (e) => {
                     e.stopPropagation();
                     if (onBefore) onBefore();
-                    startAction(name, label, optionParameters);
-                };
-            }
-
-            const expand = document.createElement('div');
-            expand.className = 'option-expand';
-            expand.textContent = '❯';
-            expand.title = 'Parameters';
-            if (!disabled) {
-                expand.onclick = (e) => {
-                    e.stopPropagation();
-                    if (onBefore) onBefore();
                     selectAction(name, label, optionParameters);
                 };
             }
 
             row.appendChild(main);
-            row.appendChild(expand);
             return row;
         }
 
-        function makeNestedPulldownRow(opt) {
+        function makeNestedPulldownRow(opt, depthIndex) {
             const row = document.createElement('div');
             row.className = 'option-row';
 
@@ -1382,6 +1412,7 @@
             main.className = 'option';
             main.textContent = displayLabel(opt);
             const drill = () => {
+                navStack = navStack.slice(0, depthIndex + 1);
                 navStack.push(opt);
                 selectedActionName = null;
                 selectedActionLabel = null;
@@ -1466,6 +1497,17 @@
             leftSelectedOpt = null;
             selectedActionName = null;
             selectedActionLabel = null;
+            const host = document.getElementById('target-cascade-host');
+            if (host) host.innerHTML = '';
+        }
+
+        function closeTargetPulldowns() {
+            navStack = [];
+            leftSelectedOpt = null;
+            selectedActionName = null;
+            selectedActionLabel = null;
+            const host = document.getElementById('target-cascade-host');
+            if (host) host.innerHTML = '';
         }
 
         function setTargetActor(uuid, name) {
@@ -1538,8 +1580,8 @@
                 left.appendChild(row);
             }
 
-            renderMiddle();
-            renderRight();
+            renderPulldownPanels();
+            renderParamsPanel();
         }
 
         function selectLeftPulldown(opt) {
@@ -1551,86 +1593,110 @@
             renderTargetMenu();
         }
 
-        function popNavStack() {
-            if (navStack.length <= 1) return;
-            navStack.pop();
+        function popNavStackTo(depthIndex) {
+            if (depthIndex <= 0) {
+                navStack = navStack.length ? [navStack[0]] : [];
+            } else {
+                navStack = navStack.slice(0, depthIndex);
+            }
             selectedActionName = null;
             selectedActionLabel = null;
             renderTargetMenu();
         }
 
-        function renderMiddle() {
-            const col = document.getElementById('col-middle');
-            const list = document.getElementById('middle-options');
-            const header = document.getElementById('middle-header');
-            if (!col || !list || !header) return;
-
-            if (!navStack.length) {
-                col.classList.add('hidden');
-                list.innerHTML = '';
-                return;
-            }
-
-            const current = navStack[navStack.length - 1];
-            if (!current || current.type !== 'pulldown') {
-                col.classList.add('hidden');
-                list.innerHTML = '';
-                return;
-            }
-
-            col.classList.remove('hidden');
-            const title = displayLabel(current);
-            if (navStack.length > 1) {
-                header.textContent = '‹ ' + title;
-                header.style.cursor = 'pointer';
-                header.onclick = (e) => {
-                    e.stopPropagation();
-                    popNavStack();
-                };
-            } else {
-                header.textContent = title;
-                header.style.cursor = '';
-                header.onclick = null;
-            }
-
-            list.innerHTML = '';
-            for (const entry of (current.options || [])) {
+        function fillPulldownPanelBody(listEl, opt, depthIndex) {
+            listEl.innerHTML = '';
+            for (const entry of (opt.options || [])) {
                 if (entry.type === 'pulldown') {
-                    list.appendChild(makeNestedPulldownRow(entry));
+                    listEl.appendChild(makeNestedPulldownRow(entry, depthIndex));
                     continue;
                 }
                 if (entry.type !== 'action' || !entry.name) continue;
                 const action = TARGET_CATALOG.actions && TARGET_CATALOG.actions[entry.name];
                 if (!action || !action.executionFunctionName) continue;
                 const lbl = (entry.label && String(entry.label).length) ? entry.label : entry.name;
-                list.appendChild(makeActionRow(
+                listEl.appendChild(makeActionRow(
                     lbl,
                     entry.name,
                     selectedActionName === entry.name,
-                    null,
+                    () => {
+                        // Keep panels up through this depth; drop deeper nestings.
+                        navStack = navStack.slice(0, depthIndex + 1);
+                        leftSelectedOpt = navStack[0] || leftSelectedOpt;
+                    },
                     entry.parameters || null
                 ));
             }
         }
 
-        function renderRight() {
-            const col = document.getElementById('col-right');
-            const dyn = document.getElementById('right-dynamics');
-            const header = document.getElementById('right-header');
-            if (!col || !dyn) return;
+        function renderPulldownPanels() {
+            const host = document.getElementById('target-cascade-host');
+            if (!host) return;
 
+            // Keep params panel if present; rebuild pulldown panels only.
+            const paramsEl = host.querySelector('.target-params-panel');
+            host.querySelectorAll('.target-pulldown-panel').forEach((el) => el.remove());
+
+            for (let i = 0; i < navStack.length; i++) {
+                const opt = navStack[i];
+                if (!opt || opt.type !== 'pulldown') continue;
+
+                const panel = document.createElement('div');
+                panel.className = 'panel target-pulldown-panel';
+
+                const header = document.createElement('div');
+                header.className = 'section-header';
+                const title = displayLabel(opt);
+                if (i > 0) {
+                    header.textContent = '‹ ' + title;
+                    header.style.cursor = 'pointer';
+                    header.onclick = (e) => {
+                        e.stopPropagation();
+                        popNavStackTo(i);
+                    };
+                } else {
+                    header.textContent = title;
+                }
+                panel.appendChild(header);
+
+                const list = document.createElement('div');
+                fillPulldownPanelBody(list, opt, i);
+                panel.appendChild(list);
+
+                if (paramsEl) host.insertBefore(panel, paramsEl);
+                else host.appendChild(panel);
+            }
+        }
+
+        function renderParamsPanel() {
+            const host = document.getElementById('target-cascade-host');
+            if (!host) return;
+
+            let panel = host.querySelector('.target-params-panel');
             if (!selectedActionName || !TARGET_CATALOG.actions[selectedActionName]) {
-                col.classList.add('hidden');
-                dyn.innerHTML = '';
+                if (panel) panel.remove();
                 return;
             }
+
+            if (!panel) {
+                panel = document.createElement('div');
+                panel.className = 'panel target-params-panel';
+                host.appendChild(panel);
+            }
+            panel.innerHTML = '';
 
             const action = TARGET_CATALOG.actions[selectedActionName];
             const actionNode = findActionNode(selectedActionName);
             if (actionNode) ensureActionParams(actionNode);
-            col.classList.remove('hidden');
+
+            const header = document.createElement('div');
+            header.className = 'section-header';
+            header.id = 'right-header';
             header.textContent = selectedActionLabel || selectedActionName;
-            dyn.innerHTML = '';
+            panel.appendChild(header);
+
+            const dyn = document.createElement('div');
+            dyn.id = 'right-dynamics';
 
             const mapping = action.parameterMapping || [];
             for (const m of mapping) {
@@ -1668,15 +1734,56 @@
                 }
                 dyn.appendChild(field);
             }
+            panel.appendChild(dyn);
+
+            const bar = document.createElement('div');
+            bar.className = 'bottom-bar';
+            const customBtn = document.createElement('div');
+            customBtn.id = 'target-custom-btn';
+            customBtn.className = 'action-btn';
+            customBtn.textContent = 'Custom';
+            customBtn.onclick = () => targetMenuCustom();
+            const startBtn = document.createElement('div');
+            startBtn.id = 'target-start-btn';
+            startBtn.className = 'action-btn';
+            startBtn.textContent = 'Start';
+            startBtn.onclick = () => targetMenuStart();
+            bar.appendChild(customBtn);
+            bar.appendChild(startBtn);
+            panel.appendChild(bar);
+
+            updateTargetConfirmButtons();
         }
 
         function targetMenuStart() {
+            const startBtn = document.getElementById('target-start-btn');
+            if (startBtn && startBtn.classList.contains('disabled')) return;
             if (!selectedActionName) return;
             if (typeof window.onAction !== 'function') return;
+            const name = selectedActionName;
+            const parameters = deepClone(paramDict);
+            closeTargetPulldowns();
+            renderTargetMenu();
             window.onAction(JSON.stringify({
                 action: 'start',
-                name: selectedActionName,
-                parameters: paramDict
+                name,
+                parameters
+            }));
+        }
+
+        function targetMenuCustom() {
+            const customBtn = document.getElementById('target-custom-btn');
+            if (customBtn && customBtn.classList.contains('disabled')) return;
+            if (!selectedActionName || !isSceneStartAction(selectedActionName)) return;
+            if (typeof window.onAction !== 'function') return;
+            const name = selectedActionName;
+            const parameters = deepClone(paramDict);
+            closeTargetPulldowns();
+            renderTargetMenu();
+            window.onAction(JSON.stringify({
+                action: 'custom',
+                name,
+                parameters
             }));
         }
 
@@ -1878,7 +1985,7 @@
         }
 
         hideSexMenu();
-        document.getElementById('target-panel').style.display = 'none';
+        hideTargetMenuRow();
         hidePanel('yesno_panel');
         hidePanel('scene_creator_panel');
         hidePanel('scene_menu_panel');

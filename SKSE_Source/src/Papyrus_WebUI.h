@@ -19,8 +19,15 @@ namespace PapyrusBindings_WebUI {
     extern bool EditTagsNonPlayer;
     /// C++ TargetMenu opened Scene Creator; cleared on Start handoff / cancel.
     extern bool SceneCreatorOpenedForPending;
+    /// TargetMenu is open until Cancel / Reset — HideAllPanels spares it.
+    extern bool TargetMenuSessionActive;
+    /// One-shot: TargetMenu Start should skip Scene Creator for the next Action_Start creator.
+    extern bool SkipSceneCreatorOnce;
 
     void ClearSceneCreatorPending();
+    void ClearTargetMenuSession();
+    /// Reads and clears SkipSceneCreatorOnce (Papyrus native).
+    bool ConsumeSkipSceneCreator(RE::StaticFunctionTag*);
     void DispatchManagerMethodStrOnly(const char* method, const std::string& b);
 
     /// Papyrus native: open the in-scene sex menu panel overlay.

@@ -20,7 +20,16 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 - `kDataLoaded`: PrismaUI API, `CreateView("SkyrimNet_SexLab/index.html")`, JS listeners.
 - `kPostLoadGame` / `kNewGame`: `WebUI_SetGameReady()` (enables input; reloads ActionCatalog from `webui/`).
 - Papyrus → C++ open; C++ → JS panels `target_menu_panel` / `sex_menu_panel`.
-- Catalog: `menu/target/` (typed recursive menu tree with `defaultsParameters`) + `actions_index.json`; Start merges params onto YAML and dispatches via SkyrimNet.
+- Catalog: `menu/target/` (typed recursive menu tree with `defaultsParameters`) + `actions_index.json`; **Start** merges params onto YAML and dispatches via SkyrimNet; **Custom** opens Scene Creator with action-derived state.
+
+### TargetMenu UX
+
+- Root `#target-panel` holds globals + root options + Cancel only. Each opened `pulldown` is its own sibling panel (nav stack); Parameters is a separate confirm panel with **Start** / **Custom**. The cascade row sits **above** Scene Creator.
+- Click an action → select it and open the Parameters panel (does not start).
+- **Start** / **Custom** snapshot params, then **close all pulldown + Parameters panels** (root TargetMenu stays), then fire `onAction`.
+- **Start** → `onAction({action:"start",…})` → `ExecuteAction`. For scene-start actions, C++ sets `SkipSceneCreatorOnce`; Papyrus `Action_Start` consumes it via `ConsumeSkipSceneCreator()` and sets `scene_creator_menu_called` so YesNo / Tag Edit will not open Scene Creator for that scene.
+- **Custom** (scene-start actions only) → `onAction({action:"custom",…})` → `OpenSceneCreatorFromTargetMenu` (`_from_target_menu`). TargetMenu root stays open above Scene Creator; Custom again reconfigures SC.
+- Cancel clears the TargetMenu session. `WebUI_HideAllPanels` spares TargetMenu while that session is active.
 
 ### `menu/target/`
 
@@ -36,15 +45,15 @@ C++ assembles these into the same in-memory shape JS expects: `defaultsParameter
 | type | Fields | Role |
 |------|--------|------|
 | `parameter` | `name`, `default`, `values` | Global param pulldown |
-| `action` | `name`, `label`, optional `parameters`, optional `disabled` | Starts SkyrimNet action `name`; UI text = `label`; `disabled` = greyed non-clickable |
+| `action` | `name`, `label`, optional `parameters`, optional `disabled` | Selects action + Parameters panel; confirm with Start/Custom; `disabled` = greyed non-clickable |
 | `pulldown` | `label`, `options[]`, optional `parameters` | Group; children are `action` and/or nested `pulldown` |
 | `actionSwitch` | `label`, `options[]` of `action` + `eligibilityRules` | C++ picks first eligible child (or disabled fallback label) |
 
 Actor sources: `playerActor` / `currentActor` (aliases `player` / `target` / `focus` still work).
 
-Outfit stay-open: `outfit_dress` / `outfit_undress` do not hide the panel; Papyrus calls `Target_Menu_Refresh` after StorageUtil updates.
+Outfit stay-open: TargetMenu stays open for all Start/Custom (until Cancel). `outfit_dress` / `outfit_undress` still call `Target_Menu_Refresh` after StorageUtil updates.
 
-Menu labels for the target panel come from `menu/target/`. Nested pulldowns use a middle-column nav stack (`‹` header pops).
+Menu labels for the target panel come from `menu/target/`. Nested pulldowns open as separate panels in a row (`‹` header pops).
 
 Start merge order: YAML statics → `defaultsParameters` → matching action-node `parameters` → UI dictionary (UI wins).
 

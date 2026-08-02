@@ -184,7 +184,7 @@ void WebUI_Reset()
 /// Clears the current target actor and resets panels / visibility to a closed UI.
 void Reset_To_Default()
 {
-    PapyrusBindings_WebUI::Target_Current = nullptr;
+    PapyrusBindings_WebUI::ClearTargetMenuSession();
     WebUI_Reset();
 }
 
@@ -224,8 +224,10 @@ void InitWebUI()
         PrismaUI->Hide(g_view);
 
         PrismaUI->RegisterJSListener(g_view, "onCancel", [](const char*) {
+            WebUI_Invoke("hidePanel('target_menu_panel');");
+            PapyrusBindings_WebUI::ClearTargetMenuSession();
+            // Keep other panels if any; hide overlay when nothing else needs focus.
             WebUI_Visibility_Hide();
-            PapyrusBindings_WebUI::Target_Current = nullptr;
         });
 
         PrismaUI->RegisterJSListener(g_view, "onYesNoResult", [](const char* value) {
@@ -237,8 +239,8 @@ void InitWebUI()
                 const int creator_sid = j.value("creator_sid", PapyrusBindings_WebUI::YesNo_Creator_Sid);
                 webui_log::info("onYesNoResult button={} creator_sid={}", button, creator_sid);
                 WebUI_Invoke("hidePanel('yesno_panel');");
-                // Yes (0) opens SceneCreator next — keep overlay focused. Random/No hide.
-                if (button != 0)
+                // Yes (0) opens SceneCreator next — keep overlay focused. Random/No hide unless TargetMenu stays.
+                if (button != 0 && !PapyrusBindings_WebUI::TargetMenuSessionActive)
                     WebUI_Visibility_Hide();
                 PapyrusBindings_WebUI::DispatchManagerMethodIntInt("WebUI_OnYesNoResult", creator_sid, button);
             } catch (...) {
@@ -258,8 +260,9 @@ void InitWebUI()
                 webui_log::info("onSceneCreatorResult action={} creator_sid={} fromTargetMenu={}", action,
                     creator_sid, fromTargetMenu);
                 WebUI_Invoke("hidePanel('scene_creator_panel');");
-                WebUI_Visibility_Hide();
                 PapyrusBindings_WebUI::ClearSceneCreatorPending();
+                if (!PapyrusBindings_WebUI::TargetMenuSessionActive)
+                    WebUI_Visibility_Hide();
                 if (action == "start" && fromTargetMenu) {
                     j["_from_target_menu"] = true;
                     PapyrusBindings_WebUI::DispatchManagerMethodStrOnly("WebUI_OnSceneCreatorHandoff", j.dump());
@@ -393,41 +396,35 @@ void InitWebUI()
             }
 
             const std::string action = payload.value("action", "");
-            if (action != "start") {
-                webui_log::info("onAction: ignoring action={}", action);
-                return;
-            }
-
             const std::string name = payload.value("name", "");
             nlohmann::json params = payload.value("parameters", nlohmann::json::object());
 
-            webui_log::info("onAction start name={}", name);
-
-            if (ActionCatalog::ShouldOpenSceneCreatorFromTargetMenu(
-                    name, params, player, target,
-                    PapyrusBindings_WebUI::EditTagsPlayer,
-                    PapyrusBindings_WebUI::EditTagsNonPlayer)) {
-                PapyrusBindings_WebUI::Target_Current = nullptr;
+            if (action == "custom") {
+                webui_log::info("onAction custom name={}", name);
                 if (!ActionCatalog::OpenSceneCreatorFromTargetMenu(name, params, player, target)) {
                     webui_log::error("onAction: OpenSceneCreatorFromTargetMenu failed for {}", name);
                 }
                 return;
             }
 
-            const bool stayOpen = ActionCatalog::IsStayOpenAction(name);
-            if (!stayOpen) {
-                WebUI_Invoke("hidePanel('target_menu_panel');");
-                WebUI_Invoke("hidePanel('sex_menu_panel');");
-                WebUI_Invoke("hidePanel('yesno_panel');");
-                WebUI_Invoke("hidePanel('scene_creator_panel');");
-                WebUI_Invoke("hidePanel('scene_menu_panel');");
-                WebUI_Visibility_Hide();
-                PapyrusBindings_WebUI::Target_Current = nullptr;
+            if (action != "start") {
+                webui_log::info("onAction: ignoring action={}", action);
+                return;
             }
 
+            webui_log::info("onAction start name={}", name);
+
+            // TargetMenu Start always ExecuteAction; skip Scene Creator only for scene-start actions.
+            if (ActionCatalog::ShouldOpenSceneCreatorFromTargetMenu(
+                    name, params, player, target, true, true)) {
+                PapyrusBindings_WebUI::SkipSceneCreatorOnce = true;
+            }
+
+            // Keep TargetMenu open (Custom/Start stay-open). Outfit refresh still works.
             bool ok = ActionCatalog::ExecuteAction(name, params, player, target);
             if (!ok) {
                 webui_log::error("onAction: ExecuteAction failed for {}", name);
+                PapyrusBindings_WebUI::SkipSceneCreatorOnce = false;
             }
             // Outfit stay-open: Papyrus Outfit_* calls Target_Menu_Refresh after storage updates.
         });

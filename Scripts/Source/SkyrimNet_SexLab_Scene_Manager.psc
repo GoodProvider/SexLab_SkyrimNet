@@ -911,9 +911,16 @@ Event Action_Start(String intent, Form f_speaker, Form f_target, Form f_victim, 
     endif 
 
     SkyrimNet_SexLab_Scene_Creator creator = CreateCreator(intent, actors, speaker, target, method, setting_name)
+    ; TargetMenu Start: consume one-shot even if CreateCreator fails (avoid leak to next scene).
+    Bool skipSceneCreator = SkyrimNet_SexLab_WebUI.ConsumeSkipSceneCreator()
     if creator == None 
         Trace("Action_Start", "CreateCreator returned None, aborting")
         return 
+    endif 
+    ; User chose Start (not Custom) — do not open Scene Creator for this scene.
+    if skipSceneCreator
+        creator.scene_creator_menu_called = true
+        Trace("Action_Start", "SkipSceneCreatorOnce consumed for sid:"+creator.sid)
     endif 
     if creator.LockAllActorLock()
         ; Can't be set by setting

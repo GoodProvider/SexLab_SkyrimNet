@@ -14,10 +14,25 @@ namespace PapyrusBindings_WebUI
     bool EditTagsPlayer = true;
     bool EditTagsNonPlayer = false;
     bool SceneCreatorOpenedForPending = false;
+    bool TargetMenuSessionActive = false;
+    bool SkipSceneCreatorOnce = false;
 
     void ClearSceneCreatorPending()
     {
         SceneCreatorOpenedForPending = false;
+    }
+
+    void ClearTargetMenuSession()
+    {
+        TargetMenuSessionActive = false;
+        Target_Current = nullptr;
+    }
+
+    bool ConsumeSkipSceneCreator(RE::StaticFunctionTag*)
+    {
+        const bool skip = SkipSceneCreatorOnce;
+        SkipSceneCreatorOnce = false;
+        return skip;
     }
 
     static AnimationDB::FilterSpec ParseFilterJson(const char* json)
@@ -103,7 +118,8 @@ namespace PapyrusBindings_WebUI
 
     void WebUI_HideAllPanels(RE::StaticFunctionTag*)
     {
-        WebUI_Invoke("hidePanel('target_menu_panel');");
+        if (!TargetMenuSessionActive)
+            WebUI_Invoke("hidePanel('target_menu_panel');");
         WebUI_Invoke("hidePanel('sex_menu_panel');");
         WebUI_Invoke("hidePanel('yesno_panel');");
         WebUI_Invoke("hidePanel('scene_creator_panel');");
@@ -155,6 +171,7 @@ namespace PapyrusBindings_WebUI
 
         Reset_To_Default();
         Target_Current = Target_Input;
+        TargetMenuSessionActive = true;
 
         if (!ActionCatalog::IsLoaded())
             ActionCatalog::Load();
@@ -270,7 +287,7 @@ namespace PapyrusBindings_WebUI
             return;
         }
         webui_log::info("Scene_Menu_Open");
-        Target_Current = nullptr;
+        ClearTargetMenuSession();
         WebUI_HideAllPanels(nullptr);
         DispatchSceneExportMenuState(thread, sl_scene);
     }
@@ -662,6 +679,7 @@ namespace PapyrusBindings_WebUI
         a_vm->RegisterFunction("WebUI_HideAllPanels", scriptName, WebUI_HideAllPanels);
         a_vm->RegisterFunction("WebUI_SetHotkey", scriptName, WebUI_SetHotkey);
         a_vm->RegisterFunction("ActorAnimMeta_Result", scriptName, ActorAnimMeta_Result);
+        a_vm->RegisterFunction("ConsumeSkipSceneCreator", scriptName, ConsumeSkipSceneCreator);
         a_vm->RegisterFunction("TraceLog", scriptName, TraceLog);
 
         webui_log::info("Successfully registered Papyrus functions for {}", scriptName);

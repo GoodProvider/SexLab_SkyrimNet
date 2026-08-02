@@ -660,10 +660,8 @@ namespace ActionCatalog
         RE::Actor* player,
         RE::Actor* focusTarget)
     {
-        if (PapyrusBindings_WebUI::SceneCreatorOpenedForPending) {
-            webui_log::info("OpenSceneCreatorFromTargetMenu: already pending, skipping");
-            return false;
-        }
+        // Allow Custom to reconfigure Scene Creator while TargetMenu stays open.
+        // SceneCreatorOpenedForPending still tracks that SC was opened from TargetMenu.
 
         ResolvedSceneParams params;
         if (!ResolveSceneParams(actionName, uiParameters, player, focusTarget, params)) {
@@ -702,7 +700,7 @@ namespace ActionCatalog
         state["_positions"] = positions;
 
         PapyrusBindings_WebUI::SceneCreatorOpenedForPending = true;
-        WebUI_Invoke("hidePanel('target_menu_panel');");
+        // Keep TargetMenu open so the user can push more presets via Custom.
         WebUI_Invoke("hidePanel('sex_menu_panel');");
         WebUI_Invoke("hidePanel('yesno_panel');");
         WebUI_Invoke("hidePanel('scene_menu_panel');");
