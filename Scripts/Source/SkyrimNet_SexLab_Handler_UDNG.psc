@@ -21,7 +21,7 @@ Function Setup()
     UnRegisterForModEvent(key_)
     if udng_groups != None 
         RegisterForModEvent(key_, "MenuOpen")
-        SkyrimNet_SexLab_API.RegisterTargetMenuOption(self as Form, "SkyrimNet_SexLab_Handler_UDNG", "OpenMenu", "bondage")
+        ; TargetMenu "bondage" comes from FOMOD-shipped webui/menu/target/options/0600_sexlab_bondage.json
         Trace("Setup",file+" found registering for "+key_) 
     else 
         Trace("Setup",file+" not found")

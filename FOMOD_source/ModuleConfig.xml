@@ -15,6 +15,7 @@
 							<image path="images\sexlab_logo.png" />
 							<files>
 								<file source="handler_udng\SkyrimNet_SexLab_Handler_UDNG.esp" destination="" alwaysInstall="false" installIfUsable="false" priority="0"/>
+								<file source="handler_udng\SKSE\Plugins\SkyrimNet_SexLab\webui\menu\target\options\0600_sexlab_bondage.json" destination="SKSE\Plugins\SkyrimNet_SexLab\webui\menu\target\options\" alwaysInstall="false" installIfUsable="false" priority="0"/>
 							</files>
 							<typeDescriptor>
 								<dependencyType>

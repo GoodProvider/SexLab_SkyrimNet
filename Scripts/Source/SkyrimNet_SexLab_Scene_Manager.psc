@@ -702,32 +702,179 @@ Function WebUI_OnSceneCreatorSave(int creator_sid, String json)
     endif
 EndFunction
 
-Function WebUI_OnSceneMenuClose(int scene_sid, String json)
+Function WebUI_OnAnimationMenuClose(int scene_sid, String json)
     SkyrimNet_SexLab_Scene sl_scene = GetSceneBySid(scene_sid)
     if sl_scene
         sl_scene.WebUI_OnMenuClose(json)
     endif
 EndFunction
 
-Function WebUI_OnSceneMenuPrevNext(int scene_sid, int direction)
+Function WebUI_OnAnimationMenuPrevNext(int scene_sid, int direction)
     SkyrimNet_SexLab_Scene sl_scene = GetSceneBySid(scene_sid)
     if sl_scene
         sl_scene.WebUI_OnMenuPrevNext(direction)
     endif
 EndFunction
 
-Function WebUI_OnSceneMenuStop(int scene_sid, int direction)
+Function WebUI_OnAnimationMenuStop(int scene_sid, int direction)
     SkyrimNet_SexLab_Scene sl_scene = GetSceneBySid(scene_sid)
     if sl_scene
         sl_scene.WebUI_OnMenuStop()
     endif
 EndFunction
 
-Function WebUI_OnSceneMenuLiveUpdate(int scene_sid, String json)
+Function WebUI_OnAnimationMenuLiveUpdate(int scene_sid, String json)
     SkyrimNet_SexLab_Scene sl_scene = GetSceneBySid(scene_sid)
     if sl_scene
         sl_scene.WebUI_OnMenuLiveUpdate(json)
     endif
+EndFunction
+
+Function WebUI_PushSceneConnections()
+    SkyrimNet_SexLab_WebUI.SceneConnections_Show(BuildSceneConnectionsJson())
+EndFunction
+
+String Function BuildSceneConnectionsJson()
+    int root = JMap.object()
+    int arr = JArray.object()
+    int neu = JMap.object()
+    JMap.setStr(neu, "_id", "new")
+    JMap.setStr(neu, "_label", "new")
+    JArray.addObj(arr, neu)
+    int i = 0
+    while i < sl_scenes.length
+        SkyrimNet_SexLab_Scene sl_scene = sl_scenes[i]
+        if sl_scene != None && sl_scene.GetThreadActive()
+            int co = JMap.object()
+            JMap.setStr(co, "_id", "scene:"+sl_scene.sid)
+            JMap.setInt(co, "_scene_sid", sl_scene.sid)
+            JMap.setStr(co, "_label", sl_scene.GetIntentMessage(sl_scene.INTENT_STAGE_ONGOING))
+            JArray.addObj(arr, co)
+        endif
+        i += 1
+    endwhile
+    JMap.setObj(root, "_connections", arr)
+    String json = ObjectToLowerCaseKeyJson(root)
+    JValue.release(root)
+    return json
+EndFunction
+
+Function WebUI_OnSceneConnectionsRefresh(String unused)
+    WebUI_PushSceneConnections()
+EndFunction
+
+Function WebUI_OnSceneConnectionChange(String json)
+    Trace("WebUI_OnSceneConnectionChange", json)
+    WebUI_PushSceneConnections()
+    int obj = JValue.objectFromPrototype(json)
+    if obj == 0
+        return
+    endif
+    String conn = JMap.getStr(obj, "_connection", "new")
+    if conn == "new" || StringUtil.Find(conn, "scene:") != 0
+        SkyrimNet_SexLab_Scene_Creator creator = None
+        int i = 0
+        while i < creators.length && creator == None
+            if creators[i] && creators[i].IsActive()
+                creator = creators[i]
+            endif
+            i += 1
+        endwhile
+        if creator
+            int st = JValue.objectFromPrototype(creator.BuildWebUIState())
+            if st
+                JMap.setStr(st, "_mode", "creator")
+                JMap.setStr(st, "_connection", "new")
+                String out = ObjectToLowerCaseKeyJson(st)
+                JValue.release(st)
+                SkyrimNet_SexLab_WebUI.SceneCreator_Configure(out)
+            else
+                SkyrimNet_SexLab_WebUI.SceneCreator_Configure(creator.BuildWebUIState())
+            endif
+        else
+            int provisional = JMap.object()
+            JMap.setStr(provisional, "_mode", "creator")
+            JMap.setStr(provisional, "_connection", "new")
+            JMap.setInt(provisional, "_creator_sid", 0)
+            JMap.setInt(provisional, "_from_target_menu", 1)
+            JMap.setObj(provisional, "_positions", JArray.object())
+            String out = ObjectToLowerCaseKeyJson(provisional)
+            JValue.release(provisional)
+            SkyrimNet_SexLab_WebUI.SceneCreator_Configure(out)
+        endif
+    else
+        String sid_str = StringUtil.Substring(conn, 6)
+        int scene_sid = sid_str as int
+        SkyrimNet_SexLab_Scene sl_scene = GetSceneBySid(scene_sid)
+        if sl_scene == None || !sl_scene.GetThreadActive()
+            Trace("WebUI_OnSceneConnectionChange", "no active scene sid:"+scene_sid, true)
+            JValue.release(obj)
+            return
+        endif
+        ; Soft configure both; do not showPanel (avoids main_panel thrash).
+        SkyrimNet_SexLab_WebUI.SceneCreator_Configure(sl_scene.BuildWebUISceneMenuState())
+        SkyrimNet_SexLab_WebUI.Animation_Menu_Configure(sl_scene.BuildWebUIAnimationMenuState())
+    endif
+    JValue.release(obj)
+EndFunction
+
+Function WebUI_OnSceneAnimUpdate(int scene_sid, String json)
+    SkyrimNet_SexLab_Scene sl_scene = GetSceneBySid(scene_sid)
+    if sl_scene
+        sl_scene.WebUI_OnAnimUpdate(json)
+    endif
+EndFunction
+
+Function WebUI_OnAnimRegistrySave(String json)
+    int obj = JValue.objectFromPrototype(json)
+    if obj == 0
+        return
+    endif
+    String registry = JMap.getStr(obj, "_registry", "")
+    if registry == ""
+        JValue.release(obj)
+        return
+    endif
+    int payload = JMap.object()
+    if JMap.hasKey(obj, "_stages")
+        int stages_arr = JMap.getObj(obj, "_stages")
+        int count = JArray.count(stages_arr)
+        int i = 0
+        while i < count
+            int st = JArray.getObj(stages_arr, i)
+            if st > 0
+                int stage_no = JMap.getInt(st, "_stage", i + 1)
+                String template = JMap.getStr(st, "_template", "")
+                if template != ""
+                    int stage_obj = JMap.object()
+                    JMap.setStr(stage_obj, "description", template)
+                    JMap.setStr(stage_obj, "version", "2.0")
+                    JMap.setObj(payload, "stage "+stage_no, stage_obj)
+                endif
+            endif
+            i += 1
+        endwhile
+    endif
+    if JMap.hasKey(obj, "_positions")
+        int pos_arr = JMap.getObj(obj, "_positions")
+        int count = JArray.count(pos_arr)
+        int orgasm_arr = JArray.objectWithSize(count)
+        int i = 0
+        while i < count
+            int po = JArray.getObj(pos_arr, i)
+            int no_org = 0
+            if po > 0
+                no_org = JMap.getInt(po, "_no_orgasm", 0)
+            endif
+            JArray.setInt(orgasm_arr, i, 1 - no_org)
+            i += 1
+        endwhile
+        JMap.setObj(payload, "orgasm_expected", orgasm_arr)
+    endif
+    String save_json = ObjectToLowerCaseKeyJson(payload)
+    JValue.release(payload)
+    animdb.SaveAnimLocal(registry, save_json)
+    JValue.release(obj)
 EndFunction
 
 ; JS onResolveActorMeta → enrich Scene Creator positions with SexLab gender + race key.

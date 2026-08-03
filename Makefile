@@ -38,7 +38,7 @@ release:
 
 	if exist "$(subst /,\\,handler_udng)" rmdir /s /q "$(subst /,\\,handler_udng)"	
 	mkdir handler_udng 
-	powershell -NoProfile -Command "Copy-Item -Path 'SkyrimNet_SexLab_Handler_UDNG.esp' -Destination 'handler_udng/.' -Recurse -Force"
+	powershell -NoProfile -Command "Copy-Item -Path 'SkyrimNet_SexLab_Handler_UDNG.esp' -Destination 'handler_udng/.' -Recurse -Force; if (Test-Path 'optional/handler_udng') { Copy-Item -Path 'optional/handler_udng/*' -Destination 'handler_udng/.' -Recurse -Force }"
 
 	if exist "$(subst /,\\,handler_dom)" rmdir /s /q "$(subst /,\\,handler_dom)"	
 	mkdir handler_dom 

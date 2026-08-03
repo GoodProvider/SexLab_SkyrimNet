@@ -14,7 +14,7 @@ Enable the hot key in the MCM (**Sex Description Editor** → Enable the Start S
 
 ## In SexLab animation
 
-- Open Scene Menu (stage descriptions, dressed / orgasm / speaking live updates)
+- Open Animation Menu (stage descriptions, dressed / orgasm / speaking live updates)
 - Change sex style when Tag Editor dialogs are on
 
 Stage JSON format: [../authors/animations.md](../authors/animations.md).

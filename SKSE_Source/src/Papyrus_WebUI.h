@@ -39,14 +39,23 @@ namespace PapyrusBindings_WebUI {
     /// Scene creator tag/animation editor (JSON state from Scene_Creator.BuildWebUIState).
     void SceneCreator_Open(RE::StaticFunctionTag*, RE::BSFixedString state_json);
 
+    /// Soft configure Scene Menu without HideAllPanels / showPanel (connection refresh).
+    void SceneCreator_Configure(RE::StaticFunctionTag*, RE::BSFixedString state_json);
+
     /// Push SexLab gender + race_key enrich result to Scene Creator JS.
     void ActorAnimMeta_Result(RE::StaticFunctionTag*, RE::BSFixedString json);
 
-    /// Active-scene menu hotkey entry; dispatches Papyrus to build payload then show.
-    void Scene_Menu_Open(RE::StaticFunctionTag*, RE::TESForm* thread, RE::TESForm* sl_scene);
+    /// Active-animation menu hotkey entry; dispatches Papyrus to build payload then show.
+    void Animation_Menu_Open(RE::StaticFunctionTag*, RE::TESForm* thread, RE::TESForm* sl_scene);
 
-    /// Show scene menu panel after Papyrus built state JSON.
-    void Scene_Menu_Show(RE::StaticFunctionTag*, RE::BSFixedString state_json);
+    /// Show animation menu panel after Papyrus built state JSON.
+    void Animation_Menu_Show(RE::StaticFunctionTag*, RE::BSFixedString state_json);
+
+    /// Soft configure Animation panel without showPanel (connection refresh).
+    void Animation_Menu_Configure(RE::StaticFunctionTag*, RE::BSFixedString state_json);
+
+    /// Push scene connection pulldown options to JS.
+    void SceneConnections_Show(RE::StaticFunctionTag*, RE::BSFixedString state_json);
 
     void WebUI_HideAllPanels(RE::StaticFunctionTag*);
 
@@ -76,6 +85,6 @@ namespace PapyrusBindings_WebUI {
 
     void DispatchManagerMethodIntInt(const char* method, std::int32_t a, std::int32_t b);
     void DispatchManagerMethodIntStr(const char* method, std::int32_t a, const std::string& b);
-    void DispatchSceneExportMenuState(RE::TESForm* thread, RE::TESForm* sl_scene);
+    void DispatchAnimationMenuExportState(RE::TESForm* thread, RE::TESForm* sl_scene);
     void HandleAnimDbQuery(const char* value);
 }

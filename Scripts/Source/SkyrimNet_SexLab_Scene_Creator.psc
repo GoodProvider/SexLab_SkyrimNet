@@ -1230,6 +1230,8 @@ EndFunction
 
 String Function BuildWebUIState()
     int obj = JMap.object()
+    JMap.setStr(obj, "_mode", "creator")
+    JMap.setStr(obj, "_connection", "new")
     JMap.setInt(obj, "_creator_sid", sid)
     JMap.setStr(obj, "_intent", intent)
     JMap.setStr(obj, "_style", style)

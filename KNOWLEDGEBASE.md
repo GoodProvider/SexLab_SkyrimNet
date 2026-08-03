@@ -18,7 +18,8 @@
 - **Scene Creator anim list**: query cap is 125 (SexLab `GetList`). Do **not** embed `JSON.stringify(anim)` in each row `onclick` — with 125 rows that freezes CEF during `configureSceneCreator` and the panel never paints. Keep rows in `SC.lastAnims` and pass an index. Rendered as a 5-column table (genders / modifiers / name / num stages / description); WebUI `AnimRowToJson` includes `_stage_descriptions` so the description column can substitute `{{sl.actors.N}}` from Scene Creator positions.
 - **Scene presets**: Load/Save write `scenes/<name>.json` (no OS dialog); preserve `event_hook`. Do not `LoadSetting` on Start after UI edits — that overwrites tags.
 - **Victim mask**: After WebUI V toggles, call `RebuildVictimsFromMask` — never `SetNames`/`SetMasks` (those rebuild the mask from `victims[]` and wipe UI).
-- **SceneMenu**: hotkey → `Scene_Menu_Open`; close saves `_local_` anim JSON **only if dirty**; live 👕/O/speaking via `WebUI_OnMenuLiveUpdate`; V display-only; no tracking toggle.
+- **AnimationMenu**: hotkey → `Animation_Menu_Open`; close saves `_local_` anim JSON **only if dirty**; live O/speaking via `WebUI_OnMenuLiveUpdate`; V display-only; no tracking toggle.
+- **Scene Menu dual-mode (2026-08-02):** UI label Scene Menu; shared scene pulldown (`new` + active `GetIntentMessage`). Active: A/N + Update (SexLab anim list cap **128** via `sslUtility.PushAnimation`); AnimationPanel is single-select AnimDb editor (slot positions, not actors); Prev/Next/Stop only when connected to a live scene. Tags stay UI filters — pool mutates only on Update.
 - **Legacy**: `SkyrimNet_SexLab_Stages` is an empty stub for save compatibility; all callers use AnimDb.
 
 ## Caprica rejects formal param name `scriptName` (2026-07-29)
@@ -28,6 +29,14 @@ Caprica fails natives that declare a parameter named `scriptName` with `no viabl
 ## TargetMenuRegistry external options (2026-07-29)
 
 `SkyrimNet_SexLab_API.RegisterTargetMenuOption(Form quest, …)` appends runtime actions to the WebUI Target Menu (end of `options` + `actions` in `BuildUICatalog`). Stores the quest **FormID** (not EditorID) — EditorID lookup often fails for optional handler ESPs and `FindQuest` would fall back to the main quest. Cleared on `kPostLoadGame` / `kNewGame`; handlers must re-register in `Setup` with `self as Form`. Click dispatches via `ExecuteAction` with a single `target` Actor arg.
+
+**Preferred (2026-08-02):** optional handlers ship filesystem `webui/menu/target/options/*.json` with `plugin` + `questFormId` + `scriptName` + `executionFunctionName` (+ optional `requiresPlugin`). UDNG bondage uses this via FOMOD; `RegisterTargetMenuOption` is legacy.
+
+## MainMenu / main_panels (2026-08-02)
+
+Left column: MainMenu (title + pulldown) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/main_panels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`.
+
+- **Scene Menu appear/disappear loop (2026-08-03):** Do **not** call `requestSceneConnectionChange` from `revealMainPanel`. Connection reload → `SceneCreator_Open` (`showPanel` → `onMainPanelChange` → `SwitchMainPanel` → reveal) loops. Soft path: `SceneCreator_Configure` / `Animation_Menu_Configure` (no HideAll/showPanel); `WebUI_OnSceneConnectionChange` uses Configure; `SwitchMainPanel` invokes `mainPanelDidOpen()` once on **key change** only. `showPanel` for SC/AM is idempotent when already selected.
 
 ## SKSE native params must use engine types (2026-07-25)
 

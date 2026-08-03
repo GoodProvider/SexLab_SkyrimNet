@@ -1,6 +1,11 @@
 #include "ActionCatalog.h"
 #include "TargetMenuRegistry.h"
 #include "WebUI_Log.h"
+#include "Papyrus_WebUI.h"
+
+#include "RE/Skyrim.h"
+#include "SKSE/SKSE.h"
+#include "WebUI.h"
 
 #include <Windows.h>
 #include <algorithm>
@@ -17,6 +22,8 @@ namespace ActionCatalog
         std::vector<ActionDef> g_actions;
         std::unordered_map<std::string, std::size_t> g_byName;
         nlohmann::json g_targetOptions = nlohmann::json::object();
+        nlohmann::json g_mainPanels = nlohmann::json::array();
+        std::string g_currentMainPanelKey;
         bool g_loaded = false;
 
         bool EqualsIgnoreCase(std::string_view a, std::string_view b)
@@ -57,6 +64,128 @@ namespace ActionCatalog
             if (!in)
                 return {};
             return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+        }
+
+        bool IsPluginLoaded(const std::string& pluginName)
+        {
+            if (pluginName.empty())
+                return true;
+            auto* dh = RE::TESDataHandler::GetSingleton();
+            if (!dh)
+                return false;
+            return dh->LookupModByName(pluginName) != nullptr;
+        }
+
+        std::uint32_t ParseFormId(const nlohmann::json& v)
+        {
+            if (v.is_number_unsigned() || v.is_number_integer())
+                return static_cast<std::uint32_t>(v.get<std::uint64_t>());
+            if (v.is_string()) {
+                auto s = v.get<std::string>();
+                if (s.empty())
+                    return 0;
+                try {
+                    if (s.size() > 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
+                        return static_cast<std::uint32_t>(std::stoul(s, nullptr, 16));
+                    return static_cast<std::uint32_t>(std::stoul(s, nullptr, 0));
+                } catch (...) {
+                    return 0;
+                }
+            }
+            return 0;
+        }
+
+        void ParseParameterMapping(const nlohmann::json& item, ActionDef& def)
+        {
+            if (!item.contains("parameterMapping") || !item["parameterMapping"].is_array())
+                return;
+            for (auto& m : item["parameterMapping"]) {
+                ParamMapping pm;
+                pm.type = m.value("type", "");
+                pm.name = m.value("name", "");
+                pm.description = m.value("description", "");
+                if (m.contains("value")) {
+                    pm.hasValue = true;
+                    if (m["value"].is_string())
+                        pm.value = m["value"].get<std::string>();
+                    else if (m["value"].is_number_integer())
+                        pm.value = std::to_string(m["value"].get<int>());
+                    else if (m["value"].is_boolean())
+                        pm.value = m["value"].get<bool>() ? "true" : "false";
+                    else
+                        pm.value = m["value"].dump();
+                }
+                def.parameterMapping.push_back(std::move(pm));
+            }
+        }
+
+        /// If an action option carries plugin dispatch fields, register it into g_byName.
+        void TrySynthesizeActionFromOption(const nlohmann::json& node)
+        {
+            if (!node.is_object())
+                return;
+            if (!EqualsIgnoreCase(node.value("type", ""), "action"))
+                return;
+
+            const std::string name = node.value("name", "");
+            const std::string scriptName = node.value("scriptName", "");
+            const std::string execFn = node.value("executionFunctionName", "");
+            if (name.empty() || scriptName.empty() || execFn.empty())
+                return;
+
+            // Prefer explicit plugin key; allow questPlugin alias.
+            std::string plugin = node.value("plugin", "");
+            if (plugin.empty())
+                plugin = node.value("questPlugin", "");
+            if (plugin.empty() || !node.contains("questFormId"))
+                return;
+
+            if (g_byName.count(name)) {
+                webui_log::info("ActionCatalog: option action '{}' already in catalog; keeping index entry", name);
+                return;
+            }
+
+            ActionDef def;
+            def.name = name;
+            def.label = node.value("label", name);
+            def.questPlugin = plugin;
+            def.questFormId = ParseFormId(node["questFormId"]);
+            def.scriptName = scriptName;
+            def.executionFunctionName = execFn;
+            ParseParameterMapping(node, def);
+
+            auto idx = g_actions.size();
+            g_byName[def.name] = idx;
+            g_actions.push_back(std::move(def));
+            webui_log::info(
+                "ActionCatalog: synthesized action '{}' from option (plugin={} formId={:08X})",
+                name,
+                plugin,
+                g_actions.back().questFormId);
+        }
+
+        void WalkOptionsForSynthesis(const nlohmann::json& node)
+        {
+            if (node.is_array()) {
+                for (auto& child : node)
+                    WalkOptionsForSynthesis(child);
+                return;
+            }
+            if (!node.is_object())
+                return;
+            TrySynthesizeActionFromOption(node);
+            if (node.contains("options"))
+                WalkOptionsForSynthesis(node["options"]);
+        }
+
+        bool PassesRequiresPlugin(const nlohmann::json& node)
+        {
+            if (!node.is_object())
+                return true;
+            const std::string req = node.value("requiresPlugin", "");
+            if (req.empty())
+                return true;
+            return IsPluginLoaded(req);
         }
 
         double AsNumber(const nlohmann::json& v)
@@ -169,6 +298,8 @@ namespace ActionCatalog
                     continue;
                 if (!EqualsIgnoreCase(child.value("type", ""), "action"))
                     continue;
+                if (!PassesRequiresPlugin(child))
+                    continue;
                 const auto& rules = child.contains("eligibilityRules") ? child["eligibilityRules"] : nlohmann::json::array();
                 if (!EvalEligibilityRules(rules, focusHasStrippedItems))
                     continue;
@@ -215,6 +346,8 @@ namespace ActionCatalog
                     out.push_back(opt);
                     continue;
                 }
+                if (!PassesRequiresPlugin(opt))
+                    continue;
                 if (EqualsIgnoreCase(opt.value("type", ""), "actionSwitch")) {
                     out.push_back(ResolveActionSwitch(opt, focusHasStrippedItems));
                     continue;
@@ -228,6 +361,139 @@ namespace ActionCatalog
                 out.push_back(opt);
             }
             return out;
+        }
+
+        std::string MainPanelKey(const nlohmann::json& entry)
+        {
+            if (!entry.is_object())
+                return {};
+            const std::string type = entry.value("type", "");
+            if (EqualsIgnoreCase(type, "builtin"))
+                return entry.value("panel", "");
+            if (EqualsIgnoreCase(type, "papyrus"))
+                return entry.value("id", "");
+            return {};
+        }
+
+        const nlohmann::json* FindMainPanelByKey(const std::string& key)
+        {
+            if (key.empty() || !g_mainPanels.is_array())
+                return nullptr;
+            for (auto& entry : g_mainPanels) {
+                if (!entry.is_object())
+                    continue;
+                if (!PassesRequiresPlugin(entry))
+                    continue;
+                if (MainPanelKey(entry) == key)
+                    return &entry;
+            }
+            return nullptr;
+        }
+
+        class EmptyArgs : public RE::BSScript::IFunctionArguments
+        {
+        public:
+            bool operator()(RE::BSScrapArray<RE::BSScript::Variable>& a_dst) const override
+            {
+                a_dst.resize(0);
+                return true;
+            }
+        };
+
+        void DispatchPapyrusNoArg(
+            const std::string& plugin,
+            std::uint32_t localFormId,
+            const std::string& scriptName,
+            const std::string& functionName)
+        {
+            if (plugin.empty() || localFormId == 0 || scriptName.empty() || functionName.empty()) {
+                webui_log::error("DispatchPapyrusNoArg: incomplete target");
+                return;
+            }
+            SKSE::GetTaskInterface()->AddTask([plugin, localFormId, scriptName, functionName]() {
+                auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+                if (!vm) {
+                    webui_log::error("DispatchPapyrusNoArg: no VM");
+                    return;
+                }
+                auto* quest = RE::TESDataHandler::GetSingleton()
+                                  ->LookupForm<RE::TESQuest>(localFormId, plugin);
+                if (!quest) {
+                    webui_log::error(
+                        "DispatchPapyrusNoArg: quest LookupForm({:08X}, {}) failed",
+                        localFormId,
+                        plugin);
+                    return;
+                }
+                auto handle = vm->GetObjectHandlePolicy()->GetHandleForObject(
+                    static_cast<RE::VMTypeID>(quest->GetFormType()), quest);
+                RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
+                vm->FindBoundObject(handle, scriptName.c_str(), scriptObject);
+                if (!scriptObject) {
+                    webui_log::error("DispatchPapyrusNoArg: bound script '{}' not found", scriptName);
+                    return;
+                }
+                auto* raw = new EmptyArgs();
+                RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
+                vm->DispatchMethodCall(scriptObject, RE::BSFixedString(functionName.c_str()), raw, callback);
+                webui_log::info("DispatchPapyrusNoArg: {}::{}", scriptName, functionName);
+            });
+        }
+
+        void CloseMainPanelEntry(const nlohmann::json& entry)
+        {
+            const std::string type = entry.value("type", "");
+            if (EqualsIgnoreCase(type, "builtin")) {
+                const std::string panel = entry.value("panel", "");
+                if (!panel.empty())
+                    WebUI_Invoke("concealMainPanel('" + panel + "');");
+            } else if (EqualsIgnoreCase(type, "papyrus")) {
+                std::string plugin = entry.value("plugin", "");
+                if (plugin.empty())
+                    plugin = entry.value("questPlugin", "");
+                const auto formId = entry.contains("questFormId") ? ParseFormId(entry["questFormId"]) : 0;
+                const std::string script = entry.value("scriptName", "");
+                const std::string fn = entry.value("closeFunction", "");
+                if (!fn.empty())
+                    DispatchPapyrusNoArg(plugin, formId, script, fn);
+            }
+        }
+
+        void OpenMainPanelEntry(const nlohmann::json& entry)
+        {
+            const std::string type = entry.value("type", "");
+            if (EqualsIgnoreCase(type, "builtin")) {
+                const std::string panel = entry.value("panel", "");
+                if (!panel.empty())
+                    WebUI_Invoke("revealMainPanel('" + panel + "');");
+            } else if (EqualsIgnoreCase(type, "papyrus")) {
+                std::string plugin = entry.value("plugin", "");
+                if (plugin.empty())
+                    plugin = entry.value("questPlugin", "");
+                const auto formId = entry.contains("questFormId") ? ParseFormId(entry["questFormId"]) : 0;
+                const std::string script = entry.value("scriptName", "");
+                const std::string fn = entry.value("openFunction", "");
+                if (!fn.empty())
+                    DispatchPapyrusNoArg(plugin, formId, script, fn);
+            }
+        }
+
+        std::vector<std::filesystem::path> SortedJsonFiles(const std::filesystem::path& dir)
+        {
+            std::vector<std::filesystem::path> files;
+            if (!std::filesystem::is_directory(dir))
+                return files;
+            for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+                if (!entry.is_regular_file())
+                    continue;
+                if (entry.path().extension() != ".json")
+                    continue;
+                files.push_back(entry.path());
+            }
+            std::sort(files.begin(), files.end(), [](const auto& a, const auto& b) {
+                return a.filename().string() < b.filename().string();
+            });
+            return files;
         }
     }
 
@@ -248,13 +514,14 @@ namespace ActionCatalog
         return EqualsIgnoreCase(actionName, "outfit_dress") || EqualsIgnoreCase(actionName, "outfit_undress");
     }
 
-    /// Loads actions_index.json and menu/target (defaults.json + options/*.json) into the catalog.
-    /// Builds name index used by the target menu and ExecuteAction.
+    /// Loads actions_index.json, menu/target, and main_panels into the catalog.
     bool Load()
     {
         g_actions.clear();
         g_byName.clear();
         g_targetOptions = nlohmann::json::object();
+        g_mainPanels = nlohmann::json::array();
+        g_currentMainPanelKey.clear();
         g_loaded = false;
 
         const auto dir = ResolveWebUIDir();
@@ -262,6 +529,7 @@ namespace ActionCatalog
         const auto menuDir = dir / "menu" / "target";
         const auto defaultsPath = menuDir / "defaults.json";
         const auto optionsDir = menuDir / "options";
+        const auto mainPanelsDir = dir / "main_panels";
 
         webui_log::info("ActionCatalog loading from {}", dir.string());
 
@@ -283,29 +551,15 @@ namespace ActionCatalog
                 def.label = item.value("label", def.name);
                 def.customCategory = item.value("customCategory", "");
                 def.questEditorId = item.value("questEditorId", "");
+                def.questPlugin = item.value("plugin", "");
+                if (def.questPlugin.empty())
+                    def.questPlugin = item.value("questPlugin", "");
+                if (item.contains("questFormId"))
+                    def.questFormId = ParseFormId(item["questFormId"]);
                 def.scriptName = item.value("scriptName", "");
                 def.executionFunctionName = item.value("executionFunctionName", "");
                 def.file = item.value("file", "");
-                if (item.contains("parameterMapping") && item["parameterMapping"].is_array()) {
-                    for (auto& m : item["parameterMapping"]) {
-                        ParamMapping pm;
-                        pm.type = m.value("type", "");
-                        pm.name = m.value("name", "");
-                        pm.description = m.value("description", "");
-                        if (m.contains("value")) {
-                            pm.hasValue = true;
-                            if (m["value"].is_string())
-                                pm.value = m["value"].get<std::string>();
-                            else if (m["value"].is_number_integer())
-                                pm.value = std::to_string(m["value"].get<int>());
-                            else if (m["value"].is_boolean())
-                                pm.value = m["value"].get<bool>() ? "true" : "false";
-                            else
-                                pm.value = m["value"].dump();
-                        }
-                        def.parameterMapping.push_back(std::move(pm));
-                    }
-                }
+                ParseParameterMapping(item, def);
                 if (def.name.empty())
                     continue;
                 auto idx = g_actions.size();
@@ -335,20 +589,8 @@ namespace ActionCatalog
                 return false;
             }
 
-            std::vector<std::filesystem::path> optionFiles;
-            for (const auto& entry : std::filesystem::directory_iterator(optionsDir)) {
-                if (!entry.is_regular_file())
-                    continue;
-                if (entry.path().extension() != ".json")
-                    continue;
-                optionFiles.push_back(entry.path());
-            }
-            std::sort(optionFiles.begin(), optionFiles.end(), [](const auto& a, const auto& b) {
-                return a.filename().string() < b.filename().string();
-            });
-
             nlohmann::json optionsArr = nlohmann::json::array();
-            for (const auto& path : optionFiles) {
+            for (const auto& path : SortedJsonFiles(optionsDir)) {
                 auto raw = ReadFile(path);
                 if (raw.empty()) {
                     webui_log::warn("ActionCatalog: skipping empty option file {}", path.string());
@@ -364,14 +606,34 @@ namespace ActionCatalog
             if (optionsArr.empty())
                 webui_log::warn("ActionCatalog: no option files loaded from {}", optionsDir.string());
 
+            WalkOptionsForSynthesis(optionsArr);
+
             g_targetOptions = nlohmann::json::object();
             g_targetOptions["defaultsParameters"] = std::move(defaultsParameters);
             g_targetOptions["options"] = std::move(optionsArr);
+
+            for (const auto& path : SortedJsonFiles(mainPanelsDir)) {
+                auto raw = ReadFile(path);
+                if (raw.empty()) {
+                    webui_log::warn("ActionCatalog: skipping empty main_panel {}", path.string());
+                    continue;
+                }
+                auto node = nlohmann::json::parse(raw);
+                if (!node.is_object()) {
+                    webui_log::warn("ActionCatalog: skipping non-object main_panel {}", path.string());
+                    continue;
+                }
+                g_mainPanels.push_back(std::move(node));
+            }
+            if (g_mainPanels.empty())
+                webui_log::warn("ActionCatalog: no main_panels loaded from {}", mainPanelsDir.string());
+
             g_loaded = true;
             webui_log::info(
-                "ActionCatalog loaded {} actions, {} target options",
+                "ActionCatalog loaded {} actions, {} target options, {} main panels",
                 g_actions.size(),
-                g_targetOptions["options"].size());
+                g_targetOptions["options"].size(),
+                g_mainPanels.size());
             return true;
         } catch (const std::exception& e) {
             webui_log::error("ActionCatalog::Load failed: {}", e.what());
@@ -408,7 +670,9 @@ namespace ActionCatalog
         else
             catalog["defaultsParameters"] = g_targetOptions.value("defaults", nlohmann::json::object());
 
-        catalog["options"] = ResolveOptionsArray(g_targetOptions.value("options", nlohmann::json::array()), focusHasStrippedItems);
+        catalog["options"] = ResolveOptionsArray(
+            g_targetOptions.value("options", nlohmann::json::array()),
+            focusHasStrippedItems);
 
         nlohmann::json actionsObj = nlohmann::json::object();
 
@@ -461,5 +725,77 @@ namespace ActionCatalog
 
         catalog["actions"] = actionsObj;
         return catalog;
+    }
+
+    nlohmann::json BuildMainPanelsCatalog()
+    {
+        if (!g_loaded)
+            Load();
+
+        nlohmann::json catalog;
+        nlohmann::json panels = nlohmann::json::array();
+        if (g_mainPanels.is_array()) {
+            for (auto& entry : g_mainPanels) {
+                if (!entry.is_object())
+                    continue;
+                if (!PassesRequiresPlugin(entry))
+                    continue;
+                panels.push_back(entry);
+            }
+        }
+        catalog["panels"] = std::move(panels);
+        catalog["selected"] = g_currentMainPanelKey;
+        return catalog;
+    }
+
+    void ClearMainPanelSelection()
+    {
+        if (!g_currentMainPanelKey.empty()) {
+            if (auto* cur = FindMainPanelByKey(g_currentMainPanelKey))
+                CloseMainPanelEntry(*cur);
+            g_currentMainPanelKey.clear();
+        }
+    }
+
+    void SwitchMainPanel(const std::string& key)
+    {
+        if (!g_loaded)
+            Load();
+
+        if (key.empty()) {
+            ClearMainPanelSelection();
+            return;
+        }
+
+        if (key == g_currentMainPanelKey) {
+            // Already selected: re-show DOM only (no connection reload — avoids loop).
+            if (auto* cur = FindMainPanelByKey(key)) {
+                if (EqualsIgnoreCase(cur->value("type", ""), "builtin"))
+                    OpenMainPanelEntry(*cur);
+            }
+            return;
+        }
+
+        if (!g_currentMainPanelKey.empty()) {
+            if (auto* prev = FindMainPanelByKey(g_currentMainPanelKey))
+                CloseMainPanelEntry(*prev);
+        }
+
+        auto* next = FindMainPanelByKey(key);
+        if (!next) {
+            webui_log::warn("SwitchMainPanel: unknown key '{}'", key);
+            g_currentMainPanelKey.clear();
+            return;
+        }
+
+        g_currentMainPanelKey = key;
+        OpenMainPanelEntry(*next);
+        webui_log::info("SwitchMainPanel: selected '{}'", key);
+
+        // One-shot soft connection load when switching TO Scene Menu / Animation.
+        const std::string panel = next->value("panel", "");
+        if (panel == "scene_creator_panel" || panel == "animation_menu_panel") {
+            WebUI_Invoke("mainPanelDidOpen();");
+        }
     }
 }

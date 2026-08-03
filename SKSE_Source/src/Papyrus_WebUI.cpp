@@ -120,10 +120,11 @@ namespace PapyrusBindings_WebUI
     {
         if (!TargetMenuSessionActive)
             WebUI_Invoke("hidePanel('target_menu_panel');");
+        ActionCatalog::ClearMainPanelSelection();
         WebUI_Invoke("hidePanel('sex_menu_panel');");
         WebUI_Invoke("hidePanel('yesno_panel');");
         WebUI_Invoke("hidePanel('scene_creator_panel');");
-        WebUI_Invoke("hidePanel('scene_menu_panel');");
+        WebUI_Invoke("hidePanel('animation_menu_panel');");
     }
 
     /// Escapes backslash and single quote so actor names are safe inside JS string literals.
@@ -149,7 +150,7 @@ namespace PapyrusBindings_WebUI
         return quest;
     }
 
-    void DispatchSceneExportMenuState(RE::TESForm* thread, RE::TESForm* sl_scene);
+    void DispatchAnimationMenuExportState(RE::TESForm* thread, RE::TESForm* sl_scene);
 
     /// Opens the target menu for the given actor and focuses the PrismaUI view.
     /// Same target again toggles visibility instead of rebuilding.
@@ -190,6 +191,7 @@ namespace PapyrusBindings_WebUI
 
         auto catalog = ActionCatalog::BuildUICatalog(hasStrippedItems);
         WebUI_Invoke("configureTargetMenu(" + catalog.dump() + ");");
+        WebUI_Invoke("configureMainMenu(" + ActionCatalog::BuildMainPanelsCatalog().dump() + ");");
         WebUI_Invoke(std::format("setTargetActor('{}', '{}');", uuid, EscapeJsString(name)));
 
         bool ostimnet = RE::TESDataHandler::GetSingleton()->LookupModByName("TT_OStimNet.esp") != nullptr;
@@ -262,6 +264,20 @@ namespace PapyrusBindings_WebUI
         WebUI_Visibility_Show();
     }
 
+    void SceneCreator_Configure(RE::StaticFunctionTag*, RE::BSFixedString state_json)
+    {
+        const char* raw = state_json.c_str() ? state_json.c_str() : "{}";
+        std::string dumped = "{}";
+        try {
+            dumped = nlohmann::json::parse(raw).dump();
+        } catch (const std::exception& e) {
+            webui_log::error("SceneCreator_Configure: bad state_json ({}); using {{}}", e.what());
+        } catch (...) {
+            webui_log::error("SceneCreator_Configure: bad state_json; using {{}}");
+        }
+        WebUI_Invoke(std::string("configureSceneCreator(") + dumped + ");");
+    }
+
     void ActorAnimMeta_Result(RE::StaticFunctionTag*, RE::BSFixedString json)
     {
         const char* raw = json.c_str() ? json.c_str() : "{}";
@@ -280,24 +296,54 @@ namespace PapyrusBindings_WebUI
         WebUI_SetMenuHotkey(static_cast<uint32_t>(dxScanCode), enabled);
     }
 
-    void Scene_Menu_Open(RE::StaticFunctionTag*, RE::TESForm* thread, RE::TESForm* sl_scene)
+    void Animation_Menu_Open(RE::StaticFunctionTag*, RE::TESForm* thread, RE::TESForm* sl_scene)
     {
         if (!thread || !sl_scene) {
-            webui_log::warn("Scene_Menu_Open: null thread or scene");
+            webui_log::warn("Animation_Menu_Open: null thread or scene");
             return;
         }
-        webui_log::info("Scene_Menu_Open");
+        webui_log::info("Animation_Menu_Open");
         ClearTargetMenuSession();
         WebUI_HideAllPanels(nullptr);
-        DispatchSceneExportMenuState(thread, sl_scene);
+        DispatchAnimationMenuExportState(thread, sl_scene);
     }
 
-    void Scene_Menu_Show(RE::StaticFunctionTag*, RE::BSFixedString state_json)
+    void Animation_Menu_Show(RE::StaticFunctionTag*, RE::BSFixedString state_json)
     {
         const char* raw = state_json.c_str() ? state_json.c_str() : "{}";
-        WebUI_Invoke(std::string("configureSceneMenu(") + raw + ");");
-        WebUI_Invoke("showPanel('scene_menu_panel');");
+        std::string dumped = "{}";
+        try {
+            dumped = nlohmann::json::parse(raw).dump();
+        } catch (...) {
+            webui_log::warn("Animation_Menu_Show: bad state_json");
+        }
+        WebUI_Invoke(std::string("configureAnimationMenu(") + dumped + ");");
+        WebUI_Invoke("showPanel('animation_menu_panel');");
         WebUI_Visibility_Show();
+    }
+
+    void Animation_Menu_Configure(RE::StaticFunctionTag*, RE::BSFixedString state_json)
+    {
+        const char* raw = state_json.c_str() ? state_json.c_str() : "{}";
+        std::string dumped = "{}";
+        try {
+            dumped = nlohmann::json::parse(raw).dump();
+        } catch (...) {
+            webui_log::warn("Animation_Menu_Configure: bad state_json");
+        }
+        WebUI_Invoke(std::string("configureAnimationMenu(") + dumped + ");");
+    }
+
+    void SceneConnections_Show(RE::StaticFunctionTag*, RE::BSFixedString state_json)
+    {
+        const char* raw = state_json.c_str() ? state_json.c_str() : "{}";
+        std::string dumped = "{}";
+        try {
+            dumped = nlohmann::json::parse(raw).dump();
+        } catch (...) {
+            webui_log::warn("SceneConnections_Show: bad state_json");
+        }
+        WebUI_Invoke(std::string("configureSceneConnections(") + dumped + ");");
     }
 
     /// Formats [script.func] msg, logs it through SKSE, and returns the same string to Papyrus.
@@ -417,23 +463,23 @@ namespace PapyrusBindings_WebUI
         });
     }
 
-    void DispatchSceneExportMenuState(RE::TESForm* thread, RE::TESForm* sl_scene)
+    void DispatchAnimationMenuExportState(RE::TESForm* thread, RE::TESForm* sl_scene)
     {
         if (!thread || !sl_scene) {
-            webui_log::warn("DispatchSceneExportMenuState: null args");
+            webui_log::warn("DispatchAnimationMenuExportState: null args");
             return;
         }
 
         SKSE::GetTaskInterface()->AddTask([thread, sl_scene]() {
             auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
             if (!vm) {
-                webui_log::error("DispatchSceneExportMenuState: no VM");
+                webui_log::error("DispatchAnimationMenuExportState: no VM");
                 return;
             }
 
             RE::TESQuest* quest = FindMainQuest();
             if (!quest) {
-                webui_log::error("DispatchSceneExportMenuState: quest not found");
+                webui_log::error("DispatchAnimationMenuExportState: quest not found");
                 return;
             }
 
@@ -442,15 +488,15 @@ namespace PapyrusBindings_WebUI
             RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
             vm->FindBoundObject(handle, "SkyrimNet_SexLab_Scene", scriptObject);
             if (!scriptObject) {
-                webui_log::error("DispatchSceneExportMenuState: Scene script not bound");
+                webui_log::error("DispatchAnimationMenuExportState: Scene script not bound");
                 return;
             }
 
             auto* args = RE::MakeFunctionArguments(static_cast<RE::TESForm*>(thread));
             RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
-            vm->DispatchMethodCall(scriptObject, RE::BSFixedString("WebUI_ExportMenuState"), args,
+            vm->DispatchMethodCall(scriptObject, RE::BSFixedString("WebUI_ExportAnimationMenuState"), args,
                 callback);
-            webui_log::info("DispatchSceneExportMenuState: dispatched");
+            webui_log::info("DispatchAnimationMenuExportState: dispatched");
         });
     }
 
@@ -674,8 +720,11 @@ namespace PapyrusBindings_WebUI
         a_vm->RegisterFunction("Sex_Menu_Open", scriptName, Sex_Menu_Open);
         a_vm->RegisterFunction("YesNo_Open", scriptName, YesNo_Open);
         a_vm->RegisterFunction("SceneCreator_Open", scriptName, SceneCreator_Open);
-        a_vm->RegisterFunction("Scene_Menu_Open", scriptName, Scene_Menu_Open);
-        a_vm->RegisterFunction("Scene_Menu_Show", scriptName, Scene_Menu_Show);
+        a_vm->RegisterFunction("SceneCreator_Configure", scriptName, SceneCreator_Configure);
+        a_vm->RegisterFunction("Animation_Menu_Open", scriptName, Animation_Menu_Open);
+        a_vm->RegisterFunction("Animation_Menu_Show", scriptName, Animation_Menu_Show);
+        a_vm->RegisterFunction("Animation_Menu_Configure", scriptName, Animation_Menu_Configure);
+        a_vm->RegisterFunction("SceneConnections_Show", scriptName, SceneConnections_Show);
         a_vm->RegisterFunction("WebUI_HideAllPanels", scriptName, WebUI_HideAllPanels);
         a_vm->RegisterFunction("WebUI_SetHotkey", scriptName, WebUI_SetHotkey);
         a_vm->RegisterFunction("ActorAnimMeta_Result", scriptName, ActorAnimMeta_Result);

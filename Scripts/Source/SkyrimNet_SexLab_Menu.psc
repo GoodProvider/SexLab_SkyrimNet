@@ -74,7 +74,7 @@ Function ProcessHotkey(int key_code)
             if thread != None
                 Trace("ProcessHotkey", "thread found "+thread.tid+" for target:"+target.GetDisplayName())
                 SkyrimNet_SexLab_Scene sl_scene = manager.GetSceneByThread(thread)
-                SkyrimNet_SexLab_WebUI.Scene_Menu_Open(thread, sl_scene)
+                SkyrimNet_SexLab_WebUI.Animation_Menu_Open(thread, sl_scene)
             else
                 Trace("ProcessHotkey","failed to find thread for target:"+target.GetDisplayName())
             endif

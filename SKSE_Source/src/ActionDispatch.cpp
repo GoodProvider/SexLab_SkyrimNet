@@ -207,10 +207,22 @@ namespace ActionCatalog
             }
         };
 
-        /// Finds the action's quest by FormID (runtime registry), else editor ID, else main quest (0x800).
-        RE::TESQuest* FindQuest(std::uint32_t questFormId, const std::string& editorId)
+        /// Finds the action's quest by plugin+local FormID, full FormID, editor ID, else main quest (0x800).
+        RE::TESQuest* FindQuest(
+            std::uint32_t questFormId,
+            const std::string& editorId,
+            const std::string& questPlugin)
         {
-            if (questFormId != 0) {
+            if (!questPlugin.empty() && questFormId != 0) {
+                if (auto* q = RE::TESDataHandler::GetSingleton()
+                                  ->LookupForm<RE::TESQuest>(questFormId, questPlugin))
+                    return q;
+                webui_log::warn(
+                    "FindQuest: LookupForm({:08X}, {}) failed",
+                    questFormId,
+                    questPlugin);
+            }
+            if (questFormId != 0 && questPlugin.empty()) {
                 if (auto* q = RE::TESForm::LookupByID<RE::TESQuest>(questFormId))
                     return q;
                 webui_log::warn("FindQuest: FormID {:08X} not a quest", questFormId);
@@ -350,15 +362,16 @@ namespace ActionCatalog
         const std::string scriptName = def->scriptName.empty() ? "SkyrimNet_SexLab_Actions" : def->scriptName;
         const std::string functionName = def->executionFunctionName;
         const std::string questEditorId = def->questEditorId;
+        const std::string questPlugin = def->questPlugin;
         const std::uint32_t questFormId = def->questFormId;
 
-        SKSE::GetTaskInterface()->AddTask([captured, scriptName, functionName, questEditorId, questFormId, actionName]() {
+        SKSE::GetTaskInterface()->AddTask([captured, scriptName, functionName, questEditorId, questPlugin, questFormId, actionName]() {
             auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
             if (!vm) {
                 webui_log::error("ExecuteAction: no VM");
                 return;
             }
-            auto* quest = FindQuest(questFormId, questEditorId);
+            auto* quest = FindQuest(questFormId, questEditorId, questPlugin);
             if (!quest) {
                 webui_log::error("ExecuteAction: quest not found for {}", actionName);
                 return;
@@ -703,7 +716,7 @@ namespace ActionCatalog
         // Keep TargetMenu open so the user can push more presets via Custom.
         WebUI_Invoke("hidePanel('sex_menu_panel');");
         WebUI_Invoke("hidePanel('yesno_panel');");
-        WebUI_Invoke("hidePanel('scene_menu_panel');");
+        WebUI_Invoke("hidePanel('animation_menu_panel');");
         WebUI_Invoke(std::string("configureSceneCreator(") + state.dump() + ");");
         WebUI_Invoke("showPanel('scene_creator_panel');");
         WebUI_Visibility_Show();

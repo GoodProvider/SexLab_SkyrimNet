@@ -28,17 +28,71 @@
             --fs:            48px;
         }
 
-        /* ── Panels container ─────────────────────────────────── */
-        #panels-container {
+        /* ── Shell: left MainMenu+TargetMenu | right main panels ─ */
+        #ui-shell {
             position: absolute;
-            top: 12%;
-            left: 5%;
+            inset: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            pointer-events: none;
+        }
+
+        #ui-shell > * {
+            pointer-events: auto;
+        }
+
+        #left-column {
+            position: absolute;
+            top: 10%;
+            left: 10%;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: stretch;
             gap: 16px;
-            max-width: 95vw;
-            max-height: 88vh;
+            width: min(420px, 28vw);
+            max-height: 80vh;
+            z-index: 2;
+        }
+
+        #main-menu {
+            display: none;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #main-menu .main-menu-title {
+            font-family: var(--font-body);
+            font-size: var(--fs);
+            color: var(--accent);
+            margin: 0;
+        }
+
+        /* Row 2: main_panel pulldown (full width under title) */
+        #main-menu-panel-host {
+            width: 100%;
+        }
+
+        #main-menu-panel-host .pulldown {
+            width: 100%;
+            min-width: 0;
+        }
+
+        /* Menu opens to the right over the MainPanel host; opaque so content underneath is covered */
+        #main-menu-panel-host .pulldown-menu {
+            left: calc(100% + 8px);
+            top: 0;
+            right: auto;
+            min-width: min(480px, 40vw);
+            max-height: 70vh;
+            overflow-y: auto;
+            z-index: 40;
+            background: rgb(10, 8, 5);
+            border: 1px solid rgba(201, 168, 76, 0.35);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85);
         }
 
         #target-menu-row {
@@ -46,8 +100,8 @@
             flex-direction: row;
             align-items: flex-start;
             gap: 16px;
-            flex-wrap: wrap;
-            max-width: 95vw;
+            width: 100%;
+            max-width: none;
         }
 
         #target-cascade-host {
@@ -60,8 +114,45 @@
 
         #target-panel {
             min-width: auto;
-            width: auto;
+            width: 100%;
             max-width: none;
+            box-sizing: border-box;
+        }
+
+        #main-panel-host {
+            position: absolute;
+            top: 10%;
+            right: 10%;
+            bottom: 10%;
+            left: calc(10% + min(420px, 28vw) + 24px);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        #main-panel-host > .panel {
+            flex: 1 1 auto;
+            width: 100%;
+            max-width: none;
+            max-height: 100%;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+
+        /* Legacy float panels (sex / yesno) sit under left column when shown alone */
+        #overlay-panels {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+            max-width: 95vw;
+            max-height: 80vh;
+            z-index: 3;
         }
 
         .target-pulldown-panel,
@@ -87,17 +178,17 @@
         }
 
         #scene-creator-panel {
-            width: 80vw;
-            height: 70vh;
-            max-height: 70vh;
+            width: auto;
+            height: auto;
+            max-height: none;
             overflow: hidden;
-            display: flex;
+            display: none;
             flex-direction: column;
         }
 
-        #scene-menu-panel {
-            width: 980px;
-            max-height: 85vh;
+        #animation-menu-panel {
+            width: auto;
+            max-height: none;
             overflow-y: auto;
         }
 
@@ -215,6 +306,17 @@
             flex: 1;
             min-height: 0;
             max-height: none;
+            overflow-y: auto;
+        }
+
+        #sc-anims-list .col-an,
+        #am-anims-list .col-an {
+            width: 1.5em;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        #am-anims-list {
             overflow-y: auto;
         }
 
@@ -796,79 +898,47 @@
     </style>
 </head>
 <body>
-    <div id="panels-container">
-    <div id="target-menu-row" style="display:none">
-        <div id="target-panel" class="panel">
-
-            <div id="target-name" class="target-row">Target</div>
-            <div id="framework-row" class="field-row" style="display:none"></div>
-
-            <div id="global-params"></div>
-            <div id="left-options"></div>
-            <div class="option-cancel" onclick="window.onCancel && window.onCancel()">Cancel</div>
-
+    <div id="ui-shell">
+    <div id="left-column">
+        <div id="main-menu" class="panel" style="display:none">
+            <div class="main-menu-title">SkyrimNet SexLab</div>
+            <div id="main-menu-panel-host"></div>
         </div>
-        <div id="target-cascade-host"></div>
-    </div>
+        <div id="target-menu-row" style="display:none">
+            <div id="target-panel" class="panel">
 
-    <div id="sex-menu-panel" class="panel" style="display:none">
+                <div id="target-name" class="target-row">Target</div>
+                <div id="framework-row" class="field-row" style="display:none"></div>
 
-        <div class="target-row">Sex Menu</div>
+                <div id="global-params"></div>
+                <div id="left-options"></div>
+                <div class="option-cancel" onclick="window.onCancel && window.onCancel()">Cancel</div>
 
-        <div class="section-header">Actors</div>
-
-        <div class="subsection-header">nearby</div>
-        <div id="nearby-list"></div>
-
-        <div class="subsection-header">positions</div>
-        <div id="positions-list"></div>
-
-        <div class="section-header">Tags</div>
-
-        <div class="tag-mode-row">
-            <span id="btn-include" class="tag-mode-btn active" onclick="setActiveList('include')">include</span>
-            <div id="include-tags" class="active-tag-list"></div>
-        </div>
-        <div class="tag-mode-row">
-            <span id="btn-exclude" class="tag-mode-btn" onclick="setActiveList('exclude')">exclude</span>
-            <div id="exclude-tags" class="active-tag-list"></div>
-        </div>
-
-        <div id="tag-group-row" class="tag-group-row"></div>
-        <div id="tag-group-dropdown" class="tag-group-dropdown" style="display:none"></div>
-
-        <div class="bottom-bar">
-            <div id="start-btn" class="action-btn disabled" onclick="sexMenuStart()">Start</div>
-            <div class="option-cancel" onclick="window.onCancel()">Cancel</div>
-        </div>
-
-    </div>
-
-    <div id="yesno-panel" class="panel" style="display:none">
-        <div class="target-row">Confirm</div>
-        <div id="yesno-question" class="yesno-question"></div>
-        <div class="btn-row">
-            <div class="action-btn" onclick="yesNoClick(0)">Yes</div>
-            <div class="action-btn" onclick="yesNoClick(1)">Yes (Random)</div>
-            <div class="option-cancel" onclick="yesNoClick(2)">No (Silent)</div>
-            <div class="option-cancel" onclick="yesNoClick(3)">No</div>
+            </div>
+            <div id="target-cascade-host"></div>
         </div>
     </div>
 
+    <div id="main-panel-host">
     <div id="scene-creator-panel" class="panel" style="display:none">
-        <div class="target-row">Scene Creator</div>
-        <div class="bottom-bar" style="margin-top:0; padding-top:0; border-top:none; margin-bottom:12px">
-            <div class="action-btn" onclick="scStart()">Start</div>
-            <div class="option-cancel" onclick="scCancel()">Cancel</div>
+        <div class="target-row">Scene Menu</div>
+        <div class="compact-row" style="margin-bottom:8px">
+            <span>scene</span>
+            <div id="sc-scene-connection-pulldown"></div>
         </div>
-        <div class="compact-row">
+        <div class="bottom-bar" id="sc-action-bar" style="margin-top:0; padding-top:0; border-top:none; margin-bottom:12px">
+            <div class="action-btn" id="sc-btn-start" onclick="scStart()">Start</div>
+            <div class="option-cancel" id="sc-btn-cancel" onclick="scCancel()">Cancel</div>
+            <div class="option-cancel" id="sc-btn-stop" onclick="scStop()" style="display:none">Stop</div>
+        </div>
+        <div class="compact-row" id="sc-preset-row">
             <span>activity</span>
             <input id="sc-intent" type="text" style="flex:1; min-width:200px" />
             <span>preset</span>
             <div id="sc-preset-pulldown"></div>
             <input id="sc-preset-name" type="text" placeholder="name" style="width:110px" />
-            <div class="action-btn" onclick="scLoadPreset()">Load</div>
-            <div class="action-btn" onclick="scSavePreset()">Save</div>
+            <div class="action-btn" id="sc-btn-load" onclick="scLoadPreset()">Load</div>
+            <div class="action-btn" id="sc-btn-save" onclick="scSavePreset()">Save</div>
         </div>
         <div class="sc-split-row">
             <div class="sc-col-positions">
@@ -913,42 +983,101 @@
             <div class="compact-row">
                 <span id="sc-anim-count"></span>
                 <span id="sc-selected-count"></span>
-                <div class="action-btn" onclick="scClearAnims()">All</div>
-                <div class="action-btn" onclick="scNoneAnims()">None</div>
+                <div class="action-btn" id="sc-btn-all" onclick="scClearAnims()">All</div>
+                <div class="action-btn" id="sc-btn-none" onclick="scNoneAnims()">None</div>
+                <div class="action-btn" id="sc-btn-update" onclick="scAnimUpdate()" style="display:none">Update</div>
             </div>
             <div id="sc-anims-list" class="scroll-list"></div>
         </div>
+        <div class="compact-row" id="sc-stage-row" style="display:none; margin-top:8px">
+            <div class="action-btn" onclick="scPrevNext(-1)">Previous</div>
+            <div class="action-btn" onclick="scPrevNext(1)">Next</div>
+            <span id="sc-stage-label"></span>
+        </div>
     </div>
 
-    <div id="scene-menu-panel" class="panel" style="display:none">
-        <div id="sm-title" class="target-row">Scene</div>
-        <div id="sm-subtitle" class="compact-row" style="opacity:0.7"></div>
+    <div id="animation-menu-panel" class="panel" style="display:none">
+        <div id="am-title" class="target-row">Animation</div>
+        <div class="compact-row" style="margin-bottom:8px">
+            <span>scene</span>
+            <div id="am-scene-connection-pulldown"></div>
+        </div>
+        <div class="section-header">Animations</div>
+        <div id="am-anims-list" class="scroll-list" style="max-height:14em; margin-bottom:8px"></div>
+        <div id="am-subtitle" class="compact-row" style="opacity:0.7"></div>
         <div class="compact-row">
-            <span id="sm-activity"></span>
+            <span id="am-activity"></span>
             <span>style</span>
-            <div id="sm-style-pulldown"></div>
+            <div id="am-style-pulldown"></div>
         </div>
         <div class="section-header">Positions</div>
-        <table class="data-table" id="sm-positions-table"><thead><tr>
-            <th>#</th><th>name</th><th>dressed</th><th>O</th><th>V</th><th>speaking</th>
+        <table class="data-table" id="am-positions-table"><thead><tr>
+            <th>#</th><th>slot</th><th>dressed</th><th>O</th><th>speaking</th>
         </tr></thead><tbody></tbody></table>
         <div class="section-header">Tags</div>
-        <div id="sm-tags" class="active-tag-list"></div>
+        <div id="am-tags" class="active-tag-list"></div>
         <div class="compact-row">
-            <div class="action-btn" onclick="smPrevNext(-1)">Previous</div>
-            <div class="action-btn" onclick="smPrevNext(1)">Next</div>
-            <span id="sm-stage-label"></span>
+            <div class="action-btn" id="am-btn-prev" onclick="amPrevNext(-1)">Previous</div>
+            <div class="action-btn" id="am-btn-next" onclick="amPrevNext(1)">Next</div>
+            <span id="am-stage-label"></span>
         </div>
         <div class="section-header">Stage descriptions</div>
-        <table class="data-table" id="sm-stages-table"><thead><tr>
+        <table class="data-table" id="am-stages-table"><thead><tr>
             <th>stage</th><th>template</th><th>preview</th>
         </tr></thead><tbody></tbody></table>
         <div class="bottom-bar">
-            <div class="option-cancel" onclick="smStop()">Stop</div>
-            <div class="action-btn" onclick="smDone()">Done</div>
+            <div class="option-cancel" id="am-btn-stop" onclick="amStop()">Stop</div>
+            <div class="action-btn" onclick="amDone()">Done</div>
         </div>
     </div>
-    </div><!-- #panels-container -->
+    </div><!-- #main-panel-host -->
+
+    <div id="overlay-panels">
+    <div id="sex-menu-panel" class="panel" style="display:none">
+
+        <div class="target-row">Sex Menu</div>
+
+        <div class="section-header">Actors</div>
+
+        <div class="subsection-header">nearby</div>
+        <div id="nearby-list"></div>
+
+        <div class="subsection-header">positions</div>
+        <div id="positions-list"></div>
+
+        <div class="section-header">Tags</div>
+
+        <div class="tag-mode-row">
+            <span id="btn-include" class="tag-mode-btn active" onclick="setActiveList('include')">include</span>
+            <div id="include-tags" class="active-tag-list"></div>
+        </div>
+        <div class="tag-mode-row">
+            <span id="btn-exclude" class="tag-mode-btn" onclick="setActiveList('exclude')">exclude</span>
+            <div id="exclude-tags" class="active-tag-list"></div>
+        </div>
+
+        <div id="tag-group-row" class="tag-group-row"></div>
+        <div id="tag-group-dropdown" class="tag-group-dropdown" style="display:none"></div>
+
+        <div class="bottom-bar">
+            <div id="start-btn" class="action-btn disabled" onclick="sexMenuStart()">Start</div>
+            <div class="option-cancel" onclick="window.onCancel()">Cancel</div>
+        </div>
+
+    </div>
+
+    <div id="yesno-panel" class="panel" style="display:none">
+        <div class="target-row">Confirm</div>
+        <div id="yesno-question" class="yesno-question"></div>
+        <div class="btn-row">
+            <div class="action-btn" onclick="yesNoClick(0)">Yes</div>
+            <div class="action-btn" onclick="yesNoClick(1)">Yes (Random)</div>
+            <div class="option-cancel" onclick="yesNoClick(2)">No (Silent)</div>
+            <div class="option-cancel" onclick="yesNoClick(3)">No</div>
+        </div>
+    </div>
+    </div><!-- #overlay-panels -->
+    </div><!-- #ui-shell -->
 
     <script>
         function dispatchFrameworkChange(value) {
@@ -969,9 +1098,6 @@
             }
             const values = ['sexlab', 'ostim'];
             const seed = (current === 'ostim') ? 'ostim' : 'sexlab';
-            const label = document.createElement('span');
-            label.textContent = 'framework';
-            row.appendChild(label);
             row.appendChild(createPulldown(values, seed, (v) => {
                 dispatchFrameworkChange(v);
             }));
@@ -980,9 +1106,146 @@
 
         // C++ Invoke adapters (Papyrus_WebUI / WebUI.cpp panel names)
         const PANEL_IDS = [
-            'target-menu-row', 'sex-menu-panel', 'yesno-panel',
-            'scene-creator-panel', 'scene-menu-panel'
+            'main-menu', 'target-menu-row', 'sex-menu-panel', 'yesno-panel',
+            'scene-creator-panel', 'animation-menu-panel'
         ];
+
+        // Fallback when C++ configureMainMenu has not run / main_panels/*.json missing from Data.
+        const MAIN_PANEL_NONE_LABEL = 'None';
+        const DEFAULT_MAIN_PANELS = [
+            { type: 'builtin', label: 'Scene Menu', panel: 'scene_creator_panel' },
+            { type: 'builtin', label: 'Animation', panel: 'animation_menu_panel' }
+        ];
+        let MAIN_PANELS = DEFAULT_MAIN_PANELS.slice();
+        // Empty key = None (no panel in main_panel host).
+        let MAIN_SELECTED_KEY = '';
+        let mainPanelPulldownBusy = false;
+
+        function mainPanelKeyOf(entry) {
+            if (!entry) return '';
+            if (entry.type === 'builtin') return entry.panel || '';
+            if (entry.type === 'papyrus') return entry.id || '';
+            return '';
+        }
+
+        function mainPanelLabelOf(entry) {
+            return (entry && entry.label) ? entry.label : mainPanelKeyOf(entry);
+        }
+
+        function findMainPanelByKey(key) {
+            if (!key) return null;
+            return MAIN_PANELS.find((p) => mainPanelKeyOf(p) === key) || null;
+        }
+
+        function labelForMainPanelKey(key) {
+            if (!key) return MAIN_PANEL_NONE_LABEL;
+            const entry = findMainPanelByKey(key);
+            return entry ? mainPanelLabelOf(entry) : MAIN_PANEL_NONE_LABEL;
+        }
+
+        function clearMainPanelHost() {
+            const builtins = ['scene-creator-panel', 'animation-menu-panel'];
+            for (const pid of builtins) {
+                const el = document.getElementById(pid);
+                if (el) el.style.display = 'none';
+            }
+        }
+
+        function showMainMenu() {
+            const el = document.getElementById('main-menu');
+            if (el) el.style.display = 'flex';
+            renderMainMenuPulldown();
+        }
+
+        function hideMainMenu() {
+            const el = document.getElementById('main-menu');
+            if (el) el.style.display = 'none';
+        }
+
+        function selectMainPanelByLabel(label) {
+            let key = '';
+            if (label !== MAIN_PANEL_NONE_LABEL) {
+                const entry = MAIN_PANELS.find((p) => mainPanelLabelOf(p) === label);
+                if (!entry) return;
+                key = mainPanelKeyOf(entry);
+            }
+            if (key === MAIN_SELECTED_KEY) return;
+            MAIN_SELECTED_KEY = key;
+            if (typeof window.onMainPanelChange === 'function') {
+                window.onMainPanelChange(JSON.stringify({ key: key }));
+            } else if (!key) {
+                clearMainPanelHost();
+            } else {
+                revealMainPanel(key);
+            }
+        }
+
+        function renderMainMenuPulldown() {
+            const host = document.getElementById('main-menu-panel-host');
+            if (!host) return;
+            if (typeof createPulldown !== 'function') return;
+            if (!MAIN_PANELS.length)
+                MAIN_PANELS = DEFAULT_MAIN_PANELS.slice();
+            host.innerHTML = '';
+            const labels = [MAIN_PANEL_NONE_LABEL].concat(MAIN_PANELS.map(mainPanelLabelOf));
+            const seed = labelForMainPanelKey(MAIN_SELECTED_KEY);
+            host.appendChild(createPulldown(labels, seed, (label) => {
+                if (mainPanelPulldownBusy) return;
+                selectMainPanelByLabel(label);
+            }));
+        }
+
+        function configureMainMenu(catalog) {
+            const panels = (catalog && catalog.panels) ? catalog.panels.slice() : [];
+            MAIN_PANELS = panels.length ? panels : DEFAULT_MAIN_PANELS.slice();
+            if (catalog && Object.prototype.hasOwnProperty.call(catalog, 'selected'))
+                MAIN_SELECTED_KEY = catalog.selected || '';
+            else if (MAIN_SELECTED_KEY && !findMainPanelByKey(MAIN_SELECTED_KEY))
+                MAIN_SELECTED_KEY = '';
+            renderMainMenuPulldown();
+        }
+
+        function domIdForPanelKey(key) {
+            if (key === 'scene_creator_panel') return 'scene-creator-panel';
+            if (key === 'animation_menu_panel') return 'animation-menu-panel';
+            return key;
+        }
+
+        function revealMainPanel(panelKey) {
+            showMainMenu();
+            if (!panelKey) {
+                MAIN_SELECTED_KEY = '';
+                mainPanelPulldownBusy = true;
+                renderMainMenuPulldown();
+                mainPanelPulldownBusy = false;
+                clearMainPanelHost();
+                return;
+            }
+            MAIN_SELECTED_KEY = panelKey;
+            mainPanelPulldownBusy = true;
+            renderMainMenuPulldown();
+            mainPanelPulldownBusy = false;
+            const builtins = ['scene-creator-panel', 'animation-menu-panel'];
+            for (const pid of builtins) {
+                const el = document.getElementById(pid);
+                if (!el) continue;
+                const want = domIdForPanelKey(panelKey);
+                if (pid === want) {
+                    el.style.display = (pid === 'scene-creator-panel') ? 'flex' : 'block';
+                } else {
+                    el.style.display = 'none';
+                }
+            }
+        }
+
+        function concealMainPanel(panelKey) {
+            if (!panelKey) {
+                clearMainPanelHost();
+                return;
+            }
+            const el = document.getElementById(domIdForPanelKey(panelKey));
+            if (el) el.style.display = 'none';
+        }
 
         function hideAllPanelsDom() {
             for (const pid of PANEL_IDS) {
@@ -992,6 +1255,7 @@
         }
 
         function showTargetMenuRow() {
+            showMainMenu();
             const row = document.getElementById('target-menu-row');
             if (row) row.style.display = 'flex';
             const panel = document.getElementById('target-panel');
@@ -1010,21 +1274,44 @@
             const spareTarget =
                 id === 'scene_creator_panel' || id === 'scene-creator-panel' ||
                 id === 'yesno_panel' || id === 'yesno-panel';
-            for (const pid of PANEL_IDS) {
-                if (spareTarget && pid === 'target-menu-row') continue;
-                const el = document.getElementById(pid);
-                if (el) el.style.display = 'none';
+            const isMainBuiltin =
+                id === 'scene_creator_panel' || id === 'scene-creator-panel' ||
+                id === 'animation_menu_panel' || id === 'animation-menu-panel';
+
+            if (!isMainBuiltin) {
+                for (const pid of PANEL_IDS) {
+                    if (spareTarget && (pid === 'target-menu-row' || pid === 'main-menu')) continue;
+                    if (pid === 'main-menu') continue;
+                    const el = document.getElementById(pid);
+                    if (el) el.style.display = 'none';
+                }
             }
+
             if (id === 'target_menu_panel' || id === 'target-panel' || id === 'target-menu-row') {
                 showTargetMenuRow();
             } else if (id === 'sex_menu_panel' || id === 'sex-menu-panel') {
+                hideMainMenu();
                 showSexMenu();
             } else if (id === 'yesno_panel' || id === 'yesno-panel') {
                 document.getElementById('yesno-panel').style.display = 'block';
             } else if (id === 'scene_creator_panel' || id === 'scene-creator-panel') {
-                document.getElementById('scene-creator-panel').style.display = 'block';
-            } else if (id === 'scene_menu_panel' || id === 'scene-menu-panel') {
-                document.getElementById('scene-menu-panel').style.display = 'block';
+                showMainMenu();
+                if (MAIN_SELECTED_KEY === 'scene_creator_panel' || MAIN_SELECTED_KEY === 'scene-creator-panel') {
+                    revealMainPanel('scene_creator_panel');
+                } else if (typeof window.onMainPanelChange === 'function') {
+                    window.onMainPanelChange(JSON.stringify({ key: 'scene_creator_panel' }));
+                } else {
+                    revealMainPanel('scene_creator_panel');
+                }
+            } else if (id === 'animation_menu_panel' || id === 'animation-menu-panel') {
+                showMainMenu();
+                if (MAIN_SELECTED_KEY === 'animation_menu_panel' || MAIN_SELECTED_KEY === 'animation-menu-panel') {
+                    revealMainPanel('animation_menu_panel');
+                } else if (typeof window.onMainPanelChange === 'function') {
+                    window.onMainPanelChange(JSON.stringify({ key: 'animation_menu_panel' }));
+                } else {
+                    revealMainPanel('animation_menu_panel');
+                }
             }
         }
 
@@ -1036,14 +1323,16 @@
             } else if (id === 'yesno_panel' || id === 'yesno-panel') {
                 document.getElementById('yesno-panel').style.display = 'none';
             } else if (id === 'scene_creator_panel' || id === 'scene-creator-panel') {
-                document.getElementById('scene-creator-panel').style.display = 'none';
-            } else if (id === 'scene_menu_panel' || id === 'scene-menu-panel') {
-                document.getElementById('scene-menu-panel').style.display = 'none';
+                concealMainPanel('scene_creator_panel');
+            } else if (id === 'animation_menu_panel' || id === 'animation-menu-panel') {
+                concealMainPanel('animation_menu_panel');
+            } else if (id === 'main_menu' || id === 'main-menu') {
+                hideMainMenu();
             }
         }
 
         function visiblePanelId() {
-            for (const pid of ['yesno-panel', 'scene-creator-panel', 'scene-menu-panel', 'target-menu-row', 'sex-menu-panel']) {
+            for (const pid of ['yesno-panel', 'scene-creator-panel', 'animation-menu-panel', 'target-menu-row', 'sex-menu-panel']) {
                 const el = document.getElementById(pid);
                 if (!el) continue;
                 const d = el.style.display;
@@ -1058,8 +1347,8 @@
                 yesNoClick(2);
             } else if (pid === 'scene-creator-panel') {
                 scCancel();
-            } else if (pid === 'scene-menu-panel') {
-                smDone();
+            } else if (pid === 'animation-menu-panel') {
+                amDone();
             } else {
                 if (typeof window.onCancel === 'function') window.onCancel();
                 else {
@@ -1988,7 +2277,7 @@
         hideTargetMenuRow();
         hidePanel('yesno_panel');
         hidePanel('scene_creator_panel');
-        hidePanel('scene_menu_panel');
+        hidePanel('animation_menu_panel');
 
         // ── Yes / No ─────────────────────────────────────────────
         let YESNO = { question: '', creator_sid: 0 };
@@ -2006,9 +2295,83 @@
             }));
         }
 
-        // ── Scene Creator ─────────────────────────────────────────
+        // ── Shared scene connection (SceneMenu + AnimationPanel) ──
+        let SCENE_CONNECTION = { kind: 'new', sid: 0, label: 'new' };
+        let SCENE_CONNECTIONS = [{ id: 'new', label: 'new' }];
+
+        function sceneConnectionId() {
+            return SCENE_CONNECTION.kind === 'scene' ? ('scene:' + SCENE_CONNECTION.sid) : 'new';
+        }
+
+        function isSceneConnectionActive() {
+            return SCENE_CONNECTION.kind === 'scene';
+        }
+
+        function configureSceneConnections(payload) {
+            const list = (payload && payload._connections) || payload || [];
+            SCENE_CONNECTIONS = Array.isArray(list) && list.length
+                ? list.map(c => ({
+                    id: c._id != null ? String(c._id) : String(c.id || 'new'),
+                    label: c._label != null ? String(c._label) : String(c.label || c._id || 'new')
+                }))
+                : [{ id: 'new', label: 'new' }];
+            const cur = sceneConnectionId();
+            if (!SCENE_CONNECTIONS.some(c => c.id === cur)) {
+                SCENE_CONNECTION = { kind: 'new', sid: 0, label: 'new' };
+            }
+            renderSceneConnectionPulldowns();
+        }
+
+        function renderSceneConnectionPulldowns() {
+            const labels = SCENE_CONNECTIONS.map(c => c.label);
+            const ids = SCENE_CONNECTIONS.map(c => c.id);
+            const curId = sceneConnectionId();
+            let curLabel = 'new';
+            const idx = ids.indexOf(curId);
+            if (idx >= 0) curLabel = labels[idx];
+            ['sc-scene-connection-pulldown', 'am-scene-connection-pulldown'].forEach(hostId => {
+                const host = document.getElementById(hostId);
+                if (!host) return;
+                host.innerHTML = '';
+                host.appendChild(createPulldown(labels, curLabel, (picked) => {
+                    const i = labels.indexOf(picked);
+                    const id = i >= 0 ? ids[i] : 'new';
+                    if (id === sceneConnectionId()) return;
+                    requestSceneConnectionChange(id);
+                }));
+            });
+        }
+
+        function requestSceneConnectionChange(id) {
+            if (typeof window.onSceneConnectionChange === 'function') {
+                window.onSceneConnectionChange(JSON.stringify({ _connection: id }));
+            }
+        }
+
+        /// Called once from C++ SwitchMainPanel when selecting Scene Menu / Animation.
+        function mainPanelDidOpen() {
+            requestSceneConnectionChange(sceneConnectionId());
+        }
+
+        function applySceneConnectionFromState(state) {
+            const mode = state && state._mode;
+            if (mode === 'active' || (state && state._scene_sid != null && state._scene_sid >= 0 && mode !== 'creator')) {
+                SCENE_CONNECTION = {
+                    kind: 'scene',
+                    sid: state._scene_sid != null ? state._scene_sid : 0,
+                    label: state._connection_label || ('scene:' + state._scene_sid)
+                };
+            } else if (state && (state._connection === 'new' || mode === 'creator' || state._creator_sid != null)) {
+                SCENE_CONNECTION = { kind: 'new', sid: 0, label: 'new' };
+            }
+            renderSceneConnectionPulldowns();
+        }
+
+        // ── Scene Creator / Scene Menu ────────────────────────────
         let SC = {
             creator_sid: 0,
+            scene_sid: -1,
+            mode: 'creator',
             from_target_menu: false,
             intent: '',
             style: 'normally',
@@ -2028,11 +2391,20 @@
             animQueryId: 0,
             tagQueryId: 0,
             metaQueryId: 0,
-            pendingNearby: null
+            pendingNearby: null,
+            inThreadRegistries: [],
+            activeRegistry: '',
+            nextRegistry: '',
+            playedRegistries: [],
+            stage: 1,
+            stageCount: 0
         };
 
         function configureSceneCreator(state) {
+            applySceneConnectionFromState(Object.assign({ _mode: state._mode || 'creator' }, state));
+            SC.mode = (state._mode === 'active' || isSceneConnectionActive()) ? 'active' : 'creator';
             SC.creator_sid = state._creator_sid != null ? state._creator_sid : 0;
+            SC.scene_sid = state._scene_sid != null ? state._scene_sid : -1;
             SC.from_target_menu = !!state._from_target_menu;
             SC.intent = state._intent || '';
             SC.style = state._style || 'normally';
@@ -2046,6 +2418,18 @@
             SC.tagType = 'any';
             SC.event_hook = state._event_hook || '';
             SC.pendingNearby = null;
+            SC.inThreadRegistries = state._in_thread_registries || [];
+            if (!Array.isArray(SC.inThreadRegistries)) SC.inThreadRegistries = [];
+            SC.activeRegistry = state._active_registry || '';
+            SC.nextRegistry = state._next_registry || '';
+            SC.playedRegistries = state._played_registries || [];
+            if (!Array.isArray(SC.playedRegistries)) SC.playedRegistries = [];
+            SC.stage = state._stage || 1;
+            SC.stageCount = state._stage_count || 0;
+            if (SC.mode === 'active' && SC.inThreadRegistries.length) {
+                // Treat out-of-thread query hits as deselected for multi color; in-thread = selected.
+                SC.deselectedRegistries = [];
+            }
             const presetsRaw = state._scene_presets || [];
             SC.presets = Array.isArray(presetsRaw)
                 ? presetsRaw.map(p => (typeof p === 'string' ? p : (p && p._name) || String(p)))
@@ -2065,14 +2449,84 @@
             }));
             const styleHost = document.getElementById('sc-style-pulldown');
             styleHost.innerHTML = '';
-            styleHost.appendChild(createPulldown(['forcefully', 'normally', 'gently'], SC.style, v => { SC.style = v; }));
+            styleHost.appendChild(createPulldown(['forcefully', 'normally', 'gently'], SC.style, v => {
+                SC.style = v;
+                if (SC.mode === 'active') scLiveUpdate();
+            }));
             const typeHost = document.getElementById('sc-type-pulldown');
             typeHost.innerHTML = '';
             const typeValues = ['any'].concat(SC.groupOrder);
             typeHost.appendChild(createPulldown(typeValues, 'any', v => { SC.tagType = v; scRefreshTags(); }));
+            scApplyModeChrome();
             scRenderPositions();
             scRenderTagChips();
-            scEnrichActorMeta();
+            if (SC.mode === 'creator') scEnrichActorMeta();
+            scRefreshTags();
+            scRefreshAnims();
+            if (typeof window.onSceneConnectionsRefresh === 'function') {
+                window.onSceneConnectionsRefresh('{}');
+            } else if (typeof window.onSceneConnectionChange === 'function') {
+                // Connections list refresh piggybacks on connection change with list-only flag
+            }
+            requestSceneConnectionsRefresh();
+        }
+
+        function scApplyModeChrome() {
+            const active = SC.mode === 'active';
+            const setDisp = (id, show) => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = show ? '' : 'none';
+            };
+            setDisp('sc-btn-start', !active);
+            setDisp('sc-btn-cancel', !active);
+            setDisp('sc-btn-stop', active);
+            setDisp('sc-btn-load', !active);
+            setDisp('sc-btn-save', !active);
+            setDisp('sc-btn-all', !active);
+            setDisp('sc-btn-none', !active);
+            setDisp('sc-btn-update', active);
+            setDisp('sc-stage-row', active);
+            const presetName = document.getElementById('sc-preset-name');
+            const presetPull = document.getElementById('sc-preset-pulldown');
+            if (presetName) presetName.disabled = active;
+            if (presetPull) presetPull.style.opacity = active ? '0.5' : '';
+            const stageLabel = document.getElementById('sc-stage-label');
+            if (stageLabel) stageLabel.textContent = active ? `stage ${SC.stage}/${SC.stageCount || '?'}` : '';
+        }
+
+        function scLiveUpdate() {
+            if (SC.mode !== 'active' || typeof window.onAnimationMenuLiveUpdate !== 'function') return;
+            window.onAnimationMenuLiveUpdate(JSON.stringify({
+                _scene_sid: SC.scene_sid,
+                _style: SC.style,
+                _intent: document.getElementById('sc-intent').value,
+                _positions: SC.positions
+            }));
+        }
+
+        function scStop() {
+            if (typeof window.onAnimationMenuStop !== 'function') return;
+            window.onAnimationMenuStop(JSON.stringify({ _scene_sid: SC.scene_sid }));
+        }
+
+        function scPrevNext(dir) {
+            if (SC.mode !== 'active' || typeof window.onAnimationMenuPrevNext !== 'function') return;
+            window.onAnimationMenuPrevNext(JSON.stringify({ _scene_sid: SC.scene_sid, _direction: dir }));
+        }
+
+        function scAnimUpdate() {
+            if (SC.mode !== 'active' || !SC.nextRegistry) return;
+            if (typeof window.onSceneAnimUpdate !== 'function') return;
+            window.onSceneAnimUpdate(JSON.stringify({
+                _scene_sid: SC.scene_sid,
+                _next_registry: SC.nextRegistry
+            }));
+        }
+
+        function requestSceneConnectionsRefresh() {
+            if (typeof window.onSceneConnectionsRefresh === 'function') {
+                window.onSceneConnectionsRefresh('{}');
+            }
         }
 
         function scParseMods(p) {
@@ -2524,25 +2978,61 @@
             return false;
         }
 
-        function scRenderAnimList() {
-            const anims = SC.lastAnims || [];
-            const selectedCount = scSelectedRegistries().length;
-            document.getElementById('sc-selected-count').textContent = `selected ${selectedCount}`;
+        function sortAnimListRows(anims, opts) {
+            const active = opts && opts.active;
+            const inThread = new Set((opts && opts.inThread) || []);
+            const activeReg = (opts && opts.activeRegistry) || '';
+            const isSelected = opts && opts.isSelected
+                ? opts.isSelected
+                : (reg) => !SC.deselectedRegistries.includes(reg);
             const indices = anims.map((_, i) => i);
             indices.sort((ia, ib) => {
                 const a = anims[ia];
                 const b = anims[ib];
-                const sa = SC.deselectedRegistries.includes(a._registry || '') ? 0 : 1;
-                const sb = SC.deselectedRegistries.includes(b._registry || '') ? 0 : 1;
-                if (sb !== sa) return sb - sa;
+                const ra = a._registry || '';
+                const rb = b._registry || '';
+                if (active) {
+                    const aa = ra === activeReg ? 2 : (inThread.has(ra) ? 1 : 0);
+                    const ab = rb === activeReg ? 2 : (inThread.has(rb) ? 1 : 0);
+                    if (ab !== aa) return ab - aa;
+                } else {
+                    const sa = isSelected(ra) ? 1 : 0;
+                    const sb = isSelected(rb) ? 1 : 0;
+                    if (sb !== sa) return sb - sa;
+                }
                 const da = scAnimHasDescription(a) ? 1 : 0;
                 const db = scAnimHasDescription(b) ? 1 : 0;
                 return db - da;
             });
+            return indices;
+        }
+
+        function scAnimAnLetter(reg) {
+            if (SC.mode !== 'active') return '';
+            if (reg && reg === SC.activeRegistry) return 'A';
+            if (reg && reg === SC.nextRegistry) return 'N';
+            return '';
+        }
+
+        function scRenderAnimList() {
+            const anims = SC.lastAnims || [];
+            const selectedCount = SC.mode === 'active'
+                ? SC.inThreadRegistries.length
+                : scSelectedRegistries().length;
+            document.getElementById('sc-selected-count').textContent =
+                SC.mode === 'active' ? `in-thread ${selectedCount}` : `selected ${selectedCount}`;
+            const inThread = new Set(SC.inThreadRegistries || []);
+            const indices = sortAnimListRows(anims, {
+                active: SC.mode === 'active',
+                inThread: SC.inThreadRegistries,
+                activeRegistry: SC.activeRegistry,
+                isSelected: (reg) => SC.mode === 'active' ? inThread.has(reg) : !SC.deselectedRegistries.includes(reg)
+            });
             const rows = indices.map((i) => {
                 const a = anims[i];
                 const reg = a._registry || '';
-                const sel = !SC.deselectedRegistries.includes(reg);
+                const sel = SC.mode === 'active' ? inThread.has(reg) : !SC.deselectedRegistries.includes(reg);
+                const an = scAnimAnLetter(reg);
                 const genders = (a._pos_genders || []).map((g, gi) => {
                     const letter = (g === 0 || g === 2) ? 'm' : 'f';
                     const no = (a._pos_no_orgasm || [])[gi];
@@ -2553,6 +3043,7 @@
                 const stages = (a._stage_count != null) ? a._stage_count : '';
                 const desc = previewDescription(a);
                 return `<tr class="${sel ? 'selected' : ''}" onclick="scToggleAnim(${i})">` +
+                    `<td class="col-an">${escapeHtml(an)}</td>` +
                     `<td class="col-genders">${escapeHtml(genders)}</td>` +
                     `<td class="col-mods">${escapeHtml(mods)}</td>` +
                     `<td class="col-name">${escapeHtml(name)}</td>` +
@@ -2562,12 +3053,14 @@
             }).join('');
             document.getElementById('sc-anims-list').innerHTML =
                 `<table class="data-table anim-table"><thead><tr>` +
+                `<th class="col-an"></th>` +
                 `<th class="col-genders">genders</th>` +
                 `<th class="col-mods">modifiers</th>` +
                 `<th class="col-name">name</th>` +
                 `<th class="col-stages">num stages</th>` +
                 `<th class="col-desc">description</th>` +
                 `</tr></thead><tbody>${rows}</tbody></table>`;
+            amSyncAnimListFromScene();
         }
 
         function scRefreshAnims() {
@@ -2595,6 +3088,13 @@
             const a = SC.lastAnims[idx];
             const reg = a && a._registry;
             if (!reg) return;
+            if (SC.mode === 'active') {
+                if (reg === SC.activeRegistry) return;
+                if (reg === SC.nextRegistry) SC.nextRegistry = '';
+                else SC.nextRegistry = reg;
+                scRenderAnimList();
+                return;
+            }
             if (SC.deselectedRegistries.includes(reg)) {
                 SC.deselectedRegistries = SC.deselectedRegistries.filter(r => r !== reg);
                 const no = a._pos_no_orgasm || [];
@@ -2628,9 +3128,7 @@
         }
 
         function scLoadPreset() {
-            if (SC.from_target_menu) {
-                return;
-            }
+            if (SC.from_target_menu || SC.mode === 'active') return;
             if (typeof window.onSceneCreatorLoad !== 'function') return;
             window.onSceneCreatorLoad(JSON.stringify({
                 _creator_sid: SC.creator_sid,
@@ -2639,9 +3137,7 @@
         }
 
         function scSavePreset() {
-            if (SC.from_target_menu) {
-                return;
-            }
+            if (SC.from_target_menu || SC.mode === 'active') return;
             if (typeof window.onSceneCreatorSave !== 'function') return;
             const payload = scBuildResult('save');
             payload._scene_preset = scCurrentPresetName();
@@ -2655,7 +3151,7 @@
                 _from_target_menu: !!SC.from_target_menu,
                 _intent: document.getElementById('sc-intent').value || SC.intent,
                 _style: SC.style,
-                _method: SC.method || '',
+                _method: SC.method,
                 _tags: SC.tags.join(','),
                 _tags_suppress: SC.suppress.join(','),
                 _positions: SC.positions,
@@ -2674,114 +3170,279 @@
             window.onSceneCreatorResult(JSON.stringify(scBuildResult('cancel')));
         }
 
-        // ── Scene Menu (live thread) ──────────────────────────────
-        let SM = { scene_sid: 0, dirty: false, registry: '', style: 'normally', positions: [], stages: [], tags: '' };
+        // ── Animation Menu (registry editor + live controls) ──────
+        let AM = {
+            scene_sid: -1,
+            dirty: false,
+            registry: '',
+            focusRegistry: '',
+            style: 'normally',
+            positions: [],
+            stages: [],
+            tags: '',
+            live: false
+        };
 
-        function configureSceneMenu(state) {
-            SM = Object.assign(SM, state);
-            SM.dirty = false;
-            SM.positions = state._positions || [];
-            SM.stages = state._stages || [];
-            document.getElementById('sm-title').textContent = state._title || state._registry || 'Scene';
-            document.getElementById('sm-subtitle').textContent = state._subtitle || state._anim_name || '';
-            document.getElementById('sm-activity').textContent = state._activity || state._intent || '';
-            document.getElementById('sm-tags').innerHTML = (state._tags || '').split(',').filter(Boolean)
-                .map(t => `<span class="tag-chip">${t}</span>`).join('');
-            document.getElementById('sm-stage-label').textContent = `stage ${state._stage || 1}/${state._stage_count || '?'}`;
-            const styleHost = document.getElementById('sm-style-pulldown');
-            styleHost.innerHTML = '';
-            styleHost.appendChild(createPulldown(['forcefully', 'normally', 'gently'], state._style || 'normally', v => {
-                SM.style = v;
-                smLiveUpdate();
-            }));
-            smRenderPositions();
-            smRenderStages();
+        function amCandidateAnims() {
+            return SC.lastAnims || [];
         }
 
-        function smRenderPositions() {
-            const tbody = document.querySelector('#sm-positions-table tbody');
-            tbody.innerHTML = SM.positions.map((p, i) => `<tr>
-                <td>${i}</td><td>${p._name || ''}</td>
-                <td><span class="cell-toggle ${p._dressed ? 'on' : ''}" onclick="smTogglePos(${i}, 'dressed')">${p._dressed ? '👕' : '—'}</span></td>
-                <td><span class="cell-toggle ${p._no_orgasm ? 'on' : ''}" onclick="smTogglePos(${i}, 'no_orgasm')">O</span></td>
-                <td>${p._victim ? 'V' : ''}</td>
-                <td><span class="cell-toggle" onclick="smCycleSpeaking(${i})">${p._speaking || '—'}</span></td>
+        function amSyncAnimListFromScene() {
+            amRenderAnimList();
+            amEnsureFocus();
+        }
+
+        function amEnsureFocus() {
+            const anims = amCandidateAnims();
+            if (!anims.length) {
+                AM.focusRegistry = '';
+                return;
+            }
+            const regs = anims.map(a => a._registry).filter(Boolean);
+            if (!AM.focusRegistry || !regs.includes(AM.focusRegistry)) {
+                const sorted = sortAnimListRows(anims, {
+                    active: isSceneConnectionActive(),
+                    inThread: SC.inThreadRegistries,
+                    activeRegistry: SC.activeRegistry,
+                    isSelected: (reg) => SC.mode === 'active'
+                        ? (SC.inThreadRegistries || []).includes(reg)
+                        : !SC.deselectedRegistries.includes(reg)
+                });
+                const first = anims[sorted[0]];
+                AM.focusRegistry = (first && first._registry) || regs[0];
+                amLoadFocusRegistry();
+            }
+        }
+
+        function amRenderAnimList() {
+            const host = document.getElementById('am-anims-list');
+            if (!host) return;
+            const anims = amCandidateAnims();
+            const inThread = new Set(SC.inThreadRegistries || []);
+            const indices = sortAnimListRows(anims, {
+                active: isSceneConnectionActive(),
+                inThread: SC.inThreadRegistries,
+                activeRegistry: SC.activeRegistry,
+                isSelected: (reg) => SC.mode === 'active'
+                    ? inThread.has(reg)
+                    : !SC.deselectedRegistries.includes(reg)
+            });
+            const rows = indices.map((i) => {
+                const a = anims[i];
+                const reg = a._registry || '';
+                const focus = reg === AM.focusRegistry;
+                const an = isSceneConnectionActive() ? scAnimAnLetter(reg) : '';
+                const name = a._name || reg || '(unnamed)';
+                return `<tr class="${focus ? 'selected' : ''}" onclick="amSelectAnim('${String(reg).replace(/'/g, "\\'")}')">` +
+                    `<td class="col-an">${escapeHtml(an)}</td>` +
+                    `<td class="col-name">${escapeHtml(name)}</td>` +
+                    `</tr>`;
+            }).join('');
+            host.innerHTML =
+                `<table class="data-table anim-table"><thead><tr>` +
+                `<th class="col-an"></th><th class="col-name">name</th>` +
+                `</tr></thead><tbody>${rows}</tbody></table>`;
+        }
+
+        function amSelectAnim(reg) {
+            AM.focusRegistry = reg;
+            amRenderAnimList();
+            amLoadFocusRegistry();
+        }
+
+        function amLoadFocusRegistry() {
+            const reg = AM.focusRegistry;
+            const a = (SC.lastAnims || []).find(x => x._registry === reg);
+            if (!a) {
+                AM.positions = [];
+                AM.stages = [];
+                AM.tags = '';
+                amRenderPositions();
+                amRenderStages();
+                return;
+            }
+            AM.registry = reg;
+            AM._registry = reg;
+            document.getElementById('am-title').textContent = a._name || reg || 'Animation';
+            document.getElementById('am-subtitle').textContent = reg || '';
+            document.getElementById('am-tags').innerHTML = (a._tags || '').split(',').filter(Boolean)
+                .map(t => `<span class="tag-chip">${t}</span>`).join('');
+            const n = a._position_count || (a._pos_genders || []).length || 0;
+            const no = a._pos_no_orgasm || [];
+            const sp = a._pos_speaking_modifiers || [];
+            const dressed = a._pos_dressed || [];
+            AM.positions = [];
+            for (let i = 0; i < n; i++) {
+                let speaking = sp[i];
+                if (Array.isArray(speaking)) speaking = speaking.join(',');
+                AM.positions.push({
+                    _slot: i,
+                    _dressed: dressed[i] ? 1 : 0,
+                    _no_orgasm: no[i] ? 1 : 0,
+                    _speaking: speaking || '_pleasure_'
+                });
+            }
+            const sd = a._stage_descriptions || {};
+            const stageCount = a._stage_count || Object.keys(sd).length || 1;
+            AM.stages = [];
+            for (let s = 1; s <= stageCount; s++) {
+                AM.stages.push({
+                    _stage: s,
+                    _template: sd[s] || sd[String(s)] || '',
+                    _preview: '',
+                    _current: 0
+                });
+            }
+            AM.dirty = false;
+            amApplyLiveChrome();
+            amRenderPositions();
+            amRenderStages();
+        }
+
+        function configureAnimationMenu(state) {
+            applySceneConnectionFromState(Object.assign({ _mode: 'active' }, state));
+            AM.scene_sid = state._scene_sid != null ? state._scene_sid : -1;
+            AM._scene_sid = AM.scene_sid;
+            AM.live = isSceneConnectionActive();
+            AM.dirty = false;
+            AM.style = state._style || 'normally';
+            SC.activeRegistry = state._registry || state._active_registry || SC.activeRegistry;
+            SC.inThreadRegistries = state._in_thread_registries || SC.inThreadRegistries;
+            if (state._registry) AM.focusRegistry = state._registry;
+            document.getElementById('am-activity').textContent = state._activity || state._intent || '';
+            document.getElementById('am-stage-label').textContent =
+                `stage ${state._stage || 1}/${state._stage_count || '?'}`;
+            const styleHost = document.getElementById('am-style-pulldown');
+            styleHost.innerHTML = '';
+            styleHost.appendChild(createPulldown(['forcefully', 'normally', 'gently'], AM.style, v => {
+                AM.style = v;
+                if (AM.live) amLiveUpdate();
+            }));
+            // Prefer thread-provided positions only for stage label; body uses anim slots.
+            if (state._registry && !(SC.lastAnims || []).some(a => a._registry === state._registry)) {
+                // Seed minimal anim stub so focus works until query returns
+                SC.lastAnims = SC.lastAnims || [];
+            }
+            if (state._in_thread_registries && state._in_thread_anims) {
+                SC.lastAnims = state._in_thread_anims;
+            }
+            amApplyLiveChrome();
+            amRenderAnimList();
+            amEnsureFocus();
+            if (AM.focusRegistry) amLoadFocusRegistry();
+            // If thread sent stages for current anim, merge templates
+            if (state._stages && state._stages.length && AM.focusRegistry === (state._registry || AM.focusRegistry)) {
+                AM.stages = state._stages;
+                amRenderStages();
+            }
+            requestSceneConnectionsRefresh();
+            if (!(SC.lastAnims && SC.lastAnims.length)) scRefreshAnims();
+        }
+
+        function amApplyLiveChrome() {
+            const live = isSceneConnectionActive();
+            AM.live = live;
+            ['am-btn-prev', 'am-btn-next', 'am-btn-stop'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.classList.toggle('disabled', !live);
+                el.style.opacity = live ? '' : '0.4';
+                el.style.pointerEvents = live ? '' : 'none';
+            });
+        }
+
+        function amRenderPositions() {
+            const tbody = document.querySelector('#am-positions-table tbody');
+            tbody.innerHTML = AM.positions.map((p, i) => `<tr>
+                <td>${i}</td><td>slot ${i}</td>
+                <td><span class="cell-toggle ${p._dressed ? 'on' : ''}" onclick="amTogglePos(${i}, 'dressed')">${p._dressed ? 'Y' : '—'}</span></td>
+                <td><span class="cell-toggle ${p._no_orgasm ? 'on' : ''}" onclick="amTogglePos(${i}, 'no_orgasm')">O</span></td>
+                <td><span class="cell-toggle" onclick="amCycleSpeaking(${i})">${p._speaking || '—'}</span></td>
             </tr>`).join('');
         }
 
-        function smTogglePos(i, key) {
-            const p = SM.positions[i];
+        function amTogglePos(i, key) {
+            const p = AM.positions[i];
             if (!p) return;
             if (key === 'dressed') p._dressed = p._dressed ? 0 : 1;
             if (key === 'no_orgasm') {
                 p._no_orgasm = p._no_orgasm ? 0 : 1;
-                SM.dirty = true;
+                AM.dirty = true;
             }
-            smRenderPositions();
-            smLiveUpdate();
+            amRenderPositions();
+            if (AM.live) amLiveUpdate();
         }
 
-        function smCycleSpeaking(i) {
+        function amCycleSpeaking(i) {
             const mods = ['_pleasure_', '_pain_', '_gagged_', '_kissing_'];
-            const p = SM.positions[i];
+            const p = AM.positions[i];
             if (!p) return;
             const cur = p._speaking || '_pleasure_';
             p._speaking = mods[(mods.indexOf(cur) + 1) % mods.length];
-            smRenderPositions();
-            smLiveUpdate();
+            AM.dirty = true;
+            amRenderPositions();
+            if (AM.live) amLiveUpdate();
         }
 
-        function smLiveUpdate() {
-            if (typeof window.onSceneMenuLiveUpdate !== 'function') return;
-            window.onSceneMenuLiveUpdate(JSON.stringify({
-                _scene_sid: SM._scene_sid || SM.scene_sid,
-                _style: SM.style,
-                _positions: SM.positions
+        function amLiveUpdate() {
+            if (!AM.live || typeof window.onAnimationMenuLiveUpdate !== 'function') return;
+            window.onAnimationMenuLiveUpdate(JSON.stringify({
+                _scene_sid: AM._scene_sid || AM.scene_sid,
+                _style: AM.style,
+                _positions: AM.positions
             }));
         }
 
-        function smRenderStages() {
-            const tbody = document.querySelector('#sm-stages-table tbody');
-            tbody.innerHTML = SM.stages.map(st => {
+        function amRenderStages() {
+            const tbody = document.querySelector('#am-stages-table tbody');
+            tbody.innerHTML = AM.stages.map(st => {
                 const n = st._stage;
                 const cur = st._current ? ' current' : '';
                 return `<tr class="${cur}">
                     <td>${n}</td>
-                    <td><input type="text" value="${(st._template || '').replace(/"/g, '&quot;')}" style="width:100%" oninput="smStageEdit(${n}, this.value)" /></td>
+                    <td><input type="text" value="${(st._template || '').replace(/"/g, '&quot;')}" style="width:100%" oninput="amStageEdit(${n}, this.value)" /></td>
                     <td>${st._preview || ''}</td>
                 </tr>`;
             }).join('');
         }
 
-        function smStageEdit(stage, val) {
-            const st = SM.stages.find(s => s._stage === stage);
+        function amStageEdit(stage, val) {
+            const st = AM.stages.find(s => s._stage === stage);
             if (st) {
                 st._template = val;
-                SM.dirty = true;
+                AM.dirty = true;
             }
         }
 
-        function smPrevNext(dir) {
-            if (typeof window.onSceneMenuPrevNext !== 'function') return;
-            window.onSceneMenuPrevNext(JSON.stringify({ _scene_sid: SM._scene_sid || SM.scene_sid, _direction: dir }));
+        function amPrevNext(dir) {
+            if (!isSceneConnectionActive()) return;
+            if (typeof window.onAnimationMenuPrevNext !== 'function') return;
+            window.onAnimationMenuPrevNext(JSON.stringify({ _scene_sid: AM._scene_sid || AM.scene_sid, _direction: dir }));
         }
 
-        function smDone(markDirty) {
-            if (typeof window.onSceneMenuClose !== 'function') return;
-            if (markDirty === false) SM.dirty = false;
-            window.onSceneMenuClose(JSON.stringify({
-                _scene_sid: SM._scene_sid || SM.scene_sid,
-                _dirty: !!SM.dirty,
-                _style: SM.style,
-                _positions: SM.positions,
-                _stages: SM.stages,
-                _registry: SM._registry || SM.registry
-            }));
+        function amDone(markDirty) {
+            if (markDirty === false) AM.dirty = false;
+            const payload = {
+                _scene_sid: AM._scene_sid || AM.scene_sid,
+                _dirty: !!AM.dirty,
+                _style: AM.style,
+                _positions: AM.positions,
+                _stages: AM.stages,
+                _registry: AM.focusRegistry || AM._registry || AM.registry
+            };
+            if (isSceneConnectionActive() && typeof window.onAnimationMenuClose === 'function') {
+                window.onAnimationMenuClose(JSON.stringify(payload));
+            } else if (typeof window.onAnimRegistrySave === 'function') {
+                window.onAnimRegistrySave(JSON.stringify(payload));
+            } else if (typeof window.onAnimationMenuClose === 'function') {
+                window.onAnimationMenuClose(JSON.stringify(payload));
+            }
         }
 
-        function smStop() {
-            if (typeof window.onSceneMenuStop !== 'function') return;
-            window.onSceneMenuStop(JSON.stringify({ _scene_sid: SM._scene_sid || SM.scene_sid }));
+        function amStop() {
+            if (!isSceneConnectionActive()) return;
+            if (typeof window.onAnimationMenuStop !== 'function') return;
+            window.onAnimationMenuStop(JSON.stringify({ _scene_sid: AM._scene_sid || AM.scene_sid }));
         }
     </script>
 </body>

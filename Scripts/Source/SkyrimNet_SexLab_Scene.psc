@@ -28,6 +28,8 @@ String storage_prefix = "skyrimnet_sexlab_scene"
 String storage_obj_key = "skyrimnet_sexlab_scene_actor_position_obj"
 String storage_total_orgasms_key = "skyrimnet_sexlab_scene_total_orgasms"
 int thread_obj = 0 ; Thread_obj will be reused 
+String[] played_registries
+int played_registries_count = 0
 
 ; -------------------------------------------
 ; Intent
@@ -1701,24 +1703,28 @@ Function SetStyleDialog()
     DbgReturn("SetStyleDialog")
 endFunction
 
-Function WebUI_ExportMenuState(sslThreadController _thread)
+Function WebUI_ExportAnimationMenuState(sslThreadController _thread)
     if _thread != None
         thread = _thread
     endif
-    SkyrimNet_SexLab_WebUI.Scene_Menu_Show(BuildWebUIMenuState())
+    SkyrimNet_SexLab_WebUI.Animation_Menu_Show(BuildWebUIAnimationMenuState())
 EndFunction
 
-String Function BuildWebUIMenuState()
+String Function BuildWebUIAnimationMenuState()
     if thread == None
         return "{}"
     endif
     sslBaseAnimation anim = thread.animation
     int obj = JMap.object()
+    JMap.setStr(obj, "_mode", "active")
     JMap.setInt(obj, "_scene_sid", sid)
+    JMap.setStr(obj, "_connection", "scene:"+sid)
     JMap.setInt(obj, "_stage", thread.stage)
     if anim != None
         String registry = anim.Registry
         JMap.setStr(obj, "_registry", registry)
+        JMap.setStr(obj, "_active_registry", registry)
+        NotePlayedRegistry(registry)
         ; Prefer meaningful registry as title; keep display name as subtitle.
         if registry != "" && StringUtil.GetLength(registry) > 2
             JMap.setStr(obj, "_title", registry)
@@ -1731,6 +1737,16 @@ String Function BuildWebUIMenuState()
         JMap.setInt(obj, "_stage_count", anim.StageCount())
         JMap.setStr(obj, "_tags", GetTagsString(anim))
     endif
+    int in_thread = JArray.object()
+    sslBaseAnimation[] anims = thread.Animations
+    int ai = 0
+    while anims && ai < anims.length
+        if anims[ai]
+            JArray.addStr(in_thread, anims[ai].Registry)
+        endif
+        ai += 1
+    endwhile
+    JMap.setObj(obj, "_in_thread_registries", in_thread)
     JMap.setStr(obj, "_intent", intent)
     JMap.setStr(obj, "_style", style)
     JMap.setStr(obj, "_activity", intent)
@@ -1831,6 +1847,9 @@ Function WebUI_OnMenuLiveUpdate(String json)
     if JMap.hasKey(obj, "_style")
         SetStyle(JMap.getStr(obj, "_style", style))
     endif
+    if JMap.hasKey(obj, "_intent")
+        intent = JMap.getStr(obj, "_intent", intent)
+    endif
     WebUI_ApplyLivePositions(obj)
     JValue.release(obj)
 EndFunction
@@ -1866,10 +1885,16 @@ Function WebUI_ApplyLivePositions(int obj)
 EndFunction
 
 Function WebUI_SaveMenuState(int obj)
-    if thread == None || thread.animation == None
+    String registry = ""
+    if JMap.hasKey(obj, "_registry")
+        registry = JMap.getStr(obj, "_registry", "")
+    endif
+    if registry == "" && thread && thread.animation
+        registry = thread.animation.Registry
+    endif
+    if registry == ""
         return
     endif
-    String registry = thread.animation.Registry
     int payload = JMap.object()
     if JMap.hasKey(obj, "_stages")
         int stages_arr = JMap.getObj(obj, "_stages")
@@ -1922,7 +1947,7 @@ Function WebUI_OnMenuPrevNext(int direction)
     elseif direction > 0 && stage < thread.animation.StageCount()
         thread.GoToStage(stage + 1)
     endif
-    SkyrimNet_SexLab_WebUI.Scene_Menu_Show(BuildWebUIMenuState())
+    SkyrimNet_SexLab_WebUI.Animation_Menu_Show(BuildWebUIAnimationMenuState())
 EndFunction
 
 Function WebUI_OnMenuStop()
@@ -1934,4 +1959,228 @@ Function WebUI_OnMenuStop()
     if actions
         actions.SceneStop_Target(player, thread.Positions[0], "silently")
     endif
+EndFunction
+Function NotePlayedRegistry(String registry)
+    if registry == ""
+        return
+    endif
+    int i = 0
+    while i < played_registries_count
+        if played_registries[i] == registry
+            return
+        endif
+        i += 1
+    endwhile
+    if !played_registries || played_registries.length < played_registries_count + 1
+        String[] grown = Utility.CreateStringArray(played_registries_count + 8)
+        i = 0
+        while i < played_registries_count
+            grown[i] = played_registries[i]
+            i += 1
+        endwhile
+        played_registries = grown
+    endif
+    played_registries[played_registries_count] = registry
+    played_registries_count += 1
+EndFunction
+
+Bool Function WasRegistryPlayed(String registry)
+    int i = 0
+    while i < played_registries_count
+        if played_registries[i] == registry
+            return true
+        endif
+        i += 1
+    endwhile
+    return false
+EndFunction
+
+String Function BuildWebUISceneMenuState()
+    int obj = JMap.object()
+    JMap.setStr(obj, "_mode", "active")
+    JMap.setInt(obj, "_scene_sid", sid)
+    JMap.setStr(obj, "_connection", "scene:"+sid)
+    JMap.setStr(obj, "_connection_label", GetIntentMessage(INTENT_STAGE_ONGOING))
+    JMap.setStr(obj, "_intent", intent)
+    JMap.setStr(obj, "_style", style)
+    int pos_arr = JArray.object()
+    Actor[] positions = None
+    if thread
+        positions = thread.Positions
+    endif
+    int n = 0
+    if positions
+        n = positions.length
+    endif
+    int i = 0
+    while i < n
+        int po = JMap.object()
+        Actor ak = positions[i]
+        JMap.setStr(po, "_name", ak.GetDisplayName())
+        JMap.setStr(po, "_uuid", GetUUID(ak))
+        JMap.setInt(po, "_form_id", ak.GetFormID())
+        int no_org = 0
+        int dressed = 0
+        String speaking = speaking_modifiers_DEFAULT
+        if position_objs && i < position_objs.length && position_objs[i] > 0
+            no_org = JMap.getInt(position_objs[i], "no_orgasm", 0)
+            dressed = JMap.getInt(position_objs[i], "dressed", 0)
+            int speaking_obj = JMap.getObj(position_objs[i], "speaking_modifiers")
+            if speaking_obj > 0 && JArray.count(speaking_obj) > 0
+                speaking = JArray.getStr(speaking_obj, 0, speaking)
+            endif
+        endif
+        JMap.setInt(po, "_dressed", dressed)
+        JMap.setInt(po, "_no_orgasm", no_org)
+        JMap.setInt(po, "_victim", ak.IsInFaction(SkyrimNet_SexLab_Faction_Victim) as int)
+        JMap.setStr(po, "_speaking", speaking)
+        JMap.setInt(po, "_gender", sexlab.GetGender(ak))
+        JArray.addObj(pos_arr, po)
+        i += 1
+    endwhile
+    JMap.setObj(obj, "_positions", pos_arr)
+    int in_thread = JArray.object()
+    String active_reg = ""
+    if thread && thread.animation
+        active_reg = thread.animation.Registry
+        NotePlayedRegistry(active_reg)
+    endif
+    JMap.setStr(obj, "_active_registry", active_reg)
+    if thread
+        sslBaseAnimation[] anims = thread.Animations
+        int ai = 0
+        while anims && ai < anims.length
+            if anims[ai]
+                JArray.addStr(in_thread, anims[ai].Registry)
+            endif
+            ai += 1
+        endwhile
+        JMap.setInt(obj, "_stage", thread.stage)
+        if thread.animation
+            JMap.setInt(obj, "_stage_count", thread.animation.StageCount())
+        endif
+    endif
+    JMap.setObj(obj, "_in_thread_registries", in_thread)
+    int played = JArray.object()
+    i = 0
+    while i < played_registries_count
+        JArray.addStr(played, played_registries[i])
+        i += 1
+    endwhile
+    JMap.setObj(obj, "_played_registries", played)
+    if manager && manager.group_info > 0
+        int group_tags = JMap.getObj(manager.group_info, "group_tags", 0)
+        if group_tags > 0
+            JMap.setObj(obj, "_group_tags", group_tags)
+        endif
+        int groups = JMap.getObj(manager.group_info, "groups", 0)
+        if groups > 0
+            JMap.setObj(obj, "_group_order", groups)
+        endif
+    endif
+    String json = ObjectToLowerCaseKeyJson(obj)
+    JValue.release(obj)
+    return json
+EndFunction
+
+Function WebUI_OnAnimUpdate(String json)
+    if thread == None
+        return
+    endif
+    int obj = JValue.objectFromPrototype(json)
+    if obj == 0
+        return
+    endif
+    String next_reg = JMap.getStr(obj, "_next_registry", "")
+    JValue.release(obj)
+    if next_reg == ""
+        return
+    endif
+    sslBaseAnimation next_anim = sexlab.GetAnimationByRegistry(next_reg)
+    if next_anim == None
+        Trace("WebUI_OnAnimUpdate", "unknown registry:"+next_reg, true)
+        return
+    endif
+    sslBaseAnimation[] cur = thread.Animations
+    int idx = -1
+    int i = 0
+    while cur && i < cur.length
+        if cur[i] && cur[i].Registry == next_reg
+            idx = i
+        endif
+        i += 1
+    endwhile
+    if idx >= 0
+        thread.SetAnimation(idx)
+        NotePlayedRegistry(next_reg)
+        SkyrimNet_SexLab_WebUI.SceneCreator_Open(BuildWebUISceneMenuState())
+        SkyrimNet_SexLab_WebUI.Animation_Menu_Show(BuildWebUIAnimationMenuState())
+        return
+    endif
+    int len = 0
+    if cur
+        len = cur.length
+    endif
+    bool use_forced = false
+    sslBaseAnimation[] forced = thread.GetForcedAnimations()
+    if forced && forced.length > 0
+        use_forced = true
+    endif
+    if len >= 128
+        String active_now = ""
+        if thread.animation
+            active_now = thread.animation.Registry
+        endif
+        int evict = -1
+        i = 0
+        while i < len
+            if cur[i] && cur[i].Registry != active_now
+                if !WasRegistryPlayed(cur[i].Registry)
+                    evict = i
+                    i = len
+                elseif evict < 0
+                    evict = i
+                endif
+            endif
+            i += 1
+        endwhile
+        if evict < 0
+            Trace("WebUI_OnAnimUpdate", "cannot evict at cap", true)
+            return
+        endif
+        sslBaseAnimation[] rebuilt = sslUtility.AnimationArray(len)
+        int w = 0
+        i = 0
+        while i < len
+            if i != evict
+                rebuilt[w] = cur[i]
+                w += 1
+            endif
+            i += 1
+        endwhile
+        rebuilt[w] = next_anim
+        if use_forced
+            thread.SetForcedAnimations(rebuilt)
+        else
+            thread.SetAnimations(rebuilt)
+        endif
+        thread.SetAnimation(w)
+    else
+        thread.AddAnimation(next_anim)
+        cur = thread.Animations
+        idx = -1
+        i = 0
+        while cur && i < cur.length
+            if cur[i] && cur[i].Registry == next_reg
+                idx = i
+            endif
+            i += 1
+        endwhile
+        if idx >= 0
+            thread.SetAnimation(idx)
+        endif
+    endif
+    NotePlayedRegistry(next_reg)
+    SkyrimNet_SexLab_WebUI.SceneCreator_Open(BuildWebUISceneMenuState())
+    SkyrimNet_SexLab_WebUI.Animation_Menu_Show(BuildWebUIAnimationMenuState())
 EndFunction

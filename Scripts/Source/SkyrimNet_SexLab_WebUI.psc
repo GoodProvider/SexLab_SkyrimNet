@@ -7,8 +7,13 @@ Function Target_Menu_Refresh(Bool hasStrippedItems) global native
 Function Sex_Menu_Open(Form thread, bool has_player) global native
 Function YesNo_Open(String question, int creator_sid) global native
 Function SceneCreator_Open(String state_json) global native
-Function Scene_Menu_Open(Form thread, Form sl_scene) global native
-Function Scene_Menu_Show(String state_json) global native
+; Soft refresh Scene Menu state without HideAll / showPanel (connection pulldown / main panel switch).
+Function SceneCreator_Configure(String state_json) global native
+Function Animation_Menu_Open(Form thread, Form sl_scene) global native
+Function Animation_Menu_Show(String state_json) global native
+; Soft refresh Animation panel without showPanel.
+Function Animation_Menu_Configure(String state_json) global native
+Function SceneConnections_Show(String state_json) global native
 Function WebUI_HideAllPanels() global native
 ; MCM: enable/disable C++ menu hotkey and set DX scancode (Escape unchanged).
 Function WebUI_SetHotkey(int dxScanCode, bool enabled) global native
