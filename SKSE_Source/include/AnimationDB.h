@@ -49,6 +49,11 @@ namespace AnimationDB
         std::vector<int> pos_genders;
         std::vector<std::string> pos_race_keys;
         bool has_description = false;
+        bool gender_match = false;
+        int males = -1;
+        int females = -1;
+        int male_creatures = -1;
+        int female_creatures = -1;
     };
 
     struct TagCount

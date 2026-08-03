@@ -380,7 +380,6 @@
             overflow-y: auto;
         }
 
-        #sc-filter-positions,
         #sc-filter-has-description {
             transform: scale(2);
             transform-origin: left center;
@@ -1046,7 +1045,8 @@
                 </div>
                 <div id="sc-available-tags" class="scroll-list"></div>
                 <div class="compact-row">
-                    <label><input id="sc-filter-positions" type="checkbox" checked onchange="scRefreshAnims()" /> filter by positions</label>
+                    <span>filter by</span>
+                    <div id="sc-filter-by-pulldown"></div>
                     <label><input id="sc-filter-has-description" type="checkbox" onchange="scOnHasDescriptionChange()" /> has description</label>
                 </div>
             </div>
@@ -2481,7 +2481,8 @@
             playedRegistries: [],
             stage: 1,
             stageCount: 0,
-            nearbyRange: 100
+            nearbyRange: 100,
+            filterBy: 'positions'
         };
 
         const SC_NEARBY_RANGES = [100, 200, 400, 800, 1600];
@@ -2560,6 +2561,16 @@
             typeHost.innerHTML = '';
             const typeValues = ['any'].concat(SC.groupOrder);
             typeHost.appendChild(createPulldown(typeValues, 'any', v => { SC.tagType = v; scRefreshTags(); }));
+            const filterByHost = document.getElementById('sc-filter-by-pulldown');
+            if (filterByHost) {
+                filterByHost.innerHTML = '';
+                if (!SC.filterBy) SC.filterBy = 'positions';
+                filterByHost.appendChild(createPulldown(['none', 'gender', 'positions'], SC.filterBy, v => {
+                    SC.filterBy = v;
+                    scRefreshAnims();
+                    scRefreshTags();
+                }));
+            }
             scApplyModeChrome();
             scEnsurePositionSeed();
             scRenderPositions();
@@ -3088,14 +3099,29 @@
 
         function scBuildFilter() {
             const filter = { _actor_count: SC.positions.length, _must_tags: SC.tags, _suppress_tags: SC.suppress, _require_all: SC.tags.length > 0 };
+            const mode = SC.filterBy || 'positions';
             const hasCreature = SC.positions.some(p => (p._gender | 0) >= 2 || (p._race_key || ''));
             filter._creature = hasCreature ? 'require' : 'exclude';
-            if (hasCreature || document.getElementById('sc-filter-positions').checked) {
+            if (mode === 'positions') {
                 filter._position_match = true;
                 filter._pos_genders = SC.positions.map(p => (p._gender != null ? p._gender : 0));
-            }
-            if (hasCreature) {
-                filter._pos_race_keys = SC.positions.map(p => (p._race_key || '').toLowerCase());
+                if (hasCreature) {
+                    filter._pos_race_keys = SC.positions.map(p => (p._race_key || '').toLowerCase());
+                }
+            } else if (mode === 'gender') {
+                let males = 0, females = 0, maleCreatures = 0, femaleCreatures = 0;
+                SC.positions.forEach(p => {
+                    const g = p._gender | 0;
+                    if (g === 0) males++;
+                    else if (g === 1) females++;
+                    else if (g === 2) maleCreatures++;
+                    else if (g === 3) femaleCreatures++;
+                });
+                filter._gender_match = true;
+                filter._males = males;
+                filter._females = females;
+                filter._male_creatures = maleCreatures;
+                filter._female_creatures = femaleCreatures;
             }
             if (document.getElementById('sc-filter-has-description').checked) {
                 filter._has_description = true;
@@ -3201,6 +3227,12 @@
             return false;
         }
 
+        function scGenderPosKey(a) {
+            return (a._pos_genders || []).map(g =>
+                ((g | 0) === 0 || (g | 0) === 2) ? 'M' : 'F'
+            ).join('');
+        }
+
         function sortAnimListRows(anims, opts) {
             const active = opts && opts.active;
             const inThread = new Set((opts && opts.inThread) || []);
@@ -3225,7 +3257,11 @@
                 }
                 const da = scAnimHasDescription(a) ? 1 : 0;
                 const db = scAnimHasDescription(b) ? 1 : 0;
-                return db - da;
+                if (db !== da) return db - da;
+                const ga = scGenderPosKey(a);
+                const gb = scGenderPosKey(b);
+                if (ga !== gb) return ga < gb ? -1 : 1;
+                return 0;
             });
             return indices;
         }

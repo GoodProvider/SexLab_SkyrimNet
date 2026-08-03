@@ -86,6 +86,16 @@ namespace PapyrusBindings_WebUI
             }
             if (j.contains("_has_description") && j["_has_description"].is_boolean())
                 spec.has_description = j["_has_description"].get<bool>();
+            if (j.contains("_gender_match") && j["_gender_match"].is_boolean())
+                spec.gender_match = j["_gender_match"].get<bool>();
+            if (j.contains("_males") && j["_males"].is_number_integer())
+                spec.males = j["_males"].get<int>();
+            if (j.contains("_females") && j["_females"].is_number_integer())
+                spec.females = j["_females"].get<int>();
+            if (j.contains("_male_creatures") && j["_male_creatures"].is_number_integer())
+                spec.male_creatures = j["_male_creatures"].get<int>();
+            if (j.contains("_female_creatures") && j["_female_creatures"].is_number_integer())
+                spec.female_creatures = j["_female_creatures"].get<int>();
         } catch (...) {
             webui_log::warn("ParseFilterJson failed");
         }

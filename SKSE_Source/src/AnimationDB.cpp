@@ -419,6 +419,17 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
                 }
             }
 
+            if (spec.gender_match) {
+                if (spec.males >= 0 && row.males != spec.males)
+                    return false;
+                if (spec.females >= 0 && row.females != spec.females)
+                    return false;
+                if (spec.male_creatures >= 0 && row.male_creatures != spec.male_creatures)
+                    return false;
+                if (spec.female_creatures >= 0 && row.female_creatures != spec.female_creatures)
+                    return false;
+            }
+
             if (spec.has_description) {
                 bool any = false;
                 for (int v : row.stage_has_description) {
