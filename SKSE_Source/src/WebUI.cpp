@@ -418,6 +418,32 @@ void InitWebUI()
             PapyrusBindings_WebUI::HandleAnimDbQuery(value);
         });
 
+        PrismaUI->RegisterJSListener(g_view, "onNearbyRangeChange", [](const char* value) {
+            if (!value)
+                return;
+            float range = 100.f;
+            try {
+                auto j = nlohmann::json::parse(value);
+                if (j.is_object() && j.contains("_range") && j["_range"].is_number())
+                    range = j["_range"].get<float>();
+                else if (j.is_number())
+                    range = j.get<float>();
+            } catch (...) {
+                try {
+                    range = std::stof(value);
+                } catch (...) {
+                    webui_log::warn("onNearbyRangeChange: bad payload {}", value);
+                    return;
+                }
+            }
+            if (!PapyrusBindings_WebUI::SetNearbyRadius(range)) {
+                webui_log::warn("onNearbyRangeChange: invalid range {}", range);
+                return;
+            }
+            webui_log::info("onNearbyRangeChange range={}", PapyrusBindings_WebUI::GetNearbyRadius());
+            PapyrusBindings_WebUI::PopulateNearbyActors(PapyrusBindings_WebUI::GetNearbyRadius());
+        });
+
         PrismaUI->RegisterJSListener(g_view, "onResolveActorMeta", [](const char* value) {
             if (!value)
                 return;

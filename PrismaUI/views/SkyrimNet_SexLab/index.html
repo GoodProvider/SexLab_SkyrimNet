@@ -213,6 +213,66 @@
             min-width: 0;
         }
 
+        #sc-header-row1 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+
+        #sc-header-row1 .target-row {
+            margin: 0;
+            flex: 1;
+            min-width: 0;
+        }
+
+        #sc-header-row1 #sc-action-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            padding: 0;
+            border: none;
+            flex-shrink: 0;
+        }
+
+        #sc-header-row2 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 0 0 10px;
+            font-size: calc(var(--fs) * 0.75);
+            flex-shrink: 0;
+        }
+
+        #sc-header-row2 .compact-row {
+            margin: 0;
+            gap: 6px;
+            flex-wrap: nowrap;
+        }
+
+        #sc-header-row2 #sc-range-style-cluster {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: nowrap;
+            flex-shrink: 0;
+        }
+
+        #sc-header-row2 #sc-intent {
+            min-width: 120px;
+            flex: 1;
+            font-size: inherit;
+        }
+
+        #sc-header-row2 #sc-preset-name {
+            width: 90px;
+            font-size: inherit;
+        }
+
         .sc-anims-section {
             margin-top: 12px;
             padding-top: 12px;
@@ -332,6 +392,13 @@
             width: 100%;
         }
 
+        .sc-positions-scroll {
+            max-height: 22em;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
         #sc-positions-table .col-idx,
         #sc-positions-table .col-move,
         #sc-positions-table .col-name,
@@ -366,17 +433,19 @@
             background: var(--accent-glow);
         }
 
-        #sc-positions-table tr.pos-unselected td {
-            color: var(--text-muted);
-            opacity: 0.75;
-        }
-
-        #sc-positions-table td.col-name {
+        #sc-positions-table td.col-name,
+        #sc-positions-table td.col-idx {
             cursor: pointer;
         }
 
-        #sc-positions-table td.col-name:hover {
+        #sc-positions-table td.col-name:hover,
+        #sc-positions-table td.col-idx:hover {
             color: var(--accent);
+        }
+
+        #sc-positions-table tr.pos-excluded {
+            color: var(--text-muted);
+            opacity: 0.75;
         }
 
         .mod-chip-list {
@@ -921,40 +990,44 @@
 
     <div id="main-panel-host">
     <div id="scene-creator-panel" class="panel" style="display:none">
-        <div class="target-row">Scene Menu</div>
-        <div class="compact-row" style="margin-bottom:8px">
+        <div id="sc-header-row1">
+            <div class="target-row">Scene Menu</div>
+            <div class="bottom-bar" id="sc-action-bar">
+                <div class="action-btn" id="sc-btn-start" onclick="scStart()">Start</div>
+                <div class="option-cancel" id="sc-btn-cancel" onclick="scCancel()">Cancel</div>
+                <div class="option-cancel" id="sc-btn-stop" onclick="scStop()" style="display:none">Stop</div>
+            </div>
+        </div>
+        <div id="sc-header-row2" class="compact-row">
             <span>scene</span>
             <div id="sc-scene-connection-pulldown"></div>
-        </div>
-        <div class="bottom-bar" id="sc-action-bar" style="margin-top:0; padding-top:0; border-top:none; margin-bottom:12px">
-            <div class="action-btn" id="sc-btn-start" onclick="scStart()">Start</div>
-            <div class="option-cancel" id="sc-btn-cancel" onclick="scCancel()">Cancel</div>
-            <div class="option-cancel" id="sc-btn-stop" onclick="scStop()" style="display:none">Stop</div>
-        </div>
-        <div class="compact-row" id="sc-preset-row">
+            <span id="sc-range-style-cluster">
+                <span>style</span>
+                <div id="sc-style-pulldown"></div>
+                <span>range</span>
+                <div id="sc-range-pulldown"></div>
+            </span>
             <span>activity</span>
-            <input id="sc-intent" type="text" style="flex:1; min-width:200px" />
+            <input id="sc-intent" type="text" />
             <span>preset</span>
             <div id="sc-preset-pulldown"></div>
-            <input id="sc-preset-name" type="text" placeholder="name" style="width:110px" />
+            <input id="sc-preset-name" type="text" placeholder="name" />
             <div class="action-btn" id="sc-btn-load" onclick="scLoadPreset()">Load</div>
             <div class="action-btn" id="sc-btn-save" onclick="scSavePreset()">Save</div>
         </div>
         <div class="sc-split-row">
             <div class="sc-col-positions">
                 <div class="section-header">Positions</div>
-                <table class="data-table" id="sc-positions-table"><thead><tr>
-                    <th class="col-idx">#</th>
-                    <th class="col-move"></th>
-                    <th class="col-name">name</th>
-                    <th class="col-dressed">dressed</th>
-                    <th class="col-o">O</th>
-                    <th class="col-v">V</th>
-                    <th class="col-mods">modifiers</th>
-                </tr></thead><tbody></tbody></table>
-                <div class="compact-row">
-                    <span>style</span>
-                    <div id="sc-style-pulldown"></div>
+                <div class="sc-positions-scroll">
+                    <table class="data-table" id="sc-positions-table"><thead><tr>
+                        <th class="col-idx">#</th>
+                        <th class="col-move"></th>
+                        <th class="col-name">name</th>
+                        <th class="col-dressed">dressed</th>
+                        <th class="col-o">O</th>
+                        <th class="col-v">V</th>
+                        <th class="col-mods">modifiers</th>
+                    </tr></thead><tbody></tbody></table>
                 </div>
             </div>
             <div class="sc-col-tags">
@@ -1799,11 +1872,17 @@
             if (host) host.innerHTML = '';
         }
 
-        function setTargetActor(uuid, name) {
-            targetActor = { uuid, name };
-            actorNames[uuid] = name;
+        function setTargetActor(uuid, name, formId) {
+            targetActor = {
+                uuid: String(uuid != null ? uuid : '0'),
+                name: name || '',
+                formId: formId != null ? formId : 0
+            };
+            if (targetActor.uuid && targetActor.uuid !== '0')
+                actorNames[targetActor.uuid] = targetActor.name;
             const el = document.getElementById('target-name');
             if (el) el.textContent = name || 'Target';
+            if (typeof scRenderPositions === 'function') scRenderPositions();
         }
 
         function isActorMapping(m) {
@@ -2112,12 +2191,14 @@
             nearbyActors = (actors || []).map(a => ({
                 name: a.name || '',
                 uuid: String(a.uuid != null ? a.uuid : ''),
-                formId: a.formId != null ? a.formId : (a.form_id != null ? a.form_id : 0)
+                formId: a.formId != null ? a.formId : (a.form_id != null ? a.form_id : 0),
+                dist: a.dist != null ? Number(a.dist) : Number.POSITIVE_INFINITY
             }));
             actorNames = {};
             for (const a of nearbyActors) actorNames[a.uuid] = a.name;
             if (playerActor && playerActor.uuid) actorNames[playerActor.uuid] = playerActor.name;
             renderNearby();
+            if (typeof scEnsurePositionSeed === 'function') scEnsurePositionSeed();
             if (typeof scRenderPositions === 'function') scRenderPositions();
         }
 
@@ -2350,6 +2431,8 @@
 
         /// Called once from C++ SwitchMainPanel when selecting Scene Menu / Animation.
         function mainPanelDidOpen() {
+            // Custom already configured SC with positions; connection "new" provisional would wipe them.
+            if (SC.from_target_menu && (SC.positions || []).length) return;
             requestSceneConnectionChange(sceneConnectionId());
         }
 
@@ -2397,8 +2480,27 @@
             nextRegistry: '',
             playedRegistries: [],
             stage: 1,
-            stageCount: 0
+            stageCount: 0,
+            nearbyRange: 100
         };
+
+        const SC_NEARBY_RANGES = [100, 200, 400, 800, 1600];
+
+        function scRenderRangePulldown() {
+            const host = document.getElementById('sc-range-pulldown');
+            if (!host) return;
+            const labels = SC_NEARBY_RANGES.map(String);
+            const cur = String(SC.nearbyRange || 100);
+            host.innerHTML = '';
+            host.appendChild(createPulldown(labels, cur, v => {
+                const n = parseInt(v, 10);
+                if (!SC_NEARBY_RANGES.includes(n) || n === SC.nearbyRange) return;
+                SC.nearbyRange = n;
+                if (typeof window.onNearbyRangeChange === 'function') {
+                    window.onNearbyRangeChange(JSON.stringify({ _range: n }));
+                }
+            }));
+        }
 
         function configureSceneCreator(state) {
             applySceneConnectionFromState(Object.assign({ _mode: state._mode || 'creator' }, state));
@@ -2453,11 +2555,13 @@
                 SC.style = v;
                 if (SC.mode === 'active') scLiveUpdate();
             }));
+            scRenderRangePulldown();
             const typeHost = document.getElementById('sc-type-pulldown');
             typeHost.innerHTML = '';
             const typeValues = ['any'].concat(SC.groupOrder);
             typeHost.appendChild(createPulldown(typeValues, 'any', v => { SC.tagType = v; scRefreshTags(); }));
             scApplyModeChrome();
+            scEnsurePositionSeed();
             scRenderPositions();
             scRenderTagChips();
             if (SC.mode === 'creator') scEnrichActorMeta();
@@ -2548,30 +2652,116 @@
             const set = new Set();
             (SC.positions || []).forEach(p => {
                 const u = scPosUuid(p);
-                if (u) set.add(u);
+                if (u && u !== '0') set.add(u);
+            });
+            return set;
+        }
+
+        function scSelectedFormIdSet() {
+            const set = new Set();
+            (SC.positions || []).forEach(p => {
+                const fid = Number((p && (p._form_id != null ? p._form_id : p.formId)) || 0);
+                if (fid) set.add(fid);
             });
             return set;
         }
 
         function scNearbyPool() {
             const byUuid = new Map();
-            if (playerActor && playerActor.uuid && playerActor.uuid !== '0') {
-                byUuid.set(String(playerActor.uuid), {
-                    name: playerActor.name || 'Player',
-                    uuid: String(playerActor.uuid),
-                    formId: playerActor.formId || 0
-                });
-            }
+            const distByKey = new Map();
             (nearbyActors || []).forEach(a => {
                 const u = String(a.uuid || '');
+                if (u && u !== '0') distByKey.set(u, a.dist != null ? Number(a.dist) : Number.POSITIVE_INFINITY);
+                const fid = Number(a.formId || 0);
+                if (fid) distByKey.set('f:' + fid, a.dist != null ? Number(a.dist) : Number.POSITIVE_INFINITY);
+            });
+            const addPool = (name, uuid, formId, preferDist) => {
+                let u = String(uuid || '');
+                const fid = Number(formId || 0);
+                if ((!u || u === '0') && fid) u = String(fid);
                 if (!u || u === '0') return;
+                let dist = preferDist != null ? Number(preferDist) : Number.POSITIVE_INFINITY;
+                if (!Number.isFinite(dist)) {
+                    if (distByKey.has(u)) dist = distByKey.get(u);
+                    else if (fid && distByKey.has('f:' + fid)) dist = distByKey.get('f:' + fid);
+                }
+                const prev = byUuid.get(u);
+                if (prev && Number.isFinite(prev.dist) && prev.dist <= dist) return;
                 byUuid.set(u, {
-                    name: a.name || actorNames[u] || u,
+                    name: name || actorNames[u] || u,
                     uuid: u,
-                    formId: a.formId != null ? a.formId : 0
+                    formId: fid,
+                    dist: Number.isFinite(dist) ? dist : Number.POSITIVE_INFINITY
                 });
+            };
+            if (playerActor) {
+                addPool(playerActor.name || 'Player', playerActor.uuid, playerActor.formId);
+            }
+            if (targetActor) {
+                // Target is the distance anchor when present → treat as nearest (0).
+                addPool(targetActor.name || 'Target', targetActor.uuid, targetActor.formId, 0);
+            }
+            (nearbyActors || []).forEach(a => {
+                addPool(a.name, a.uuid, a.formId != null ? a.formId : 0, a.dist);
             });
             return [...byUuid.values()];
+        }
+
+        function scPoolIsPlayer(a) {
+            if (!a || !playerActor) return false;
+            const pu = String(playerActor.uuid || '');
+            if (pu && pu !== '0' && a.uuid === pu) return true;
+            const pf = Number(playerActor.formId || 0);
+            return pf && Number(a.formId || 0) === pf;
+        }
+
+        function scPosFromPool(a) {
+            return {
+                _name: a.name || '',
+                _uuid: a.uuid,
+                _form_id: a.formId || 0,
+                _dressed: 0,
+                _no_orgasm: 0,
+                _victim: 0,
+                _speaking: '_pleasure_',
+                _gender: 0,
+                _race_key: ''
+            };
+        }
+
+        /// When Include is empty, seed from soft nearby: solo player @0; else nearest-to-target @0, player @1.
+        function scEnsurePositionSeed() {
+            if (SC.mode === 'active') return;
+            if ((SC.positions || []).length) return;
+            const pool = scNearbyPool();
+            if (!pool.length) return;
+
+            const byDist = (a, b) => (a.dist - b.dist) || (a.name || '').localeCompare(b.name || '');
+            let pos0 = null;
+            let pos1 = null;
+
+            if (pool.length === 1) {
+                pos0 = pool[0];
+            } else {
+                const nonPlayer = pool.filter(a => !scPoolIsPlayer(a)).sort(byDist);
+                const allSorted = [...pool].sort(byDist);
+                pos0 = nonPlayer.length ? nonPlayer[0] : allSorted[0];
+                const player = pool.find(a => scPoolIsPlayer(a));
+                if (player && player.uuid !== pos0.uuid) pos1 = player;
+            }
+
+            const seeded = [];
+            if (pos0) seeded.push(scPosFromPool(pos0));
+            if (pos1) seeded.push(scPosFromPool(pos1));
+            if (!seeded.length) return;
+
+            SC.positions = seeded;
+            const formIds = seeded.map(p => p._form_id).filter(id => id);
+            if (formIds.length && typeof window.onResolveActorMeta === 'function') {
+                const id = 'e' + (++SC.metaQueryId);
+                scRequestActorMeta(formIds, id);
+            }
+            scOnActorCountChanged();
         }
 
         function scOnActorCountChanged() {
@@ -2688,19 +2878,57 @@
             scRefreshAnims();
         }
 
+        function scFindPosIndex(uuid, formId) {
+            const u = String(uuid || '');
+            const fid = Number(formId || 0);
+            for (let i = 0; i < (SC.positions || []).length; i++) {
+                const p = SC.positions[i];
+                const pu = scPosUuid(p);
+                if (u && pu && pu === u) return i;
+                const pf = Number((p && (p._form_id != null ? p._form_id : p.formId)) || 0);
+                if (fid && pf && pf === fid) return i;
+            }
+            return -1;
+        }
+
+        function scToggleInclude(uuid, formId) {
+            const i = scFindPosIndex(uuid, formId);
+            if (i >= 0) {
+                scUnselectPos(i);
+                return;
+            }
+            let u = String(uuid || '');
+            if ((!u || u === '0') && formId) {
+                const pool = scNearbyPool().find(a => Number(a.formId) === Number(formId));
+                if (pool) u = pool.uuid;
+            }
+            scSelectNearby(u);
+        }
+
         function scRenderPositions() {
             const tbody = document.querySelector('#sc-positions-table tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
             const selectedSet = scSelectedUuidSet();
+            const selectedFormIds = scSelectedFormIdSet();
+
+            const emptyTd = (cls) => {
+                const td = document.createElement('td');
+                if (cls) td.className = cls;
+                td.textContent = '';
+                return td;
+            };
 
             SC.positions.forEach((p, i) => {
                 const mods = scParseMods(p);
                 const tr = document.createElement('tr');
+                const uuid = scPosUuid(p);
+                const formId = Number((p._form_id != null ? p._form_id : p.formId) || 0);
 
                 const tdIdx = document.createElement('td');
                 tdIdx.className = 'col-idx';
                 tdIdx.textContent = String(i);
+                tdIdx.onclick = (e) => { e.stopPropagation(); scToggleInclude(uuid, formId); };
 
                 const tdMove = document.createElement('td');
                 tdMove.className = 'col-move';
@@ -2723,7 +2951,7 @@
                 const tdName = document.createElement('td');
                 tdName.className = 'col-name';
                 tdName.textContent = p._name || p.name || '';
-                tdName.onclick = (e) => { e.stopPropagation(); scUnselectPos(i); };
+                tdName.onclick = (e) => { e.stopPropagation(); scToggleInclude(uuid, formId); };
 
                 const tdDressed = document.createElement('td');
                 tdDressed.className = 'col-dressed';
@@ -2769,40 +2997,35 @@
                 tbody.appendChild(tr);
             });
 
-            scNearbyPool().forEach(a => {
-                if (selectedSet.has(a.uuid)) return;
+            const excluded = scNearbyPool()
+                .filter(a => {
+                    if (selectedSet.has(a.uuid)) return false;
+                    if (a.formId && selectedFormIds.has(Number(a.formId))) return false;
+                    return true;
+                })
+                .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+            excluded.forEach(a => {
                 const tr = document.createElement('tr');
-                tr.className = 'pos-unselected';
-                const empty = () => {
-                    const td = document.createElement('td');
-                    td.textContent = '';
-                    return td;
-                };
+                tr.className = 'pos-excluded';
+
                 const tdIdx = document.createElement('td');
                 tdIdx.className = 'col-idx';
                 tdIdx.textContent = '';
-                const tdMove = empty();
-                tdMove.className = 'col-move';
+                tdIdx.onclick = (e) => { e.stopPropagation(); scToggleInclude(a.uuid, a.formId); };
+
                 const tdName = document.createElement('td');
                 tdName.className = 'col-name';
-                tdName.colSpan = 1;
                 tdName.textContent = a.name;
-                tdName.onclick = () => scSelectNearby(a.uuid);
-                const tdDressed = empty();
-                tdDressed.className = 'col-dressed';
-                const tdO = empty();
-                tdO.className = 'col-o';
-                const tdV = empty();
-                tdV.className = 'col-v';
-                const tdMods = empty();
-                tdMods.className = 'col-mods';
+                tdName.onclick = (e) => { e.stopPropagation(); scToggleInclude(a.uuid, a.formId); };
+
                 tr.appendChild(tdIdx);
-                tr.appendChild(tdMove);
+                tr.appendChild(emptyTd('col-move'));
                 tr.appendChild(tdName);
-                tr.appendChild(tdDressed);
-                tr.appendChild(tdO);
-                tr.appendChild(tdV);
-                tr.appendChild(tdMods);
+                tr.appendChild(emptyTd('col-dressed'));
+                tr.appendChild(emptyTd('col-o'));
+                tr.appendChild(emptyTd('col-v'));
+                tr.appendChild(emptyTd('col-mods'));
                 tbody.appendChild(tr);
             });
         }
@@ -3183,8 +3406,26 @@
             live: false
         };
 
+        /// Selected (new) or in-thread (active) anims for AnimationPanel, sorted, max 10.
         function amCandidateAnims() {
-            return SC.lastAnims || [];
+            const byReg = new Map();
+            (SC.lastAnims || []).forEach(a => {
+                if (a && a._registry) byReg.set(a._registry, a);
+            });
+            const active = isSceneConnectionActive() || SC.mode === 'active';
+            const regs = active
+                ? (SC.inThreadRegistries || []).filter(Boolean)
+                : scSelectedRegistries();
+            const anims = regs.map(reg => byReg.get(reg) || { _registry: reg, _name: reg });
+            const indices = sortAnimListRows(anims, {
+                active: active,
+                inThread: SC.inThreadRegistries,
+                activeRegistry: SC.activeRegistry,
+                isSelected: (reg) => active
+                    ? (SC.inThreadRegistries || []).includes(reg)
+                    : !SC.deselectedRegistries.includes(reg)
+            });
+            return indices.map(i => anims[i]).slice(0, 10);
         }
 
         function amSyncAnimListFromScene() {
@@ -3200,16 +3441,7 @@
             }
             const regs = anims.map(a => a._registry).filter(Boolean);
             if (!AM.focusRegistry || !regs.includes(AM.focusRegistry)) {
-                const sorted = sortAnimListRows(anims, {
-                    active: isSceneConnectionActive(),
-                    inThread: SC.inThreadRegistries,
-                    activeRegistry: SC.activeRegistry,
-                    isSelected: (reg) => SC.mode === 'active'
-                        ? (SC.inThreadRegistries || []).includes(reg)
-                        : !SC.deselectedRegistries.includes(reg)
-                });
-                const first = anims[sorted[0]];
-                AM.focusRegistry = (first && first._registry) || regs[0];
+                AM.focusRegistry = (anims[0] && anims[0]._registry) || regs[0];
                 amLoadFocusRegistry();
             }
         }
@@ -3218,17 +3450,7 @@
             const host = document.getElementById('am-anims-list');
             if (!host) return;
             const anims = amCandidateAnims();
-            const inThread = new Set(SC.inThreadRegistries || []);
-            const indices = sortAnimListRows(anims, {
-                active: isSceneConnectionActive(),
-                inThread: SC.inThreadRegistries,
-                activeRegistry: SC.activeRegistry,
-                isSelected: (reg) => SC.mode === 'active'
-                    ? inThread.has(reg)
-                    : !SC.deselectedRegistries.includes(reg)
-            });
-            const rows = indices.map((i) => {
-                const a = anims[i];
+            const rows = anims.map((a) => {
                 const reg = a._registry || '';
                 const focus = reg === AM.focusRegistry;
                 const an = isSceneConnectionActive() ? scAnimAnLetter(reg) : '';
@@ -3252,7 +3474,8 @@
 
         function amLoadFocusRegistry() {
             const reg = AM.focusRegistry;
-            const a = (SC.lastAnims || []).find(x => x._registry === reg);
+            const a = (SC.lastAnims || []).find(x => x._registry === reg)
+                || amCandidateAnims().find(x => x._registry === reg);
             if (!a) {
                 AM.positions = [];
                 AM.stages = [];
@@ -3261,10 +3484,25 @@
                 amRenderStages();
                 return;
             }
+            const rich = (a._stage_count != null)
+                || (a._stage_descriptions && Object.keys(a._stage_descriptions).length)
+                || (a._pos_genders && a._pos_genders.length)
+                || (a._position_count != null);
             AM.registry = reg;
             AM._registry = reg;
             document.getElementById('am-title').textContent = a._name || reg || 'Animation';
             document.getElementById('am-subtitle').textContent = reg || '';
+            if (!rich) {
+                // Registry-only stub until AnimDb query row arrives.
+                document.getElementById('am-tags').innerHTML = '';
+                AM.positions = [];
+                AM.stages = [];
+                AM.dirty = false;
+                amApplyLiveChrome();
+                amRenderPositions();
+                amRenderStages();
+                return;
+            }
             document.getElementById('am-tags').innerHTML = (a._tags || '').split(',').filter(Boolean)
                 .map(t => `<span class="tag-chip">${t}</span>`).join('');
             const n = a._position_count || (a._pos_genders || []).length || 0;

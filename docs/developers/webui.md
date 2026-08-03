@@ -33,14 +33,14 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 - Both panels share a top **scene** pulldown: `new` (Scene Creator pool) plus each active scene labeled with `GetIntentMessage` (status message).
 - JS `onSceneConnectionChange` → Papyrus `WebUI_OnSceneConnectionChange`; list via `SceneConnections_Show` / `WebUI_OnSceneConnectionsRefresh`.
 - **Scene Menu** (`scene_creator_panel`): multi-select anim pool. On `new`: Start/Cancel. On active scene: Stop, A/N column, Update (SexLab in-thread cap 128), stage prev/next.
-- **AnimationPanel**: single-select focus registry; positions are anim-slot / AnimDb (not actors). Prev/Next/Stop enabled only on an active scene connection. Done saves AnimDb (`onAnimRegistrySave` when not live).
+- **AnimationPanel**: top list is sorted SceneMenu **selected** (`new`) or **in-thread** (active) registries, capped at **10**, single-select focus; positions are anim-slot / AnimDb (not actors). Prev/Next/Stop enabled only on an active scene connection. Done saves AnimDb (`onAnimRegistrySave` when not live).
 
 ## Lifecycle
 
 - `kDataLoaded`: PrismaUI API, `CreateView("SkyrimNet_SexLab/index.html")`, JS listeners.
 - `kPostLoadGame` / `kNewGame`: `WebUI_SetGameReady()` (enables input; reloads ActionCatalog from `webui/`; `configureMainMenu`).
 - DomReady / game-ready: `configureMainMenu(BuildMainPanelsCatalog())`.
-- Pulldown → JS `onMainPanelChange` → C++ `SwitchMainPanel` (close previous, open next). On key change to Scene Menu / Animation, C++ invokes `mainPanelDidOpen()` → soft connection load (`WebUI_OnSceneConnectionChange` → `SceneCreator_Configure` / `Animation_Menu_Configure`, no HideAll/showPanel). Full `SceneCreator_Open` / `Animation_Menu_Show` remain for YesNo / Custom / hotkey.
+- Pulldown → JS `onMainPanelChange` → C++ `SwitchMainPanel` (close previous, open next). On key change to Scene Menu / Animation, C++ invokes `mainPanelDidOpen()` → soft connection load (`WebUI_OnSceneConnectionChange` → `SceneCreator_Configure` / `Animation_Menu_Configure`, no HideAll/showPanel). SceneMenu **Update** (`WebUI_OnAnimUpdate`) also refreshes via Configure. Full `SceneCreator_Open` / `Animation_Menu_Show` remain for YesNo / Custom / hotkey.
 - Papyrus → C++ open; C++ → JS `showPanel` for `target_menu_panel` / `sex_menu_panel` / `scene_creator_panel` / `animation_menu_panel` (SC/AM auto-select the matching main_panel entry; idempotent if already selected).
 - Catalog: `menu/target/` + `actions_index.json` + `main_panels/`; **Start** merges params and dispatches; **Custom** opens Scene Creator.
 

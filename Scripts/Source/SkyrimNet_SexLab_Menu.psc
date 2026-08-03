@@ -539,3 +539,56 @@ String Function SexRapeSelection(String current)
     endif
     return current
 EndFunction
+; Soft C++ gate + StorageUtil scene lock + SexLab IsValidActor (pre-check 3D to avoid WaitMenuMode).
+bool Function IsAvailableActor(Actor akActor)
+    if akActor == None
+        return false
+    endif
+    if !SkyrimNet_SexLab_WebUI.IsAvailableActor(akActor)
+        return false
+    endif
+    if StorageUtil.HasIntValue(akActor, "skyrimnet_sexlab_scene_actor_lock")
+        return false
+    endif
+    if !akActor.Is3DLoaded()
+        return false
+    endif
+    if main == None || main.sexlab == None
+        return false
+    endif
+    return main.sexlab.IsValidActor(akActor)
+EndFunction
+
+; C++ ProcessLists CSV of form IDs -> filter -> SetNearbyActorsJson (names resolved in C++).
+Function WebUI_PushAvailableNearby(String formIdCsv)
+    if formIdCsv == ""
+        SkyrimNet_SexLab_WebUI.SetNearbyActorsJson("[]")
+        return
+    endif
+
+    String[] parts = StringUtil.Split(formIdCsv, ",")
+    if parts == None || parts.Length == 0
+        SkyrimNet_SexLab_WebUI.SetNearbyActorsJson("[]")
+        return
+    endif
+
+    String json = "["
+    int n = 0
+    int i = 0
+    while i < parts.Length
+        if parts[i] != ""
+            int formId = parts[i] as int
+            Actor ak = Game.GetFormEx(formId) as Actor
+            if ak && IsAvailableActor(ak)
+                if n > 0
+                    json += ","
+                endif
+                json += "{\"formId\":" + formId + "}"
+                n += 1
+            endif
+        endif
+        i += 1
+    endwhile
+    json += "]"
+    SkyrimNet_SexLab_WebUI.SetNearbyActorsJson(json)
+EndFunction

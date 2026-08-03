@@ -631,9 +631,15 @@ namespace ActionCatalog
 
         std::string ActorUuidDecimal(RE::Actor* actor)
         {
-            if (!actor || !PublicFormIDToUUID)
+            if (!actor)
                 return "0";
-            return std::to_string(PublicFormIDToUUID(actor->GetFormID()));
+            if (PublicFormIDToUUID) {
+                uint64_t uuid = PublicFormIDToUUID(actor->GetFormID());
+                if (uuid)
+                    return std::to_string(uuid);
+            }
+            // Fallback so Positions rows stay distinct when SkyrimNet UUID is unavailable.
+            return std::to_string(static_cast<unsigned>(actor->GetFormID()));
         }
 
         std::string ActorDisplayName(RE::Actor* actor)
@@ -677,8 +683,41 @@ namespace ActionCatalog
         // SceneCreatorOpenedForPending still tracks that SC was opened from TargetMenu.
 
         ResolvedSceneParams params;
-        if (!ResolveSceneParams(actionName, uiParameters, player, focusTarget, params)) {
-            webui_log::error("OpenSceneCreatorFromTargetMenu: resolve failed for {}", actionName);
+        const bool resolved = ResolveSceneParams(actionName, uiParameters, player, focusTarget, params);
+        if (!resolved) {
+            webui_log::warn(
+                "OpenSceneCreatorFromTargetMenu: resolve failed for {} — falling back to focus+player seed",
+                actionName);
+            params.speaker = player;
+            params.target = focusTarget;
+            params.victim = nullptr;
+            params.participate = nullptr;
+            params.intent = actionName;
+            params.style = "normally";
+            params.method = "";
+            if (!params.speaker && !params.target) {
+                webui_log::error("OpenSceneCreatorFromTargetMenu: no speaker/target to seed");
+                return false;
+            }
+        }
+
+        // Scene Menu UI seed order (ignore direction): target@0, speaker@1, participate@2+.
+        // BuildActorOrder remains for Start / ExecuteAction only.
+        RE::Actor* seedTarget = params.target ? params.target : focusTarget;
+        RE::Actor* seedSpeaker = params.speaker ? params.speaker : player;
+        std::vector<RE::Actor*> seedOrder;
+        seedOrder.reserve(3);
+        if (seedTarget)
+            seedOrder.push_back(seedTarget);
+        if (seedSpeaker && seedSpeaker != seedTarget)
+            seedOrder.push_back(seedSpeaker);
+        if (params.participate && params.participate != seedTarget && params.participate != seedSpeaker)
+            seedOrder.push_back(params.participate);
+        if (seedOrder.empty() && seedSpeaker)
+            seedOrder.push_back(seedSpeaker);
+
+        if (seedOrder.empty()) {
+            webui_log::error("OpenSceneCreatorFromTargetMenu: empty position seed");
             return false;
         }
 
@@ -689,7 +728,7 @@ namespace ActionCatalog
         state["_style"] = params.style.empty() ? "normally" : params.style;
         state["_method"] = params.method;
         state["_event_hook"] = "";
-        state["_num_actors"] = static_cast<int>(params.actorsResolved.size());
+        state["_num_actors"] = static_cast<int>(seedOrder.size());
         state["_tags"] = params.method;
         state["_tags_suppress"] = "";
         state["_scene_presets"] = nlohmann::json::array({ "default" });
@@ -697,7 +736,7 @@ namespace ActionCatalog
         state["_group_order"] = nlohmann::json::array();
 
         nlohmann::json positions = nlohmann::json::array();
-        for (auto* a : params.actorsResolved) {
+        for (auto* a : seedOrder) {
             nlohmann::json po;
             po["_name"] = ActorDisplayName(a);
             po["_uuid"] = ActorUuidDecimal(a);
@@ -719,11 +758,15 @@ namespace ActionCatalog
         WebUI_Invoke("hidePanel('animation_menu_panel');");
         WebUI_Invoke(std::string("configureSceneCreator(") + state.dump() + ");");
         WebUI_Invoke("showPanel('scene_creator_panel');");
+        // Show refreshes nearby (sync soft list → unselected Positions rows).
         WebUI_Visibility_Show();
+
         webui_log::info(
-            "OpenSceneCreatorFromTargetMenu: opened for {} actors={} method={}",
+            "OpenSceneCreatorFromTargetMenu: {} seeded count={} target@0={} speaker@1={} method={}",
             actionName,
-            params.actorsResolved.size(),
+            seedOrder.size(),
+            seedTarget ? ActorDisplayName(seedTarget) : "(none)",
+            (seedSpeaker && seedSpeaker != seedTarget) ? ActorDisplayName(seedSpeaker) : "(none)",
             params.method);
         return true;
     }

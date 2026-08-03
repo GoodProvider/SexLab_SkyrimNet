@@ -8,7 +8,7 @@ Related plan: SceneMenu dual-mode (`scenemenu_dual_mode`).
 
 ## Before commit (this feature branch)
 
-Naming debt left in place to avoid churn during the dual-mode work. Fix before merging if the public surface should match “Scene Menu”:
+Naming debt left in place to avoid churn during the dual-mode work (still deferred after 2026-08-03 AnimationPanel list + soft-refresh follow-up). Fix before merging if the public surface should match “Scene Menu”:
 
 - [ ] Rename main-panel id `scene_creator_panel` → `scene_menu_panel` (JSON catalog, JS builtins, C++ `showPanel` / `SwitchMainPanel` keys, docs).
 - [ ] Rename DOM id `scene-creator-panel` → `scene-menu-panel` (HTML/CSS/JS).

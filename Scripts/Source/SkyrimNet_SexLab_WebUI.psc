@@ -22,3 +22,7 @@ Function ActorAnimMeta_Result(String json) global native
 ; TargetMenu Start: consume one-shot skip so this scene does not open Scene Creator.
 Bool Function ConsumeSkipSceneCreator() global native
 String Function TraceLog(String script_name, String func, String msg) global native
+; Soft availability (dead/combat/SexLab+OStim factions/3D). Papyrus adds StorageUtil + SexLab IsValidActor.
+Bool Function IsAvailableActor(Actor akActor) global native
+; Push filtered nearby actor list JSON [{name,formId},...] — C++ adds uuids and calls setNearbyActors.
+Function SetNearbyActorsJson(String json) global native

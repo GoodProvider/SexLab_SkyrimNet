@@ -6,6 +6,9 @@
 #include "ActionCatalog.h"
 #include "AnimationDB.h"
 #include <nlohmann/json.hpp>
+#include <algorithm>
+#include <cmath>
+#include <vector>
 
 namespace PapyrusBindings_WebUI
 {
@@ -177,7 +180,8 @@ namespace PapyrusBindings_WebUI
         if (!ActionCatalog::IsLoaded())
             ActionCatalog::Load();
 
-        uint64_t uuid = (PublicFormIDToUUID) ? PublicFormIDToUUID(Target_Current->GetFormID()) : 0;
+        const auto targetFormId = Target_Current->GetFormID();
+        uint64_t uuid = (PublicFormIDToUUID) ? PublicFormIDToUUID(targetFormId) : 0;
         std::string skyrimNetName = (uuid && PublicGetActorNameByUUID) ? PublicGetActorNameByUUID(uuid) : "";
         const char* targetName = !skyrimNetName.empty() ? skyrimNetName.c_str() : Target_Current->GetName();
         const char* name = (targetName && targetName[0]) ? targetName : "Unknown";
@@ -192,7 +196,10 @@ namespace PapyrusBindings_WebUI
         auto catalog = ActionCatalog::BuildUICatalog(hasStrippedItems);
         WebUI_Invoke("configureTargetMenu(" + catalog.dump() + ");");
         WebUI_Invoke("configureMainMenu(" + ActionCatalog::BuildMainPanelsCatalog().dump() + ");");
-        WebUI_Invoke(std::format("setTargetActor('{}', '{}');", uuid, EscapeJsString(name)));
+        const std::string uuidStr =
+            uuid ? std::to_string(uuid) : std::to_string(static_cast<unsigned>(targetFormId));
+        WebUI_Invoke(std::format("setTargetActor('{}', '{}', {});", uuidStr, EscapeJsString(name),
+            static_cast<unsigned>(targetFormId)));
 
         bool ostimnet = RE::TESDataHandler::GetSingleton()->LookupModByName("TT_OStimNet.esp") != nullptr;
         const char* fw = "sexlab";
@@ -358,70 +365,244 @@ namespace PapyrusBindings_WebUI
         return RE::BSFixedString(formatted);
     }
 
-    void PopulateNearbyActors()
+    namespace
     {
-        auto* player = RE::PlayerCharacter::GetSingleton();
-        if (player && PublicFormIDToUUID) {
-            uint64_t playerUUID = PublicFormIDToUUID(player->GetFormID());
-            std::string playerName;
-            if (playerUUID && PublicGetActorNameByUUID) {
-                playerName = PublicGetActorNameByUUID(playerUUID);
+        constexpr float kDefaultNearbyRadius = 100.f;
+        float g_nearbyRadius = kDefaultNearbyRadius;
+
+        constexpr float kAllowedRadii[] = { 100.f, 200.f, 400.f, 800.f, 1600.f };
+
+        RE::TESFaction* ResolveSexLabAnimatingFaction()
+        {
+            static RE::TESFaction* cached = nullptr;
+            static bool resolved = false;
+            if (!resolved) {
+                resolved = true;
+                cached = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0xE50F, "SexLab.esm");
             }
-            if (playerName.empty()) {
-                const char* dn = player->GetDisplayFullName();
-                if (dn && dn[0])
-                    playerName = dn;
-            }
-            if (playerName.empty()) {
-                const char* n = player->GetName();
-                playerName = (n && n[0]) ? n : "Player";
-            }
-            WebUI_Invoke(std::format("setPlayerActor('{}', '{}', {});", playerUUID, EscapeJsString(playerName),
-                static_cast<unsigned>(player->GetFormID())));
+            return cached;
         }
 
-        if (PublicGetActorEngagement) {
-            try {
-                std::string raw = PublicGetActorEngagement(20, true, false, 604800.0, 2592000.0);
-                auto arr = nlohmann::json::parse(raw);
-                nlohmann::json nearby = nlohmann::json::array();
-                for (auto& item : arr) {
-                    uint32_t formId = item["formId"].get<uint32_t>();
-                    std::string actorName;
-                    uint64_t actorUUID = PublicFormIDToUUID ? PublicFormIDToUUID(formId) : 0;
-                    if (actorUUID && PublicGetActorNameByUUID) {
-                        actorName = PublicGetActorNameByUUID(actorUUID);
-                    }
-                    if (actorName.empty() && item.contains("name") && item["name"].is_string()) {
-                        actorName = item["name"].get<std::string>();
-                    }
-                    if (actorName.empty()) {
-                        auto* ak = RE::TESForm::LookupByID<RE::Actor>(formId);
-                        if (ak) {
-                            const char* dn = ak->GetDisplayFullName();
-                            if (dn && dn[0])
-                                actorName = dn;
-                            else {
-                                const char* n = ak->GetName();
-                                if (n && n[0])
-                                    actorName = n;
-                            }
-                        }
-                    }
-                    if (actorName.empty())
-                        actorName = "Unknown";
-                    nearby.push_back({
-                        { "name", actorName },
-                        { "uuid", std::to_string(actorUUID) },
-                        { "formId", static_cast<int>(formId) }
-                    });
-                }
-                WebUI_Invoke("setNearbyActors(" + nearby.dump() + ");");
-            } catch (...) {
-                webui_log::warn("PopulateNearbyActors: failed to parse actor engagement JSON");
-                WebUI_Invoke("setNearbyActors([]);");
+        RE::TESFaction* ResolveOstimActorCountFaction()
+        {
+            static RE::TESFaction* cached = nullptr;
+            static bool resolved = false;
+            if (!resolved) {
+                resolved = true;
+                auto* dh = RE::TESDataHandler::GetSingleton();
+                if (dh && dh->LookupModByName("Ostim.esp"))
+                    cached = dh->LookupForm<RE::TESFaction>(0xECA, "Ostim.esp");
+            }
+            return cached;
+        }
+
+        std::string ActorDisplayNameLocal(RE::Actor* actor)
+        {
+            if (!actor)
+                return "Unknown";
+            uint64_t uuid = PublicFormIDToUUID ? PublicFormIDToUUID(actor->GetFormID()) : 0;
+            if (uuid && PublicGetActorNameByUUID) {
+                std::string n = PublicGetActorNameByUUID(uuid);
+                if (!n.empty())
+                    return n;
+            }
+            const char* dn = actor->GetDisplayFullName();
+            if (dn && dn[0])
+                return dn;
+            const char* n = actor->GetName();
+            return (n && n[0]) ? n : "Unknown";
+        }
+
+        void PushNearbyJsonEntry(nlohmann::json& nearby, RE::Actor* actor)
+        {
+            if (!actor)
+                return;
+            const auto formId = actor->GetFormID();
+            uint64_t uuid = PublicFormIDToUUID ? PublicFormIDToUUID(formId) : 0;
+            // Match ActionDispatch ActorUuidDecimal: never emit "0" when formId is known.
+            const std::string uuidStr =
+                uuid ? std::to_string(uuid) : std::to_string(static_cast<unsigned>(formId));
+
+            float dist = 0.f;
+            RE::Actor* anchor = Target_Current ? Target_Current : RE::PlayerCharacter::GetSingleton();
+            if (anchor)
+                dist = actor->GetPosition().GetDistance(anchor->GetPosition());
+
+            nearby.push_back({
+                { "name", ActorDisplayNameLocal(actor) },
+                { "uuid", uuidStr },
+                { "formId", static_cast<int>(formId) },
+                { "dist", dist }
+            });
+        }
+    }
+
+    bool SetNearbyRadius(float radius)
+    {
+        for (float allowed : kAllowedRadii) {
+            if (std::fabs(radius - allowed) < 0.5f) {
+                g_nearbyRadius = allowed;
+                return true;
             }
         }
+        return false;
+    }
+
+    float GetNearbyRadius()
+    {
+        return g_nearbyRadius;
+    }
+
+    /// Soft session checks for the nearby scan. StorageUtil lock + SexLab IsValidActor applied in Papyrus.
+    bool IsAvailableActor(RE::Actor* actor)
+    {
+        if (!actor || actor->IsDeleted())
+            return false;
+        if (!actor->Is3DLoaded())
+            return false;
+        if (actor->IsDead())
+            return false;
+        if (actor->IsInCombat())
+            return false;
+        if (auto* anim = ResolveSexLabAnimatingFaction()) {
+            if (actor->IsInFaction(anim))
+                return false;
+        }
+        if (auto* ostim = ResolveOstimActorCountFaction()) {
+            if (actor->IsInFaction(ostim))
+                return false;
+        }
+        return true;
+    }
+
+    void SetNearbyActorsJson(RE::StaticFunctionTag*, RE::BSFixedString json)
+    {
+        const char* raw = json.c_str() ? json.c_str() : "[]";
+        try {
+            auto arr = nlohmann::json::parse(raw);
+            if (!arr.is_array()) {
+                webui_log::warn("SetNearbyActorsJson: not an array — keeping prior nearby list");
+                return;
+            }
+            if (arr.empty()) {
+                // Non-destructive: Papyrus tighten found nobody; keep C++ soft sync list.
+                webui_log::warn("SetNearbyActorsJson: empty tighten — keeping prior nearby list");
+                return;
+            }
+            nlohmann::json nearby = nlohmann::json::array();
+            for (auto& item : arr) {
+                if (!item.is_object())
+                    continue;
+                uint32_t formId = 0;
+                if (item.contains("formId") && item["formId"].is_number())
+                    formId = item["formId"].get<uint32_t>();
+                else if (item.contains("_form_id") && item["_form_id"].is_number())
+                    formId = item["_form_id"].get<uint32_t>();
+                auto* ak = formId ? RE::TESForm::LookupByID<RE::Actor>(formId) : nullptr;
+                if (!ak)
+                    continue;
+                PushNearbyJsonEntry(nearby, ak);
+            }
+            if (nearby.empty()) {
+                webui_log::warn("SetNearbyActorsJson: no resolvable actors — keeping prior nearby list");
+                return;
+            }
+            std::sort(nearby.begin(), nearby.end(), [](const nlohmann::json& a, const nlohmann::json& b) {
+                return a.value("name", "") < b.value("name", "");
+            });
+            webui_log::info("SetNearbyActorsJson: tightened count={}", nearby.size());
+            WebUI_Invoke("setNearbyActors(" + nearby.dump() + ");");
+        } catch (...) {
+            webui_log::warn("SetNearbyActorsJson: bad JSON — keeping prior nearby list");
+        }
+    }
+
+    void PopulateNearbyActors(float radius)
+    {
+        if (radius > 0.f && SetNearbyRadius(radius)) {
+            // updated
+        } else if (radius > 0.f) {
+            webui_log::warn("PopulateNearbyActors: invalid radius {}, keeping {}", radius, g_nearbyRadius);
+        }
+
+        auto* player = RE::PlayerCharacter::GetSingleton();
+        if (player) {
+            const auto formId = player->GetFormID();
+            uint64_t playerUUID = PublicFormIDToUUID ? PublicFormIDToUUID(formId) : 0;
+            const std::string uuidStr =
+                playerUUID ? std::to_string(playerUUID) : std::to_string(static_cast<unsigned>(formId));
+            std::string playerName = ActorDisplayNameLocal(player);
+            WebUI_Invoke(std::format("setPlayerActor('{}', '{}', {});", uuidStr, EscapeJsString(playerName),
+                static_cast<unsigned>(formId)));
+        }
+
+        if (!player) {
+            WebUI_Invoke("setNearbyActors([]);");
+            return;
+        }
+
+        const float radiusSq = g_nearbyRadius * g_nearbyRadius;
+        const auto playerPos = player->GetPosition();
+        std::vector<RE::Actor*> soft;
+        soft.reserve(32);
+        int considered = 0;
+        bool includedPlayer = false;
+        bool includedTarget = false;
+
+        auto addUnique = [&](RE::Actor* actor) {
+            if (!actor)
+                return;
+            const auto id = actor->GetFormID();
+            for (auto* existing : soft) {
+                if (existing && existing->GetFormID() == id)
+                    return;
+            }
+            soft.push_back(actor);
+        };
+
+        // Player: same soft eligibility as anyone else (not force-seeded).
+        if (IsAvailableActor(player)) {
+            addUnique(player);
+            includedPlayer = true;
+        }
+
+        if (auto* lists = RE::ProcessLists::GetSingleton()) {
+            lists->ForEachHighActor([&](RE::Actor* actor) {
+                if (!actor || actor == player)
+                    return RE::BSContainer::ForEachResult::kContinue;
+                if (actor->IsDeleted())
+                    return RE::BSContainer::ForEachResult::kContinue;
+                ++considered;
+                const float distSq = actor->GetPosition().GetSquaredDistance(playerPos);
+                if (distSq > radiusSq)
+                    return RE::BSContainer::ForEachResult::kContinue;
+                if (!IsAvailableActor(actor))
+                    return RE::BSContainer::ForEachResult::kContinue;
+                addUnique(actor);
+                return RE::BSContainer::ForEachResult::kContinue;
+            });
+        }
+
+        // Target: soft-eligible, even outside radius.
+        if (Target_Current && Target_Current != player && !Target_Current->IsDeleted() &&
+            IsAvailableActor(Target_Current)) {
+            addUnique(Target_Current);
+            includedTarget = true;
+        }
+
+        nlohmann::json nearby = nlohmann::json::array();
+        for (auto* ak : soft)
+            PushNearbyJsonEntry(nearby, ak);
+        std::sort(nearby.begin(), nearby.end(), [](const nlohmann::json& a, const nlohmann::json& b) {
+            return a.value("name", "") < b.value("name", "");
+        });
+
+        webui_log::info(
+            "PopulateNearbyActors: radius={} considered={} soft={} player={} target={}",
+            g_nearbyRadius, considered, soft.size(), includedPlayer, includedTarget);
+
+        // Soft list is authoritative for Positions nearby (no Papyrus IsValidActor overwrite).
+        WebUI_Invoke("setNearbyActors(" + nearby.dump() + ");");
     }
 
     void Call_MultiTarget_Menu_Selection()
@@ -706,6 +887,11 @@ namespace PapyrusBindings_WebUI
         });
     }
 
+    bool IsAvailableActor_Native(RE::StaticFunctionTag*, RE::Actor* actor)
+    {
+        return IsAvailableActor(actor);
+    }
+
     bool Register_WebUI_Functions(RE::BSScript::IVirtualMachine* a_vm)
     {
         if (!a_vm) {
@@ -730,6 +916,8 @@ namespace PapyrusBindings_WebUI
         a_vm->RegisterFunction("ActorAnimMeta_Result", scriptName, ActorAnimMeta_Result);
         a_vm->RegisterFunction("ConsumeSkipSceneCreator", scriptName, ConsumeSkipSceneCreator);
         a_vm->RegisterFunction("TraceLog", scriptName, TraceLog);
+        a_vm->RegisterFunction("SetNearbyActorsJson", scriptName, SetNearbyActorsJson);
+        a_vm->RegisterFunction("IsAvailableActor", scriptName, IsAvailableActor_Native);
 
         webui_log::info("Successfully registered Papyrus functions for {}", scriptName);
         return true;

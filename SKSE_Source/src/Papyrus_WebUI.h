@@ -69,8 +69,16 @@ namespace PapyrusBindings_WebUI {
     /// Registers SkyrimNet_SexLab_WebUI natives on the Papyrus VM.
     bool Register_WebUI_Functions(RE::BSScript::IVirtualMachine* a_vm);
 
+    /// Soft session gate for nearby scan (dead/combat/factions/3D). Papyrus adds StorageUtil + SexLab IsValidActor.
+    bool IsAvailableActor(RE::Actor* actor);
+
     /// Pushes player + nearby actors into JS before showing the overlay.
-    void PopulateNearbyActors();
+    /// radius < 0 keeps the last range (default 100).
+    void PopulateNearbyActors(float radius = -1.f);
+
+    /// Allowed nearby scan radii (MultiTarget-compatible).
+    bool SetNearbyRadius(float radius);
+    float GetNearbyRadius();
 
     /// No crosshair actor: dispatch Papyrus MultiTarget_Menu_Selection picker.
     void Call_MultiTarget_Menu_Selection();

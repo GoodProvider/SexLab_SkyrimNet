@@ -2113,8 +2113,8 @@ Function WebUI_OnAnimUpdate(String json)
     if idx >= 0
         thread.SetAnimation(idx)
         NotePlayedRegistry(next_reg)
-        SkyrimNet_SexLab_WebUI.SceneCreator_Open(BuildWebUISceneMenuState())
-        SkyrimNet_SexLab_WebUI.Animation_Menu_Show(BuildWebUIAnimationMenuState())
+        SkyrimNet_SexLab_WebUI.SceneCreator_Configure(BuildWebUISceneMenuState())
+        SkyrimNet_SexLab_WebUI.Animation_Menu_Configure(BuildWebUIAnimationMenuState())
         return
     endif
     int len = 0
@@ -2181,6 +2181,6 @@ Function WebUI_OnAnimUpdate(String json)
         endif
     endif
     NotePlayedRegistry(next_reg)
-    SkyrimNet_SexLab_WebUI.SceneCreator_Open(BuildWebUISceneMenuState())
-    SkyrimNet_SexLab_WebUI.Animation_Menu_Show(BuildWebUIAnimationMenuState())
+    SkyrimNet_SexLab_WebUI.SceneCreator_Configure(BuildWebUISceneMenuState())
+    SkyrimNet_SexLab_WebUI.Animation_Menu_Configure(BuildWebUIAnimationMenuState())
 EndFunction

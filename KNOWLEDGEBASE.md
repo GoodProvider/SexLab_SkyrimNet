@@ -36,7 +36,7 @@ Caprica fails natives that declare a parameter named `scriptName` with `no viabl
 
 Left column: MainMenu (title + pulldown) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/main_panels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`.
 
-- **Scene Menu appear/disappear loop (2026-08-03):** Do **not** call `requestSceneConnectionChange` from `revealMainPanel`. Connection reload → `SceneCreator_Open` (`showPanel` → `onMainPanelChange` → `SwitchMainPanel` → reveal) loops. Soft path: `SceneCreator_Configure` / `Animation_Menu_Configure` (no HideAll/showPanel); `WebUI_OnSceneConnectionChange` uses Configure; `SwitchMainPanel` invokes `mainPanelDidOpen()` once on **key change** only. `showPanel` for SC/AM is idempotent when already selected.
+- **Scene Menu appear/disappear loop (2026-08-03):** Do **not** call `requestSceneConnectionChange` from `revealMainPanel`. Connection reload → `SceneCreator_Open` (`showPanel` → `onMainPanelChange` → `SwitchMainPanel` → reveal) loops. Soft path: `SceneCreator_Configure` / `Animation_Menu_Configure` (no HideAll/showPanel); `WebUI_OnSceneConnectionChange` and `WebUI_OnAnimUpdate` use Configure; `SwitchMainPanel` invokes `mainPanelDidOpen()` once on **key change** only. `showPanel` for SC/AM is idempotent when already selected.
 
 ## SKSE native params must use engine types (2026-07-25)
 
