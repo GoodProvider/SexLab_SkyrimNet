@@ -446,6 +446,17 @@ namespace ActionCatalog
                 return "whip";
             if (EqualsIgnoreCase(method, "hugging"))
                 return "hug";
+            if (EqualsIgnoreCase(method, "cuddle"))
+                return "cuddling";
+            return method;
+        }
+
+        /// SexLab animation tag for a UI/LLM method. Cuddle postures stay in _method for narration.
+        std::string SexLabTagFromMethod(const std::string& method)
+        {
+            if (EqualsIgnoreCase(method, "sitting") || EqualsIgnoreCase(method, "laying") ||
+                EqualsIgnoreCase(method, "cuddle"))
+                return "cuddling";
             return method;
         }
 
@@ -729,7 +740,7 @@ namespace ActionCatalog
         state["_method"] = params.method;
         state["_event_hook"] = "";
         state["_num_actors"] = static_cast<int>(seedOrder.size());
-        state["_tags"] = params.method;
+        state["_tags"] = SexLabTagFromMethod(params.method);
         state["_tags_suppress"] = "";
         state["_scene_presets"] = nlohmann::json::array({ "default" });
         state["_group_tags"] = nlohmann::json::object();

@@ -2137,6 +2137,9 @@
                 name,
                 parameters
             }));
+            // Immediate UI close; C++ also ClearTargetMenuSession + Visibility_Hide.
+            hidePanel('target_menu_panel');
+            hidePanel('main_menu');
         }
 
         function targetMenuCustom() {

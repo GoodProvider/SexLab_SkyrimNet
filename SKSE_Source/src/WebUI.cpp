@@ -496,13 +496,16 @@ void InitWebUI()
                 PapyrusBindings_WebUI::SkipSceneCreatorOnce = true;
             }
 
-            // Keep TargetMenu open (Custom/Start stay-open). Outfit refresh still works.
+            // Queue Papyrus first, then close overlay so StartThread runs unpaused
+            // (PrismaUI Focus uses pauseGame=true). Custom keeps TargetMenu open.
             bool ok = ActionCatalog::ExecuteAction(name, params, player, target);
             if (!ok) {
                 webui_log::error("onAction: ExecuteAction failed for {}", name);
                 PapyrusBindings_WebUI::SkipSceneCreatorOnce = false;
             }
-            // Outfit stay-open: Papyrus Outfit_* calls Target_Menu_Refresh after storage updates.
+            WebUI_Invoke("hidePanel('target_menu_panel');");
+            PapyrusBindings_WebUI::ClearTargetMenuSession();
+            WebUI_Visibility_Hide();
         });
 
         PrismaUI->RegisterJSListener(g_view, "onMainPanelChange", [](const char* value) {

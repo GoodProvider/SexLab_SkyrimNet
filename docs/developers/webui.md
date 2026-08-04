@@ -48,8 +48,8 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 
 - Root `#target-panel` holds globals + root options + Cancel only. Each opened `pulldown` is its own sibling panel (nav stack); Parameters is a separate confirm panel with **Start** / **Custom**. The cascade row sits in the left column under MainMenu; Scene Creator opens in the right main-panel host.
 - Click an action → select it and open the Parameters panel (does not start).
-- **Start** / **Custom** snapshot params, then **close all pulldown + Parameters panels** (root TargetMenu stays), then fire `onAction`.
-- **Start** → `onAction({action:"start",…})` → `ExecuteAction`. For scene-start actions, C++ sets `SkipSceneCreatorOnce`; Papyrus `Action_Start` consumes it via `ConsumeSkipSceneCreator()` and sets `scene_creator_menu_called` so YesNo / Tag Edit will not open Scene Creator for that scene.
+- **Start** / **Custom** snapshot params, then **close all pulldown + Parameters panels**, then fire `onAction`.
+- **Start** → `onAction({action:"start",…})` → `ExecuteAction`, then **closes WebUI** (clear TargetMenu session + hide overlay, same as Cancel) so SexLab `StartThread` runs unpaused. For scene-start actions, C++ sets `SkipSceneCreatorOnce`; Papyrus `Action_Start` consumes it via `ConsumeSkipSceneCreator()` and sets `scene_creator_menu_called` so that scene skips Scene Creator **and** YesNo (treated as Yes/Random).
 - **Custom** (scene-start actions only) → `onAction({action:"custom",…})` → `OpenSceneCreatorFromTargetMenu` (`_from_target_menu`). TargetMenu root stays open; Custom again reconfigures SC.
 - Cancel clears the TargetMenu session. `WebUI_HideAllPanels` spares TargetMenu while that session is active.
 
@@ -77,7 +77,7 @@ Optional on any option node: `requiresPlugin` (ESP/ESL name) — omitted from th
 
 Actor sources: `playerActor` / `currentActor` (aliases `player` / `target` / `focus` still work).
 
-Outfit stay-open: TargetMenu stays open for all Start/Custom (until Cancel). `outfit_dress` / `outfit_undress` still call `Target_Menu_Refresh` after StorageUtil updates.
+Outfit: TargetMenu closes on **Start** (session cleared); `outfit_dress` / `outfit_undress` still call `Target_Menu_Refresh` after storage updates (no-ops when menu is closed). **Custom** keeps TargetMenu open until Cancel.
 
 Menu labels for the target panel come from `menu/target/`. Nested pulldowns open as separate panels in a row (`‹` header pops).
 

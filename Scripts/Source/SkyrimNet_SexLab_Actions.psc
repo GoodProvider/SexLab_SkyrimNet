@@ -256,6 +256,10 @@ Function StartScene_Event(String intent, Actor speaker, Actor target=None, Actor
         method = "hug"
     endif 
 
+    if method == "cuddle"
+        method = "cuddling"
+    endif 
+
     int speaker_position = 0 
     if target != None 
         ; Victim wrappers: TargetVictim → speaker pos1 (dominant); SpeakerVictim → speaker pos0 (submissive)

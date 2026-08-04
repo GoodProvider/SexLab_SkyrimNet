@@ -220,7 +220,12 @@ Bool Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _targ
     endif 
 
     SetMethod(_method)
-    AddTag(_method) 
+    ; Cuddle YAML uses sitting|laying for narration posture; SexLab packs tag "cuddling".
+    if _method == "sitting" || _method == "laying"
+        AddTag("cuddling")
+    else
+        AddTag(_method)
+    endif
     SetNames() 
     Trace("Setup", GetString())
     DbgEnd("Setup")
@@ -670,6 +675,8 @@ String Function RemapTag(String tag)
         return "vaginal"
     elseif tag == "ass"
         return "anal"
+    elseif tag == "cuddle"
+        return "cuddling"
     endif
     return tag
 EndFunction
@@ -1547,15 +1554,20 @@ sslBaseAnimation[] Function SelectAnimations()
     endif 
     int button = BUTTON_YES_RANDOM
     if has_player
-        button = YesNoDialog()
-        if button == -1
-            DbgReturn("SelectAnimations", "ui_pending")
-            return manager.ui_pending
+        ; TargetMenu Start already confirmed (SkipSceneCreatorOnce → scene_creator_menu_called).
+        if scene_creator_menu_called
+            Trace("SelectAnimations", "SkipSceneCreator: skipping YesNo, treating as Yes/Random")
+        else
+            button = YesNoDialog()
+            if button == -1
+                DbgReturn("SelectAnimations", "ui_pending")
+                return manager.ui_pending
+            endif
+            if button == BUTTON_NO || button == BUTTON_NO_SILENT
+                DbgReturn("SelectAnimations", "cancel")
+                return manager.cancel 
+            endif 
         endif
-        if button == BUTTON_NO || button == BUTTON_NO_SILENT
-            DbgReturn("SelectAnimations", "cancel")
-            return manager.cancel 
-        endif 
     elseif main.sex_edit_tags_nonplayer
         if TryOpenSceneCreatorMenu()
             DbgReturn("SelectAnimations", "ui_pending")
