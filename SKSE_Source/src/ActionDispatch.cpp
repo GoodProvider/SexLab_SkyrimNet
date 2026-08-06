@@ -620,6 +620,9 @@ namespace ActionCatalog
             out.target = actorsByName.count("target") ? actorsByName["target"] : nullptr;
             if (!out.target && actorsByName.count("stripped"))
                 out.target = actorsByName["stripped"];
+            // Explicit JSON null clears target (solo actions e.g. masturbation).
+            if (dict.contains("target") && dict["target"].is_null())
+                out.target = nullptr;
             out.victim = actorsByName.count("victim") ? actorsByName["victim"] : nullptr;
             out.participate = actorsByName.count("participate") ? actorsByName["participate"] : nullptr;
             if (!out.participate && actorsByName.count("participate_3"))
@@ -696,25 +699,26 @@ namespace ActionCatalog
         ResolvedSceneParams params;
         const bool resolved = ResolveSceneParams(actionName, uiParameters, player, focusTarget, params);
         if (!resolved) {
+            // Solo fallback: focused NPC only (not player+focus).
             webui_log::warn(
-                "OpenSceneCreatorFromTargetMenu: resolve failed for {} — falling back to focus+player seed",
+                "OpenSceneCreatorFromTargetMenu: resolve failed for {} — falling back to focus solo seed",
                 actionName);
-            params.speaker = player;
-            params.target = focusTarget;
+            params.speaker = focusTarget;
+            params.target = nullptr;
             params.victim = nullptr;
             params.participate = nullptr;
             params.intent = actionName;
             params.style = "normally";
             params.method = "";
-            if (!params.speaker && !params.target) {
-                webui_log::error("OpenSceneCreatorFromTargetMenu: no speaker/target to seed");
+            if (!params.speaker) {
+                webui_log::error("OpenSceneCreatorFromTargetMenu: no speaker to seed");
                 return false;
             }
         }
 
-        // Scene Menu UI seed order (ignore direction): target@0, speaker@1, participate@2+.
-        // BuildActorOrder remains for Start / ExecuteAction only.
-        RE::Actor* seedTarget = params.target ? params.target : focusTarget;
+        // Scene Menu UI seed: target@0 when present, else speaker-only (solo / target:null).
+        // Do not invent focusTarget when params.target is null.
+        RE::Actor* seedTarget = params.target;
         RE::Actor* seedSpeaker = params.speaker ? params.speaker : player;
         std::vector<RE::Actor*> seedOrder;
         seedOrder.reserve(3);
