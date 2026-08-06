@@ -45,4 +45,6 @@ Use `punish_*` (not obsolete `punishing_*`).
 
 Wire from actions via static `setting_name` — see [../authors/actions.md](../authors/actions.md).
 
+You are encouraged to create and share your own scene settings. Example actions: [`SKSE/Plugins/SkyrimNet/config/actions/`](../../SKSE/Plugins/SkyrimNet/config/actions/). Full authoring rules: [../authors/actions.md](../authors/actions.md).
+
 Synthetic stub (when no short shipped file fits): [../examples/minimal-scene-setting.json](../examples/minimal-scene-setting.json).

@@ -14,7 +14,13 @@ Orgasm narration when a stage climaxes: [../reference/orgasm-narration.md](../re
 
 ## In-game editor
 
-MCM **Sex Description Editor** hot key while in a SexLab animation: add/replace stage description, set `orgasm_expected`, change sex style (if Tag Editor dialogs on).
+You are strongly encouraged to add and share stage descriptions. Press the **Sex Description Editor** hot key on an actor in sex:
+
+- If the animation's stage already has a description, you can view or replace it.
+- If not, a text field lets you add one; names are filled in and you can accept or reject. Empty results usually mean wrong variable names.
+- Set `orgasm_expected` and change sex style (if Tag Editor dialogs are on).
+
+Edit files with any text editor after creation. Type actor indices alone if you need to see who is who.
 
 ESC cancels cleanly. Save aborts if existing JSON fails to parse (avoids wiping with `{}`).
 
@@ -36,7 +42,7 @@ Keys are **case-sensitive** (JContainers). Use lowercase `"stage N"` and `"versi
 }
 ```
 
-Inja `2.0`: actors array; victim usually first; `{{sl.actors.0}}`, `{{sl.actors.1}}`, …
+Inja `2.0`: actors are an array; if there is a victim, it is normally first; `{{sl.actors.0}}`, `{{sl.actors.1}}`, `{{sl.actors.2}}`, …
 
 ### orgasm_expected
 
@@ -48,4 +54,6 @@ Forcefully fucking / having sex / gently making love.
 
 ## Sharing
 
-Zip `_local_` or an author folder; install under `animations/(author_name)/`. Keep personal overrides in `_local_`.
+Please send packs by zipping your `_local_` folder with an author name (anonymous OK): Discord, or email da.good.provider@gmail.com.
+
+Install shared packs under `animations/(author_name)/`. Keep personal overrides in `_local_` (loaded last, wins). Examples: `animations/GoodProvider/`.
