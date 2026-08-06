@@ -1,0 +1,58 @@
+{
+  "type": "pulldown",
+  "label": "punish",
+  "options": [
+    { "type": "action", "name": "SexLab_Punish_Rape_Target", "label": "rape" },
+    { "type": "action", "name": "SexLab_Punish_Rape_Target_By_Target", "label": "rape (by target)" },
+    { "type": "action", "name": "SexLab_Punish_Spanking_Target", "label": "spanking" },
+    { "type": "action", "name": "SexLab_Punish_Spanking_Speaker", "label": "spanking (by target)" },
+    { "type": "action", "name": "SexLab_Punish_Spanking_Victim_Nude_Target", "label": "spanking nude" },
+    { "type": "action", "name": "SexLab_Punish_Spanking_Victim_Nude_Speaker", "label": "spanking nude (by target)" },
+    { "type": "action", "name": "SexLab_Punish_Whipping_Oral_Target", "label": "whip" },
+    { "type": "action", "name": "SexLab_Punish_Whipping_Oral_Speaker", "label": "whip (by target)" }
+  ],
+  "eligibilityRules": [
+    {
+      "conditions": [
+        {
+          "decoratorName": "get_global_value",
+          "arguments": ["SkyrimNet_SexLab_ostim_player"],
+          "comparisonOperator": "==",
+          "expectedValue": 0
+        },
+        {
+          "decoratorName": "get_faction_rank",
+          "arguments": ["currentActor", "SexLabAnimatingFaction"],
+          "comparisonOperator": "<",
+          "expectedValue": 1
+        },
+        {
+          "decoratorName": "is_in_faction",
+          "arguments": ["currentActor", "dse_dm_FactionActorUsingDevice"],
+          "comparisonOperator": "==",
+          "expectedValue": false
+        },
+        {
+          "decoratorName": "is_in_faction",
+          "arguments": ["currentActor", "OStimActorCountFaction"],
+          "comparisonOperator": "==",
+          "expectedValue": false
+        },
+        {
+          "decoratorName": "is_in_combat",
+          "arguments": ["currentActor"],
+          "comparisonOperator": "==",
+          "expectedValue": false
+        },
+        {
+          "decoratorName": "papyrus_util",
+          "arguments": ["HasIntValue", "currentActor", "skyrimnet_sexlab_scene_actor_lock"],
+          "comparisonOperator": "==",
+          "expectedValue": false
+        }
+      ],
+      "logicalOperator": "AND",
+      "required": true
+    }
+  ]
+}

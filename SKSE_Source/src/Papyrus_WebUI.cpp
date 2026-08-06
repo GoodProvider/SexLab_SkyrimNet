@@ -2,13 +2,19 @@
 #include "SKSE/SKSE.h"
 #include "WebUI_Log.h"
 #include "WebUI.h"
-#include "PublicAPI.h"
 #include "ActionCatalog.h"
 #include "AnimationDB.h"
+#include "Config.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <cmath>
 #include <vector>
+
+// Defined in PublicAPI.h (included once from Config.cpp).
+extern "C" {
+extern uint64_t (*PublicFormIDToUUID)(uint32_t formId);
+extern std::string (*PublicGetActorNameByUUID)(uint64_t uuid);
+}
 
 namespace PapyrusBindings_WebUI
 {
@@ -138,6 +144,8 @@ namespace PapyrusBindings_WebUI
         WebUI_Invoke("hidePanel('yesno_panel');");
         WebUI_Invoke("hidePanel('scene_creator_panel');");
         WebUI_Invoke("hidePanel('animation_menu_panel');");
+        WebUI_Invoke("hidePanel('settings_panel');");
+        WebUI_Invoke("hidePanel('log_panel');");
     }
 
     /// Escapes backslash and single quote so actor names are safe inside JS string literals.
@@ -179,6 +187,11 @@ namespace PapyrusBindings_WebUI
         EditTagsNonPlayer = editTagsNonPlayer;
 
         if (Target_Current == Target_Input) {
+            // Rebuild catalog so eligibilityRules re-evaluate against live focus state.
+            if (!ActionCatalog::IsLoaded())
+                ActionCatalog::Load();
+            auto catalog = ActionCatalog::BuildUICatalog(hasStrippedItems);
+            WebUI_Invoke("configureTargetMenu(" + catalog.dump() + ");");
             WebUI_Visibility_Toggle();
             return;
         }
@@ -205,17 +218,20 @@ namespace PapyrusBindings_WebUI
 
         auto catalog = ActionCatalog::BuildUICatalog(hasStrippedItems);
         WebUI_Invoke("configureTargetMenu(" + catalog.dump() + ");");
-        WebUI_Invoke("configureMainMenu(" + ActionCatalog::BuildMainPanelsCatalog().dump() + ");");
+        WebUI_Invoke("configureControlPanel(" + ActionCatalog::BuildMainPanelsCatalog().dump() + ");");
         const std::string uuidStr =
             uuid ? std::to_string(uuid) : std::to_string(static_cast<unsigned>(targetFormId));
         WebUI_Invoke(std::format("setTargetActor('{}', '{}', {});", uuidStr, EscapeJsString(name),
             static_cast<unsigned>(targetFormId)));
 
         bool ostimnet = RE::TESDataHandler::GetSingleton()->LookupModByName("TT_OStimNet.esp") != nullptr;
-        const char* fw = "sexlab";
+        // Prefer live control store; fall back to global (TargetMenu live toggle).
+        const char* fw = SexLabNet::Config::GetSingleton().FrameworkPlayerIndex() == 1 ? "ostim" : "sexlab";
         if (auto* g = RE::TESForm::LookupByEditorID<RE::TESGlobal>("skyrimnet_sexlab_ostim_player")) {
             if (g->value == 1.0f)
                 fw = "ostim";
+            else if (g->value == 0.0f)
+                fw = "sexlab";
         }
         WebUI_Invoke(std::format("setFrameworkToggle({}, '{}');", ostimnet ? "true" : "false", fw));
 
@@ -311,6 +327,13 @@ namespace PapyrusBindings_WebUI
     {
         webui_log::info("WebUI_SetHotkey dx={:#x} enabled={}", static_cast<uint32_t>(dxScanCode), enabled);
         WebUI_SetMenuHotkey(static_cast<uint32_t>(dxScanCode), enabled);
+    }
+
+    void WebUI_SetLastRebuildTimestamp(RE::StaticFunctionTag*, RE::BSFixedString timestamp)
+    {
+        const char* ts = timestamp.c_str();
+        SexLabNet::SetLastRebuildTimestamp(ts ? ts : "");
+        SexLabNet::InvokeConfigureSettingsPanel();
     }
 
     void Animation_Menu_Open(RE::StaticFunctionTag*, RE::TESForm* thread, RE::TESForm* sl_scene)
@@ -923,6 +946,7 @@ namespace PapyrusBindings_WebUI
         a_vm->RegisterFunction("SceneConnections_Show", scriptName, SceneConnections_Show);
         a_vm->RegisterFunction("WebUI_HideAllPanels", scriptName, WebUI_HideAllPanels);
         a_vm->RegisterFunction("WebUI_SetHotkey", scriptName, WebUI_SetHotkey);
+        a_vm->RegisterFunction("WebUI_SetLastRebuildTimestamp", scriptName, WebUI_SetLastRebuildTimestamp);
         a_vm->RegisterFunction("ActorAnimMeta_Result", scriptName, ActorAnimMeta_Result);
         a_vm->RegisterFunction("ConsumeSkipSceneCreator", scriptName, ConsumeSkipSceneCreator);
         a_vm->RegisterFunction("TraceLog", scriptName, TraceLog);

@@ -2,6 +2,7 @@
 #include "TargetMenuRegistry.h"
 #include "WebUI_Log.h"
 #include "Papyrus_WebUI.h"
+#include "Config.h"
 
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
@@ -225,31 +226,155 @@ namespace ActionCatalog
             return false;
         }
 
-        /// Minimal eligibilityRules eval for actionSwitch (FormListCount on strip storage).
+        class BoolResultCallback : public RE::BSScript::IStackCallbackFunctor
+        {
+        public:
+            void operator()(RE::BSScript::Variable a_result) override
+            {
+                if (a_result.IsBool())
+                    value = a_result.GetBool();
+                done = true;
+            }
+            void SetObject(const RE::BSTSmartPointer<RE::BSScript::Object>&) override {}
+
+            bool value = false;
+            bool done = false;
+        };
+
+        bool StorageUtilHasIntValue(RE::TESForm* form, const char* key)
+        {
+            if (!form || !key || !key[0])
+                return false;
+            auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+            if (!vm)
+                return false;
+
+            auto cbPtr = RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor>{ new BoolResultCallback() };
+            auto* cb = static_cast<BoolResultCallback*>(cbPtr.get());
+
+            RE::BSFixedString keyStr(key);
+            auto* args = RE::MakeFunctionArguments(static_cast<RE::TESForm*>(form), std::move(keyStr));
+            if (!vm->DispatchStaticCall(
+                    RE::BSFixedString("StorageUtil"), RE::BSFixedString("HasIntValue"), args, cbPtr)) {
+                return false;
+            }
+            for (int i = 0; i < 64 && !cb->done; ++i)
+                vm->Update(0.0f);
+            return cb->done && cb->value;
+        }
+
+        RE::TESGlobal* ResolveGlobalByArg(std::string_view name)
+        {
+            if (name.empty())
+                return nullptr;
+            if (auto* g = RE::TESForm::LookupByEditorID<RE::TESGlobal>(std::string(name)))
+                return g;
+            // YAML uses SkyrimNet_SexLab_ostim_player; ESP EditorID is lowercase.
+            if (EqualsIgnoreCase(name, "SkyrimNet_SexLab_ostim_player"))
+                return RE::TESForm::LookupByEditorID<RE::TESGlobal>("skyrimnet_sexlab_ostim_player");
+            return nullptr;
+        }
+
+        RE::TESFaction* ResolveFactionByArg(std::string_view name)
+        {
+            if (name.empty())
+                return nullptr;
+            if (auto* f = RE::TESForm::LookupByEditorID<RE::TESFaction>(std::string(name)))
+                return f;
+            auto* dh = RE::TESDataHandler::GetSingleton();
+            if (!dh)
+                return nullptr;
+            if (EqualsIgnoreCase(name, "SexLabAnimatingFaction"))
+                return dh->LookupForm<RE::TESFaction>(0xE50F, "SexLab.esm");
+            if (EqualsIgnoreCase(name, "OStimActorCountFaction") && dh->LookupModByName("Ostim.esp"))
+                return dh->LookupForm<RE::TESFaction>(0xECA, "Ostim.esp");
+            return nullptr;
+        }
+
+        RE::Actor* FocusActor()
+        {
+            return PapyrusBindings_WebUI::Target_Current;
+        }
+
+        bool ArgIsCurrentActor(const nlohmann::json& arg)
+        {
+            if (!arg.is_string())
+                return false;
+            return EqualsIgnoreCase(arg.get<std::string>(), "currentActor");
+        }
+
+        /// EligibilityRules eval for actionSwitch + pulldown/action gates.
         bool EvalCondition(const nlohmann::json& cond, bool focusHasStrippedItems)
         {
             if (!cond.is_object())
                 return false;
             const std::string decorator = cond.value("decoratorName", "");
-            if (!EqualsIgnoreCase(decorator, "papyrus_util"))
-                return false;
-            if (!cond.contains("arguments") || !cond["arguments"].is_array() || cond["arguments"].size() < 3)
-                return false;
-
-            const auto& args = cond["arguments"];
-            const std::string fn = args[0].is_string() ? args[0].get<std::string>() : "";
-            const std::string actorTok = args[1].is_string() ? args[1].get<std::string>() : "";
-            const std::string key = args[2].is_string() ? args[2].get<std::string>() : "";
-            if (!EqualsIgnoreCase(fn, "FormListCount"))
-                return false;
-            if (!EqualsIgnoreCase(actorTok, "currentActor"))
-                return false;
-            if (key != "skyrimnet_sexlab_storage_items")
-                return false;
-
-            const double count = focusHasStrippedItems ? 1.0 : 0.0;
             const std::string op = cond.value("comparisonOperator", "==");
-            return CompareValues(count, op, cond.contains("expectedValue") ? cond["expectedValue"] : nlohmann::json(0));
+            const nlohmann::json& expected =
+                cond.contains("expectedValue") ? cond["expectedValue"] : nlohmann::json(0);
+            const auto& args =
+                cond.contains("arguments") && cond["arguments"].is_array() ? cond["arguments"] : nlohmann::json::array();
+
+            if (EqualsIgnoreCase(decorator, "get_global_value")) {
+                if (args.empty() || !args[0].is_string())
+                    return false;
+                auto* global = ResolveGlobalByArg(args[0].get<std::string>());
+                const double actual = global ? static_cast<double>(global->value) : 0.0;
+                return CompareValues(actual, op, expected);
+            }
+
+            if (EqualsIgnoreCase(decorator, "get_faction_rank")) {
+                if (args.size() < 2 || !ArgIsCurrentActor(args[0]) || !args[1].is_string())
+                    return false;
+                auto* actor = FocusActor();
+                auto* faction = ResolveFactionByArg(args[1].get<std::string>());
+                double rank = -1.0;
+                if (actor && faction) {
+                    const bool isPlayer = actor == RE::PlayerCharacter::GetSingleton();
+                    rank = static_cast<double>(actor->GetFactionRank(faction, isPlayer));
+                }
+                return CompareValues(rank, op, expected);
+            }
+
+            if (EqualsIgnoreCase(decorator, "is_in_faction")) {
+                if (args.size() < 2 || !ArgIsCurrentActor(args[0]) || !args[1].is_string())
+                    return false;
+                auto* actor = FocusActor();
+                auto* faction = ResolveFactionByArg(args[1].get<std::string>());
+                const bool inFac = actor && faction && actor->IsInFaction(faction);
+                return CompareValues(inFac ? 1.0 : 0.0, op, expected);
+            }
+
+            if (EqualsIgnoreCase(decorator, "is_in_combat")) {
+                if (args.empty() || !ArgIsCurrentActor(args[0]))
+                    return false;
+                auto* actor = FocusActor();
+                const bool inCombat = actor && actor->IsInCombat();
+                return CompareValues(inCombat ? 1.0 : 0.0, op, expected);
+            }
+
+            if (EqualsIgnoreCase(decorator, "papyrus_util")) {
+                if (args.size() < 3 || !args[0].is_string() || !ArgIsCurrentActor(args[1]) || !args[2].is_string())
+                    return false;
+                const std::string fn = args[0].get<std::string>();
+                const std::string key = args[2].get<std::string>();
+
+                if (EqualsIgnoreCase(fn, "FormListCount")) {
+                    if (key != "skyrimnet_sexlab_storage_items")
+                        return false;
+                    const double count = focusHasStrippedItems ? 1.0 : 0.0;
+                    return CompareValues(count, op, expected);
+                }
+
+                if (EqualsIgnoreCase(fn, "HasIntValue")) {
+                    auto* actor = FocusActor();
+                    const bool has = actor && StorageUtilHasIntValue(actor, key.c_str());
+                    return CompareValues(has ? 1.0 : 0.0, op, expected);
+                }
+                return false;
+            }
+
+            return false;
         }
 
         bool EvalEligibilityRules(const nlohmann::json& rules, bool focusHasStrippedItems)
@@ -348,6 +473,16 @@ namespace ActionCatalog
                 }
                 if (!PassesRequiresPlugin(opt))
                     continue;
+                if (opt.contains("eligibilityRules")) {
+                    const auto& rules = opt["eligibilityRules"];
+                    if (!EvalEligibilityRules(rules, focusHasStrippedItems)) {
+                        webui_log::info(
+                            "eligibility omit type={} label={}",
+                            opt.value("type", ""),
+                            opt.value("label", opt.value("name", "")));
+                        continue;
+                    }
+                }
                 if (EqualsIgnoreCase(opt.value("type", ""), "actionSwitch")) {
                     out.push_back(ResolveActionSwitch(opt, focusHasStrippedItems));
                     continue;
@@ -464,8 +599,13 @@ namespace ActionCatalog
             const std::string type = entry.value("type", "");
             if (EqualsIgnoreCase(type, "builtin")) {
                 const std::string panel = entry.value("panel", "");
-                if (!panel.empty())
+                if (!panel.empty()) {
                     WebUI_Invoke("revealMainPanel('" + panel + "');");
+                    if (panel == "settings_panel")
+                        SexLabNet::InvokeConfigureSettingsPanel();
+                    else if (panel == "log_panel")
+                        SexLabNet::InvokeLogPanelOpen();
+                }
             } else if (EqualsIgnoreCase(type, "papyrus")) {
                 std::string plugin = entry.value("plugin", "");
                 if (plugin.empty())

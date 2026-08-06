@@ -13,19 +13,20 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 | `PrismaUI/views/SkyrimNet_SexLab/index.html` | Overlay HTML under `Data/PrismaUI/views/` |
 | `SKSE/Plugins/SkyrimNet_SexLab/webui/` | `actions_index.json`, `menu/target/`, `main_panels/` |
 | `optional/handler_udng/` | FOMOD-only UDNG TargetMenu JSON (co-installed with handler ESP) |
-| `SKSE/Plugins/SkyrimNet/config/plugins/SkyrimNet_SexLab/manifest.yaml` | SkyrimNet plugin schema (e.g. `sexlab.orgasm.delay`) |
+| `SKSE/Plugins/SkyrimNet/config/plugins/SkyrimNet_SexLab/manifest.yaml` | SkyrimNet plugin settings schema (control store) |
 | `Scripts/Source/SkyrimNet_SexLab_WebUI.psc` | Target/Sex/YesNo/SceneCreator/Animation natives + `SceneConnections_Show` |
 
 ## Layout
 
 ```
-| MainMenu (10% top/left) | Main panel (10% top/bottom/right) |
-| TargetMenu (same width) |                                     |
+| ControlPanel (10% top/left) | Main panel (10% top/bottom/right) |
+| TargetMenu (same width)     |                                     |
 ```
 
-- **MainMenu:** row 1 title `SkyrimNet SexLab`; row 2 `main_panel` pulldown (from `webui/main_panels/`, with JS builtin fallback). Pulldown list includes **None** (clears the right main-panel host). The open menu drops to the **right** over the main-panel area with an opaque background.
-- **TargetMenu:** stacked under MainMenu in the left column. OStimNet framework toggle shows sexlab/ostim only (no “framework” label).
-- **Main panel host:** one visible panel at a time, selected by the pulldown (builtin **Scene Menu** / Animation).
+- **ControlPanel** (`#control-panel`): row 1 title `SkyrimNet SexLab`; row 2 `main_panel` pulldown (from `webui/main_panels/`, with JS builtin fallback); row 3 pause/unpause button. Pulldown list includes **None** (clears the right main-panel host). The open menu drops to the **right** over the main-panel area with an opaque background.
+- **Pause toggle:** WebUI opens with `Focus(view, true)` (game paused; button shows **unpause**). Click unpause → `Focus(view, false)` (game runs, UI stays focused/visible; button shows **pause**). Needed so AnimDB/`RegisterForSingleUpdate` and Log tailing can progress while the overlay stays open.
+- **TargetMenu:** stacked under ControlPanel in the left column. OStimNet framework toggle shows sexlab/ostim only (no “framework” label).
+- **Main panel host:** one visible panel at a time, selected by the pulldown (builtin Scene Menu / Animation / Log / Settings).
 - Sex Menu / YesNo remain overlay panels outside the main_panel pulldown.
 
 ### Scene Menu + AnimationPanel connection
@@ -38,15 +39,15 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 ## Lifecycle
 
 - `kDataLoaded`: PrismaUI API, `CreateView("SkyrimNet_SexLab/index.html")`, JS listeners.
-- `kPostLoadGame` / `kNewGame`: `WebUI_SetGameReady()` (enables input; reloads ActionCatalog from `webui/`; `configureMainMenu`).
-- DomReady / game-ready: `configureMainMenu(BuildMainPanelsCatalog())`.
+- `kPostLoadGame` / `kNewGame`: `WebUI_SetGameReady()` (enables input; reloads ActionCatalog from `webui/`; `configureControlPanel`).
+- DomReady / game-ready: `configureControlPanel(BuildMainPanelsCatalog())`.
 - Pulldown → JS `onMainPanelChange` → C++ `SwitchMainPanel` (close previous, open next). On key change to Scene Menu / Animation, C++ invokes `mainPanelDidOpen()` → soft connection load (`WebUI_OnSceneConnectionChange` → `SceneCreator_Configure` / `Animation_Menu_Configure`, no HideAll/showPanel). SceneMenu **Update** (`WebUI_OnAnimUpdate`) also refreshes via Configure. Full `SceneCreator_Open` / `Animation_Menu_Show` remain for YesNo / Custom / hotkey.
 - Papyrus → C++ open; C++ → JS `showPanel` for `target_menu_panel` / `sex_menu_panel` / `scene_creator_panel` / `animation_menu_panel` (SC/AM auto-select the matching main_panel entry; idempotent if already selected).
 - Catalog: `menu/target/` + `actions_index.json` + `main_panels/`; **Start** merges params and dispatches; **Custom** opens Scene Creator.
 
 ### TargetMenu UX
 
-- Root `#target-panel` holds globals + root options + Cancel only. Each opened `pulldown` is its own sibling panel (nav stack); Parameters is a separate confirm panel with **Start** / **Custom**. The cascade row sits in the left column under MainMenu; Scene Creator opens in the right main-panel host.
+- Root `#target-panel` holds globals + root options + Cancel only. Each opened `pulldown` is its own sibling panel (nav stack); Parameters is a separate confirm panel with **Start** / **Custom**. The cascade row sits in the left column under ControlPanel; Scene Creator opens in the right main-panel host.
 - Click an action → select it and open the Parameters panel (does not start).
 - **Start** / **Custom** snapshot params, then **close all pulldown + Parameters panels**, then fire `onAction`.
 - **Start** → `onAction({action:"start",…})` → `ExecuteAction`, then **closes WebUI** (clear TargetMenu session + hide overlay, same as Cancel) so SexLab `StartThread` runs unpaused. For scene-start actions, C++ sets `SkipSceneCreatorOnce`; Papyrus `Action_Start` consumes it via `ConsumeSkipSceneCreator()` and sets `scene_creator_menu_called` so that scene skips Scene Creator **and** YesNo (treated as Yes/Random).
@@ -68,7 +69,7 @@ C++ assembles these into the same in-memory shape JS expects: `defaultsParameter
 |------|--------|------|
 | `parameter` | `name`, `default`, `values` | Global param pulldown |
 | `action` | `name`, `label`, optional `parameters`, optional `disabled`, optional dispatch fields | Selects action + Parameters panel; confirm with Start/Custom; `disabled` = greyed non-clickable |
-| `pulldown` | `label`, `options[]`, optional `parameters` | Group; children are `action` and/or nested `pulldown` |
+| `pulldown` | `label`, `options[]`, optional `parameters`, optional `eligibilityRules` | Group; children are `action` and/or nested `pulldown`. Optional `eligibilityRules` evaluated at catalog build against `currentActor`; fail → option omitted |
 | `actionSwitch` | `label`, `options[]` of `action` + `eligibilityRules` | C++ picks first eligible child (or disabled fallback label) |
 
 Optional on any option node: `requiresPlugin` (ESP/ESL name) — omitted from the catalog when that mod is not loaded.
@@ -91,10 +92,14 @@ One JSON object per file; **order = lexicographic filename**. Optional `requires
 
 | type | Fields | Role |
 |------|--------|------|
-| `builtin` | `label`, `panel` | Panel already in PrismaUI (`scene_creator_panel` labeled Scene Menu, `animation_menu_panel`) |
+| `builtin` | `label`, `panel` | Panel already in PrismaUI (`log_panel`, `settings_panel`, `scene_creator_panel` labeled Scene Menu, `animation_menu_panel`) |
 | `papyrus` | `label`, `id`, `plugin`, `questFormId`, `scriptName`, `openFunction`, `closeFunction` | Zero-arg Papyrus open/close on that quest script |
 
-Starters in core: `000_scene_creator_panel.json`, `010_animation_panel.json`. Foreign main panels are filesystem-only (no register native); DOM wiring is deferred.
+Starters in core: `0900_log_panel.json` (Log), `1000_settings.json` (Settings), `0100_scene_creator_panel.json`, `0200_animation_panel.json`. Foreign main panels are filesystem-only (no register native); DOM wiring is deferred.
+
+**Settings panel:** rebuild AnimationDB (then switches main panel to Log with follow-tail), version from `Data/SKSE/Plugins/SkyrimNet_SexLab/info.json` (fallback `Config::kPluginVersion`), docs URL shown as text (`https://github.com/GoodProvider/SkyrimNet_SexLab` — no `ShellExecute`), **Open SkyrimNet dashboard** hides this WebUI then `SkyrimNetApi.TriggerToggleDashboard()` (navigate Plugins → SkyrimNet_SexLab; no deep-link API). Plugin config schema: `SKSE/Plugins/SkyrimNet/config/plugins/SkyrimNet_SexLab/manifest.yaml`. C++ reads via `PublicGetPluginConfigValue("SkyrimNet_SexLab", …)`; Papyrus via `SkyrimNetApi.GetConfig*("Plugin_SkyrimNet_SexLab", …)`.
+
+**Log panel:** reads `SKSE::log::log_directory()` / `SkyrimNet_SexLab.log` (same sink as `webui_log` / Papyrus `TraceLog`). Regex filter in JS; follow-tail unless the user scrolls away. C++ tails by file offset; JS polls `onLogPoll` while visible.
 
 ### Optional integrations (FOMOD / third parties)
 
