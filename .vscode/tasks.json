@@ -155,7 +155,7 @@
         {
             "label": "CMake: Build SKSE (Release)",
             "type": "shell",
-            "command": "cmake --build --preset build-release",
+            "command": "cmake --build --preset build-release && cmake -E make_directory \"${workspaceFolder}/SKSE/Plugins\" && cmake -E copy \"${workspaceFolder}/SKSE_Source/build/release/Release/SkyrimNet_SexLab.dll\" \"${workspaceFolder}/SKSE/Plugins/SkyrimNet_SexLab.dll\"",
             "options": {
                 "cwd": "${workspaceFolder}/SKSE_Source"
             },
