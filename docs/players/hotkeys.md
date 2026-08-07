@@ -9,7 +9,7 @@ Both drive the same C++ `KeyHandler` via `WebUI_SetHotkey` / control-store apply
 
 ## Out of animation
 
-- Start a sexual act with crosshair NPC, or between NPCs not under crosshair
+- Open WebUI TargetMenu with ControlPanel actor focus (crosshair preferred; else nearby list — MultiTarget picker retired)
 - Dress / undress under crosshair (including silently)
 - **Punish:** spanking, spanking nude, whip, rape
 - **Affection** (SexLab): hug, kiss, cuddle, spoon, headpat
@@ -19,7 +19,8 @@ Both drive the same C++ `KeyHandler` via `WebUI_SetHotkey` / control-store apply
 
 ## In SexLab animation
 
-- Open Animation Menu (stage descriptions, dressed / orgasm / speaking live updates)
+- Same hotkey opens TargetMenu on the focus actor; Animation main panel restores only if it was left open
+- Mid-scene TargetMenu: stop / stage / position ▲▼ / replace actor / victim / orgasm / speaking / clothed
 - Change sex style (when Tag Editor dialogs are on)
 - Add / edit a per-stage description
 - Change whether a given actor expects an orgasm

@@ -25,6 +25,7 @@ namespace ActionCatalog
         nlohmann::json g_targetOptions = nlohmann::json::object();
         nlohmann::json g_mainPanels = nlohmann::json::array();
         std::string g_currentMainPanelKey;
+        bool g_animationPanelPreferredOpen = false;
         bool g_loaded = false;
 
         bool EqualsIgnoreCase(std::string_view a, std::string_view b)
@@ -897,6 +898,16 @@ namespace ActionCatalog
         }
     }
 
+    bool IsAnimationPanelPreferredOpen()
+    {
+        return g_animationPanelPreferredOpen;
+    }
+
+    void SetAnimationPanelPreferredOpen(bool open)
+    {
+        g_animationPanelPreferredOpen = open;
+    }
+
     void SwitchMainPanel(const std::string& key)
     {
         if (!g_loaded)
@@ -904,6 +915,7 @@ namespace ActionCatalog
 
         if (key.empty()) {
             ClearMainPanelSelection();
+            g_animationPanelPreferredOpen = false;
             return;
         }
 
@@ -932,8 +944,10 @@ namespace ActionCatalog
         OpenMainPanelEntry(*next);
         webui_log::info("SwitchMainPanel: selected '{}'", key);
 
-        // One-shot soft connection load when switching TO Scene Menu / Animation.
         const std::string panel = next->value("panel", "");
+        g_animationPanelPreferredOpen = (panel == "animation_menu_panel");
+
+        // One-shot soft connection load when switching TO Scene Menu / Animation.
         if (panel == "scene_creator_panel" || panel == "animation_menu_panel") {
             WebUI_Invoke("mainPanelDidOpen();");
         }

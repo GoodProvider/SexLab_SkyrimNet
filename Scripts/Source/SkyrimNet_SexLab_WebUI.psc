@@ -17,6 +17,10 @@ Function SceneConnections_Show(String state_json) global native
 Function WebUI_HideAllPanels() global native
 ; MCM: enable/disable C++ menu hotkey and set DX scancode (Escape unchanged).
 Function WebUI_SetHotkey(int dxScanCode, bool enabled) global native
+; After Target_Menu_Open: JS picks ControlPanel default (preferredFormId or nearest non-player).
+Function WebUI_AfterTargetOpen(Actor preferred, Bool preferExplicit) global native
+; Hotkey reopen: show Animation main panel when preferred-open and focus is in SexLab.
+Function WebUI_MaybeRestoreAnimationPanel() global native
 ; Push last AnimDb rebuild timestamp into C++ for Settings panel.
 Function WebUI_SetLastRebuildTimestamp(String timestamp) global native
 ; Push SexLab gender + race_key enrich result to Scene Creator JS (actorAnimMetaResult).

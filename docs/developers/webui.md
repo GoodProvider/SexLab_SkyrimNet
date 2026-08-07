@@ -23,18 +23,20 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 | TargetMenu (same width)     |                                     |
 ```
 
-- **ControlPanel** (`#control-panel`): row 1 title `SkyrimNet SexLab`; row 2 `main_panel` pulldown (from `webui/main_panels/`, with JS builtin fallback); row 3 pause/unpause button. Pulldown list includes **None** (clears the right main-panel host). The open menu drops to the **right** over the main-panel area with an opaque background.
+- **ControlPanel** (`#control-panel`): row 1 title `SkyrimNet SexLab`; row 2 `main_panel` pulldown (from `webui/main_panels/`, with JS builtin fallback); row 3 pause/unpause; row 4 **actor focus** pulldown (`#control-actor-pulldown`). Main-panel list includes **None** (clears the right main-panel host). Pulldowns open to the **right** over the main-panel area with an opaque background.
+- **Actor focus pulldown:** nearby actors (player pinned first), sorted sexlab → eligible → ineligible, then distance. Labels: name cropped to 10 chars; `(sexlab)` selectable; no suffix = eligible; `(reason)` greyed (`child`/`cmbt`/`ostim`/`dead`/`load`, ≤5 chars). Selection sets `Target_Current` for TargetMenu / Scene Menu / AnimationPanel (`onControlActorChange` → `WebUI_OnControlActorFocus`). Default: crosshair if present, else nearest selectable non-player, else player.
 - **Pause toggle:** WebUI opens with `Focus(view, true)` (game paused; button shows **unpause**). Click unpause → `Focus(view, false)` (game runs, UI stays focused/visible; button shows **pause**). Needed so AnimDB/`RegisterForSingleUpdate` and Log tailing can progress while the overlay stays open.
-- **TargetMenu:** stacked under ControlPanel in the left column. OStimNet framework toggle shows sexlab/ostim only (no “framework” label).
+- **TargetMenu:** stacked under ControlPanel in the left column (no actor name header — focus is the ControlPanel pulldown). OStimNet framework toggle shows sexlab/ostim only (no “framework” label).
 - **Main panel host:** one visible panel at a time, selected by the pulldown (builtin Scene Menu / Animation / Log / Settings).
 - Sex Menu / YesNo remain overlay panels outside the main_panel pulldown.
 
 ### Scene Menu + AnimationPanel connection
 
-- Both panels share a top **scene** pulldown: `new` (Scene Creator pool) plus each active scene labeled with `GetIntentMessage` (status message).
-- JS `onSceneConnectionChange` → Papyrus `WebUI_OnSceneConnectionChange`; list via `SceneConnections_Show` / `WebUI_OnSceneConnectionsRefresh`.
+- Focus actor owns the active scene (or `"new"` creator state). Duplicate scene pulldowns on Scene Menu / AnimationPanel were removed.
+- Soft reload still uses JS `SCENE_CONNECTION` + Papyrus `WebUI_OnSceneConnectionChange` / `SceneCreator_Configure` / `Animation_Menu_Configure` when the ControlPanel actor changes or a main panel opens (`mainPanelDidOpen`).
 - **Scene Menu** (`scene_creator_panel`): multi-select anim pool. On `new`: Start/Cancel. On active scene: Stop, A/N column, Update (SexLab in-thread cap 128), stage prev/next.
-- **AnimationPanel**: top list is sorted SceneMenu **selected** (`new`) or **in-thread** (active) registries, capped at **10**, single-select focus; positions are anim-slot / AnimDb (not actors). Prev/Next/Stop enabled only on an active scene connection. Done saves AnimDb (`onAnimRegistrySave` when not live).
+- **AnimationPanel**: registries capped at **10**, single-select focus; positions are anim-slot / AnimDb (not actors). Prev/Next/Stop enabled only on an active scene connection. Done saves AnimDb (`onAnimRegistrySave` when not live).
+- **Animation open preference:** C++ remembers whether Animation was the selected main panel across hide. Hotkey restores Animation only when the focus actor is in SexLab **and** that preference is true.
 
 ## Lifecycle
 
@@ -47,7 +49,8 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 
 ### TargetMenu UX
 
-- Root `#target-panel` holds globals + root options + Cancel only. Each opened `pulldown` is its own sibling panel (nav stack); Parameters is a separate confirm panel with **Start** / **Custom**. The cascade row sits in the left column under ControlPanel; Scene Creator opens in the right main-panel host.
+- Root `#target-panel` holds globals + root options + Cancel only (no `#target-name`). Each opened `pulldown` is its own sibling panel (nav stack); Parameters is a separate confirm panel with **Start** / **Custom**. The cascade row sits in the left column under ControlPanel; Scene Creator opens in the right main-panel host.
+- Mid-scene **active** options are target-specific: victim/orgasm/speaking/clothed edit the ControlPanel focus actor only; **position** shows index + ▲▼; **change actors** lists eligible nearby actors to replace the focus actor in their slot.
 - Click an action → select it and open the Parameters panel (does not start).
 - **Start** / **Custom** snapshot params, then **close all pulldown + Parameters panels**, then fire `onAction`.
 - **Start** → `onAction({action:"start",…})` → `ExecuteAction`, then **closes WebUI** (clear TargetMenu session + hide overlay, same as Cancel) so SexLab `StartThread` runs unpaused. For scene-start actions, C++ sets `SkipSceneCreatorOnce`; Papyrus `Action_Start` consumes it via `ConsumeSkipSceneCreator()` and sets `scene_creator_menu_called` so that scene skips Scene Creator **and** YesNo (treated as Yes/Random).

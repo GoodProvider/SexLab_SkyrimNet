@@ -1,12 +1,23 @@
 # Knowledgebase
 
+## Scratch files `z-*.*` (standing rule)
+
+Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / notes only — not product docs or agent source of truth.
+
+## ControlPanel actor focus + active TargetMenu (2026-08-07)
+
+- ControlPanel bottom `#control-actor-pulldown` owns focus for TargetMenu / Scene Menu / AnimationPanel. `#target-name` and Scene/Animation **scene** pulldowns removed.
+- Nearby list (C++ `PopulateNearbyActors`): player first; then status `sexlab` → `ok` → ineligible (`child`/`cmbt`/`ostim`/`dead`/`load`); then distance. Labels crop name to 10 + status suffix. Soft Scene Menu pool = `selectable && status==ok`.
+- Hotkey always `Open_WebUI_Target` (+ `WebUI_AfterTargetOpen` default pick). MultiTarget retired for this path. Animation main-panel preference persists across hide; restore via `WebUI_MaybeRestoreAnimationPanel` only when focus is SexLab-animating **and** preference true.
+- Active panels: `position` (▲▼ slot), `change_actors` (replace focus slot from eligible nearby), victim/orgasm/speaking/clothed single-actor.
+
 ## Active TargetMenu `type: papyrus` (2026-08-06)
 
 - Mid-scene TargetMenu options under `webui/menu/target/options/0*_active_*.json` use **`type: papyrus`** (no `name`, no YAML / `actions_index`). JS `onAction({action:"papyrus",...})` → C++ `ExecutePapyrusOption` → `SkyrimNet_SexLab_Actions.TM_*`.
-- Eligibility: `SexLabAnimatingFaction` rank `> 0` only (no ostim gate). Target = scene picker.
+- Eligibility: `SexLabAnimatingFaction` rank `> 0` only (no ostim gate). Target = scene picker via ControlPanel focus.
 - Storage: Animation JSON durable; AnimDB cache; Scene overlay this-thread only. Save (`TM_SaveAnimationSettings` / AnimationPanel Save) → SQL + JSON (`orgasm_expected`, `speaking_modifiers`, `clothed`). Victim/deny never durable; deny saves as expected=`1`.
 - Anim switch: `SeedOverlayFromAnimDb` — per-registry `user_anim_defaults` win, else AnimDB, else orgasm→speaking helper (`1`→`_pleasure_`, `0`→`""`).
-- Live panels (`panel` on option JSON): `change_actors` / `rotate` (name+in/out+▲▼ → `TM_ChangeActors`), `animation_list`, `victim`, `orgasm`, `speaking`, `clothed`. Stop pulldown: silent / stop / explain. LLM YAML deferred: `todo/active_action_yaml.md`.
+- Live panels (`panel` on option JSON): `change_actors` (eligible replace-in-slot), `position` (index ▲▼ → `TM_ChangeActors`), `animation_list`, `victim`, `orgasm`, `speaking`, `clothed`. Stop pulldown: silent / stop / explain. LLM YAML deferred: `todo/active_action_yaml.md`.
 
 ## Debug SKSE DLL + PublicGetPluginConfigValue CTD (2026-08-05)
 
@@ -46,8 +57,8 @@
 - **Scene Creator anim list**: query cap is 125 (SexLab `GetList`). Do **not** embed `JSON.stringify(anim)` in each row `onclick` — with 125 rows that freezes CEF during `configureSceneCreator` and the panel never paints. Keep rows in `SC.lastAnims` and pass an index. Rendered as a 5-column table (genders / modifiers / name / num stages / description); WebUI `AnimRowToJson` includes `_stage_descriptions` so the description column can substitute `{{sl.actors.N}}` from Scene Creator positions.
 - **Scene presets**: Load/Save write `scenes/<name>.json` (no OS dialog); preserve `event_hook`. Do not `LoadSetting` on Start after UI edits — that overwrites tags.
 - **Victim mask**: After WebUI V toggles, call `RebuildVictimsFromMask` — never `SetNames`/`SetMasks` (those rebuild the mask from `victims[]` and wipe UI).
-- **AnimationMenu**: hotkey → `Animation_Menu_Open`; close saves `_local_` anim JSON **only if dirty**; live O/speaking via `WebUI_OnMenuLiveUpdate`; V display-only; no tracking toggle.
-- **Scene Menu dual-mode (2026-08-02):** UI label Scene Menu; shared scene pulldown (`new` + active `GetIntentMessage`). Active: A/N + Update (SexLab anim list cap **128** via `sslUtility.PushAnimation`); AnimationPanel is single-select AnimDb editor (slot positions, not actors); Prev/Next/Stop only when connected to a live scene. Tags stay UI filters — pool mutates only on Update.
+- **AnimationMenu:** hotkey opens TargetMenu + ControlPanel focus; Animation main panel restores only if preferred-open and focus is SexLab-animating. Close saves `_local_` anim JSON **only if dirty**; live O/speaking via `WebUI_OnMenuLiveUpdate`; V display-only; no tracking toggle.
+- **Scene Menu dual-mode (2026-08-02 / 2026-08-07):** UI label Scene Menu; scene focus from ControlPanel actor (no duplicate scene pulldown). Active: A/N + Update (SexLab anim list cap **128** via `sslUtility.PushAnimation`); AnimationPanel is single-select AnimDb editor (slot positions, not actors); Prev/Next/Stop only when connected to a live scene. Tags stay UI filters — pool mutates only on Update.
 - **Legacy**: `SkyrimNet_SexLab_Stages` is an empty stub for save compatibility; all callers use AnimDb.
 
 ## Caprica rejects formal param name `scriptName` (2026-07-29)
@@ -62,7 +73,7 @@ Caprica fails natives that declare a parameter named `scriptName` with `no viabl
 
 ## ControlPanel / main_panels (2026-08-02)
 
-Left column: ControlPanel (`#control-panel`: title + main_panel pulldown + pause/unpause) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/main_panels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`. Catalog invoke: `configureControlPanel`.
+Left column: ControlPanel (`#control-panel`: title + main_panel pulldown + pause/unpause + **actor focus pulldown**) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/main_panels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`. Catalog invoke: `configureControlPanel`. Actor focus → `onControlActorChange` → `ApplyControlActorFocus` / `WebUI_OnControlActorFocus`.
 
 - **Pause toggle (2026-08-05):** PrismaUI `Focus(view, true)` pauses the game (default on Show). ControlPanel button toggles pause while the view stays shown. **Quirk:** calling `Focus` again while already focused does **not** change `pauseGame` — must `Unfocus` then `Focus(pauseGame)` to switch. Button label: **unpause** when paused, **pause** when running.
 

@@ -61,33 +61,27 @@ EndFunction
 Function ProcessHotkey(int key_code)
     ; Both players need to be in the crosshair to have SkyrimNet load them into the cache
     ; so the parseJsonActor works
-    Actor target = Game.GetCurrentCrosshairRef() as Actor 
-    Actor player = Game.GetPlayer() 
-    
+    Actor target = Game.GetCurrentCrosshairRef() as Actor
+    Actor player = Game.GetPlayer()
+    bool preferExplicit = false
+
     if target == None && main.sexlab.IsActorActive(player)
         target = player
-    endif 
-    
+        preferExplicit = true
+    elseif target != None
+        preferExplicit = true
+    else
+        target = player
+        preferExplicit = false
+    endif
+
     bool target_not_none = target != None
-    Trace("ProcessHotkey","target_not_none: "+target_not_none)
-    
-    if target != None 
-        if main.sexlab.IsActorActive(target)
-            Trace("ProcessHotkey","target: "+target.getDisplayName()+" in active sex")
-            sslThreadController thread = manager.GetThreadbyActor(target)
-            if thread != None
-                Trace("ProcessHotkey", "thread found "+thread.tid+" for target:"+target.GetDisplayName())
-                SkyrimNet_SexLab_Scene sl_scene = manager.GetSceneByThread(thread)
-                SkyrimNet_SexLab_WebUI.Animation_Menu_Open(thread, sl_scene)
-            else
-                Trace("ProcessHotkey","failed to find thread for target:"+target.GetDisplayName())
-            endif
-        elseif actions.BodyAnimation_IsEligible(target, "", "") && main.sexlab.IsValidActor(target)
-            Open_WebUI_Target(target)
-        endif 
-    else 
-        MultiTarget_Menu_Selection(player)
-    endif 
+    Trace("ProcessHotkey","target_not_none: "+target_not_none+" preferExplicit:"+preferExplicit)
+
+    if target != None
+        Open_WebUI_Target(target)
+        SkyrimNet_SexLab_WebUI.WebUI_AfterTargetOpen(target, preferExplicit)
+    endif
 EndFunction
 
 ; WebUI hotkey / stay-open refresh: pass StorageUtil strip state for actionSwitch.
@@ -104,11 +98,42 @@ Function Open_WebUI_Target(Actor target)
         SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.playerDialogs", true), \
         SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.nonPlayerDialogs", false))
     ; Mid-scene TargetMenu panels need active cast/anim state.
-    if main && main.sexlab && target.IsInFaction(main.sexlab.AnimatingFaction)
+    SyncPanelsForActor(target)
+EndFunction
+
+; ControlPanel actor pulldown changed focus.
+Function WebUI_OnControlActorFocus(Actor target)
+    if target == None
+        Trace("WebUI_OnControlActorFocus", "target is None")
+        return
+    endif
+    bool hasStripped = main.HasStrippedItems(target)
+    Trace("WebUI_OnControlActorFocus", target.GetDisplayName()+" hasStripped:"+hasStripped)
+    SkyrimNet_SexLab_WebUI.Target_Menu_Refresh(hasStripped)
+    SyncPanelsForActor(target)
+    SkyrimNet_SexLab_WebUI.WebUI_MaybeRestoreAnimationPanel()
+EndFunction
+
+Function SyncPanelsForActor(Actor target)
+    if target == None || !main || !main.sexlab
+        return
+    endif
+    if target.IsInFaction(main.sexlab.AnimatingFaction)
         SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
         if sl != None
             SkyrimNet_SexLab_WebUI.SceneCreator_Configure(sl.BuildWebUISceneMenuState())
+            SkyrimNet_SexLab_WebUI.Animation_Menu_Configure(sl.BuildWebUIAnimationMenuState())
         endif
+    else
+        int provisional = JMap.object()
+        JMap.setStr(provisional, "_mode", "creator")
+        JMap.setStr(provisional, "_connection", "new")
+        JMap.setInt(provisional, "_creator_sid", 0)
+        JMap.setInt(provisional, "_from_target_menu", 0)
+        JMap.setObj(provisional, "_positions", JArray.object())
+        String out = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(provisional)
+        JValue.release(provisional)
+        SkyrimNet_SexLab_WebUI.SceneCreator_Configure(out)
     endif
 EndFunction
 

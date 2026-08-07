@@ -446,26 +446,109 @@ namespace PapyrusBindings_WebUI
             return (n && n[0]) ? n : "Unknown";
         }
 
-        void PushNearbyJsonEntry(nlohmann::json& nearby, RE::Actor* actor)
+        struct NearbyClassify {
+            std::string status;  // sexlab | ok | reason (<=5)
+            bool selectable = false;
+            int sortRank = 2;  // 0 sexlab, 1 ok, 2 ineligible
+        };
+
+        NearbyClassify ClassifyNearbyActor(RE::Actor* actor)
+        {
+            NearbyClassify out;
+            out.status = "gone";
+            out.selectable = false;
+            out.sortRank = 2;
+            if (!actor || actor->IsDeleted())
+                return out;
+            if (actor->IsChild()) {
+                out.status = "child";
+                return out;
+            }
+            if (actor->IsDead()) {
+                out.status = "dead";
+                return out;
+            }
+            if (actor->IsInCombat()) {
+                out.status = "cmbt";
+                return out;
+            }
+            if (auto* ostim = ResolveOstimActorCountFaction()) {
+                if (actor->IsInFaction(ostim)) {
+                    out.status = "ostim";
+                    return out;
+                }
+            }
+            if (auto* anim = ResolveSexLabAnimatingFaction()) {
+                if (actor->IsInFaction(anim)) {
+                    out.status = "sexlab";
+                    out.selectable = true;
+                    out.sortRank = 0;
+                    return out;
+                }
+            }
+            if (!actor->Is3DLoaded()) {
+                out.status = "load";
+                return out;
+            }
+            out.status = "ok";
+            out.selectable = true;
+            out.sortRank = 1;
+            return out;
+        }
+
+        std::string CropActorLabelName(const std::string& name, std::size_t maxLen = 10)
+        {
+            if (name.size() <= maxLen)
+                return name;
+            return name.substr(0, maxLen);
+        }
+
+        std::string MakeNearbyLabel(const std::string& name, const NearbyClassify& cls)
+        {
+            const std::string cropped = CropActorLabelName(name);
+            if (cls.status == "ok")
+                return cropped;
+            std::string reason = cls.status;
+            if (reason.size() > 5)
+                reason = reason.substr(0, 5);
+            return cropped + " (" + reason + ")";
+        }
+
+        bool IsSexLabAnimatingActor(RE::Actor* actor)
+        {
+            if (!actor)
+                return false;
+            if (auto* anim = ResolveSexLabAnimatingFaction())
+                return actor->IsInFaction(anim);
+            return false;
+        }
+
+        void PushNearbyJsonEntry(nlohmann::json& nearby, RE::Actor* actor, RE::Actor* distAnchor, bool isPlayer)
         {
             if (!actor)
                 return;
             const auto formId = actor->GetFormID();
             uint64_t uuid = PublicFormIDToUUID ? PublicFormIDToUUID(formId) : 0;
-            // Match ActionDispatch ActorUuidDecimal: never emit "0" when formId is known.
             const std::string uuidStr =
                 uuid ? std::to_string(uuid) : std::to_string(static_cast<unsigned>(formId));
 
             float dist = 0.f;
-            RE::Actor* anchor = Target_Current ? Target_Current : RE::PlayerCharacter::GetSingleton();
-            if (anchor)
-                dist = actor->GetPosition().GetDistance(anchor->GetPosition());
+            if (distAnchor)
+                dist = actor->GetPosition().GetDistance(distAnchor->GetPosition());
+
+            const std::string name = ActorDisplayNameLocal(actor);
+            const NearbyClassify cls = ClassifyNearbyActor(actor);
 
             nearby.push_back({
-                { "name", ActorDisplayNameLocal(actor) },
+                { "name", name },
+                { "label", MakeNearbyLabel(name, cls) },
                 { "uuid", uuidStr },
-                { "formId", static_cast<int>(formId) },
-                { "dist", dist }
+                { "formId", static_cast<std::uint32_t>(formId) },
+                { "dist", dist },
+                { "status", cls.status },
+                { "selectable", cls.selectable },
+                { "sortRank", cls.sortRank },
+                { "isPlayer", isPlayer }
             });
         }
     }
@@ -522,6 +605,7 @@ namespace PapyrusBindings_WebUI
                 webui_log::warn("SetNearbyActorsJson: empty tighten — keeping prior nearby list");
                 return;
             }
+            auto* player = RE::PlayerCharacter::GetSingleton();
             nlohmann::json nearby = nlohmann::json::array();
             for (auto& item : arr) {
                 if (!item.is_object())
@@ -534,14 +618,23 @@ namespace PapyrusBindings_WebUI
                 auto* ak = formId ? RE::TESForm::LookupByID<RE::Actor>(formId) : nullptr;
                 if (!ak)
                     continue;
-                PushNearbyJsonEntry(nearby, ak);
+                const bool isPlayer = player && ak == player;
+                PushNearbyJsonEntry(nearby, ak, player, isPlayer);
             }
             if (nearby.empty()) {
                 webui_log::warn("SetNearbyActorsJson: no resolvable actors — keeping prior nearby list");
                 return;
             }
             std::sort(nearby.begin(), nearby.end(), [](const nlohmann::json& a, const nlohmann::json& b) {
-                return a.value("name", "") < b.value("name", "");
+                const bool ap = a.value("isPlayer", false);
+                const bool bp = b.value("isPlayer", false);
+                if (ap != bp)
+                    return ap && !bp;
+                const int ar = a.value("sortRank", 2);
+                const int br = b.value("sortRank", 2);
+                if (ar != br)
+                    return ar < br;
+                return a.value("dist", 0.f) < b.value("dist", 0.f);
             });
             webui_log::info("SetNearbyActorsJson: tightened count={}", nearby.size());
             WebUI_Invoke("setNearbyActors(" + nearby.dump() + ");");
@@ -576,28 +669,23 @@ namespace PapyrusBindings_WebUI
 
         const float radiusSq = g_nearbyRadius * g_nearbyRadius;
         const auto playerPos = player->GetPosition();
-        std::vector<RE::Actor*> soft;
-        soft.reserve(32);
+        std::vector<RE::Actor*> scanned;
+        scanned.reserve(64);
         int considered = 0;
-        bool includedPlayer = false;
-        bool includedTarget = false;
 
         auto addUnique = [&](RE::Actor* actor) {
-            if (!actor)
+            if (!actor || actor->IsDeleted())
                 return;
             const auto id = actor->GetFormID();
-            for (auto* existing : soft) {
+            for (auto* existing : scanned) {
                 if (existing && existing->GetFormID() == id)
                     return;
             }
-            soft.push_back(actor);
+            scanned.push_back(actor);
         };
 
-        // Player: same soft eligibility as anyone else (not force-seeded).
-        if (IsAvailableActor(player)) {
-            addUnique(player);
-            includedPlayer = true;
-        }
+        // Player always listed (status may grey them).
+        addUnique(player);
 
         if (auto* lists = RE::ProcessLists::GetSingleton()) {
             lists->ForEachHighActor([&](RE::Actor* actor) {
@@ -609,32 +697,35 @@ namespace PapyrusBindings_WebUI
                 const float distSq = actor->GetPosition().GetSquaredDistance(playerPos);
                 if (distSq > radiusSq)
                     return RE::BSContainer::ForEachResult::kContinue;
-                if (!IsAvailableActor(actor))
-                    return RE::BSContainer::ForEachResult::kContinue;
                 addUnique(actor);
                 return RE::BSContainer::ForEachResult::kContinue;
             });
         }
 
-        // Target: soft-eligible, even outside radius.
-        if (Target_Current && Target_Current != player && !Target_Current->IsDeleted() &&
-            IsAvailableActor(Target_Current)) {
+        // Keep current focus in the list even outside radius.
+        if (Target_Current && Target_Current != player && !Target_Current->IsDeleted())
             addUnique(Target_Current);
-            includedTarget = true;
-        }
 
         nlohmann::json nearby = nlohmann::json::array();
-        for (auto* ak : soft)
-            PushNearbyJsonEntry(nearby, ak);
+        for (auto* ak : scanned)
+            PushNearbyJsonEntry(nearby, ak, player, ak == player);
+
         std::sort(nearby.begin(), nearby.end(), [](const nlohmann::json& a, const nlohmann::json& b) {
-            return a.value("name", "") < b.value("name", "");
+            const bool ap = a.value("isPlayer", false);
+            const bool bp = b.value("isPlayer", false);
+            if (ap != bp)
+                return ap && !bp;
+            const int ar = a.value("sortRank", 2);
+            const int br = b.value("sortRank", 2);
+            if (ar != br)
+                return ar < br;
+            return a.value("dist", 0.f) < b.value("dist", 0.f);
         });
 
         webui_log::info(
-            "PopulateNearbyActors: radius={} considered={} soft={} player={} target={}",
-            g_nearbyRadius, considered, soft.size(), includedPlayer, includedTarget);
+            "PopulateNearbyActors: radius={} considered={} listed={}",
+            g_nearbyRadius, considered, scanned.size());
 
-        // Soft list is authoritative for Positions nearby (no Papyrus IsValidActor overwrite).
         WebUI_Invoke("setNearbyActors(" + nearby.dump() + ");");
     }
 
@@ -925,6 +1016,88 @@ namespace PapyrusBindings_WebUI
         return IsAvailableActor(actor);
     }
 
+    bool IsSexLabAnimatingFocus(RE::Actor* actor)
+    {
+        return IsSexLabAnimatingActor(actor);
+    }
+
+    void Call_ControlActorFocus(RE::Actor* target)
+    {
+        if (!target) {
+            webui_log::warn("Call_ControlActorFocus: null target");
+            return;
+        }
+        SKSE::GetTaskInterface()->AddTask([target]() {
+            auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+            if (!vm) {
+                webui_log::error("Call_ControlActorFocus: no VM");
+                return;
+            }
+            RE::TESQuest* quest = FindMainQuest();
+            if (!quest) {
+                webui_log::error("Call_ControlActorFocus: quest not found");
+                return;
+            }
+            auto handle = vm->GetObjectHandlePolicy()->GetHandleForObject(
+                static_cast<RE::VMTypeID>(quest->GetFormType()), quest);
+            RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
+            vm->FindBoundObject(handle, "SkyrimNet_SexLab_Menu", scriptObject);
+            if (!scriptObject) {
+                webui_log::error("Call_ControlActorFocus: Menu script not bound");
+                return;
+            }
+            auto* args = RE::MakeFunctionArguments(static_cast<RE::Actor*>(target));
+            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
+            vm->DispatchMethodCall(scriptObject, RE::BSFixedString("WebUI_OnControlActorFocus"), args, callback);
+            webui_log::info("Call_ControlActorFocus: dispatched");
+        });
+    }
+
+    void ApplyControlActorFocus(std::uint32_t formId)
+    {
+        if (!formId) {
+            webui_log::warn("ApplyControlActorFocus: formId 0");
+            return;
+        }
+        auto* actor = RE::TESForm::LookupByID<RE::Actor>(formId);
+        if (!actor) {
+            webui_log::warn("ApplyControlActorFocus: actor not found {:08X}", formId);
+            return;
+        }
+
+        Target_Current = actor;
+        TargetMenuSessionActive = true;
+
+        const auto targetFormId = actor->GetFormID();
+        uint64_t uuid = (PublicFormIDToUUID) ? PublicFormIDToUUID(targetFormId) : 0;
+        std::string skyrimNetName = (uuid && PublicGetActorNameByUUID) ? PublicGetActorNameByUUID(uuid) : "";
+        const char* targetName = !skyrimNetName.empty() ? skyrimNetName.c_str() : actor->GetName();
+        const char* name = (targetName && targetName[0]) ? targetName : "Unknown";
+        const std::string uuidStr =
+            uuid ? std::to_string(uuid) : std::to_string(static_cast<unsigned>(targetFormId));
+        WebUI_Invoke(std::format("setTargetActor('{}', '{}', {});", uuidStr, EscapeJsString(name),
+            static_cast<unsigned>(targetFormId)));
+
+        Call_ControlActorFocus(actor);
+    }
+
+    void WebUI_AfterTargetOpen(RE::StaticFunctionTag*, RE::Actor* preferred, bool preferExplicit)
+    {
+        const unsigned fid =
+            (preferExplicit && preferred) ? static_cast<unsigned>(preferred->GetFormID()) : 0u;
+        WebUI_Invoke(std::format("selectControlActorDefault({});", fid));
+    }
+
+    void WebUI_MaybeRestoreAnimationPanel(RE::StaticFunctionTag*)
+    {
+        if (!Target_Current || !IsSexLabAnimatingActor(Target_Current))
+            return;
+        if (!ActionCatalog::IsAnimationPanelPreferredOpen())
+            return;
+        webui_log::info("WebUI_MaybeRestoreAnimationPanel: restoring Animation panel");
+        ActionCatalog::SwitchMainPanel("animation_menu_panel");
+    }
+
     bool Register_WebUI_Functions(RE::BSScript::IVirtualMachine* a_vm)
     {
         if (!a_vm) {
@@ -946,6 +1119,8 @@ namespace PapyrusBindings_WebUI
         a_vm->RegisterFunction("SceneConnections_Show", scriptName, SceneConnections_Show);
         a_vm->RegisterFunction("WebUI_HideAllPanels", scriptName, WebUI_HideAllPanels);
         a_vm->RegisterFunction("WebUI_SetHotkey", scriptName, WebUI_SetHotkey);
+        a_vm->RegisterFunction("WebUI_AfterTargetOpen", scriptName, WebUI_AfterTargetOpen);
+        a_vm->RegisterFunction("WebUI_MaybeRestoreAnimationPanel", scriptName, WebUI_MaybeRestoreAnimationPanel);
         a_vm->RegisterFunction("WebUI_SetLastRebuildTimestamp", scriptName, WebUI_SetLastRebuildTimestamp);
         a_vm->RegisterFunction("ActorAnimMeta_Result", scriptName, ActorAnimMeta_Result);
         a_vm->RegisterFunction("ConsumeSkipSceneCreator", scriptName, ConsumeSkipSceneCreator);

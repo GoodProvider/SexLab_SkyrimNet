@@ -54,6 +54,10 @@ namespace ActionCatalog
     /// Clear current main-panel selection (papyrus close / hide builtins) without selecting another.
     void ClearMainPanelSelection();
 
+    /// Last hotkey/session preference: Animation main panel was left open.
+    bool IsAnimationPanelPreferredOpen();
+    void SetAnimationPanelPreferredOpen(bool open);
+
     // Assembled menu/target defaultsParameters + options
     const nlohmann::json& TargetOptions();
 

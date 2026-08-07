@@ -75,6 +75,18 @@ namespace PapyrusBindings_WebUI {
     /// Soft session gate for nearby scan (dead/combat/factions/3D). Papyrus adds StorageUtil + SexLab IsValidActor.
     bool IsAvailableActor(RE::Actor* actor);
 
+    /// True when actor is in SexLab AnimatingFaction.
+    bool IsSexLabAnimatingFocus(RE::Actor* actor);
+
+    /// After Target_Menu_Open: pick ControlPanel default and maybe restore Animation panel.
+    void WebUI_AfterTargetOpen(RE::StaticFunctionTag*, RE::Actor* preferred, bool preferExplicit);
+
+    /// Restore Animation main panel when preferred-open and focus is in SexLab.
+    void WebUI_MaybeRestoreAnimationPanel(RE::StaticFunctionTag*);
+
+    /// JS ControlPanel actor pick → set Target_Current + Papyrus sync.
+    void ApplyControlActorFocus(std::uint32_t formId);
+
     /// Pushes player + nearby actors into JS before showing the overlay.
     /// radius < 0 keeps the last range (default 100).
     void PopulateNearbyActors(float radius = -1.f);

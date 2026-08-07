@@ -93,8 +93,7 @@
             width: min(320px, 28vw);
             max-height: 80vh;
             min-height: 0;
-            overflow-x: visible;
-            overflow-y: auto;
+            overflow: visible;
             z-index: 2;
         }
 
@@ -104,6 +103,8 @@
             align-items: stretch;
             gap: var(--space-sm);
             width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
             flex: 0 0 auto;
         }
 
@@ -118,14 +119,31 @@
 
         #control-panel-host {
             width: 100%;
-        }
-
-        #control-panel-host .pulldown {
-            width: 100%;
             min-width: 0;
         }
 
-        #control-panel-host .pulldown-menu {
+        #control-actor-pulldown {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        #control-panel-host .pulldown,
+        #control-actor-pulldown .pulldown {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        #control-actor-pulldown .pulldown-value {
+            width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #control-panel-host .pulldown-menu,
+        #control-actor-pulldown .pulldown-menu {
             left: calc(100% + var(--space-sm));
             top: 0;
             right: auto;
@@ -138,16 +156,24 @@
             box-shadow: var(--shadow-lg);
         }
 
+        .pulldown-option.disabled {
+            opacity: 0.45;
+            color: var(--text-muted);
+            cursor: default;
+            pointer-events: none;
+        }
+
         #target-menu-row {
             display: none;
             flex-direction: row;
             align-items: flex-start;
             gap: var(--space-md);
-            width: 100%;
-            max-width: none;
+            width: max-content;
+            max-width: calc(90vw - 10%);
             min-height: 0;
             flex: 1 1 auto;
             overflow: visible;
+            z-index: 5;
         }
 
         #target-cascade-host {
@@ -155,21 +181,21 @@
             flex-direction: row;
             align-items: flex-start;
             gap: var(--space-md);
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             min-height: 0;
-            max-height: 100%;
-            overflow-y: auto;
+            overflow: visible;
+            z-index: 5;
         }
 
         #target-panel {
-            min-width: auto;
-            width: 100%;
-            max-width: none;
-            max-height: 100%;
+            min-width: min(280px, 28vw);
+            width: min(320px, 28vw);
+            max-width: min(320px, 28vw);
+            max-height: min(70vh, 100%);
             min-height: 0;
             box-sizing: border-box;
             overflow-y: auto;
-            flex: 0 1 auto;
+            flex: 0 0 auto;
         }
 
         #main-panel-host {
@@ -217,10 +243,44 @@
         .target-pulldown-panel,
         .target-params-panel,
         .target-papyrus-panel {
-            min-width: 180px;
-            max-width: 320px;
-            max-height: 80vh;
+            min-width: min(280px, 40vw);
+            max-width: min(360px, 45vw);
+            max-height: min(70vh, 80vh);
+            overflow: visible;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            flex: 0 0 auto;
+        }
+
+        .target-params-panel .section-header {
+            flex-shrink: 0;
+        }
+
+        .target-params-panel #right-dynamics {
+            flex: 1 1 auto;
+            min-height: 0;
             overflow-y: auto;
+            overflow-x: visible;
+        }
+
+        .target-params-panel > .bottom-bar {
+            flex-shrink: 0;
+            margin-top: var(--space-sm);
+        }
+
+        .target-params-panel .pulldown-menu,
+        .target-pulldown-panel .pulldown-menu,
+        .target-papyrus-panel .pulldown-menu {
+            left: calc(100% + var(--space-sm));
+            top: 0;
+            right: auto;
+            min-width: min(220px, 40vw);
+            max-height: 50vh;
+            z-index: 40;
+            background: rgba(24, 24, 28, 0.96);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
         }
 
         /* ── Panel ────────────────────────────────────────────── */
@@ -1099,11 +1159,11 @@
             <div class="control-panel-title">SkyrimNet SexLab</div>
             <div id="control-panel-host"></div>
             <div class="action-btn" id="control-pause-btn" onclick="controlPauseToggle()">unpause</div>
+            <div id="control-actor-pulldown"></div>
         </div>
         <div id="target-menu-row" style="display:none">
             <div id="target-panel" class="panel">
 
-                <div id="target-name" class="target-row">Target</div>
                 <div id="framework-row" class="field-row" style="display:none"></div>
 
                 <div id="global-params"></div>
@@ -1126,8 +1186,6 @@
             </div>
         </div>
         <div id="sc-header-row2" class="compact-row">
-            <span>scene</span>
-            <div id="sc-scene-connection-pulldown"></div>
             <span id="sc-range-style-cluster">
                 <span>style</span>
                 <div id="sc-style-pulldown"></div>
@@ -1199,10 +1257,6 @@
 
     <div id="animation-menu-panel" class="panel" style="display:none">
         <div id="am-title" class="target-row">Animation</div>
-        <div class="compact-row" style="margin-bottom:8px">
-            <span>scene</span>
-            <div id="am-scene-connection-pulldown"></div>
-        </div>
         <div class="section-header">Animations</div>
         <div id="am-anims-list" class="scroll-list" style="max-height:14em; margin-bottom:8px"></div>
         <div id="am-subtitle" class="compact-row" style="opacity:0.7"></div>
@@ -2109,8 +2163,117 @@
             const customBtn = document.getElementById('target-custom-btn');
             if (!startBtn || !customBtn) return;
             const hasAction = !!selectedActionName && !!(TARGET_CATALOG.actions && TARGET_CATALOG.actions[selectedActionName]);
-            startBtn.classList.toggle('disabled', !hasAction);
-            customBtn.classList.toggle('disabled', !hasAction || !isSceneStartAction(selectedActionName));
+            const sameActor = !isSoloTargetAction() && paramsPositionsSameActor();
+            startBtn.classList.toggle('disabled', !hasAction || sameActor);
+            customBtn.classList.toggle('disabled', !hasAction || !isSceneStartAction(selectedActionName) || sameActor);
+        }
+
+        function isSoloTargetAction() {
+            if (!selectedActionName) return false;
+            const node = findActionNode(selectedActionName);
+            if (node && node.optionParameters && Object.prototype.hasOwnProperty.call(node.optionParameters, 'target')
+                && node.optionParameters.target === null)
+                return true;
+            if (paramDict && Object.prototype.hasOwnProperty.call(paramDict, 'target') && paramDict.target === null)
+                return true;
+            return false;
+        }
+
+        function eligibleParamActors() {
+            const pool = [];
+            const seen = new Set();
+            const add = (a) => {
+                if (!a) return;
+                const fid = formIdU32(a.formId);
+                if (!fid || seen.has(fid)) return;
+                seen.add(fid);
+                pool.push({
+                    name: a.name || '?',
+                    formId: fid,
+                    label: a.name || '?'
+                });
+            };
+            softNearbyActors().forEach(add);
+            if (playerActor) add(playerActor);
+            if (targetActor) add(targetActor);
+            return pool;
+        }
+
+        function actorParamEntry(formId) {
+            return { type: 'Actor', formId: formIdU32(formId) };
+        }
+
+        function paramsPositionFormId(slot) {
+            const key = slot === 0 ? 'target' : 'speaker';
+            if (isSoloTargetAction() && slot === 0) {
+                const sp = paramDict && paramDict.speaker;
+                if (sp && typeof sp === 'object' && sp.formId != null) return formIdU32(sp.formId);
+            }
+            const ent = paramDict && paramDict[key];
+            if (ent && typeof ent === 'object' && ent.formId != null) return formIdU32(ent.formId);
+            return 0;
+        }
+
+        function paramsPositionsSameActor() {
+            const a = paramsPositionFormId(0);
+            const b = paramsPositionFormId(1);
+            return !!(a && b && a === b);
+        }
+
+        function setParamsPositionActor(slot, formId) {
+            const fid = formIdU32(formId);
+            if (!fid) return;
+            if (isSoloTargetAction()) {
+                paramDict.speaker = actorParamEntry(fid);
+                paramDict.target = null;
+            } else if (slot === 0) {
+                paramDict.target = actorParamEntry(fid);
+            } else {
+                paramDict.speaker = actorParamEntry(fid);
+            }
+            updateTargetConfirmButtons();
+        }
+
+        function defaultParamsPositions(pool) {
+            const byId = (fid) => pool.find(a => formIdU32(a.formId) === formIdU32(fid)) || null;
+            let pos0 = byId(targetActor && targetActor.formId) || pool[0] || null;
+            let pos1 = byId(playerActor && playerActor.formId) || null;
+            if (isSoloTargetAction()) {
+                if (!pos0) pos0 = byId(playerActor && playerActor.formId) || pool[0] || null;
+                return { pos0, pos1: null };
+            }
+            if (pos1 && pos0 && formIdU32(pos1.formId) === formIdU32(pos0.formId))
+                pos1 = pool.find(a => formIdU32(a.formId) !== formIdU32(pos0.formId)) || null;
+            if (!pos1)
+                pos1 = pool.find(a => !pos0 || formIdU32(a.formId) !== formIdU32(pos0.formId)) || null;
+            return { pos0, pos1 };
+        }
+
+        function appendPositionActorField(dyn, slot, pool, current) {
+            const field = document.createElement('div');
+            field.className = 'dyn-field';
+            const lab = document.createElement('label');
+            lab.textContent = 'Position ' + slot;
+            field.appendChild(lab);
+            if (!pool.length) {
+                const miss = document.createElement('div');
+                miss.textContent = '—';
+                field.appendChild(miss);
+                dyn.appendChild(field);
+                return;
+            }
+            const labels = pool.map(a => a.label);
+            const curLabel = current ? current.label : labels[0];
+            const curFid = current ? formIdU32(current.formId) : formIdU32(pool[0].formId);
+            setParamsPositionActor(slot, curFid);
+            field.appendChild(createPulldown(labels, curLabel, (picked, idx) => {
+                const entry = (idx != null && idx >= 0 && idx < pool.length)
+                    ? pool[idx]
+                    : pool.find(a => a.label === picked);
+                if (!entry) return;
+                setParamsPositionActor(slot, entry.formId);
+            }));
+            dyn.appendChild(field);
         }
 
         function makeActionRow(label, name, selected, onBefore, optionParameters, disabled) {
@@ -2171,7 +2334,7 @@
             });
         }
 
-        function createPulldown(values, current, onChange) {
+        function createPulldown(values, current, onChange, disabledValues) {
             const root = document.createElement('div');
             root.className = 'pulldown';
             const valueEl = document.createElement('div');
@@ -2179,20 +2342,29 @@
             valueEl.textContent = current || (values[0] || '');
             const menu = document.createElement('div');
             menu.className = 'pulldown-menu';
+            const disabled = disabledValues instanceof Set
+                ? disabledValues
+                : new Set(Array.isArray(disabledValues) ? disabledValues : []);
 
             const paint = (selected) => {
                 valueEl.textContent = selected;
                 menu.innerHTML = '';
-                for (const v of values) {
+                for (let i = 0; i < values.length; i++) {
+                    const v = values[i];
                     const item = document.createElement('div');
-                    item.className = 'pulldown-option' + (v === selected ? ' selected' : '');
+                    const isDisabled = disabled.has(v);
+                    item.className = 'pulldown-option'
+                        + (v === selected ? ' selected' : '')
+                        + (isDisabled ? ' disabled' : '');
                     item.textContent = v;
-                    item.onclick = (e) => {
-                        e.stopPropagation();
-                        paint(v);
-                        root.classList.remove('open');
-                        if (onChange) onChange(v);
-                    };
+                    if (!isDisabled) {
+                        item.onclick = (e) => {
+                            e.stopPropagation();
+                            paint(v);
+                            root.classList.remove('open');
+                            if (onChange) onChange(v, i);
+                        };
+                    }
                     menu.appendChild(item);
                 }
             };
@@ -2246,12 +2418,12 @@
             targetActor = {
                 uuid: String(uuid != null ? uuid : '0'),
                 name: name || '',
-                formId: formId != null ? formId : 0
+                formId: formIdU32(formId)
             };
             if (targetActor.uuid && targetActor.uuid !== '0')
                 actorNames[targetActor.uuid] = targetActor.name;
-            const el = document.getElementById('target-name');
-            if (el) el.textContent = name || 'Target';
+            if (typeof renderControlActorPulldown === 'function')
+                renderControlActorPulldown();
             if (typeof scRenderPositions === 'function') scRenderPositions();
         }
 
@@ -2367,8 +2539,8 @@
             }
             if (opt.panel) {
                 tmCastDraft = null;
-                if (opt.panel === 'change_actors' || opt.panel === 'rotate')
-                    tmCastDraft = tmBuildCastDraft(opt.panel === 'rotate');
+                if (opt.panel === 'position')
+                    tmCastDraft = tmBuildCastDraft(true);
                 renderTargetMenu();
                 return;
             }
@@ -2401,7 +2573,7 @@
             };
             if (playerActor) addOut(playerActor.name, playerActor.formId);
             if (targetActor) addOut(targetActor.name, targetActor.formId);
-            (nearbyActors || []).forEach(a => addOut(a.name, a.formId));
+            softNearbyActors().forEach(a => addOut(a.name, a.formId));
             return inCast.concat(out);
         }
 
@@ -2476,59 +2648,72 @@
             const body = document.createElement('div');
             const kind = opt.panel;
 
-            if (kind === 'change_actors' || kind === 'rotate') {
-                if (!tmCastDraft) tmCastDraft = tmBuildCastDraft(kind === 'rotate');
-                const table = document.createElement('table');
-                table.className = 'data-table';
-                table.innerHTML = '<thead><tr><th>name</th><th>in</th><th>pos</th></tr></thead>';
-                const tbody = document.createElement('tbody');
-                const rows = kind === 'rotate'
-                    ? tmInCastOrdered()
-                    : (tmCastDraft || []).slice().sort((a, b) => {
-                        if (a.in !== b.in) return a.in ? -1 : 1;
-                        return a.order - b.order;
-                    });
-                rows.forEach(a => {
-                    const tr = document.createElement('tr');
-                    const tdName = document.createElement('td');
-                    tdName.textContent = a.name;
-                    const tdIn = document.createElement('td');
-                    if (kind === 'rotate') {
-                        tdIn.textContent = 'in';
+            if (kind === 'position') {
+                if (!tmCastDraft) tmCastDraft = tmBuildCastDraft(true);
+                const focusFid = Number((targetActor && targetActor.formId) || 0);
+                const ordered = tmInCastOrdered();
+                const idx = ordered.findIndex(a => a.formId === focusFid);
+                const row = document.createElement('div');
+                row.className = 'compact-row';
+                const label = document.createElement('span');
+                label.textContent = 'position ' + (idx >= 0 ? idx : '—');
+                const up = document.createElement('div');
+                up.className = 'action-btn';
+                up.textContent = '▲';
+                up.onclick = () => {
+                    if (idx < 0) return;
+                    tmMoveInCast(focusFid, -1);
+                    tmFireChangeActors(opt);
+                };
+                const down = document.createElement('div');
+                down.className = 'action-btn';
+                down.textContent = '▼';
+                down.onclick = () => {
+                    if (idx < 0) return;
+                    tmMoveInCast(focusFid, 1);
+                    tmFireChangeActors(opt);
+                };
+                row.appendChild(label);
+                row.appendChild(up);
+                row.appendChild(down);
+                body.appendChild(row);
+                if (idx < 0)
+                    body.appendChild(document.createTextNode('Focus actor is not in the active cast.'));
+            } else if (kind === 'change_actors') {
+                const focusFid = Number((targetActor && targetActor.formId) || 0);
+                const cast = (SC.positions || []).map((p, i) => ({
+                    formId: tmFormId(p),
+                    name: tmActorName(p),
+                    order: i
+                })).filter(a => a.formId);
+                const focusIdx = cast.findIndex(a => a.formId === focusFid);
+                if (focusIdx < 0) {
+                    body.textContent = 'Focus actor is not in the active cast.';
+                } else {
+                    const hint = document.createElement('div');
+                    hint.style.opacity = '0.7';
+                    hint.style.marginBottom = '6px';
+                    hint.textContent = 'Replace ' + (targetActor.name || 'actor') + ' at position ' + focusIdx;
+                    body.appendChild(hint);
+                    const eligible = softNearbyActors().filter(a => Number(a.formId) !== focusFid);
+                    if (!eligible.length) {
+                        body.appendChild(document.createTextNode('No eligible nearby actors.'));
                     } else {
-                        const btn = document.createElement('span');
-                        btn.className = 'cell-toggle' + (a.in ? ' on' : '');
-                        btn.textContent = a.in ? 'in' : 'out';
-                        btn.onclick = () => tmToggleInOut(a.formId);
-                        tdIn.appendChild(btn);
+                        eligible.forEach(a => {
+                            const row = document.createElement('div');
+                            row.className = 'option';
+                            row.textContent = a.name || a.label || '?';
+                            row.onclick = () => {
+                                const next = cast.map(c => c.formId);
+                                next[focusIdx] = Number(a.formId);
+                                const formIdsCsv = next.map(String).join(',');
+                                firePapyrusOption(opt, { formIdsCsv });
+                                requestControlActorFocus(a, { force: true });
+                            };
+                            body.appendChild(row);
+                        });
                     }
-                    const tdPos = document.createElement('td');
-                    if (a.in) {
-                        const move = document.createElement('div');
-                        move.className = 'pos-move';
-                        const up = document.createElement('span');
-                        up.textContent = '▲';
-                        up.onclick = () => tmMoveInCast(a.formId, -1);
-                        const down = document.createElement('span');
-                        down.textContent = '▼';
-                        down.onclick = () => tmMoveInCast(a.formId, 1);
-                        move.appendChild(up);
-                        move.appendChild(down);
-                        tdPos.appendChild(move);
-                    }
-                    tr.appendChild(tdName);
-                    tr.appendChild(tdIn);
-                    tr.appendChild(tdPos);
-                    tbody.appendChild(tr);
-                });
-                table.appendChild(tbody);
-                body.appendChild(table);
-                const apply = document.createElement('div');
-                apply.className = 'action-btn';
-                apply.style.marginTop = '8px';
-                apply.textContent = 'Apply';
-                apply.onclick = () => tmFireChangeActors(opt);
-                body.appendChild(apply);
+                }
             } else if (kind === 'animation_list') {
                 const regs = SC.inThreadRegistries || [];
                 const active = SC.activeRegistry || '';
@@ -2556,109 +2741,93 @@
                 body.appendChild(custom);
             } else if (kind === 'victim' || kind === 'orgasm' || kind === 'speaking' || kind === 'clothed') {
                 const positions = SC.positions || [];
-                if (!positions.length) {
-                    body.textContent = 'No active cast. Open TargetMenu on an animating actor.';
+                const focusFid = Number((targetActor && targetActor.formId) || 0);
+                const p = positions.find(x => tmFormId(x) === focusFid);
+                if (!p) {
+                    body.textContent = 'Focus actor is not in the active cast.';
                 } else {
-                    const table = document.createElement('table');
-                    table.className = 'data-table';
-                    const thead = document.createElement('thead');
-                    if (kind === 'victim') thead.innerHTML = '<tr><th>name</th><th>V</th></tr>';
-                    else if (kind === 'orgasm') thead.innerHTML = '<tr><th>name</th><th>mode</th><th>force</th></tr>';
-                    else if (kind === 'speaking') thead.innerHTML = '<tr><th>name</th><th>speaking</th></tr>';
-                    else thead.innerHTML = '<tr><th>name</th><th>clothed</th></tr>';
-                    table.appendChild(thead);
-                    const tbody = document.createElement('tbody');
-                    positions.forEach((p) => {
-                        const fid = tmFormId(p);
-                        const tr = document.createElement('tr');
-                        const tdName = document.createElement('td');
-                        tdName.textContent = tmActorName(p);
-                        tr.appendChild(tdName);
-                        if (kind === 'victim') {
-                            const td = document.createElement('td');
-                            const on = !!Number(p._victim);
+                    const fid = focusFid;
+                    const nameRow = document.createElement('div');
+                    nameRow.style.marginBottom = '6px';
+                    nameRow.textContent = tmActorName(p);
+                    body.appendChild(nameRow);
+                    if (kind === 'victim') {
+                        const on = !!Number(p._victim);
+                        const btn = document.createElement('span');
+                        btn.className = 'cell-toggle' + (on ? ' on' : '');
+                        btn.textContent = on ? 'V' : '—';
+                        btn.onclick = () => {
+                            p._victim = on ? 0 : 1;
+                            tmFireForActor(opt, fid, { isVictimStr: on ? '0' : '1' });
+                            renderPapyrusPanel();
+                        };
+                        body.appendChild(btn);
+                    } else if (kind === 'orgasm') {
+                        const mode = tmOrgasmMode(p);
+                        const row = document.createElement('div');
+                        row.className = 'compact-row';
+                        ['deny', 'expect', 'not_expected'].forEach(m => {
                             const btn = document.createElement('span');
-                            btn.className = 'cell-toggle' + (on ? ' on' : '');
-                            btn.textContent = on ? 'V' : '—';
+                            btn.className = 'cell-toggle' + (mode === m ? ' on' : '');
+                            btn.style.marginRight = '4px';
+                            btn.textContent = m === 'not_expected' ? 'no' : m;
                             btn.onclick = () => {
-                                p._victim = on ? 0 : 1;
-                                tmFireForActor(opt, fid, { isVictimStr: on ? '0' : '1' });
+                                if (m === 'deny') { p._deny_orgasm = 1; p._no_orgasm = 1; }
+                                else if (m === 'not_expected') { p._deny_orgasm = 0; p._no_orgasm = 1; }
+                                else { p._deny_orgasm = 0; p._no_orgasm = 0; }
+                                tmFireForActor(opt, fid, { mode: m });
                                 renderPapyrusPanel();
                             };
-                            td.appendChild(btn);
-                            tr.appendChild(td);
-                        } else if (kind === 'orgasm') {
-                            const mode = tmOrgasmMode(p);
-                            const tdMode = document.createElement('td');
-                            ['deny', 'expect', 'not_expected'].forEach(m => {
-                                const btn = document.createElement('span');
-                                btn.className = 'cell-toggle' + (mode === m ? ' on' : '');
-                                btn.style.marginRight = '4px';
-                                btn.textContent = m === 'not_expected' ? 'no' : m;
-                                btn.onclick = () => {
-                                    if (m === 'deny') { p._deny_orgasm = 1; p._no_orgasm = 1; }
-                                    else if (m === 'not_expected') { p._deny_orgasm = 0; p._no_orgasm = 1; }
-                                    else { p._deny_orgasm = 0; p._no_orgasm = 0; }
-                                    tmFireForActor(opt, fid, { mode: m });
-                                    renderPapyrusPanel();
-                                };
-                                tdMode.appendChild(btn);
-                            });
-                            tr.appendChild(tdMode);
-                            const tdForce = document.createElement('td');
-                            const force = document.createElement('span');
-                            force.className = 'cell-toggle';
-                            force.textContent = 'force';
-                            force.onclick = () => {
-                                firePapyrusOption({
-                                    plugin: opt.plugin,
-                                    questFormId: opt.questFormId,
-                                    scriptName: opt.scriptName,
-                                    executionFunctionName: 'TM_ForceOrgasm',
-                                    parameterMapping: [
-                                        { type: 'speaker', name: 'speaker' },
-                                        { type: 'target', name: 'target' },
-                                        { type: 'dynamic', name: 'formIdStr' }
-                                    ]
-                                }, { formIdStr: String(fid) });
-                            };
-                            tdForce.appendChild(force);
-                            tr.appendChild(tdForce);
-                        } else if (kind === 'speaking') {
-                            const td = document.createElement('td');
-                            const mods = ['_pleasure_', '_pain_', '_gagged_', '_kissing_', ''];
-                            const cur = String(p._speaking || '');
-                            mods.forEach(m => {
-                                const btn = document.createElement('span');
-                                btn.className = 'cell-toggle' + (cur === m ? ' on' : '');
-                                btn.style.marginRight = '4px';
-                                btn.textContent = m ? abbrevMod(m) : '—';
-                                btn.onclick = () => {
-                                    p._speaking = m;
-                                    tmFireForActor(opt, fid, { speaking: m });
-                                    renderPapyrusPanel();
-                                };
-                                td.appendChild(btn);
-                            });
-                            tr.appendChild(td);
-                        } else {
-                            const td = document.createElement('td');
-                            const on = !!Number(p._dressed);
+                            row.appendChild(btn);
+                        });
+                        const force = document.createElement('span');
+                        force.className = 'cell-toggle';
+                        force.textContent = 'force';
+                        force.onclick = () => {
+                            firePapyrusOption({
+                                plugin: opt.plugin,
+                                questFormId: opt.questFormId,
+                                scriptName: opt.scriptName,
+                                executionFunctionName: 'TM_ForceOrgasm',
+                                parameterMapping: [
+                                    { type: 'speaker', name: 'speaker' },
+                                    { type: 'target', name: 'target' },
+                                    { type: 'dynamic', name: 'formIdStr' }
+                                ]
+                            }, { formIdStr: String(fid) });
+                        };
+                        row.appendChild(force);
+                        body.appendChild(row);
+                    } else if (kind === 'speaking') {
+                        const row = document.createElement('div');
+                        row.className = 'compact-row';
+                        const mods = ['_pleasure_', '_pain_', '_gagged_', '_kissing_', ''];
+                        const cur = String(p._speaking || '');
+                        mods.forEach(m => {
                             const btn = document.createElement('span');
-                            btn.className = 'cell-toggle' + (on ? ' on' : '');
-                            btn.textContent = on ? 'clothed' : 'nude';
+                            btn.className = 'cell-toggle' + (cur === m ? ' on' : '');
+                            btn.style.marginRight = '4px';
+                            btn.textContent = m ? abbrevMod(m) : '—';
                             btn.onclick = () => {
-                                p._dressed = on ? 0 : 1;
-                                tmFireForActor(opt, fid, { clothedStr: on ? '0' : '1' });
+                                p._speaking = m;
+                                tmFireForActor(opt, fid, { speaking: m });
                                 renderPapyrusPanel();
                             };
-                            td.appendChild(btn);
-                            tr.appendChild(td);
-                        }
-                        tbody.appendChild(tr);
-                    });
-                    table.appendChild(tbody);
-                    body.appendChild(table);
+                            row.appendChild(btn);
+                        });
+                        body.appendChild(row);
+                    } else {
+                        const on = !!Number(p._dressed);
+                        const btn = document.createElement('span');
+                        btn.className = 'cell-toggle' + (on ? ' on' : '');
+                        btn.textContent = on ? 'clothed' : 'nude';
+                        btn.onclick = () => {
+                            p._dressed = on ? 0 : 1;
+                            tmFireForActor(opt, fid, { clothedStr: on ? '0' : '1' });
+                            renderPapyrusPanel();
+                        };
+                        body.appendChild(btn);
+                    }
                 }
             } else {
                 body.textContent = 'Unknown panel: ' + kind;
@@ -2795,6 +2964,20 @@
             const dyn = document.createElement('div');
             dyn.id = 'right-dynamics';
 
+            const pool = eligibleParamActors();
+            const defaults = defaultParamsPositions(pool);
+            const pickPos = (slot, fallback) => {
+                const fid = paramsPositionFormId(slot);
+                if (fid) {
+                    const found = pool.find(a => formIdU32(a.formId) === fid);
+                    if (found) return found;
+                }
+                return fallback;
+            };
+            appendPositionActorField(dyn, 0, pool, pickPos(0, defaults.pos0));
+            if (!isSoloTargetAction())
+                appendPositionActorField(dyn, 1, pool, pickPos(1, defaults.pos1));
+
             const mapping = action.parameterMapping || [];
             for (const m of mapping) {
                 if (isActorMapping(m) || isStaticMapping(m)) continue;
@@ -2856,6 +3039,7 @@
             const startBtn = document.getElementById('target-start-btn');
             if (startBtn && startBtn.classList.contains('disabled')) return;
             if (!selectedActionName) return;
+            if (!isSoloTargetAction() && paramsPositionsSameActor()) return;
             if (typeof window.onAction !== 'function') return;
             const name = selectedActionName;
             const parameters = deepClone(paramDict);
@@ -2875,6 +3059,7 @@
             const customBtn = document.getElementById('target-custom-btn');
             if (customBtn && customBtn.classList.contains('disabled')) return;
             if (!selectedActionName || !isSceneStartAction(selectedActionName)) return;
+            if (!isSoloTargetAction() && paramsPositionsSameActor()) return;
             if (typeof window.onAction !== 'function') return;
             const name = selectedActionName;
             const parameters = deepClone(paramDict);
@@ -2919,23 +3104,134 @@
         let openGroup      = null;
 
         // ── C++-callable actor setters ────────────────────────────
+        /// Coerce FormID to uint32 so temp refs (0xFF******) match C++ unsigned emits.
+        function formIdU32(x) {
+            return Number(x || 0) >>> 0;
+        }
+
+        function softNearbyActors() {
+            return (nearbyActors || []).filter(a => a && a.selectable && a.status === 'ok');
+        }
+
         function setNearbyActors(actors) {
-            nearbyActors = (actors || []).map(a => ({
-                name: a.name || '',
-                uuid: String(a.uuid != null ? a.uuid : ''),
-                formId: a.formId != null ? a.formId : (a.form_id != null ? a.form_id : 0),
-                dist: a.dist != null ? Number(a.dist) : Number.POSITIVE_INFINITY
-            }));
+            nearbyActors = (actors || []).map(a => {
+                const status = a.status != null ? String(a.status) : 'ok';
+                const selectable = a.selectable != null
+                    ? !!a.selectable
+                    : (status === 'ok' || status === 'sexlab');
+                const name = a.name || '';
+                const label = a.label != null
+                    ? String(a.label)
+                    : (status === 'ok'
+                        ? name.slice(0, 10)
+                        : (name.slice(0, 10) + ' (' + status.slice(0, 5) + ')'));
+                return {
+                    name,
+                    label,
+                    uuid: String(a.uuid != null ? a.uuid : ''),
+                    formId: formIdU32(a.formId != null ? a.formId : (a.form_id != null ? a.form_id : 0)),
+                    dist: a.dist != null ? Number(a.dist) : Number.POSITIVE_INFINITY,
+                    status,
+                    selectable,
+                    isPlayer: !!a.isPlayer || !!a.is_player
+                };
+            });
             actorNames = {};
             for (const a of nearbyActors) actorNames[a.uuid] = a.name;
             if (playerActor && playerActor.uuid) actorNames[playerActor.uuid] = playerActor.name;
+            if (playerActor)
+                playerActor.formId = formIdU32(playerActor.formId);
+            if (targetActor)
+                targetActor.formId = formIdU32(targetActor.formId);
             renderNearby();
+            renderControlActorPulldown();
             if (typeof scEnsurePositionSeed === 'function') scEnsurePositionSeed();
             if (typeof scRenderPositions === 'function') scRenderPositions();
         }
 
+        let controlActorSelectBusy = false;
+
+        function controlActorByFormId(formId) {
+            const fid = formIdU32(formId);
+            if (!fid) return null;
+            return (nearbyActors || []).find(a => formIdU32(a.formId) === fid) || null;
+        }
+
+        function controlActorCurrentEntry() {
+            if (targetActor && formIdU32(targetActor.formId))
+                return controlActorByFormId(targetActor.formId);
+            return null;
+        }
+
+        function pickDefaultControlActor(preferredFormId) {
+            const list = nearbyActors || [];
+            if (!list.length) return null;
+            const pref = formIdU32(preferredFormId);
+            if (pref) {
+                const hit = list.find(a => formIdU32(a.formId) === pref);
+                if (hit) return hit;
+            }
+            const playerFid = playerActor ? formIdU32(playerActor.formId) : 0;
+            const nonPlayer = list.filter(a => formIdU32(a.formId) !== playerFid);
+            if (nonPlayer.length) {
+                const sel = nonPlayer.find(a => a.selectable);
+                if (sel) return sel;
+                return nonPlayer[0];
+            }
+            return list.find(a => a.selectable) || list[0] || null;
+        }
+
+        function requestControlActorFocus(entry, opts) {
+            if (!entry || !formIdU32(entry.formId)) return;
+            const force = opts && opts.force;
+            const fid = formIdU32(entry.formId);
+            if (!force && targetActor && formIdU32(targetActor.formId) === fid)
+                return;
+            setTargetActor(entry.uuid, entry.name, fid);
+            if (typeof window.onControlActorChange === 'function') {
+                window.onControlActorChange(JSON.stringify({
+                    formId: fid,
+                    uuid: String(entry.uuid || ''),
+                    status: entry.status || ''
+                }));
+            }
+        }
+
+        function selectControlActorDefault(preferredFormId) {
+            const entry = pickDefaultControlActor(preferredFormId);
+            if (!entry) return;
+            requestControlActorFocus(entry, { force: true });
+            renderControlActorPulldown();
+        }
+
+        function renderControlActorPulldown() {
+            const host = document.getElementById('control-actor-pulldown');
+            if (!host || typeof createPulldown !== 'function') return;
+            const list = nearbyActors || [];
+            host.innerHTML = '';
+            if (!list.length) {
+                host.textContent = '—';
+                return;
+            }
+            const labels = list.map(a => a.label || a.name || '?');
+            const disabled = new Set(list.filter(a => !a.selectable).map(a => a.label || a.name || '?'));
+            let cur = controlActorCurrentEntry();
+            if (!cur) cur = pickDefaultControlActor(0);
+            const curLabel = cur ? (cur.label || cur.name || '?') : (labels[0] || '—');
+            host.appendChild(createPulldown(labels, curLabel, (picked, idx) => {
+                if (controlActorSelectBusy) return;
+                const entry = (idx != null && idx >= 0 && idx < list.length)
+                    ? list[idx]
+                    : list.find(a => (a.label || a.name || '?') === picked);
+                if (!entry || !entry.selectable) return;
+                controlActorSelectBusy = true;
+                requestControlActorFocus(entry, { force: true });
+                controlActorSelectBusy = false;
+            }, disabled));
+        }
+
         function setPlayerActor(uuid, name, formId) {
-            playerActor = { uuid: String(uuid), name: name || 'Player', formId: formId != null ? formId : 0 };
+            playerActor = { uuid: String(uuid), name: name || 'Player', formId: formIdU32(formId) };
             actorNames[playerActor.uuid] = playerActor.name;
             playerName = playerActor.name;
             if (typeof scRenderPositions === 'function') scRenderPositions();
@@ -2954,7 +3250,7 @@
         }
 
         function renderNearby() {
-            const sorted = [...nearbyActors].sort((a, b) => a.name.localeCompare(b.name));
+            const sorted = softNearbyActors().slice().sort((a, b) => a.name.localeCompare(b.name));
             document.getElementById('nearby-list').innerHTML =
                 `<div class="nearby-list">${sorted.map(({ name, uuid }) => {
                     const sel = selectedActors.has(uuid);
@@ -3136,23 +3432,8 @@
         }
 
         function renderSceneConnectionPulldowns() {
-            const labels = SCENE_CONNECTIONS.map(c => c.label);
-            const ids = SCENE_CONNECTIONS.map(c => c.id);
-            const curId = sceneConnectionId();
-            let curLabel = 'new';
-            const idx = ids.indexOf(curId);
-            if (idx >= 0) curLabel = labels[idx];
-            ['sc-scene-connection-pulldown', 'am-scene-connection-pulldown'].forEach(hostId => {
-                const host = document.getElementById(hostId);
-                if (!host) return;
-                host.innerHTML = '';
-                host.appendChild(createPulldown(labels, curLabel, (picked) => {
-                    const i = labels.indexOf(picked);
-                    const id = i >= 0 ? ids[i] : 'new';
-                    if (id === sceneConnectionId()) return;
-                    requestSceneConnectionChange(id);
-                }));
-            });
+            // Scene connection UI removed from Scene Menu / AnimationPanel;
+            // focus is owned by ControlPanel actor pulldown. Keep labels in sync only.
         }
 
         function requestSceneConnectionChange(id) {
@@ -3449,7 +3730,7 @@
                 // Target is the distance anchor when present → treat as nearest (0).
                 addPool(targetActor.name || 'Target', targetActor.uuid, targetActor.formId, 0);
             }
-            (nearbyActors || []).forEach(a => {
+            softNearbyActors().forEach(a => {
                 addPool(a.name, a.uuid, a.formId != null ? a.formId : 0, a.dist);
             });
             return [...byUuid.values()];

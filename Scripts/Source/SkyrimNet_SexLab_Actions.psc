@@ -513,6 +513,7 @@ Function TM_ChangeActors(Actor speaker, Actor target, String formIdsCsv)
     endif
     th.ChangeActors(next)
     SkyrimNet_SexLab_WebUI.SceneCreator_Configure(sl.BuildWebUISceneMenuState())
+    SkyrimNet_SexLab_WebUI.Animation_Menu_Configure(sl.BuildWebUIAnimationMenuState())
 EndFunction
 
 Function TM_SetAnimationIndex(Actor speaker, Actor target, String indexStr)

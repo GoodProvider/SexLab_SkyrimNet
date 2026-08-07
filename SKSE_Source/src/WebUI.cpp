@@ -774,6 +774,19 @@ void InitWebUI()
             WebUI_Visibility_Hide();
         });
 
+        PrismaUI->RegisterJSListener(g_view, "onControlActorChange", [](const char* value) {
+            if (!value)
+                return;
+            try {
+                auto j = nlohmann::json::parse(value);
+                const std::uint32_t formId = j.value("formId", 0u);
+                webui_log::info("onControlActorChange formId={:08X}", formId);
+                PapyrusBindings_WebUI::ApplyControlActorFocus(formId);
+            } catch (...) {
+                webui_log::warn("onControlActorChange: bad JSON");
+            }
+        });
+
         PrismaUI->RegisterJSListener(g_view, "onMainPanelChange", [](const char* value) {
             if (!value)
                 return;

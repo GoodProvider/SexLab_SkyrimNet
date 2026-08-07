@@ -153,6 +153,31 @@ namespace ActionCatalog
             return nullptr;
         }
 
+        /// Actor dict with formId → LookupByID; else ResolveSource(source).
+        /// formId may arrive signed-negative from JSON (0xFF******); cast via int64.
+        RE::Actor* ResolveActorDictEntry(const nlohmann::json& entry, RE::Actor* player, RE::Actor* focus)
+        {
+            if (!entry.is_object())
+                return nullptr;
+            if (entry.contains("formId") && entry["formId"].is_number()) {
+                std::uint32_t formId = 0;
+                try {
+                    formId = static_cast<std::uint32_t>(entry["formId"].get<std::int64_t>());
+                } catch (...) {
+                    formId = 0;
+                }
+                if (formId) {
+                    if (auto* ak = RE::TESForm::LookupByID<RE::Actor>(formId))
+                        return ak;
+                    webui_log::warn("ActionDispatch: formId {:08X} not found", formId);
+                }
+            }
+            const std::string source = entry.value("source", "");
+            if (!source.empty())
+                return ResolveSource(source, player, focus);
+            return nullptr;
+        }
+
         /// Heuristic: treat a parameterMapping row as an Actor arg for Papyrus dispatch.
         bool MappingLooksLikeActor(const ParamMapping& pm, const nlohmann::json& dict)
         {
@@ -747,20 +772,18 @@ namespace ActionCatalog
                         EqualsIgnoreCase(pm.name, "participate") || EqualsIgnoreCase(pm.name, "participate_3")) {
                         source = "target";
                     }
-                    if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name]))
-                        source = dict[pm.name].value("source", source);
-                    else if (EqualsIgnoreCase(pm.type, "speaker") || EqualsIgnoreCase(pm.name, "speaker") ||
-                             EqualsIgnoreCase(pm.name, "stripper")) {
+                    if (EqualsIgnoreCase(pm.type, "speaker") || EqualsIgnoreCase(pm.name, "speaker") ||
+                        EqualsIgnoreCase(pm.name, "stripper")) {
                         source = "player";
-                        if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name]))
-                            source = dict[pm.name].value("source", "player");
                     }
-                    // participate often uses nearby / currentActor-like sources from defaults.
-                    if (EqualsIgnoreCase(pm.name, "participate") || EqualsIgnoreCase(pm.name, "participate_3")) {
-                        if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name]))
-                            source = dict[pm.name].value("source", source);
+                    RE::Actor* actor = nullptr;
+                    if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name])) {
+                        actor = ResolveActorDictEntry(dict[pm.name], player, focusTarget);
+                        if (!actor)
+                            actor = ResolveSource(dict[pm.name].value("source", source), player, focusTarget);
+                    } else {
+                        actor = ResolveSource(source, player, focusTarget);
                     }
-                    RE::Actor* actor = ResolveSource(source, player, focusTarget);
                     actorsByName[pm.name] = actor;
                     continue;
                 }

@@ -1,0 +1,28 @@
+{
+  "type": "papyrus",
+  "label": "position",
+  "plugin": "SkyrimNet_SexLab.esp",
+  "questFormId": "0x800",
+  "scriptName": "SkyrimNet_SexLab_Actions",
+  "executionFunctionName": "TM_ChangeActors",
+  "parameterMapping": [
+    { "type": "speaker", "name": "speaker" },
+    { "type": "target", "name": "target" },
+    { "type": "dynamic", "name": "formIdsCsv", "description": "Comma-separated FormIDs in order" }
+  ],
+  "panel": "position",
+  "eligibilityRules": [
+    {
+      "conditions": [
+        {
+          "decoratorName": "get_faction_rank",
+          "arguments": ["currentActor", "SexLabAnimatingFaction"],
+          "comparisonOperator": ">",
+          "expectedValue": 0
+        }
+      ],
+      "logicalOperator": "AND",
+      "required": true
+    }
+  ]
+}
