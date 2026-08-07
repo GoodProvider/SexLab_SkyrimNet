@@ -45,7 +45,7 @@ namespace ActionCatalog
     // focusHasStrippedItems: StorageUtil strip-store on focus (currentActor) for actionSwitch.
     nlohmann::json BuildUICatalog(bool focusHasStrippedItems = false);
 
-    /// Catalog for JS configureMainMenu(...): { "panels": [ ... ] } with requiresPlugin filtered.
+    /// Catalog for JS configureControlPanel(...): { "panels": [ ... ] } with requiresPlugin filtered.
     nlohmann::json BuildMainPanelsCatalog();
 
     /// Apply main-panel selection from JS (id or panel key). Closes previous, opens next.

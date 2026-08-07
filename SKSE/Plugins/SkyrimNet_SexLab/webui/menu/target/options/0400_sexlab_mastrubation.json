@@ -1,8 +1,0 @@
-{
-  "type": "pulldown",
-  "label": "masturbation",
-  "options": [
-    { "type": "action", "name": "SexLab_Masturbation_Start", "label": "masturbate" },
-    { "type": "action", "name": "SexLab_Masturbation_Forced", "label": "forced" }
-  ]
-}

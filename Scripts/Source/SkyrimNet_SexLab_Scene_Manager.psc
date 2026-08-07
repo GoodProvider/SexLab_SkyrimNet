@@ -973,7 +973,7 @@ Event Action_Stop(Form f_speaker,Form f_target, String style)
 
     Actor Player = Game.GetPlayer() 
     if sl_scene.has_player
-        if speaker != player && main.sex_edit_tags_player
+        if speaker != player && SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.playerDialogs", true)
             int yes = 0
             int no = 1
             int no_forcefully = 2

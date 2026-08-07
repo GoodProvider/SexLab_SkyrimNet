@@ -14,5 +14,5 @@ args = parser.parse_args()
 with open(args.output,"w") as fout:
     print("{",file=fout)
     print (f'   "name":"{args.name}",',file=fout)
-    print (f'   "version":"{args.version}",',file=fout)
+    print (f'   "version":"{args.version}"',file=fout)
     print("}",file=fout)

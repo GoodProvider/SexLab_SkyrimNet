@@ -202,10 +202,10 @@ Function FinishSourceOrDone()
     Trace("FinishSourceOrDone", "total_pushed="+walk_total)
     Trace("FinishSourceOrDone", "SkyrimNet_SexLab is ready", True)
     if walk_force
-        ; allow a follow-up force request that arrived mid-walk
+        last_rebuild_timestamp = "game day " + Utility.GetCurrentGameTime()
+        SkyrimNet_SexLab_WebUI.WebUI_SetLastRebuildTimestamp(last_rebuild_timestamp)
         Bool again = walk_force
         walk_force = False
-        ; already finished forced sync
     endif
 EndFunction
 
@@ -360,6 +360,7 @@ EndFunction
 ; ---- Replacements for former Stages APIs ----
 
 Bool Property hide_help = false Auto
+String Property last_rebuild_timestamp = "never" Auto
 
 String Function GetThreadStageDescription(sslThreadController thread, int stage_override = -1)
     if !thread || !thread.animation
@@ -429,6 +430,89 @@ int[] Function GetOrgasmExpected(sslThreadController thread)
         out[i] = 1 - no_org
         i += 1
     endwhile
+    JValue.release(obj)
+    return out
+EndFunction
+
+; Canonical default speaking_modifiers from orgasm_expected (missing JSON / SceneCreator).
+String Function SpeakingDefaultFromOrgasmExpected(int orgasm_expected) global
+    if orgasm_expected == 1
+        return "_pleasure_"
+    endif
+    return ""
+EndFunction
+
+; Per-position speaking from AnimDB row; empty slots filled via SpeakingDefaultFromOrgasmExpected.
+String[] Function GetSpeakingModifiers(sslThreadController thread)
+    Actor[] actors = thread.Positions
+    int n = 0
+    if actors
+        n = actors.length
+    endif
+    String[] out = Utility.CreateStringArray(n)
+    int[] orgasm = GetOrgasmExpected(thread)
+    int i = 0
+    while i < n
+        int expected = 1
+        if orgasm && i < orgasm.length
+            expected = orgasm[i]
+        endif
+        out[i] = SpeakingDefaultFromOrgasmExpected(expected)
+        i += 1
+    endwhile
+    if !thread || !thread.animation
+        return out
+    endif
+    String row = AnimDb_GetByRegistry(thread.animation.Registry)
+    if row == ""
+        return out
+    endif
+    int obj = JValue.objectFromPrototype(row)
+    if obj == 0
+        return out
+    endif
+    int speak_arr = JMap.getObj(obj, "_pos_speaking_modifiers")
+    if speak_arr == 0
+        speak_arr = JMap.getObj(obj, "speaking_modifiers")
+    endif
+    if speak_arr != 0
+        i = 0
+        while i < n && i < JArray.count(speak_arr)
+            out[i] = JArray.getStr(speak_arr, i, out[i])
+            i += 1
+        endwhile
+    endif
+    JValue.release(obj)
+    return out
+EndFunction
+
+; Per-position clothed (1=dressed) from AnimDB JSON; default 0 when missing.
+int[] Function GetClothed(sslThreadController thread)
+    Actor[] actors = thread.Positions
+    int n = 0
+    if actors
+        n = actors.length
+    endif
+    int[] out = Utility.CreateIntArray(n, 0)
+    if !thread || !thread.animation
+        return out
+    endif
+    String row = AnimDb_GetByRegistry(thread.animation.Registry)
+    if row == ""
+        return out
+    endif
+    int obj = JValue.objectFromPrototype(row)
+    if obj == 0
+        return out
+    endif
+    int clothed_arr = JMap.getObj(obj, "clothed")
+    if clothed_arr != 0
+        int i = 0
+        while i < n && i < JArray.count(clothed_arr)
+            out[i] = JArray.getInt(clothed_arr, i, 0)
+            i += 1
+        endwhile
+    endif
     JValue.release(obj)
     return out
 EndFunction

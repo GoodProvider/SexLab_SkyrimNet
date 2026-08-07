@@ -1,8 +1,0 @@
-{
-  "type": "pulldown",
-  "label": "comfort",
-  "options": [
-    { "type": "action", "name": "SexLabComfortCuddle", "label": "cuddle" },
-    { "type": "action", "name": "SexLabComfortGeneral", "label": "hug/kiss" }
-  ]
-}

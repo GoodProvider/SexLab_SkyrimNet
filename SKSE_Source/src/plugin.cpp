@@ -11,6 +11,7 @@
 #include "AnimationDB.h"
 #include "TargetMenuRegistry.h"
 #include "WebUI_Log.h"
+#include "Config.h"
 
 using namespace SKSE;
 
@@ -19,15 +20,19 @@ namespace {
 SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     SKSE::Init(skse);
 
+    SexLabNet::InitSkyrimNetAPI();
+
     SKSE::GetMessagingInterface()->RegisterListener([](SKSE::MessagingInterface::Message *message) {
         if (message->type == SKSE::MessagingInterface::kDataLoaded) {
             RE::ConsoleLog::GetSingleton()->Print("SkyrimNet_SexLab: SKSE listening!");
             AnimationDB::Open();
             InitWebUI();
+            SexLabNet::Config::GetSingleton().ApplyFromConfig();
         } else if (message->type == SKSE::MessagingInterface::kPostLoadGame ||
                    message->type == SKSE::MessagingInterface::kNewGame) {
             TargetMenuRegistry::Clear();
             WebUI_SetGameReady();
+            SexLabNet::Config::GetSingleton().ApplyFromConfig();
         }
     });
 

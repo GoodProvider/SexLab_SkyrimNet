@@ -21,6 +21,7 @@
     - CHANGELOG-user.md — plain-language public summary
     - README.md — short front door (links only; no long feature dump)
     - docs/** — audience docs must match shipped behavior
+    - update SKSE/Plugins/SkyrimNet/config/plugins/SkyrimNet_SexLab/manifest's version to next_version
   </goal>
 
   <cold_start>

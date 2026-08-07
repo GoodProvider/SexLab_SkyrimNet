@@ -62,6 +62,9 @@ namespace PapyrusBindings_WebUI {
     /// MCM: enable/disable C++ menu hotkey and set DX scancode (Escape unchanged).
     void WebUI_SetHotkey(RE::StaticFunctionTag*, std::int32_t dxScanCode, bool enabled);
 
+    /// Papyrus: push last AnimDb rebuild timestamp for Settings panel.
+    void WebUI_SetLastRebuildTimestamp(RE::StaticFunctionTag*, RE::BSFixedString timestamp);
+
     /// Papyrus native: format and write a script log line via SKSE::log.
     RE::BSFixedString TraceLog(RE::StaticFunctionTag*, RE::BSFixedString script_name,
         RE::BSFixedString func, RE::BSFixedString msg);

@@ -1,5 +1,31 @@
 # Knowledgebase
 
+## Active TargetMenu `type: papyrus` (2026-08-06)
+
+- Mid-scene TargetMenu options under `webui/menu/target/options/0*_active_*.json` use **`type: papyrus`** (no `name`, no YAML / `actions_index`). JS `onAction({action:"papyrus",...})` → C++ `ExecutePapyrusOption` → `SkyrimNet_SexLab_Actions.TM_*`.
+- Eligibility: `SexLabAnimatingFaction` rank `> 0` only (no ostim gate). Target = scene picker.
+- Storage: Animation JSON durable; AnimDB cache; Scene overlay this-thread only. Save (`TM_SaveAnimationSettings` / AnimationPanel Save) → SQL + JSON (`orgasm_expected`, `speaking_modifiers`, `clothed`). Victim/deny never durable; deny saves as expected=`1`.
+- Anim switch: `SeedOverlayFromAnimDb` — per-registry `user_anim_defaults` win, else AnimDB, else orgasm→speaking helper (`1`→`_pleasure_`, `0`→`""`).
+- Live panels (`panel` on option JSON): `change_actors` / `rotate` (name+in/out+▲▼ → `TM_ChangeActors`), `animation_list`, `victim`, `orgasm`, `speaking`, `clothed`. Stop pulldown: silent / stop / explain. LLM YAML deferred: `todo/active_action_yaml.md`.
+
+## Debug SKSE DLL + PublicGetPluginConfigValue CTD (2026-08-05)
+
+- **Symptom:** CTD on load / `kDataLoaded` — Crash Logger `EXCEPTION_ACCESS_VIOLATION` in `SkyrimNet_SexLab.dll` during `std::string` teardown (`std::exchange`).
+- **Stack:** `plugin.cpp` → `Config::ApplyFromConfig` → `ApplyMenuHotkey` → `EditStageHotkeyEnabled` → `GetValue` → SkyrimNet `PublicGetPluginConfigValue` (returns `std::string` by value across DLL).
+- **Cause:** Debug-built `SkyrimNet_SexLab.dll` (~7.7 MB) against Release SkyrimNet — CRT/ABI mismatch on cross-DLL `std::string`. Stack shows `0xCCCCCCCC` fill and path `sexlab.controls.editStageHotkeyEnabled`.
+- **Fix:** Deploy Release DLL via `CMake: Build SKSE (Release)` + `Copy DLL to SKSE/Plugins (Release)` (~2.5 MB). Do not ship Debug. Harden `GetValue` only if Release still AVs.
+- **Crash logs (this machine):** `C:\Users\bhuff\OneDrive\Documents\my games\Skyrim Special Edition\SKSE\crash-*.log` (OneDrive Documents).
+
+## Plugin config / control store (2026-08-04)
+
+- **Source of truth:** `SKSE/Plugins/SkyrimNet/config/plugins/SkyrimNet_SexLab/manifest.yaml` (`schema.fields`). New settings always go in the manifest; MCM may mirror utilities only.
+- **IDs:** C++ `PublicGetPluginConfigValue("SkyrimNet_SexLab", path, def)`; Papyrus `SkyrimNetApi.GetConfig*("Plugin_SkyrimNet_SexLab", path, def)`.
+- **Practical split:** C++ owns control-store hotkey (`sexlab.controls.editStageHotkey*` VK→DX via `MapVirtualKeyA`), WebUI Settings panel, and syncing `skyrimnet_sexlab_public_sex_accepted` / `hide_hermaphrodites` / `ostim_player` globals on load. MCM can also enable/remap the same KeyHandler via DX `WebUI_SetHotkey`. Papyrus only `GetConfig*` at Menu / Utilities / Scene / Creator / Manager call sites. No plugin `PatchConfig`.
+- **TargetMenu framework toggle** still writes the ostim_player **global** for live eligibility; next load re-syncs from control store.
+- **Settings main panel:** `webui/main_panels/1000_settings.json` → `settings_panel` (rebuild → switches to Log, version from `info.json`, docs URL text, Open SkyrimNet dashboard). MCM shows redirect text + rebuild + last-rebuild timestamp.
+- **Log main panel:** `webui/main_panels/0900_log_panel.json` → `log_panel`. Source: `SKSE::log::log_directory()` + `SkyrimNet_SexLab.log`. JS regex filter; follow-tail until user scrolls away. Settings Rebuild AnimDB switches here so progress lines are visible.
+- **No Prisma deep-link** to Plugins → SkyrimNet_SexLab; `TriggerToggleDashboard()` only toggles the SkyrimNet dashboard. **ShellExecute** for GitHub docs is unreliable in-game — show the URL as text instead.
+
 ## AnimationDB creature / race-key filter (2026-08-02)
 
 - Scene Creator sets `_creature: require|exclude` from SexLab classification only (`GetGender` 2/3 + `sslCreatureAnimationSlots.GetRaceKey`). Do **not** treat non-creature as “human.”
@@ -13,7 +39,7 @@
 - **DB file**: `Data/SKSE/Plugins/SkyrimNet_SexLab/animationdb.sql` (SQLite via vcpkg `unofficial-sqlite3`). Registry / tags / race keys stored lowercase for matching; PK = SexLab `registry`. Display `name` (and `animations/(name).json`) keep SexLab casing.
 - **Ingest**: Papyrus `SkyrimNet_SexLab_AnimDb` walks `GetBySlot` in batches (not SexLab `GetByTags` — 125-cap lossy). C++ `InferOrgasmExpected` seeds `pos_no_orgasm` / speaking mods; stage descriptions from `animations/**/*.json` (`_local_` last wins).
 - **YesNo / SceneCreator are async**: PrismaUI cannot block like SkyMessage. `SelectAnimations` returns `manager.ui_pending`; C++ JS listeners dispatch `Scene_Manager.WebUI_OnYesNoResult` / `WebUI_OnSceneCreatorResult` → `ContinueAfterYesNo` / `ContinueAfterSceneCreator` → `FinishStartScene`.
-- **Yes always opens SceneCreatorMenu**; **Yes (Random)** skips editor; NPC–NPC opens creator when MCM `sex_edit_tags_nonplayer` is on. Escape on YesNo = No (Silent).
+- **Yes always opens SceneCreatorMenu**; **Yes (Random)** skips editor; NPC–NPC opens creator when config `sexlab.tagEdit.nonPlayerDialogs` is on. Escape on YesNo = No (Silent).
 - **TargetMenu Custom / Start**: root panel only; each pulldown + Parameters are sibling panels in a row **above** Scene Creator. Action click opens Parameters (no immediate start). **Custom** / **Start** close the cascade then fire; Custom opens Scene Creator (`_from_target_menu`, `_creator_sid:0`); Start on SC → `WebUI_OnSceneCreatorHandoff`. **Start** always `ExecuteAction` then **closes WebUI** (clear session + hide; PrismaUI `Focus(..., pauseGame=true)` must not stay focused or SexLab `StartThread` fails). For scene-start actions sets `SkipSceneCreatorOnce` → `ConsumeSkipSceneCreator` → `scene_creator_menu_called` so Papyrus skips Scene Creator **and** YesNo (Yes/Random). Tag Edit MCM no longer intercepts TargetMenu Start.
 - **Cuddle tags**: LLM/general method `cuddle` → `cuddling` (`RemapTag` / `Actions` / C++ `RemapMethod`). Dedicated cuddle actions keep UI method `sitting|laying` for narration but `Setup` adds SexLab tag `cuddling` (not sitting/laying — those are position tags and miss Ace cuddle packs).
 - **`scene_creator_menu_called`**: once per creator / SexLab thread; `TryOpenSceneCreatorMenu` gates Papyrus first-open; Load/Save refresh still calls `SceneCreator_Open` directly. TargetMenu Custom may re-`configureSceneCreator` while TargetMenu stays open (`TargetMenuSessionActive`; HideAllPanels spares TargetMenu until Cancel). **Do not** keep TargetMenu open across Start — paused overlay blocks SexLab.
@@ -34,9 +60,11 @@ Caprica fails natives that declare a parameter named `scriptName` with `no viabl
 
 **Preferred (2026-08-02):** optional handlers ship filesystem `webui/menu/target/options/*.json` with `plugin` + `questFormId` + `scriptName` + `executionFunctionName` (+ optional `requiresPlugin`). UDNG bondage uses this via FOMOD; `RegisterTargetMenuOption` is legacy.
 
-## MainMenu / main_panels (2026-08-02)
+## ControlPanel / main_panels (2026-08-02)
 
-Left column: MainMenu (title + pulldown) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/main_panels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`.
+Left column: ControlPanel (`#control-panel`: title + main_panel pulldown + pause/unpause) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/main_panels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`. Catalog invoke: `configureControlPanel`.
+
+- **Pause toggle (2026-08-05):** PrismaUI `Focus(view, true)` pauses the game (default on Show). ControlPanel button toggles pause while the view stays shown. **Quirk:** calling `Focus` again while already focused does **not** change `pauseGame` — must `Unfocus` then `Focus(pauseGame)` to switch. Button label: **unpause** when paused, **pause** when running.
 
 - **Scene Menu appear/disappear loop (2026-08-03):** Do **not** call `requestSceneConnectionChange` from `revealMainPanel`. Connection reload → `SceneCreator_Open` (`showPanel` → `onMainPanelChange` → `SwitchMainPanel` → reveal) loops. Soft path: `SceneCreator_Configure` / `Animation_Menu_Configure` (no HideAll/showPanel); `WebUI_OnSceneConnectionChange` and `WebUI_OnAnimUpdate` use Configure; `SwitchMainPanel` invokes `mainPanelDidOpen()` once on **key change** only. `showPanel` for SC/AM is idempotent when already selected.
 
@@ -56,7 +84,9 @@ SexLab/SLSO `SexLabOrgasm` uses `ModEvent.PushForm(eid, ActorRef)`. Handlers tha
 
 `CreateView("SkyrimNet_SexLab/index.html")` loads from **`Data/PrismaUI/views/`**, not from `SKSE/Plugins/`. This mod ships the overlay at `PrismaUI/views/SkyrimNet_SexLab/index.html` (restored from commit `a8c9440`). Missing that file → valid-looking C++ open path (hotkey / `Target_Menu_Open`) but **no visible UI**. C++ Invokes use panel ids `target_menu_panel` / `sex_menu_panel`; the HTML maps those via `showPanel` / `hidePanel` adapters onto `#target-panel` / `#sex-menu-panel`.
 
-**Menu hotkey (2026-08-01):** MCM no longer `RegisterForKey`. Toggle + keymap call `WebUI_SetHotkey(dx, enabled)` so C++ `KeyHandler` owns the menu key; Escape stays always registered. Hotkey → `Menu.ProcessHotkey` → WebUI Target / Scene / MultiTarget.
+**Display scale (2026-08-07):** Matches SkyrimNet dashboard scaling system. Design tokens are **px** (`--text-base: 15px`, `--space-*`, `--radius`, `--target-min: 44px`); global scale is `document.body.style.zoom = clamp(ui_scale,0.75–1.5) * resolutionBaseline()` where baseline is `1` at ≤~1080p height else `(innerHeight/1080)*0.85` (up-only; never shrinks from resolution). User `ui_scale` from `GET {__SN_BASE__||http://localhost:8080}/config?api=get&name=Dashboard`. Fit without crop: `#left-column` / target panels use `max-height` + `overflow-y: auto` (same pattern as SkyrimNet’s `.main` scroll). Re-applies on resize and Settings configure.
+
+**Menu hotkey (2026-08-04):** Control store `sexlab.controls.editStageHotkeyEnabled` + `editStageHotkey` (VK→DX). MCM also has Enable + KeyMap (DX) → `WebUI_SetHotkey`. MCM Setup only re-applies when its toggle is on (does not clear a store-enabled key). Escape stays always registered. Hotkey → `Menu.ProcessHotkey` → WebUI Target / Scene / MultiTarget.
 
 ## WebUI target menu catalog (2026-07-28, outfit/actionSwitch 2026-07-31, split layout 2026-07-31)
 

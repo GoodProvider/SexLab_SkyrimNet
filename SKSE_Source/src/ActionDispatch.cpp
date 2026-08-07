@@ -407,6 +407,183 @@ namespace ActionCatalog
         return true;
     }
 
+    bool ExecutePapyrusOption(
+        const nlohmann::json& optionPayload,
+        RE::Actor* player,
+        RE::Actor* focusTarget)
+    {
+        if (!optionPayload.is_object()) {
+            webui_log::error("ExecutePapyrusOption: payload not an object");
+            return false;
+        }
+
+        std::string plugin = optionPayload.value("plugin", "");
+        if (plugin.empty())
+            plugin = optionPayload.value("questPlugin", "");
+        std::string scriptName = optionPayload.value("scriptName", "");
+        std::string functionName = optionPayload.value("executionFunctionName", "");
+        if (scriptName.empty() || functionName.empty()) {
+            webui_log::error("ExecutePapyrusOption: missing scriptName or executionFunctionName");
+            return false;
+        }
+
+        std::uint32_t questFormId = 0;
+        if (optionPayload.contains("questFormId")) {
+            const auto& v = optionPayload["questFormId"];
+            if (v.is_number_unsigned() || v.is_number_integer())
+                questFormId = static_cast<std::uint32_t>(v.get<std::uint64_t>());
+            else if (v.is_string()) {
+                try {
+                    questFormId = static_cast<std::uint32_t>(std::stoul(v.get<std::string>(), nullptr, 0));
+                } catch (...) {
+                    questFormId = 0;
+                }
+            }
+        }
+
+        nlohmann::json dict = nlohmann::json::object();
+        nlohmann::json params = optionPayload.value("parameters", nlohmann::json::object());
+        if (params.is_object()) {
+            for (auto it = params.begin(); it != params.end(); ++it)
+                dict[it.key()] = NormalizeParamValue(it.value());
+        }
+
+        const auto& opts = TargetOptions();
+        MergeDict(dict, DefaultsParametersOf(opts));
+
+        std::vector<ParamMapping> mapping;
+        if (optionPayload.contains("parameterMapping") && optionPayload["parameterMapping"].is_array()) {
+            for (auto& entry : optionPayload["parameterMapping"]) {
+                if (!entry.is_object())
+                    continue;
+                ParamMapping pm;
+                pm.type = entry.value("type", "");
+                pm.name = entry.value("name", "");
+                if (entry.contains("value") && !entry["value"].is_null()) {
+                    pm.hasValue = true;
+                    if (entry["value"].is_string())
+                        pm.value = entry["value"].get<std::string>();
+                    else
+                        pm.value = entry["value"].dump();
+                }
+                if (entry.contains("description") && entry["description"].is_string())
+                    pm.description = entry["description"].get<std::string>();
+                mapping.push_back(std::move(pm));
+            }
+        }
+
+        auto args = std::make_shared<DynamicArgs>();
+        for (auto& pm : mapping) {
+            if (pm.name.empty())
+                continue;
+
+            if (MappingLooksLikeActor(pm, dict)) {
+                std::string source = "player";
+                if (EqualsIgnoreCase(pm.type, "target") || EqualsIgnoreCase(pm.name, "target") ||
+                    EqualsIgnoreCase(pm.name, "stripped") || EqualsIgnoreCase(pm.name, "victim")) {
+                    source = "target";
+                }
+                if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name])) {
+                    source = dict[pm.name].value("source", source);
+                } else if (EqualsIgnoreCase(pm.type, "speaker") || EqualsIgnoreCase(pm.name, "speaker") ||
+                           EqualsIgnoreCase(pm.name, "stripper")) {
+                    source = "player";
+                    if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name]))
+                        source = dict[pm.name].value("source", "player");
+                }
+
+                RE::Actor* actor = ResolveSource(source, player, focusTarget);
+                if (!actor) {
+                    webui_log::error(
+                        "ExecutePapyrusOption: missing Actor for '{}' (fn {}, source {})",
+                        pm.name, functionName, source);
+                    return false;
+                }
+                DynamicArgs::Item item;
+                item.kind = DynamicArgs::Kind::Actor;
+                item.actor = actor;
+                args->items.push_back(item);
+                continue;
+            }
+
+            std::string value;
+            if (EqualsIgnoreCase(pm.type, "static") && pm.hasValue) {
+                value = pm.value;
+                if (dict.contains(pm.name))
+                    value = StringValueOf(dict[pm.name], pm.name);
+            } else if (dict.contains(pm.name)) {
+                value = StringValueOf(dict[pm.name], pm.name);
+            } else {
+                value = FirstPipeValue(pm.description);
+            }
+
+            DynamicArgs::Item item;
+            item.kind = DynamicArgs::Kind::String;
+            item.str = value;
+            args->items.push_back(item);
+        }
+
+        struct CapturedArg {
+            bool isActor = false;
+            RE::Actor* actor = nullptr;
+            std::string str;
+        };
+        std::vector<CapturedArg> captured;
+        captured.reserve(args->items.size());
+        for (auto& it : args->items) {
+            CapturedArg c;
+            if (it.kind == DynamicArgs::Kind::Actor) {
+                c.isActor = true;
+                c.actor = it.actor;
+            } else {
+                c.str = it.str;
+            }
+            captured.push_back(std::move(c));
+        }
+
+        const std::string label = optionPayload.value("label", functionName);
+        SKSE::GetTaskInterface()->AddTask([captured, scriptName, functionName, plugin, questFormId, label]() {
+            auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+            if (!vm) {
+                webui_log::error("ExecutePapyrusOption: no VM");
+                return;
+            }
+            auto* quest = FindQuest(questFormId, "", plugin);
+            if (!quest) {
+                webui_log::error("ExecutePapyrusOption: quest not found for {}", label);
+                return;
+            }
+            auto handle = vm->GetObjectHandlePolicy()->GetHandleForObject(
+                static_cast<RE::VMTypeID>(quest->GetFormType()), quest);
+            RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
+            vm->FindBoundObject(handle, scriptName.c_str(), scriptObject);
+            if (!scriptObject) {
+                webui_log::error("ExecutePapyrusOption: bound script '{}' not found", scriptName);
+                return;
+            }
+
+            auto* raw = new DynamicArgs();
+            for (auto& c : captured) {
+                DynamicArgs::Item item;
+                if (c.isActor) {
+                    item.kind = DynamicArgs::Kind::Actor;
+                    item.actor = c.actor;
+                } else {
+                    item.kind = DynamicArgs::Kind::String;
+                    item.str = c.str;
+                }
+                raw->items.push_back(std::move(item));
+            }
+
+            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
+            vm->DispatchMethodCall(scriptObject, RE::BSFixedString(functionName.c_str()), raw, callback);
+            webui_log::info("ExecutePapyrusOption: dispatched {}::{} ({} args) for {}",
+                scriptName, functionName, raw->items.size(), label);
+        });
+
+        return true;
+    }
+
     namespace
     {
         struct ResolvedSceneParams {

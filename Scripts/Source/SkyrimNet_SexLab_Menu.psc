@@ -15,6 +15,10 @@ Function Trace(String func, String msg, Bool notification=False) global
     endif 
 EndFunction
 
+Function OpenSkyrimNetDashboard()
+    SkyrimNetApi.TriggerToggleDashboard()
+EndFunction
+
 Function Setup()
     debug_mode = False
     Bool links_ok = Setup_CheckLinks()
@@ -94,8 +98,18 @@ Function Open_WebUI_Target(Actor target)
     endif
     bool hasStripped = main.HasStrippedItems(target)
     Trace("Open_WebUI_Target", target.GetDisplayName()+" hasStripped:"+hasStripped \
-        +" editTagsPlayer:"+main.sex_edit_tags_player+" editTagsNonPlayer:"+main.sex_edit_tags_nonplayer)
-    SkyrimNet_SexLab_WebUI.Target_Menu_Open(target, hasStripped, main.sex_edit_tags_player, main.sex_edit_tags_nonplayer)
+        +" editTagsPlayer:"+SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.playerDialogs", true) \
+        +" editTagsNonPlayer:"+SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.nonPlayerDialogs", false))
+    SkyrimNet_SexLab_WebUI.Target_Menu_Open(target, hasStripped, \
+        SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.playerDialogs", true), \
+        SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.nonPlayerDialogs", false))
+    ; Mid-scene TargetMenu panels need active cast/anim state.
+    if main && main.sexlab && target.IsInFaction(main.sexlab.AnimatingFaction)
+        SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+        if sl != None
+            SkyrimNet_SexLab_WebUI.SceneCreator_Configure(sl.BuildWebUISceneMenuState())
+        endif
+    endif
 EndFunction
 
 Function Target_Menu_Selection(Actor target, Actor player)

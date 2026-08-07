@@ -38,7 +38,9 @@ Keys are **case-sensitive** (JContainers). Use lowercase `"stage N"` and `"versi
         "description": "{{sl.actors.1}} fingers {{sl.actors.0}}.",
         "version": "2.0"
     },
-    "orgasm_expected": [1, 0]
+    "orgasm_expected": [1, 0],
+    "speaking_modifiers": ["_pleasure_", ""],
+    "clothed": [0, 1]
 }
 ```
 
@@ -48,9 +50,19 @@ Inja `2.0`: actors are an array; if there is a victim, it is normally first; `{{
 
 Int array by thread position: `0` no orgasm expected, `1` expects orgasm.
 
+### speaking_modifiers
+
+Per-position protocol tokens (e.g. `_pleasure_`, `_pain_`). When JSON is missing, defaults from `orgasm_expected`: `1` → `_pleasure_`, `0` → empty.
+
+### clothed
+
+Per-position `0` unclothed / `1` clothed (dressed).
+
 ### Sex style (Tag Editor)
 
 Forcefully fucking / having sex / gently making love.
+
+Victim and orgasm **deny** are scene-only and are never stored in animation JSON.
 
 ## Sharing
 

@@ -29,12 +29,18 @@ Faction Property SkyrimNet_SexLab_Faction_Victim Auto
 GlobalVariable Property skyrimnet_sexlab_active_sex Auto
 bool Property active_sex
     bool Function Get()
+        if skyrimnet_sexlab_active_sex == None
+            return false
+        endif
         if skyrimnet_sexlab_active_sex.GetValue() == 1
             return true
         endif
         return false 
     EndFunction 
     Function Set(bool value)
+        if skyrimnet_sexlab_active_sex == None
+            return
+        endif
         if value
             skyrimnet_sexlab_active_sex.SetValue(1)
         else
@@ -62,11 +68,6 @@ String Property storage_items_key = "skyrimnet_sexlab_storage_items" AutoReadOnl
 String Property storage_arousal_key = "skyrimnet_sexlab_arousal_level" AutoReadOnly
 String Property storage_thread_ejaculated = "skyrimnet_sexlab_thread_ejaculated" AutoReadOnly
 
-
-; -----------------------------
-; enable virgin blood
-; -----------------------------
-Bool Property virgin_blood_enabled = True Auto
 
 ; -----------------------------
 ; Time since last dirrect narration

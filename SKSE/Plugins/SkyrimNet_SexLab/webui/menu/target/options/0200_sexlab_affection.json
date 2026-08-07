@@ -1,8 +1,0 @@
-{
-  "type": "pulldown",
-  "label": "affection",
-  "options": [
-    { "type": "action", "name": "SexLab_Nonsexual_Cuddle", "label": "cuddle" },
-    { "type": "action", "name": "SexLab_Nonsexual_General", "label": "hug/kiss" }
-  ]
-}

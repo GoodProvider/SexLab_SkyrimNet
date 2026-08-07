@@ -17,6 +17,18 @@ Bridge mod between SkyrimNet (LLM) and SexLab Framework.
 
 Repo root: `c:\Skyrim\dev\mods\SkyrimNet_SexLab`.
 
+### Logs (this machine)
+
+Documents is OneDrive-redirected — not `%USERPROFILE%\Documents\...`.
+
+| Log | Path |
+|-----|------|
+| Crash Logger | `C:\Users\bhuff\OneDrive\Documents\my games\Skyrim Special Edition\SKSE\crash-*.log` |
+| SkyrimNet_SexLab | `C:\Users\bhuff\OneDrive\Documents\my games\Skyrim Special Edition\SKSE\SkyrimNet_SexLab.log` |
+| Papyrus | `C:\Users\bhuff\OneDrive\Documents\my games\Skyrim Special Edition\Logs\Script\Papyrus.0.log` |
+
+Relative paths for other machines: [docs/reference/papyrus-rules.md](docs/reference/papyrus-rules.md).
+
 ## Documentation map
 
 | Job | Read |

@@ -512,7 +512,9 @@ Bool Function NarrationCoolOffAllows(Actor source, Actor target) global
     int last_audio = SkyrimNetAPI.GetTimeSinceLastAudioEnded()/1000 
     float time_current = Utility.GetCurrentRealTime() 
     float time_delta = time_current - main.direct_narration_last_time 
-    return time_delta > main.direct_narration_cool_off && queue_size == 0 && (last_audio >= main.direct_narration_cool_off && distance <= main.direct_narration_max_distance)
+    float cool_off = SkyrimNetApi.GetConfigFloat("Plugin_SkyrimNet_SexLab", "sexlab.narration.cooldown", 20.0)
+    float max_distance = SkyrimNetApi.GetConfigFloat("Plugin_SkyrimNet_SexLab", "sexlab.narration.maxDistance", 15.0)
+    return time_delta > cool_off && queue_size == 0 && (last_audio >= cool_off && distance <= max_distance)
 EndFunction
 
 bool Function DirectNarration_Optional(String event_type, String msg, Actor source=None, Actor target=None, bool optional_is_dropped=False) global

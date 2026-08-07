@@ -17,6 +17,8 @@ Function SceneConnections_Show(String state_json) global native
 Function WebUI_HideAllPanels() global native
 ; MCM: enable/disable C++ menu hotkey and set DX scancode (Escape unchanged).
 Function WebUI_SetHotkey(int dxScanCode, bool enabled) global native
+; Push last AnimDb rebuild timestamp into C++ for Settings panel.
+Function WebUI_SetLastRebuildTimestamp(String timestamp) global native
 ; Push SexLab gender + race_key enrich result to Scene Creator JS (actorAnimMetaResult).
 Function ActorAnimMeta_Result(String json) global native
 ; TargetMenu Start: consume one-shot skip so this scene does not open Scene Creator.

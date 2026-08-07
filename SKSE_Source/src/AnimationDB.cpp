@@ -531,12 +531,15 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
     void InferSpeakingModifiers(const std::vector<int>& pos_no_orgasm,
         const std::unordered_set<std::string>& tags, std::vector<std::string>& out_csv_per_pos)
     {
+        // orgasm_expected 1 (pos_no_orgasm 0) → _pleasure_; not expected → empty.
+        // Pain tags may append _pain_ for position 0 when expected.
         out_csv_per_pos.assign(pos_no_orgasm.size(), "");
         for (size_t i = 0; i < pos_no_orgasm.size(); ++i) {
+            const bool orgasm_expected = pos_no_orgasm[i] == 0;
             std::vector<std::string> mods;
-            if (pos_no_orgasm[i] == 1)
+            if (orgasm_expected)
                 mods.push_back("_pleasure_");
-            if (i == 0 && (HasTag(tags, "spanking") || HasTag(tags, "whipping")))
+            if (orgasm_expected && i == 0 && (HasTag(tags, "spanking") || HasTag(tags, "whipping")))
                 mods.push_back("_pain_");
             std::ostringstream oss;
             for (size_t m = 0; m < mods.size(); ++m) {
@@ -885,6 +888,14 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
             for (int v : row.pos_no_orgasm)
                 ov.push_back(1 - v);
             file["orgasm_expected"] = ov;
+        }
+        if (payload.contains("speaking_modifiers") && payload["speaking_modifiers"].is_array()) {
+            file["speaking_modifiers"] = payload["speaking_modifiers"];
+            row.pos_speaking_modifiers = JsonToVecStr(payload["speaking_modifiers"]);
+        }
+        if (payload.contains("clothed") && payload["clothed"].is_array()) {
+            file["clothed"] = payload["clothed"];
+            // clothed 1 = dressed / no_stripping; mirror into row if we track dressed separately later
         }
 
         row.stage_has_description.assign(std::max(0, row.stage_count), 0);

@@ -36,8 +36,11 @@ Trace("FunctionName", "--- this is a debug message")
 
 Logs:
 
+On this machine Documents is OneDrive-redirected (`%USERPROFILE%\OneDrive\Documents\...`). Absolute maintainer paths: [AGENTS.md](../../AGENTS.md) (Logs).
+
 | Log | Path |
 |-----|------|
+| Crash Logger | `Documents\my games\Skyrim Special Edition\SKSE\crash-*.log` |
 | SkyrimNet_SexLab (primary) | `Documents\my games\Skyrim Special Edition\SKSE\SkyrimNet_SexLab.log` |
 | Papyrus (None / stack) | `Documents\my games\Skyrim Special Edition\Logs\Script\Papyrus.0.log` |
 | SkyrimNet (last resort; ask first) | `Documents\my games\Skyrim Special Edition\SKSE\SkyrimNet.log` |

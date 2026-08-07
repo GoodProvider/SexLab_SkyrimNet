@@ -204,10 +204,6 @@
         "Name": "SkyrimNet_SexLab_Main",
         "Properties": [
           {
-            "MutagenObjectType": "ScriptBoolProperty",
-            "Name": "active_sex"
-          },
-          {
             "MutagenObjectType": "ScriptObjectProperty",
             "Name": "skyrimnet_sexlab_active_sex",
             "Object": "000803:SkyrimNet_Sexlab.esp"
@@ -221,11 +217,6 @@
             "MutagenObjectType": "ScriptObjectProperty",
             "Name": "SkyrimNet_SexLab_Faction_Victim",
             "Object": "000807:SkyrimNet_Sexlab.esp"
-          },
-          {
-            "MutagenObjectType": "ScriptObjectProperty",
-            "Name": "stages",
-            "Object": "000800:SkyrimNet_Sexlab.esp"
           },
           {
             "MutagenObjectType": "ScriptObjectProperty",

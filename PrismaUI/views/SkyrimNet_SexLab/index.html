@@ -2,8 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SkyrimNet SexLab</title>
     <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        :root {
+            /* SkyrimNet dashboard tokens (px) — scale via body.zoom */
+            --bg-base:       #18181c;
+            --bg-surface:    #212126;
+            --bg-elevated:   #2a2a30;
+            --bg-input:      #1c1c21;
+            --text-primary:  #e8e6e1;
+            --text-secondary:#a8a5a0;
+            --text-muted:    #65635e;
+            --accent:        #c9a84c;
+            --accent-hover:  #d4b35d;
+            --accent-muted:  rgba(201, 168, 76, 0.15);
+            --accent-text:   #c9a84c;
+            --border:        rgba(201, 168, 76, 0.28);
+            --border-solid:  #333338;
+            --danger:        #e54545;
+            --danger-hover:  #f06060;
+            --font-ui:       'Segoe UI', 'Microsoft YaHei UI', 'Meiryo', system-ui, sans-serif;
+            --font-mono:     'Consolas', 'Noto Sans Mono', monospace;
+            --text-xs:       12px;
+            --text-sm:       14px;
+            --text-base:     15px;
+            --text-lg:       18px;
+            --text-xl:       22px;
+            --text-2xl:      28px;
+            --space-xs:      4px;
+            --space-sm:      8px;
+            --space-md:      14px;
+            --space-lg:      18px;
+            --space-xl:      28px;
+            --space-2xl:     36px;
+            --radius:        6px;
+            --radius-lg:     10px;
+            --target-min:    44px;
+            --shadow:        0 2px 4px rgba(0, 0, 0, 0.35);
+            --shadow-lg:     0 6px 16px rgba(0, 0, 0, 0.45);
+            /* SexLab overlay aliases */
+            --bg:            rgba(24, 24, 28, 0.82);
+            --text:          var(--text-primary);
+            --accent-glow:   var(--accent-muted);
+            --ui-scale:      1;
+        }
+
+        html {
+            font-family: var(--font-ui);
+            font-size: var(--text-base);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
         html, body {
             margin: 0;
             padding: 0;
@@ -12,23 +65,10 @@
             width: 100%;
             height: 100%;
             user-select: none;
+            color: var(--text-primary);
         }
 
-        :root {
-            --accent:        #c9a84c;
-            --accent-glow:   rgba(201, 168, 76, 0.15);
-            --text:          rgba(218, 210, 192, 0.95);
-            --text-muted:    rgba(175, 162, 138, 0.75);
-            --bg:            rgba(10, 8, 5, 0.70);
-            --border:        rgba(201, 168, 76, 0.20);
-            --danger:        #c27a6a;
-            --danger-hover:  #d48878;
-            --font-body:     Georgia, 'Times New Roman', serif;
-            --font-ui:       system-ui, sans-serif;
-            --fs:            48px;
-        }
-
-        /* ── Shell: left MainMenu+TargetMenu | right main panels ─ */
+        /* ── Shell: left ControlPanel+TargetMenu | right main panels ─ */
         #ui-shell {
             position: absolute;
             inset: 0;
@@ -49,74 +89,87 @@
             display: flex;
             flex-direction: column;
             align-items: stretch;
-            gap: 16px;
-            width: min(420px, 28vw);
+            gap: var(--space-md);
+            width: min(320px, 28vw);
             max-height: 80vh;
+            min-height: 0;
+            overflow-x: visible;
+            overflow-y: auto;
             z-index: 2;
         }
 
-        #main-menu {
+        #control-panel {
             display: none;
             flex-direction: column;
             align-items: stretch;
-            gap: 12px;
+            gap: var(--space-sm);
             width: 100%;
-            box-sizing: border-box;
+            flex: 0 0 auto;
         }
 
-        #main-menu .main-menu-title {
-            font-family: var(--font-body);
-            font-size: var(--fs);
-            color: var(--accent);
+        #control-panel .control-panel-title {
+            font-family: var(--font-ui);
+            font-size: var(--text-xl);
+            font-weight: 600;
+            color: var(--accent-text);
             margin: 0;
+            letter-spacing: 0.04em;
         }
 
-        /* Row 2: main_panel pulldown (full width under title) */
-        #main-menu-panel-host {
+        #control-panel-host {
             width: 100%;
         }
 
-        #main-menu-panel-host .pulldown {
+        #control-panel-host .pulldown {
             width: 100%;
             min-width: 0;
         }
 
-        /* Menu opens to the right over the MainPanel host; opaque so content underneath is covered */
-        #main-menu-panel-host .pulldown-menu {
-            left: calc(100% + 8px);
+        #control-panel-host .pulldown-menu {
+            left: calc(100% + var(--space-sm));
             top: 0;
             right: auto;
-            min-width: min(480px, 40vw);
+            min-width: min(280px, 40vw);
             max-height: 70vh;
             overflow-y: auto;
             z-index: 40;
-            background: rgb(10, 8, 5);
-            border: 1px solid rgba(201, 168, 76, 0.35);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85);
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
         }
 
         #target-menu-row {
             display: none;
             flex-direction: row;
             align-items: flex-start;
-            gap: 16px;
+            gap: var(--space-md);
             width: 100%;
             max-width: none;
+            min-height: 0;
+            flex: 1 1 auto;
+            overflow: visible;
         }
 
         #target-cascade-host {
             display: flex;
             flex-direction: row;
             align-items: flex-start;
-            gap: 16px;
+            gap: var(--space-md);
             flex-wrap: wrap;
+            min-height: 0;
+            max-height: 100%;
+            overflow-y: auto;
         }
 
         #target-panel {
             min-width: auto;
             width: 100%;
             max-width: none;
+            max-height: 100%;
+            min-height: 0;
             box-sizing: border-box;
+            overflow-y: auto;
+            flex: 0 1 auto;
         }
 
         #main-panel-host {
@@ -124,11 +177,12 @@
             top: 10%;
             right: 10%;
             bottom: 10%;
-            left: calc(10% + min(420px, 28vw) + 24px);
+            left: calc(10% + min(320px, 28vw) + var(--space-lg));
             display: flex;
             flex-direction: column;
             align-items: stretch;
             overflow: hidden;
+            min-height: 0;
             z-index: 1;
         }
 
@@ -137,11 +191,15 @@
             width: 100%;
             max-width: none;
             max-height: 100%;
+            min-height: 0;
             box-sizing: border-box;
             overflow: auto;
         }
 
-        /* Legacy float panels (sex / yesno) sit under left column when shown alone */
+        #main-panel-host > #log-panel {
+            overflow: hidden;
+        }
+
         #overlay-panels {
             position: absolute;
             top: 10%;
@@ -149,32 +207,39 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            gap: 16px;
+            gap: var(--space-md);
             max-width: 95vw;
             max-height: 80vh;
+            overflow-y: auto;
             z-index: 3;
         }
 
         .target-pulldown-panel,
-        .target-params-panel {
-            min-width: 220px;
-            max-width: 420px;
+        .target-params-panel,
+        .target-papyrus-panel {
+            min-width: 180px;
+            max-width: 320px;
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
         /* ── Panel ────────────────────────────────────────────── */
         .panel {
-            min-width: 380px;
-            padding: 28px 36px 24px;
+            min-width: 240px;
+            padding: var(--space-lg) var(--space-xl) var(--space-md);
             background: var(--bg);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             border: 1px solid var(--border);
-            border-radius: 6px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
             animation: panelIn 0.25s ease-out;
         }
 
         #sex-menu-panel {
-            width: 920px;
+            width: min(720px, 90vw);
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
         #scene-creator-panel {
@@ -192,33 +257,70 @@
             overflow-y: auto;
         }
 
+        #log-panel {
+            width: auto;
+            height: 100%;
+            max-height: 100%;
+            overflow: hidden;
+            display: none;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        #log-panel > .target-row,
+        #log-panel > .compact-row {
+            flex: 0 0 auto;
+        }
+
+        #log-view {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: none;
+            height: auto;
+            overflow: auto;
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            white-space: pre-wrap;
+            user-select: text;
+            color: var(--text-primary);
+        }
+
         .sc-split-row {
             display: flex;
             align-items: flex-start;
-            gap: 20px;
+            gap: var(--space-md);
+            min-height: 0;
+            flex: 1 1 auto;
         }
 
         .sc-split-row > * + * {
             border-left: 1px solid var(--border);
-            padding-left: 16px;
+            padding-left: var(--space-md);
         }
 
         .sc-col-positions {
             flex: 0 1 37%;
             min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         .sc-col-tags {
             flex: 1 1 63%;
             min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         #sc-header-row1 {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 6px;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-xs);
             flex-shrink: 0;
         }
 
@@ -231,7 +333,7 @@
         #sc-header-row1 #sc-action-bar {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: var(--space-sm);
             margin: 0;
             padding: 0;
             border: none;
@@ -241,23 +343,23 @@
         #sc-header-row2 {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: var(--space-sm);
             flex-wrap: wrap;
-            margin: 0 0 10px;
-            font-size: calc(var(--fs) * 0.75);
+            margin: 0 0 var(--space-sm);
+            font-size: var(--text-sm);
             flex-shrink: 0;
         }
 
         #sc-header-row2 .compact-row {
             margin: 0;
-            gap: 6px;
+            gap: var(--space-xs);
             flex-wrap: nowrap;
         }
 
         #sc-header-row2 #sc-range-style-cluster {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: var(--space-xs);
             flex-wrap: nowrap;
             flex-shrink: 0;
         }
@@ -274,8 +376,8 @@
         }
 
         .sc-anims-section {
-            margin-top: 12px;
-            padding-top: 12px;
+            margin-top: var(--space-sm);
+            padding-top: var(--space-sm);
             border-top: 1px solid var(--border);
             flex: 1;
             min-height: 0;
@@ -288,41 +390,41 @@
         }
 
         #yesno-panel {
-            min-width: 520px;
+            min-width: 320px;
         }
 
         .yesno-question {
-            font-family: var(--font-body);
-            font-size: calc(var(--fs) * 0.85);
-            color: var(--text);
-            margin: 12px 0 24px;
+            font-family: var(--font-ui);
+            font-size: var(--text-lg);
+            color: var(--text-primary);
+            margin: var(--space-sm) 0 var(--space-md);
             line-height: 1.35;
         }
 
         .btn-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: var(--space-sm);
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.55);
-            color: var(--text);
-            margin: 8px 0;
+            font-size: var(--text-sm);
+            color: var(--text-primary);
+            margin: var(--space-sm) 0;
         }
 
         .data-table th {
             text-align: left;
-            color: var(--text-muted);
+            color: var(--text-secondary);
             border-bottom: 1px solid var(--border);
-            padding: 4px 6px;
+            padding: var(--space-xs) var(--space-sm);
         }
 
         .data-table td {
-            padding: 4px 6px;
+            padding: var(--space-xs) var(--space-sm);
             border-bottom: 1px solid rgba(201, 168, 76, 0.08);
         }
 
@@ -333,8 +435,11 @@
         .cell-toggle {
             cursor: pointer;
             border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 0 6px;
+            border-radius: var(--radius);
+            padding: 0 var(--space-xs);
+            min-height: 28px;
+            display: inline-flex;
+            align-items: center;
         }
 
         .cell-toggle.on {
@@ -345,20 +450,20 @@
         .compact-row {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: var(--space-sm);
             flex-wrap: wrap;
-            margin: 8px 0;
+            margin: var(--space-sm) 0;
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.65);
-            color: var(--text-muted);
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
         }
 
         .scroll-list {
             max-height: 180px;
             overflow-y: auto;
             border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 6px;
+            border-radius: var(--radius);
+            padding: var(--space-xs);
         }
 
         #sc-anims-list {
@@ -381,9 +486,9 @@
         }
 
         #sc-filter-has-description {
-            transform: scale(2);
+            transform: scale(1.4);
             transform-origin: left center;
-            margin-right: 1.2em;
+            margin-right: var(--space-sm);
         }
 
         #sc-positions-table {
@@ -417,7 +522,7 @@
             flex-direction: column;
             gap: 2px;
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.45);
+            font-size: var(--text-xs);
             line-height: 1;
             color: var(--accent);
             cursor: pointer;
@@ -425,11 +530,11 @@
         }
 
         #sc-positions-table .pos-move span {
-            padding: 0 4px;
+            padding: 0 var(--space-xs);
         }
 
         #sc-positions-table .pos-move span:hover {
-            background: var(--accent-glow);
+            background: var(--accent-muted);
         }
 
         #sc-positions-table td.col-name,
@@ -450,29 +555,29 @@
         .mod-chip-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: var(--space-xs);
             align-items: center;
         }
 
         #sc-positions-table .mod-chip-list .pulldown {
             min-width: auto;
-            font-size: calc(var(--fs) * 0.55);
+            font-size: var(--text-sm);
         }
 
         #sc-positions-table .mod-chip-list .pulldown-value {
-            padding: 1px 8px;
+            padding: 1px var(--space-sm);
             color: var(--accent);
             border-color: rgba(201, 168, 76, 0.45);
-            border-radius: 6px;
+            border-radius: var(--radius);
         }
 
         #sc-positions-table .mod-chip-list .pulldown-option {
-            font-size: calc(var(--fs) * 0.55);
+            font-size: var(--text-sm);
         }
 
         .anim-table {
             margin: 0;
-            font-size: calc(var(--fs) * 0.60);
+            font-size: var(--text-sm);
             table-layout: auto;
             width: 100%;
         }
@@ -491,7 +596,7 @@
         .anim-table thead th {
             position: sticky;
             top: 0;
-            background: var(--bg, #1a1814);
+            background: var(--bg);
             z-index: 1;
         }
 
@@ -501,7 +606,7 @@
 
         .anim-table tbody tr.selected td {
             color: var(--accent);
-            background: var(--accent-glow);
+            background: var(--accent-muted);
         }
 
         .anim-table .col-genders,
@@ -522,48 +627,48 @@
 
         @keyframes panelIn {
             from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0);    }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Name ─────────────────────────────────────────────── */
         .target-row {
             font-family: var(--font-ui);
-            font-size: var(--fs);
+            font-size: var(--text-xl);
             font-weight: 600;
-            color: var(--accent);
+            color: var(--accent-text);
             letter-spacing: 0.04em;
-            text-shadow: 0 0 18px var(--accent-glow);
-            margin-bottom: 18px;
+            margin-bottom: var(--space-md);
         }
 
-        /* ── Framework row ────────────────────────────────────── */
         .field-row {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: var(--space-md);
             font-family: var(--font-ui);
-            font-size: var(--fs);
-            color: var(--text-muted);
-            margin-bottom: 20px;
+            font-size: var(--text-base);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-md);
         }
 
-        /* Custom pulldown — native <select>/<option> ignore font-size in PrismaUI/CEF */
         .pulldown {
             position: relative;
             font-family: var(--font-ui);
-            font-size: var(--fs);
-            color: var(--text);
+            font-size: var(--text-base);
+            color: var(--text-primary);
             min-width: 8em;
         }
 
         .pulldown-value {
-            background: rgba(10, 8, 5, 0.85);
+            background: rgba(28, 28, 33, 0.9);
             border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 2px 10px;
+            border-radius: var(--radius);
+            padding: var(--space-xs) var(--space-sm);
+            min-height: var(--target-min);
+            display: flex;
+            align-items: center;
             cursor: pointer;
             transition: border-color 0.15s ease;
             white-space: nowrap;
+            box-sizing: border-box;
         }
 
         .pulldown-value:hover,
@@ -575,14 +680,16 @@
             display: none;
             position: absolute;
             left: 0;
-            top: calc(100% + 4px);
+            top: calc(100% + var(--space-xs));
             z-index: 20;
             min-width: 100%;
-            background: rgba(10, 8, 5, 0.95);
+            max-height: 50vh;
+            overflow-y: auto;
+            background: rgba(24, 24, 28, 0.96);
             border: 1px solid var(--border);
-            border-radius: 3px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
-            padding: 4px 0;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: var(--space-xs) 0;
         }
 
         .pulldown.open .pulldown-menu {
@@ -591,36 +698,38 @@
 
         .pulldown-option {
             font-family: var(--font-ui);
-            font-size: var(--fs);
-            color: var(--text);
-            padding: 4px 10px;
+            font-size: var(--text-base);
+            color: var(--text-primary);
+            padding: var(--space-sm) var(--space-md);
+            min-height: var(--target-min);
+            display: flex;
+            align-items: center;
             cursor: pointer;
             white-space: nowrap;
+            box-sizing: border-box;
         }
 
         .pulldown-option:hover,
         .pulldown-option.selected {
             color: var(--accent);
-            background: var(--accent-glow);
+            background: var(--accent-muted);
         }
 
-        /* ── Section headers ──────────────────────────────────── */
         .section-header {
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.65);
+            font-size: var(--text-sm);
             color: var(--text-muted);
             letter-spacing: 0.10em;
             text-transform: uppercase;
             border-bottom: 1px solid var(--border);
-            padding-bottom: 4px;
-            margin: 20px 0 6px;
+            padding-bottom: var(--space-xs);
+            margin: var(--space-md) 0 var(--space-xs);
         }
 
-        /* ── Clickable options ────────────────────────────────── */
         .option-row {
             display: flex;
             align-items: stretch;
-            gap: 4px;
+            gap: var(--space-xs);
         }
 
         .option-row .option {
@@ -630,18 +739,21 @@
 
         .option-expand {
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.75);
-            color: var(--text-muted);
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
             cursor: pointer;
-            padding: 7px 10px;
+            padding: var(--space-sm) var(--space-md);
+            min-height: var(--target-min);
+            display: flex;
+            align-items: center;
             flex-shrink: 0;
             transition: color 0.15s ease, background 0.15s ease;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.70);
+            box-sizing: border-box;
         }
 
         .option-expand:hover {
             color: var(--accent);
-            background: var(--accent-glow);
+            background: var(--accent-muted);
         }
 
         .option-expand:active {
@@ -653,13 +765,16 @@
         }
 
         .option {
-            font-family: var(--font-body);
-            font-size: var(--fs);
-            color: var(--text);
+            font-family: var(--font-ui);
+            font-size: var(--text-lg);
+            color: var(--text-primary);
             cursor: pointer;
-            padding: 7px 0 7px 18px;
+            padding: var(--space-sm) 0 var(--space-sm) var(--space-md);
+            min-height: var(--target-min);
+            display: flex;
+            align-items: center;
             transition: color 0.15s ease, box-shadow 0.15s ease;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.70);
+            box-sizing: border-box;
         }
 
         .option:hover {
@@ -684,16 +799,19 @@
             opacity: 0.4;
         }
 
-        /* ── Cancel ───────────────────────────────────────────── */
         .option-cancel {
             font-family: var(--font-ui);
-            font-size: var(--fs);
+            font-size: var(--text-base);
             color: var(--danger);
             cursor: pointer;
-            padding: 7px 0;
-            margin-top: 20px;
-            border-top: 1px solid rgba(194, 122, 106, 0.20);
+            padding: var(--space-sm) 0;
+            min-height: var(--target-min);
+            display: flex;
+            align-items: center;
+            margin-top: var(--space-md);
+            border-top: 1px solid rgba(229, 69, 69, 0.25);
             transition: color 0.15s ease;
+            box-sizing: border-box;
         }
 
         .option-cancel:hover {
@@ -704,34 +822,33 @@
             color: var(--text-muted);
         }
 
-        /* ── Subsection header ────────────────────────────────── */
         .subsection-header {
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.55);
+            font-size: var(--text-xs);
             color: var(--text-muted);
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            margin: 10px 0 4px;
+            margin: var(--space-sm) 0 var(--space-xs);
         }
 
-        /* ── Position row ─────────────────────────────────────── */
         .position-row {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-family: var(--font-body);
-            font-size: var(--fs);
-            color: var(--text);
-            padding: 2px 0 2px 18px;
+            gap: var(--space-sm);
+            font-family: var(--font-ui);
+            font-size: var(--text-base);
+            color: var(--text-primary);
+            padding: var(--space-xs) 0 var(--space-xs) var(--space-md);
+            min-height: var(--target-min);
         }
 
         .nude-toggle {
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.65);
+            font-size: var(--text-sm);
             cursor: pointer;
             border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 1px 8px;
+            border-radius: var(--radius);
+            padding: 1px var(--space-sm);
             transition: color 0.15s, border-color 0.15s;
         }
 
@@ -746,27 +863,25 @@
 
         .pos-hint {
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.55);
+            font-size: var(--text-sm);
             color: var(--text-muted);
         }
 
-        /* ── Name list (empty state) ──────────────────────────── */
         .name-list {
-            font-family: var(--font-body);
-            font-size: calc(var(--fs) * 0.80);
-            color: var(--text);
-            padding: 2px 0 2px 18px;
+            font-family: var(--font-ui);
+            font-size: var(--text-base);
+            color: var(--text-primary);
+            padding: var(--space-xs) 0 var(--space-xs) var(--space-md);
             min-height: 1.4em;
         }
 
-        /* ── Bottom bar (Start + Cancel) ─────────────────────── */
         .bottom-bar {
             display: flex;
-            gap: 24px;
+            gap: var(--space-lg);
             align-items: center;
             border-top: 1px solid var(--border);
-            margin-top: 20px;
-            padding-top: 10px;
+            margin-top: var(--space-md);
+            padding-top: var(--space-sm);
         }
 
         .bottom-bar .option-cancel {
@@ -775,20 +890,23 @@
             padding: 0;
         }
 
-        /* ── Start button ─────────────────────────────────────── */
         .action-btn {
             font-family: var(--font-ui);
-            font-size: var(--fs);
+            font-size: var(--text-base);
             color: var(--accent);
             cursor: pointer;
-            padding: 4px 20px;
+            padding: var(--space-xs) var(--space-md);
+            min-height: var(--target-min);
+            display: inline-flex;
+            align-items: center;
             border: 1px solid var(--border);
-            border-radius: 3px;
+            border-radius: var(--radius);
             transition: background 0.15s;
+            box-sizing: border-box;
         }
 
         .action-btn:hover {
-            background: var(--accent-glow);
+            background: var(--accent-muted);
         }
 
         .action-btn.disabled {
@@ -798,14 +916,13 @@
             pointer-events: none;
         }
 
-        /* ── Tag mode row ─────────────────────────────────────── */
         .tag-mode-row {
             display: flex;
             align-items: flex-start;
-            gap: 14px;
+            gap: var(--space-md);
             font-family: var(--font-ui);
-            font-size: var(--fs);
-            padding: 4px 0;
+            font-size: var(--text-base);
+            padding: var(--space-xs) 0;
         }
 
         .tag-mode-btn {
@@ -813,6 +930,9 @@
             cursor: pointer;
             white-space: nowrap;
             transition: color 0.15s;
+            min-height: var(--target-min);
+            display: inline-flex;
+            align-items: center;
         }
 
         .tag-mode-btn.active {
@@ -823,11 +943,10 @@
             color: var(--accent);
         }
 
-        /* ── Tag chips ────────────────────────────────────────── */
         .active-tag-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: var(--space-sm);
             align-items: center;
         }
 
@@ -835,67 +954,73 @@
             display: inline-flex;
             align-items: center;
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.70);
-            color: var(--text);
+            font-size: var(--text-sm);
+            color: var(--text-primary);
             border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 1px 8px;
+            border-radius: var(--radius);
+            padding: 1px var(--space-sm);
             cursor: pointer;
             transition: color 0.15s, border-color 0.15s;
         }
 
         .tag-chip:hover {
             color: var(--danger);
-            border-color: rgba(194, 122, 106, 0.45);
+            border-color: rgba(229, 69, 69, 0.45);
         }
 
-        /* ── Nearby wrapping list ─────────────────────────────── */
         .nearby-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            padding: 4px 0 4px 18px;
+            gap: var(--space-sm);
+            padding: var(--space-xs) 0 var(--space-xs) var(--space-md);
         }
 
         .nearby-item {
-            font-family: var(--font-body);
-            font-size: var(--fs);
-            color: var(--text);
+            font-family: var(--font-ui);
+            font-size: var(--text-base);
+            color: var(--text-primary);
             cursor: pointer;
             border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 2px 10px;
+            border-radius: var(--radius);
+            padding: var(--space-xs) var(--space-sm);
+            min-height: var(--target-min);
+            display: inline-flex;
+            align-items: center;
             transition: color 0.15s, background 0.15s, border-color 0.15s;
+            box-sizing: border-box;
         }
 
         .nearby-item.selected {
             color: var(--accent);
             border-color: rgba(201, 168, 76, 0.45);
-            background: var(--accent-glow);
+            background: var(--accent-muted);
         }
 
         .nearby-item:hover {
             color: var(--accent);
-            background: var(--accent-glow);
+            background: var(--accent-muted);
         }
 
-        /* ── Tag group buttons ────────────────────────────────── */
         .tag-group-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin: 24px 0 8px;
+            gap: var(--space-sm);
+            margin: var(--space-md) 0 var(--space-sm);
         }
 
         .tag-group-btn {
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.65);
+            font-size: var(--text-sm);
             color: var(--text-muted);
             cursor: pointer;
             border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 2px 10px;
+            border-radius: var(--radius);
+            padding: var(--space-xs) var(--space-sm);
+            min-height: 32px;
+            display: inline-flex;
+            align-items: center;
             transition: color 0.15s, border-color 0.15s;
+            box-sizing: border-box;
         }
 
         .tag-group-btn:hover,
@@ -904,30 +1029,29 @@
             border-color: rgba(201, 168, 76, 0.45);
         }
 
-        /* ── Tag group dropdown ───────────────────────────────── */
         .tag-group-dropdown {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 8px;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
         }
 
         .tag-member {
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.70);
-            color: var(--text);
+            font-size: var(--text-sm);
+            color: var(--text-primary);
             cursor: pointer;
             border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 2px 10px;
+            border-radius: var(--radius);
+            padding: var(--space-xs) var(--space-sm);
             transition: color 0.15s, background 0.15s;
         }
 
         .tag-member:hover {
             color: var(--accent);
-            background: var(--accent-glow);
+            background: var(--accent-muted);
         }
-        /* ── Cascading target menu ─────────────────────────────── */
+
         .option.selected {
             color: var(--accent);
             box-shadow: inset 2px 0 0 var(--accent);
@@ -936,41 +1060,45 @@
         .dyn-field {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            margin: 8px 0;
-            padding-left: 8px;
+            gap: var(--space-xs);
+            margin: var(--space-sm) 0;
+            padding-left: var(--space-sm);
         }
 
         .dyn-field label {
             font-family: var(--font-ui);
-            font-size: calc(var(--fs) * 0.55);
+            font-size: var(--text-xs);
             color: var(--text-muted);
             letter-spacing: 0.06em;
             text-transform: uppercase;
         }
 
         .dyn-field input {
-            background: rgba(10, 8, 5, 0.85);
-            color: var(--text);
+            background: rgba(28, 28, 33, 0.9);
+            color: var(--text-primary);
             border: 1px solid var(--border);
-            border-radius: 3px;
+            border-radius: var(--radius);
             font-family: var(--font-ui);
-            font-size: var(--fs);
-            padding: 4px 10px;
+            font-size: var(--text-base);
+            padding: var(--space-xs) var(--space-sm);
+            min-height: var(--target-min);
             outline: none;
+            box-sizing: border-box;
         }
 
         .dyn-field .pulldown {
-            font-size: var(--fs);
+            font-size: var(--text-base);
         }
+
     </style>
 </head>
 <body>
     <div id="ui-shell">
     <div id="left-column">
-        <div id="main-menu" class="panel" style="display:none">
-            <div class="main-menu-title">SkyrimNet SexLab</div>
-            <div id="main-menu-panel-host"></div>
+        <div id="control-panel" class="panel" style="display:none">
+            <div class="control-panel-title">SkyrimNet SexLab</div>
+            <div id="control-panel-host"></div>
+            <div class="action-btn" id="control-pause-btn" onclick="controlPauseToggle()">unpause</div>
         </div>
         <div id="target-menu-row" style="display:none">
             <div id="target-panel" class="panel">
@@ -1100,8 +1228,48 @@
         </tr></thead><tbody></tbody></table>
         <div class="bottom-bar">
             <div class="option-cancel" id="am-btn-stop" onclick="amStop()">Stop</div>
-            <div class="action-btn" onclick="amDone()">Done</div>
+            <div class="action-btn" onclick="amDone()">Save</div>
         </div>
+    </div>
+
+    <div id="settings-panel" class="panel" style="display:none">
+        <div class="target-row">Settings</div>
+        <div class="compact-row" style="margin-bottom:8px">
+            <span id="settings-mod-name">SkyrimNet_SexLab</span>
+            <span id="settings-version" style="opacity:0.8">v?</span>
+        </div>
+        <div class="section-header">Animation database</div>
+        <div class="compact-row" style="margin-bottom:8px">
+            <span>Last rebuild:</span>
+            <span id="settings-last-rebuild">never</span>
+        </div>
+        <div class="compact-row" style="margin-bottom:12px">
+            <div class="action-btn" id="settings-btn-rebuild" onclick="settingsRebuild()">Rebuild Animation Database</div>
+        </div>
+        <div class="section-header">SkyrimNet plugin settings</div>
+        <div class="compact-row" style="margin-bottom:8px">
+            <div class="action-btn" id="settings-btn-skyrimnet" onclick="settingsOpenSkyrimNet()">Open SkyrimNet dashboard</div>
+        </div>
+        <p style="opacity:0.75; margin-bottom:12px; font-size:var(--text-sm)">
+            Closes this WebUI and toggles the SkyrimNet Prisma dashboard. Navigate to Plugins → SkyrimNet_SexLab (no deep-link API). UI Scale is the SkyrimNet Dashboard setting (ui_scale); this overlay reads it on open.
+        </p>
+        <div class="section-header">Documentation</div>
+        <div class="compact-row" style="margin-bottom:4px">Documentation:</div>
+        <div id="settings-docs-url" class="compact-row" style="opacity:0.85; word-break:break-all; user-select:text">https://github.com/GoodProvider/SkyrimNet_SexLab</div>
+        <p style="opacity:0.75; margin-top:16px; font-size:var(--text-sm)">
+            Plugin options live in the SkyrimNet mod menu under SkyrimNet_SexLab, or use this Settings panel for rebuild / version / docs.
+        </p>
+    </div>
+
+    <div id="log-panel" class="panel" style="display:none">
+        <div class="target-row">Log</div>
+        <div class="compact-row" style="margin-bottom:8px">
+            <span>filter</span>
+            <input id="log-filter-text" type="text" placeholder="regex filter" style="flex:1; min-width:8em"
+                oninput="logOnFilterInput()" />
+            <span id="log-filter-error" style="color:#c66; font-size:0.85em; display:none">bad regex</span>
+        </div>
+        <div id="log-view" class="scroll-list" onscroll="logOnScroll()"></div>
     </div>
     </div><!-- #main-panel-host -->
 
@@ -1153,6 +1321,53 @@
     </div><!-- #ui-shell -->
 
     <script>
+        // ── Display scale (SkyrimNet theme.js): body.zoom = clamp(ui_scale) × up-only 1080p baseline ──
+        // Fit comes from px tokens (~15px) + overflow scroll shells, not rem / downscale.
+        let _uiUserScale = 1;
+        let _uiScaleResizeTimer = null;
+
+        function resolutionBaseline() {
+            if (typeof window === 'undefined') return 1;
+            const s = window.innerHeight / 1080;
+            return s > 1.05 ? s * 0.85 : 1; // never < 1 from resolution
+        }
+
+        function applyUiScale(userScale) {
+            const clamped = Math.max(0.75, Math.min(1.5, Number(userScale) || 1));
+            _uiUserScale = clamped;
+            const finalScale = clamped * resolutionBaseline();
+            document.body.style.zoom = String(finalScale);
+            document.documentElement.style.setProperty('--ui-scale', String(finalScale));
+        }
+
+        function skyrimNetApiBase() {
+            if (typeof window.__SN_BASE__ === 'string' && window.__SN_BASE__)
+                return window.__SN_BASE__.replace(/\/$/, '');
+            return 'http://localhost:8080';
+        }
+
+        function loadDashboardUiScale() {
+            const url = skyrimNetApiBase() + '/config?api=get&name=Dashboard';
+            return fetch(url)
+                .then(function (res) { return res.ok ? res.json() : Promise.reject(res.status); })
+                .then(function (body) {
+                    const d = (body && body.data) ? body.data : {};
+                    applyUiScale(typeof d.ui_scale === 'number' ? d.ui_scale : 1);
+                })
+                .catch(function () {
+                    applyUiScale(_uiUserScale || 1);
+                });
+        }
+
+        applyUiScale(1);
+        loadDashboardUiScale();
+        window.addEventListener('resize', function () {
+            if (_uiScaleResizeTimer) clearTimeout(_uiScaleResizeTimer);
+            _uiScaleResizeTimer = setTimeout(function () {
+                applyUiScale(_uiUserScale);
+            }, 75);
+        });
+
         function dispatchFrameworkChange(value) {
             if (typeof window.onFrameworkChange === 'function') {
                 window.onFrameworkChange(value);
@@ -1179,13 +1394,15 @@
 
         // C++ Invoke adapters (Papyrus_WebUI / WebUI.cpp panel names)
         const PANEL_IDS = [
-            'main-menu', 'target-menu-row', 'sex-menu-panel', 'yesno-panel',
-            'scene-creator-panel', 'animation-menu-panel'
+            'control-panel', 'target-menu-row', 'sex-menu-panel', 'yesno-panel',
+            'scene-creator-panel', 'animation-menu-panel', 'settings-panel', 'log-panel'
         ];
 
-        // Fallback when C++ configureMainMenu has not run / main_panels/*.json missing from Data.
+        // Fallback when C++ configureControlPanel has not run / main_panels/*.json missing from Data.
         const MAIN_PANEL_NONE_LABEL = 'None';
         const DEFAULT_MAIN_PANELS = [
+            { type: 'builtin', label: 'Log', panel: 'log_panel' },
+            { type: 'builtin', label: 'Settings', panel: 'settings_panel' },
             { type: 'builtin', label: 'Scene Menu', panel: 'scene_creator_panel' },
             { type: 'builtin', label: 'Animation', panel: 'animation_menu_panel' }
         ];
@@ -1217,22 +1434,35 @@
         }
 
         function clearMainPanelHost() {
-            const builtins = ['scene-creator-panel', 'animation-menu-panel'];
+            const builtins = ['scene-creator-panel', 'animation-menu-panel', 'settings-panel', 'log-panel'];
             for (const pid of builtins) {
                 const el = document.getElementById(pid);
                 if (el) el.style.display = 'none';
             }
+            logStopPolling();
         }
 
-        function showMainMenu() {
-            const el = document.getElementById('main-menu');
+        function showControlPanel() {
+            const el = document.getElementById('control-panel');
             if (el) el.style.display = 'flex';
-            renderMainMenuPulldown();
+            setControlPaused(true);
+            renderControlPanelPulldown();
         }
 
-        function hideMainMenu() {
-            const el = document.getElementById('main-menu');
+        function hideControlPanel() {
+            const el = document.getElementById('control-panel');
             if (el) el.style.display = 'none';
+        }
+
+        function setControlPaused(paused) {
+            const btn = document.getElementById('control-pause-btn');
+            if (btn)
+                btn.textContent = paused ? 'unpause' : 'pause';
+        }
+
+        function controlPauseToggle() {
+            if (typeof window.onControlPauseToggle === 'function')
+                window.onControlPauseToggle('{}');
         }
 
         function selectMainPanelByLabel(label) {
@@ -1253,8 +1483,8 @@
             }
         }
 
-        function renderMainMenuPulldown() {
-            const host = document.getElementById('main-menu-panel-host');
+        function renderControlPanelPulldown() {
+            const host = document.getElementById('control-panel-host');
             if (!host) return;
             if (typeof createPulldown !== 'function') return;
             if (!MAIN_PANELS.length)
@@ -1268,45 +1498,53 @@
             }));
         }
 
-        function configureMainMenu(catalog) {
+        function configureControlPanel(catalog) {
             const panels = (catalog && catalog.panels) ? catalog.panels.slice() : [];
             MAIN_PANELS = panels.length ? panels : DEFAULT_MAIN_PANELS.slice();
             if (catalog && Object.prototype.hasOwnProperty.call(catalog, 'selected'))
                 MAIN_SELECTED_KEY = catalog.selected || '';
             else if (MAIN_SELECTED_KEY && !findMainPanelByKey(MAIN_SELECTED_KEY))
                 MAIN_SELECTED_KEY = '';
-            renderMainMenuPulldown();
+            renderControlPanelPulldown();
         }
 
         function domIdForPanelKey(key) {
             if (key === 'scene_creator_panel') return 'scene-creator-panel';
             if (key === 'animation_menu_panel') return 'animation-menu-panel';
+            if (key === 'settings_panel') return 'settings-panel';
+            if (key === 'log_panel') return 'log-panel';
             return key;
         }
 
         function revealMainPanel(panelKey) {
-            showMainMenu();
+            showControlPanel();
             if (!panelKey) {
                 MAIN_SELECTED_KEY = '';
                 mainPanelPulldownBusy = true;
-                renderMainMenuPulldown();
+                renderControlPanelPulldown();
                 mainPanelPulldownBusy = false;
                 clearMainPanelHost();
                 return;
             }
             MAIN_SELECTED_KEY = panelKey;
             mainPanelPulldownBusy = true;
-            renderMainMenuPulldown();
+            renderControlPanelPulldown();
             mainPanelPulldownBusy = false;
-            const builtins = ['scene-creator-panel', 'animation-menu-panel'];
+            const builtins = ['scene-creator-panel', 'animation-menu-panel', 'settings-panel', 'log-panel'];
+            const want = domIdForPanelKey(panelKey);
             for (const pid of builtins) {
                 const el = document.getElementById(pid);
                 if (!el) continue;
-                const want = domIdForPanelKey(panelKey);
                 if (pid === want) {
-                    el.style.display = (pid === 'scene-creator-panel') ? 'flex' : 'block';
+                    el.style.display = (pid === 'scene-creator-panel' || pid === 'log-panel') ? 'flex' : 'block';
+                    if (pid === 'settings-panel' && typeof window.onSettingsRefresh === 'function')
+                        window.onSettingsRefresh('{}');
+                    if (pid === 'log-panel')
+                        logStartPolling(true);
                 } else {
                     el.style.display = 'none';
+                    if (pid === 'log-panel')
+                        logStopPolling();
                 }
             }
         }
@@ -1318,6 +1556,8 @@
             }
             const el = document.getElementById(domIdForPanelKey(panelKey));
             if (el) el.style.display = 'none';
+            if (panelKey === 'log_panel' || panelKey === 'log-panel')
+                logStopPolling();
         }
 
         function hideAllPanelsDom() {
@@ -1325,10 +1565,11 @@
                 const el = document.getElementById(pid);
                 if (el) el.style.display = 'none';
             }
+            logStopPolling();
         }
 
         function showTargetMenuRow() {
-            showMainMenu();
+            showControlPanel();
             const row = document.getElementById('target-menu-row');
             if (row) row.style.display = 'flex';
             const panel = document.getElementById('target-panel');
@@ -1349,12 +1590,14 @@
                 id === 'yesno_panel' || id === 'yesno-panel';
             const isMainBuiltin =
                 id === 'scene_creator_panel' || id === 'scene-creator-panel' ||
-                id === 'animation_menu_panel' || id === 'animation-menu-panel';
+                id === 'animation_menu_panel' || id === 'animation-menu-panel' ||
+                id === 'settings_panel' || id === 'settings-panel' ||
+                id === 'log_panel' || id === 'log-panel';
 
             if (!isMainBuiltin) {
                 for (const pid of PANEL_IDS) {
-                    if (spareTarget && (pid === 'target-menu-row' || pid === 'main-menu')) continue;
-                    if (pid === 'main-menu') continue;
+                    if (spareTarget && (pid === 'target-menu-row' || pid === 'control-panel')) continue;
+                    if (pid === 'control-panel') continue;
                     const el = document.getElementById(pid);
                     if (el) el.style.display = 'none';
                 }
@@ -1363,12 +1606,12 @@
             if (id === 'target_menu_panel' || id === 'target-panel' || id === 'target-menu-row') {
                 showTargetMenuRow();
             } else if (id === 'sex_menu_panel' || id === 'sex-menu-panel') {
-                hideMainMenu();
+                hideControlPanel();
                 showSexMenu();
             } else if (id === 'yesno_panel' || id === 'yesno-panel') {
                 document.getElementById('yesno-panel').style.display = 'block';
             } else if (id === 'scene_creator_panel' || id === 'scene-creator-panel') {
-                showMainMenu();
+                showControlPanel();
                 if (MAIN_SELECTED_KEY === 'scene_creator_panel' || MAIN_SELECTED_KEY === 'scene-creator-panel') {
                     revealMainPanel('scene_creator_panel');
                 } else if (typeof window.onMainPanelChange === 'function') {
@@ -1377,13 +1620,31 @@
                     revealMainPanel('scene_creator_panel');
                 }
             } else if (id === 'animation_menu_panel' || id === 'animation-menu-panel') {
-                showMainMenu();
+                showControlPanel();
                 if (MAIN_SELECTED_KEY === 'animation_menu_panel' || MAIN_SELECTED_KEY === 'animation-menu-panel') {
                     revealMainPanel('animation_menu_panel');
                 } else if (typeof window.onMainPanelChange === 'function') {
                     window.onMainPanelChange(JSON.stringify({ key: 'animation_menu_panel' }));
                 } else {
                     revealMainPanel('animation_menu_panel');
+                }
+            } else if (id === 'settings_panel' || id === 'settings-panel') {
+                showControlPanel();
+                if (MAIN_SELECTED_KEY === 'settings_panel' || MAIN_SELECTED_KEY === 'settings-panel') {
+                    revealMainPanel('settings_panel');
+                } else if (typeof window.onMainPanelChange === 'function') {
+                    window.onMainPanelChange(JSON.stringify({ key: 'settings_panel' }));
+                } else {
+                    revealMainPanel('settings_panel');
+                }
+            } else if (id === 'log_panel' || id === 'log-panel') {
+                showControlPanel();
+                if (MAIN_SELECTED_KEY === 'log_panel' || MAIN_SELECTED_KEY === 'log-panel') {
+                    revealMainPanel('log_panel');
+                } else if (typeof window.onMainPanelChange === 'function') {
+                    window.onMainPanelChange(JSON.stringify({ key: 'log_panel' }));
+                } else {
+                    revealMainPanel('log_panel');
                 }
             }
         }
@@ -1399,19 +1660,120 @@
                 concealMainPanel('scene_creator_panel');
             } else if (id === 'animation_menu_panel' || id === 'animation-menu-panel') {
                 concealMainPanel('animation_menu_panel');
-            } else if (id === 'main_menu' || id === 'main-menu') {
-                hideMainMenu();
+            } else if (id === 'settings_panel' || id === 'settings-panel') {
+                concealMainPanel('settings_panel');
+            } else if (id === 'log_panel' || id === 'log-panel') {
+                concealMainPanel('log_panel');
+            } else if (id === 'control_panel' || id === 'control-panel') {
+                hideControlPanel();
             }
         }
 
         function visiblePanelId() {
-            for (const pid of ['yesno-panel', 'scene-creator-panel', 'animation-menu-panel', 'target-menu-row', 'sex-menu-panel']) {
+            for (const pid of ['yesno-panel', 'scene-creator-panel', 'animation-menu-panel', 'settings-panel', 'log-panel', 'target-menu-row', 'sex-menu-panel']) {
                 const el = document.getElementById(pid);
                 if (!el) continue;
                 const d = el.style.display;
                 if (d === 'block' || d === 'flex') return pid;
             }
             return null;
+        }
+
+        function configureSettingsPanel(cfg) {
+            const versionEl = document.getElementById('settings-version');
+            const rebuildEl = document.getElementById('settings-last-rebuild');
+            const urlEl = document.getElementById('settings-docs-url');
+            if (versionEl)
+                versionEl.textContent = 'v' + ((cfg && cfg.version) ? cfg.version : '?');
+            if (rebuildEl)
+                rebuildEl.textContent = (cfg && cfg.lastRebuild) ? cfg.lastRebuild : 'never';
+            if (urlEl)
+                urlEl.textContent = (cfg && cfg.docsUrl) ? cfg.docsUrl : 'https://github.com/GoodProvider/SkyrimNet_SexLab';
+            loadDashboardUiScale();
+        }
+
+        function settingsRebuild() {
+            if (typeof window.onSettingsRebuild === 'function')
+                window.onSettingsRebuild('{}');
+        }
+
+        function settingsOpenSkyrimNet() {
+            if (typeof window.onSettingsOpenSkyrimNet === 'function')
+                window.onSettingsOpenSkyrimNet('{}');
+        }
+
+        // ── Log panel (regex filter + follow-tail) ─────────────────
+        let LOG_LINES = [];
+        let LOG_FOLLOW = true;
+        let LOG_FILTER_RE = null;
+        let LOG_POLL_TIMER = null;
+
+        function logStopPolling() {
+            if (LOG_POLL_TIMER) {
+                clearInterval(LOG_POLL_TIMER);
+                LOG_POLL_TIMER = null;
+            }
+        }
+
+        function logStartPolling(resetFollow) {
+            if (resetFollow)
+                LOG_FOLLOW = true;
+            if (typeof window.onLogPanelOpen === 'function')
+                window.onLogPanelOpen('{}');
+            if (LOG_POLL_TIMER)
+                return;
+            LOG_POLL_TIMER = setInterval(function () {
+                if (typeof window.onLogPoll === 'function')
+                    window.onLogPoll('{}');
+            }, 500);
+        }
+
+        function logOnFilterInput() {
+            const input = document.getElementById('log-filter-text');
+            const err = document.getElementById('log-filter-error');
+            const raw = input ? input.value : '';
+            if (!raw) {
+                LOG_FILTER_RE = null;
+                if (err) err.style.display = 'none';
+                renderLogView();
+                return;
+            }
+            try {
+                LOG_FILTER_RE = new RegExp(raw, 'i');
+                if (err) err.style.display = 'none';
+            } catch (e) {
+                LOG_FILTER_RE = null;
+                if (err) err.style.display = '';
+            }
+            renderLogView();
+        }
+
+        function logOnScroll() {
+            const view = document.getElementById('log-view');
+            if (!view) return;
+            const gap = view.scrollHeight - view.scrollTop - view.clientHeight;
+            LOG_FOLLOW = gap < 28;
+        }
+
+        function renderLogView() {
+            const view = document.getElementById('log-view');
+            if (!view) return;
+            let lines = LOG_LINES;
+            if (LOG_FILTER_RE) {
+                lines = lines.filter(function (ln) { return LOG_FILTER_RE.test(ln); });
+            }
+            view.textContent = lines.join('\n');
+            if (LOG_FOLLOW)
+                view.scrollTop = view.scrollHeight;
+        }
+
+        function appendLogLines(payload) {
+            if (!payload) return;
+            if (payload.reset)
+                LOG_LINES = [];
+            if (payload.lines && payload.lines.length)
+                LOG_LINES = LOG_LINES.concat(payload.lines);
+            renderLogView();
         }
 
         function handleGlobalEscape() {
@@ -1437,7 +1799,9 @@
         let navStack = [];            // stack of pulldown option objects
         let selectedActionName = null;
         let selectedActionLabel = null;
-        let leftSelectedOpt = null;   // root left-column selection (for highlight)
+        let leftSelectedOpt = null; // root left-column selection (for highlight)
+        let papyrusSelectedOpt = null;
+        let tmCastDraft = null; // [{name, formId, in:bool}, ...] for change_actors / rotate
 
         /// Hierarchical param remember-store (parent-linked tree → localStorage).
         let paramTreeRoot = null;
@@ -1721,6 +2085,8 @@
 
         function selectAction(name, label, optionParameters) {
             rebuildParamDict(optionParameters);
+            papyrusSelectedOpt = null;
+            tmCastDraft = null;
             selectedActionName = name;
             selectedActionLabel = label || name;
             seedActionParams(name);
@@ -1857,6 +2223,8 @@
             rebuildParamDict(null);
             navStack = [];
             leftSelectedOpt = null;
+            papyrusSelectedOpt = null;
+            tmCastDraft = null;
             selectedActionName = null;
             selectedActionLabel = null;
             const host = document.getElementById('target-cascade-host');
@@ -1866,6 +2234,8 @@
         function closeTargetPulldowns() {
             navStack = [];
             leftSelectedOpt = null;
+            papyrusSelectedOpt = null;
+            tmCastDraft = null;
             selectedActionName = null;
             selectedActionLabel = null;
             const host = document.getElementById('target-cascade-host');
@@ -1921,7 +2291,7 @@
                 globals.appendChild(row);
             }
 
-            // Root pulldown / action rows
+            // Root pulldown / action / papyrus rows
             left.innerHTML = '';
             for (const opt of (TARGET_CATALOG.options || [])) {
                 if (opt.type === 'parameter') continue;
@@ -1940,6 +2310,14 @@
                     ));
                     continue;
                 }
+                if (opt.type === 'papyrus') {
+                    const row = document.createElement('div');
+                    row.className = 'option' + (leftSelectedOpt === opt ? ' selected' : '');
+                    row.textContent = displayLabel(opt);
+                    row.onclick = () => selectPapyrusOption(opt);
+                    left.appendChild(row);
+                    continue;
+                }
                 if (opt.type !== 'pulldown') continue;
                 const row = document.createElement('div');
                 row.className = 'option' + (leftSelectedOpt === opt ? ' selected' : '');
@@ -1950,10 +2328,350 @@
 
             renderPulldownPanels();
             renderParamsPanel();
+            renderPapyrusPanel();
+        }
+
+        function firePapyrusOption(opt, extraParams) {
+            if (!opt || typeof window.onAction !== 'function') return;
+            const parameters = Object.assign({}, extraParams || {});
+            const payload = {
+                action: 'papyrus',
+                label: opt.label || '',
+                plugin: opt.plugin || opt.questPlugin || 'SkyrimNet_SexLab.esp',
+                questFormId: opt.questFormId || '0x800',
+                scriptName: opt.scriptName || 'SkyrimNet_SexLab_Actions',
+                executionFunctionName: opt.executionFunctionName || '',
+                parameterMapping: opt.parameterMapping || [],
+                parameters,
+                closeWebUI: !!opt.closeWebUI
+            };
+            window.onAction(JSON.stringify(payload));
+        }
+
+        function selectPapyrusOption(opt) {
+            leftSelectedOpt = opt;
+            papyrusSelectedOpt = opt;
+            navStack = [];
+            selectedActionName = null;
+            selectedActionLabel = null;
+            if (opt.confirmSave) {
+                if (window.confirm('Save animation settings to JSON?'))
+                    firePapyrusOption(opt, {});
+                return;
+            }
+            if (opt.explainPrompt) {
+                const msg = window.prompt('Stop narration (Enter to apply, Cancel to abort):', '');
+                if (msg === null) return;
+                firePapyrusOption(opt, { narration: msg });
+                return;
+            }
+            if (opt.panel) {
+                tmCastDraft = null;
+                if (opt.panel === 'change_actors' || opt.panel === 'rotate')
+                    tmCastDraft = tmBuildCastDraft(opt.panel === 'rotate');
+                renderTargetMenu();
+                return;
+            }
+            firePapyrusOption(opt, {});
+            renderTargetMenu();
+        }
+
+        function tmFormId(p) {
+            return Number((p && (p._form_id != null ? p._form_id : p.formId)) || 0);
+        }
+
+        function tmActorName(p) {
+            return (p && (p._name || p.name)) || '?';
+        }
+
+        function tmBuildCastDraft(sameCastOnly) {
+            const inCast = (SC.positions || []).map((p, i) => ({
+                name: tmActorName(p),
+                formId: tmFormId(p),
+                in: true,
+                order: i
+            })).filter(a => a.formId);
+            if (sameCastOnly) return inCast;
+            const inIds = new Set(inCast.map(a => a.formId));
+            const out = [];
+            const addOut = (name, formId) => {
+                const fid = Number(formId || 0);
+                if (!fid || inIds.has(fid) || out.some(x => x.formId === fid)) return;
+                out.push({ name: name || '?', formId: fid, in: false, order: 999 });
+            };
+            if (playerActor) addOut(playerActor.name, playerActor.formId);
+            if (targetActor) addOut(targetActor.name, targetActor.formId);
+            (nearbyActors || []).forEach(a => addOut(a.name, a.formId));
+            return inCast.concat(out);
+        }
+
+        function tmInCastOrdered() {
+            return (tmCastDraft || []).filter(a => a.in).sort((a, b) => a.order - b.order);
+        }
+
+        function tmApplyCastOrder() {
+            const ordered = tmInCastOrdered();
+            ordered.forEach((a, i) => { a.order = i; });
+        }
+
+        function tmMoveInCast(formId, dir) {
+            const ordered = tmInCastOrdered();
+            const i = ordered.findIndex(a => a.formId === formId);
+            const j = i + dir;
+            if (i < 0 || j < 0 || j >= ordered.length) return;
+            const tmp = ordered[i].order;
+            ordered[i].order = ordered[j].order;
+            ordered[j].order = tmp;
+            renderPapyrusPanel();
+        }
+
+        function tmToggleInOut(formId) {
+            const row = (tmCastDraft || []).find(a => a.formId === formId);
+            if (!row) return;
+            const inCount = tmInCastOrdered().length;
+            if (row.in) {
+                if (inCount <= 1) return;
+                row.in = false;
+                row.order = 999;
+            } else {
+                if (inCount >= 5) return;
+                row.in = true;
+                row.order = inCount;
+            }
+            tmApplyCastOrder();
+            renderPapyrusPanel();
+        }
+
+        function tmFireChangeActors(opt) {
+            const ordered = tmInCastOrdered();
+            if (!ordered.length || !opt) return;
+            const formIdsCsv = ordered.map(a => String(a.formId)).join(',');
+            firePapyrusOption(opt, { formIdsCsv });
+        }
+
+        function tmFireForActor(opt, formId, extra) {
+            firePapyrusOption(opt, Object.assign({ formIdStr: String(formId) }, extra || {}));
+        }
+
+        function tmOrgasmMode(p) {
+            if (p && Number(p._deny_orgasm) === 1) return 'deny';
+            if (p && Number(p._no_orgasm) === 1) return 'not_expected';
+            return 'expect';
+        }
+
+        function renderPapyrusPanel() {
+            const host = document.getElementById('target-cascade-host');
+            if (!host) return;
+            host.querySelectorAll('.target-papyrus-panel').forEach(el => el.remove());
+            const opt = papyrusSelectedOpt;
+            if (!opt || !opt.panel) return;
+
+            const panel = document.createElement('div');
+            panel.className = 'panel target-papyrus-panel';
+            const header = document.createElement('div');
+            header.className = 'section-header';
+            header.textContent = displayLabel(opt);
+            panel.appendChild(header);
+
+            const body = document.createElement('div');
+            const kind = opt.panel;
+
+            if (kind === 'change_actors' || kind === 'rotate') {
+                if (!tmCastDraft) tmCastDraft = tmBuildCastDraft(kind === 'rotate');
+                const table = document.createElement('table');
+                table.className = 'data-table';
+                table.innerHTML = '<thead><tr><th>name</th><th>in</th><th>pos</th></tr></thead>';
+                const tbody = document.createElement('tbody');
+                const rows = kind === 'rotate'
+                    ? tmInCastOrdered()
+                    : (tmCastDraft || []).slice().sort((a, b) => {
+                        if (a.in !== b.in) return a.in ? -1 : 1;
+                        return a.order - b.order;
+                    });
+                rows.forEach(a => {
+                    const tr = document.createElement('tr');
+                    const tdName = document.createElement('td');
+                    tdName.textContent = a.name;
+                    const tdIn = document.createElement('td');
+                    if (kind === 'rotate') {
+                        tdIn.textContent = 'in';
+                    } else {
+                        const btn = document.createElement('span');
+                        btn.className = 'cell-toggle' + (a.in ? ' on' : '');
+                        btn.textContent = a.in ? 'in' : 'out';
+                        btn.onclick = () => tmToggleInOut(a.formId);
+                        tdIn.appendChild(btn);
+                    }
+                    const tdPos = document.createElement('td');
+                    if (a.in) {
+                        const move = document.createElement('div');
+                        move.className = 'pos-move';
+                        const up = document.createElement('span');
+                        up.textContent = '▲';
+                        up.onclick = () => tmMoveInCast(a.formId, -1);
+                        const down = document.createElement('span');
+                        down.textContent = '▼';
+                        down.onclick = () => tmMoveInCast(a.formId, 1);
+                        move.appendChild(up);
+                        move.appendChild(down);
+                        tdPos.appendChild(move);
+                    }
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdIn);
+                    tr.appendChild(tdPos);
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                body.appendChild(table);
+                const apply = document.createElement('div');
+                apply.className = 'action-btn';
+                apply.style.marginTop = '8px';
+                apply.textContent = 'Apply';
+                apply.onclick = () => tmFireChangeActors(opt);
+                body.appendChild(apply);
+            } else if (kind === 'animation_list') {
+                const regs = SC.inThreadRegistries || [];
+                const active = SC.activeRegistry || '';
+                if (!regs.length) {
+                    body.textContent = 'No in-thread animations.';
+                } else {
+                    regs.forEach((reg, idx) => {
+                        const row = document.createElement('div');
+                        row.className = 'option' + (reg === active ? ' selected' : '');
+                        row.textContent = (reg === active ? 'A ' : '') + (reg || ('#' + idx));
+                        row.onclick = () => {
+                            firePapyrusOption(opt, { indexStr: String(idx) });
+                        };
+                        body.appendChild(row);
+                    });
+                }
+                const custom = document.createElement('div');
+                custom.className = 'action-btn';
+                custom.style.marginTop = '8px';
+                custom.textContent = 'Custom…';
+                custom.onclick = () => {
+                    if (typeof window.onMainPanelChange === 'function')
+                        window.onMainPanelChange(JSON.stringify({ key: 'scene_creator_panel' }));
+                };
+                body.appendChild(custom);
+            } else if (kind === 'victim' || kind === 'orgasm' || kind === 'speaking' || kind === 'clothed') {
+                const positions = SC.positions || [];
+                if (!positions.length) {
+                    body.textContent = 'No active cast. Open TargetMenu on an animating actor.';
+                } else {
+                    const table = document.createElement('table');
+                    table.className = 'data-table';
+                    const thead = document.createElement('thead');
+                    if (kind === 'victim') thead.innerHTML = '<tr><th>name</th><th>V</th></tr>';
+                    else if (kind === 'orgasm') thead.innerHTML = '<tr><th>name</th><th>mode</th><th>force</th></tr>';
+                    else if (kind === 'speaking') thead.innerHTML = '<tr><th>name</th><th>speaking</th></tr>';
+                    else thead.innerHTML = '<tr><th>name</th><th>clothed</th></tr>';
+                    table.appendChild(thead);
+                    const tbody = document.createElement('tbody');
+                    positions.forEach((p) => {
+                        const fid = tmFormId(p);
+                        const tr = document.createElement('tr');
+                        const tdName = document.createElement('td');
+                        tdName.textContent = tmActorName(p);
+                        tr.appendChild(tdName);
+                        if (kind === 'victim') {
+                            const td = document.createElement('td');
+                            const on = !!Number(p._victim);
+                            const btn = document.createElement('span');
+                            btn.className = 'cell-toggle' + (on ? ' on' : '');
+                            btn.textContent = on ? 'V' : '—';
+                            btn.onclick = () => {
+                                p._victim = on ? 0 : 1;
+                                tmFireForActor(opt, fid, { isVictimStr: on ? '0' : '1' });
+                                renderPapyrusPanel();
+                            };
+                            td.appendChild(btn);
+                            tr.appendChild(td);
+                        } else if (kind === 'orgasm') {
+                            const mode = tmOrgasmMode(p);
+                            const tdMode = document.createElement('td');
+                            ['deny', 'expect', 'not_expected'].forEach(m => {
+                                const btn = document.createElement('span');
+                                btn.className = 'cell-toggle' + (mode === m ? ' on' : '');
+                                btn.style.marginRight = '4px';
+                                btn.textContent = m === 'not_expected' ? 'no' : m;
+                                btn.onclick = () => {
+                                    if (m === 'deny') { p._deny_orgasm = 1; p._no_orgasm = 1; }
+                                    else if (m === 'not_expected') { p._deny_orgasm = 0; p._no_orgasm = 1; }
+                                    else { p._deny_orgasm = 0; p._no_orgasm = 0; }
+                                    tmFireForActor(opt, fid, { mode: m });
+                                    renderPapyrusPanel();
+                                };
+                                tdMode.appendChild(btn);
+                            });
+                            tr.appendChild(tdMode);
+                            const tdForce = document.createElement('td');
+                            const force = document.createElement('span');
+                            force.className = 'cell-toggle';
+                            force.textContent = 'force';
+                            force.onclick = () => {
+                                firePapyrusOption({
+                                    plugin: opt.plugin,
+                                    questFormId: opt.questFormId,
+                                    scriptName: opt.scriptName,
+                                    executionFunctionName: 'TM_ForceOrgasm',
+                                    parameterMapping: [
+                                        { type: 'speaker', name: 'speaker' },
+                                        { type: 'target', name: 'target' },
+                                        { type: 'dynamic', name: 'formIdStr' }
+                                    ]
+                                }, { formIdStr: String(fid) });
+                            };
+                            tdForce.appendChild(force);
+                            tr.appendChild(tdForce);
+                        } else if (kind === 'speaking') {
+                            const td = document.createElement('td');
+                            const mods = ['_pleasure_', '_pain_', '_gagged_', '_kissing_', ''];
+                            const cur = String(p._speaking || '');
+                            mods.forEach(m => {
+                                const btn = document.createElement('span');
+                                btn.className = 'cell-toggle' + (cur === m ? ' on' : '');
+                                btn.style.marginRight = '4px';
+                                btn.textContent = m ? abbrevMod(m) : '—';
+                                btn.onclick = () => {
+                                    p._speaking = m;
+                                    tmFireForActor(opt, fid, { speaking: m });
+                                    renderPapyrusPanel();
+                                };
+                                td.appendChild(btn);
+                            });
+                            tr.appendChild(td);
+                        } else {
+                            const td = document.createElement('td');
+                            const on = !!Number(p._dressed);
+                            const btn = document.createElement('span');
+                            btn.className = 'cell-toggle' + (on ? ' on' : '');
+                            btn.textContent = on ? 'clothed' : 'nude';
+                            btn.onclick = () => {
+                                p._dressed = on ? 0 : 1;
+                                tmFireForActor(opt, fid, { clothedStr: on ? '0' : '1' });
+                                renderPapyrusPanel();
+                            };
+                            td.appendChild(btn);
+                            tr.appendChild(td);
+                        }
+                        tbody.appendChild(tr);
+                    });
+                    table.appendChild(tbody);
+                    body.appendChild(table);
+                }
+            } else {
+                body.textContent = 'Unknown panel: ' + kind;
+            }
+
+            panel.appendChild(body);
+            host.appendChild(panel);
         }
 
         function selectLeftPulldown(opt) {
             leftSelectedOpt = opt;
+            papyrusSelectedOpt = null;
+            tmCastDraft = null;
             navStack = [opt];
             selectedActionName = null;
             selectedActionLabel = null;
@@ -1977,6 +2695,17 @@
             for (const entry of (opt.options || [])) {
                 if (entry.type === 'pulldown') {
                     listEl.appendChild(makeNestedPulldownRow(entry, depthIndex));
+                    continue;
+                }
+                if (entry.type === 'papyrus') {
+                    const row = document.createElement('div');
+                    row.className = 'option';
+                    row.textContent = displayLabel(entry);
+                    row.onclick = () => {
+                        navStack = navStack.slice(0, depthIndex + 1);
+                        selectPapyrusOption(entry);
+                    };
+                    listEl.appendChild(row);
                     continue;
                 }
                 if (entry.type !== 'action' || !entry.name) continue;
@@ -2139,7 +2868,7 @@
             }));
             // Immediate UI close; C++ also ClearTargetMenuSession + Visibility_Hide.
             hidePanel('target_menu_panel');
-            hidePanel('main_menu');
+            hidePanel('control_panel');
         }
 
         function targetMenuCustom() {
@@ -2587,6 +3316,11 @@
                 // Connections list refresh piggybacks on connection change with list-only flag
             }
             requestSceneConnectionsRefresh();
+            if (papyrusSelectedOpt && papyrusSelectedOpt.panel) {
+                if (papyrusSelectedOpt.panel === 'change_actors' || papyrusSelectedOpt.panel === 'rotate')
+                    tmCastDraft = tmBuildCastDraft(papyrusSelectedOpt.panel === 'rotate');
+                if (typeof renderPapyrusPanel === 'function') renderPapyrusPanel();
+            }
         }
 
         function scApplyModeChrome() {

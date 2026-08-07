@@ -387,7 +387,7 @@ bool Function BodyAnimation_IsEligible(Actor akActor, string contextJson, string
 
     if StorageUtil.HasIntValue(akActor, "skyrimnet_sexlab_scene_actor_lock")
         Trace("BodyAnimation_IsEligible", akActor.GetDisplayName()+" is locked")
-        return false 
+        return false
     endif
 
     if main.sexLab.IsActorActive(akActor) 
@@ -401,4 +401,234 @@ bool Function BodyAnimation_IsEligible(Actor akActor, string contextJson, string
     endif
     Trace("BodyAnimation_Tag", name+" is eligible for sex")
     return True
+EndFunction
+
+; -------------------------------------------------
+; TargetMenu Papyrus APIs (type: papyrus — no SkyrimNet YAML)
+; -------------------------------------------------
+
+Function TM_StopSilent(Actor speaker, Actor target)
+    Trace("TM_StopSilent", GetDisplayName(speaker)+" -> "+GetDisplayName(target))
+    SceneStop_Target(speaker, target, "silent")
+EndFunction
+
+Function TM_Stop(Actor speaker, Actor target)
+    Trace("TM_Stop", GetDisplayName(speaker)+" -> "+GetDisplayName(target))
+    SceneStop_Target(speaker, target, "stop")
+EndFunction
+
+Function TM_StopExplain(Actor speaker, Actor target, String narration)
+    Trace("TM_StopExplain", GetDisplayName(speaker)+" -> "+GetDisplayName(target)+" msg:"+narration)
+    SceneStop_Target(speaker, target, "explain:"+narration)
+EndFunction
+
+Function TM_StagePrev(Actor speaker, Actor target)
+    Trace("TM_StagePrev", GetDisplayName(target))
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    sslThreadController th = sl.GetThread()
+    if th == None
+        return
+    endif
+    int stage = th.stage
+    if stage > 1
+        th.GoToStage(stage - 1)
+    endif
+EndFunction
+
+Function TM_StageNext(Actor speaker, Actor target)
+    Trace("TM_StageNext", GetDisplayName(target))
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    sslThreadController th = sl.GetThread()
+    if th == None || th.animation == None
+        return
+    endif
+    int stage = th.stage
+    int maxStage = th.animation.StageCount()
+    if stage < maxStage
+        th.GoToStage(stage + 1)
+    endif
+EndFunction
+
+Function TM_RotatePositions(Actor speaker, Actor target)
+    Trace("TM_RotatePositions", GetDisplayName(target))
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    sslThreadController th = sl.GetThread()
+    if th == None
+        return
+    endif
+    th.ChangePositions(false)
+EndFunction
+
+Function TM_ChangeActors(Actor speaker, Actor target, String formIdsCsv)
+    Trace("TM_ChangeActors", GetDisplayName(target)+" formIds:"+formIdsCsv)
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    sslThreadController th = sl.GetThread()
+    if th == None
+        return
+    endif
+    String[] parts = StringUtil.Split(formIdsCsv, ",")
+    int n = parts.length
+    if n < 1 || n > 5
+        Trace("TM_ChangeActors", "invalid count "+n)
+        return
+    endif
+    Actor[] next = PapyrusUtil.ActorArray(n)
+    int i = 0
+    int valid = 0
+    while i < n
+        int fid = parts[i] as int
+        Actor a = None
+        if fid != 0
+            a = Game.GetFormEx(fid) as Actor
+        endif
+        if a != None
+            next[valid] = a
+            valid += 1
+        endif
+        i += 1
+    endwhile
+    if valid < 1
+        return
+    endif
+    if valid != n
+        Actor[] trimmed = PapyrusUtil.ActorArray(valid)
+        i = 0
+        while i < valid
+            trimmed[i] = next[i]
+            i += 1
+        endwhile
+        next = trimmed
+    endif
+    th.ChangeActors(next)
+    SkyrimNet_SexLab_WebUI.SceneCreator_Configure(sl.BuildWebUISceneMenuState())
+EndFunction
+
+Function TM_SetAnimationIndex(Actor speaker, Actor target, String indexStr)
+    Trace("TM_SetAnimationIndex", GetDisplayName(target)+" idx:"+indexStr)
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    sslThreadController th = sl.GetThread()
+    if th == None
+        return
+    endif
+    int idx = indexStr as int
+    sslBaseAnimation[] anims = th.Animations
+    if anims == None || idx < 0 || idx >= anims.length
+        Trace("TM_SetAnimationIndex", "bad index")
+        return
+    endif
+    th.SetAnimation(idx)
+    sl.SeedOverlayFromAnimDb()
+    SkyrimNet_SexLab_WebUI.SceneCreator_Configure(sl.BuildWebUISceneMenuState())
+EndFunction
+
+Function TM_SyncSceneState(Actor speaker, Actor target)
+    Trace("TM_SyncSceneState", GetDisplayName(target))
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    SkyrimNet_SexLab_WebUI.SceneCreator_Configure(sl.BuildWebUISceneMenuState())
+EndFunction
+
+Function TM_SetVictim(Actor speaker, Actor target, String formIdStr, String isVictimStr)
+    Trace("TM_SetVictim", GetDisplayName(target)+" form:"+formIdStr+" victim:"+isVictimStr)
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    sslThreadController th = sl.GetThread()
+    if th == None
+        return
+    endif
+    Actor a = Game.GetFormEx(formIdStr as int) as Actor
+    if a == None
+        return
+    endif
+    Bool isVictim = (isVictimStr == "1" || isVictimStr == "true")
+    th.SetVictim(a, isVictim)
+EndFunction
+
+Function TM_SetOrgasmMode(Actor speaker, Actor target, String formIdStr, String mode)
+    Trace("TM_SetOrgasmMode", GetDisplayName(target)+" form:"+formIdStr+" mode:"+mode)
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    Actor a = Game.GetFormEx(formIdStr as int) as Actor
+    if a == None
+        return
+    endif
+    sl.TM_ApplyOrgasmMode(a, mode)
+EndFunction
+
+Function TM_ForceOrgasm(Actor speaker, Actor target, String formIdStr)
+    Trace("TM_ForceOrgasm", GetDisplayName(target)+" form:"+formIdStr)
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    sslThreadController th = sl.GetThread()
+    if th == None
+        return
+    endif
+    Actor a = Game.GetFormEx(formIdStr as int) as Actor
+    if a == None
+        return
+    endif
+    th.ForceOrgasm(a)
+EndFunction
+
+Function TM_SetSpeaking(Actor speaker, Actor target, String formIdStr, String speaking)
+    Trace("TM_SetSpeaking", GetDisplayName(target)+" form:"+formIdStr+" speaking:"+speaking)
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    Actor a = Game.GetFormEx(formIdStr as int) as Actor
+    if a == None
+        return
+    endif
+    sl.TM_ApplySpeaking(a, speaking)
+EndFunction
+
+Function TM_SetClothed(Actor speaker, Actor target, String formIdStr, String clothedStr)
+    Trace("TM_SetClothed", GetDisplayName(target)+" form:"+formIdStr+" clothed:"+clothedStr)
+    Actor a = Game.GetFormEx(formIdStr as int) as Actor
+    if a == None
+        return
+    endif
+    Bool clothed = (clothedStr == "1" || clothedStr == "true")
+    if clothed
+        Outfit_Dress(speaker, a, "silently", "silent")
+    else
+        Outfit_Undress(speaker, a, "silently", "silent")
+    endif
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl != None
+        sl.TM_ApplyClothed(a, clothed)
+    endif
+EndFunction
+
+Function TM_SaveAnimationSettings(Actor speaker, Actor target)
+    Trace("TM_SaveAnimationSettings", GetDisplayName(target))
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    sl.TM_SaveAnimationSettings()
 EndFunction

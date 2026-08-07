@@ -188,7 +188,7 @@ Bool Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _targ
             if player == akActor
                 has_player = True 
             endif 
-            speaking_modifiers[num_actors] = speaking_modifiers_DEFAULT
+            speaking_modifiers[num_actors] = SkyrimNet_SexLab_AnimDb.SpeakingDefaultFromOrgasmExpected(1 - no_orgasm_default_current)
             num_actors += 1 
         endif 
         i += 1 
@@ -1568,7 +1568,7 @@ sslBaseAnimation[] Function SelectAnimations()
                 return manager.cancel 
             endif 
         endif
-    elseif main.sex_edit_tags_nonplayer
+    elseif SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.nonPlayerDialogs", false)
         if TryOpenSceneCreatorMenu()
             DbgReturn("SelectAnimations", "ui_pending")
             return manager.ui_pending
@@ -1578,7 +1578,7 @@ sslBaseAnimation[] Function SelectAnimations()
 
     sslBaseAnimation[] animations = manager.empty
     if button != BUTTON_YES_RANDOM
-        if (main.sex_edit_tags_player && has_player) || (main.sex_edit_tags_nonplayer && !has_player)
+        if (SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.playerDialogs", true) && has_player) || (SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.nonPlayerDialogs", false) && !has_player)
             animations = SelectAnimationsDialog()
             if animations == manager.cancel
                 DbgReturn("SelectAnimations", "cancel")
@@ -1628,8 +1628,8 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
         Trace("SelectAnimationsDialog"," actors:"+actor_names)
     endif 
 
-    if (has_player && !main.sex_edit_tags_player) || (!has_player && !main.sex_edit_tags_nonplayer)
-        Trace("SelectAnimationsDialog", "Returning empty | sex_edit_tags_player:"+main.sex_edit_tags_player+" sex_edit_tags_nonplayer:"+main.sex_edit_tags_nonplayer)
+    if (has_player && !SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.playerDialogs", true)) || (!has_player && !SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.nonPlayerDialogs", false))
+        Trace("SelectAnimationsDialog", "Returning empty | sex_edit_tags_player:"+SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.playerDialogs", true)+" sex_edit_tags_nonplayer:"+SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.nonPlayerDialogs", false))
         DbgReturn("SelectAnimationsDialog", "empty")
         return manager.empty 
     endif 

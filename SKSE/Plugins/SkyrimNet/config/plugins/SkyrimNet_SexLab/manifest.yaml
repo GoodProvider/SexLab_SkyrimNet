@@ -1,13 +1,111 @@
 plugin:
-  name: SkyrimNet_SexLab
-  version: 1.0.0
-  description: Sexlab-SkyrimNet integration
-  icon: ⚗️
+  name: "SkyrimNet_SexLab"
+  version: "0.31.4"
+  description: "SexLab-SkyrimNet integration"
+  icon: "⚗️"
 
 schema:
-  # General 
-  - name: orgasm delay (sec)
-    path: sexlab.orgasm.delay
-    description: Number of seconds added to stage with orgasm 
-    type: float
-    default: 5.0
+  fields:
+    # Prompt Options
+    - name: "Hide hermaphrodite from prompt"
+      path: "sexlab.prompt.hideHermaphrodites"
+      type: "bool"
+      description: "Hides hermaphrodite labels in prompts."
+      defaultValue: false
+      category: "Prompt Options"
+
+    - name: "Public sex accepted"
+      path: "sexlab.prompt.publicSexAccepted"
+      type: "bool"
+      description: "Makes public sex a socially accepted intent."
+      defaultValue: false
+      category: "Prompt Options"
+
+    # Rape Options
+    - name: "Add rape actions"
+      path: "sexlab.rape.allowed"
+      type: "bool"
+      description: "Enables rape-related actions. May require save/reload for action eligibility to refresh."
+      defaultValue: true
+      category: "Rape Options"
+
+    # Tag Edit
+    - name: "Show dialogs for player actions"
+      path: "sexlab.tagEdit.playerDialogs"
+      type: "bool"
+      description: "Opens tag/stage dialogs for events that include the player."
+      defaultValue: true
+      category: "Tag Edit"
+
+    - name: "Show dialogs for non-player actions"
+      path: "sexlab.tagEdit.nonPlayerDialogs"
+      type: "bool"
+      description: "Opens tag/stage dialogs for events that do not include the player."
+      defaultValue: false
+      category: "Tag Edit"
+
+    # Sex Description Editor
+    - name: "Enable Start Sex / Edit Stage hotkey"
+      path: "sexlab.controls.editStageHotkeyEnabled"
+      type: "bool"
+      description: "Enables the PrismaUI Start Sex / Edit Stage hotkey."
+      defaultValue: false
+      category: "Sex Description Editor"
+
+    - name: "Start Sex / Edit Stage hotkey"
+      path: "sexlab.controls.editStageHotkey"
+      type: "hotkey"
+      description: "Hotkey to start sex or open the stage description editor.\nCrosshair on actor not in sex: start sex.\nCrosshair on actor in sex: stage editor.\nNo crosshair: start sex among nearby eligible actors."
+      min: 1
+      max: 255
+      required: false
+      defaultValue: 220
+      category: "Sex Description Editor"
+      supportsOverride: false
+
+    - name: "Hide Edit Stage Description Help"
+      path: "sexlab.editor.hideHelp"
+      type: "bool"
+      description: "Hides the help dialogue that appears if no stage description is found."
+      defaultValue: false
+      category: "Sex Description Editor"
+
+    # Direction Narration Blocking
+    - name: "Narration cooldown (seconds)"
+      path: "sexlab.narration.cooldown"
+      type: "float"
+      description: "Minimum seconds since last audio ended before the next optional Direct Narration."
+      min: 1
+      max: 120
+      defaultValue: 20
+      category: "Direction Narration Blocking"
+
+    - name: "Narration max distance (meters)"
+      path: "sexlab.narration.maxDistance"
+      type: "float"
+      description: "Maximum distance in meters that can generate a new direct narration."
+      min: 5
+      max: 100
+      defaultValue: 15
+      category: "Direction Narration Blocking"
+
+    # Framework
+    - name: "Player sex framework"
+      path: "sexlab.framework.player"
+      type: "select"
+      description: "Which sex framework to use for player-facing actions when OStimNet is installed."
+      defaultValue: "SexLab"
+      options:
+        - "SexLab"
+        - "Ostim"
+      category: "Framework"
+
+    # Orgasm
+    - name: "Orgasm delay (seconds)"
+      path: "sexlab.orgasm.delay"
+      type: "float"
+      description: "Number of seconds added to the stage with orgasm."
+      min: 0
+      max: 60
+      defaultValue: 5.0
+      category: "Orgasm"

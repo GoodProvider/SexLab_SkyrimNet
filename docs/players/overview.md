@@ -8,9 +8,11 @@ Hotkeys: [hotkeys.md](hotkeys.md). Authoring: [../authors/actions.md](../authors
 
 ### NPCs avoid casual sex
 
-- Public visibility matters; try whisper mode. SkyrimNet can see/hear through walls.
+- People normally don't want to have sex where others can see them.
+  - Use whisper mode to reduce the number of people watching.
+  - SkyrimNet allows people to see/hear through walls/floors.
 - Match social-world settings to the tone you want.
-- MCM **Public sex accepted** changes prompt treatment of public sex.
+- **Public sex accepted** (SkyrimNet plugin menu → SkyrimNet_SexLab) changes prompt treatment of public sex.
 
 ### Too much sex
 
@@ -26,27 +28,38 @@ SkyrimNet is not seeing Actions functions.
 
 ### Narration spammy or silent
 
-- MCM **Narration cooldown** — min seconds since last audio before optional Direct Narration.
-- MCM **Narration max distance** — player distance for optional narration.
+- **Narration cooldown** — min seconds since last audio before optional Direct Narration (SkyrimNet_SexLab plugin settings).
+- **Narration max distance** — player distance for optional narration (same settings UI).
 
 ## Shipped LLM actions
 
 | Category | What |
 |----------|------|
-| sex1 / sex2 / sex3 | Masturbation, two-actor, threesome; forceful/normal/gentle; **fucking** vs **giving** (`no_penis`); rape if MCM **Add rape actions** on |
+| sex1 / sex2 / sex3 | Masturbation, two-actor, threesome; forceful/normal/gentle; **fucking** vs **giving** (`no_penis`); rape if **Add rape actions** is on |
 | nonsexual / comfort | Kiss, hug, cuddle, spoon, headpat; 3-actor nonsexual |
 | punish | Spanking, nude spanking, whipping; punish-rape |
 | none | Stop; dress/undress actions (silent RegisterEvent OK) |
 
 Scene files via `setting_name`: [../reference/scene-settings.md](../reference/scene-settings.md).
 
-## MCM (summary)
+## Settings
 
-- Prompt: hide hermaphrodites; public sex accepted; virgin blood message
-- Rape: add rape actions (toggle / save / reload)
-- Tag Edit dialogs; Sex Description Editor hot key
-- Direct Narration Blocking: cooldown, max distance
-- OstimNet (if present): which framework starts sex for the player
+Plugin options live in:
+
+1. **SkyrimNet mod menu** → **SkyrimNet_SexLab** plugin (manifest / control store), or
+2. In-game WebUI **Settings** main panel (main panel pulldown → Settings) for rebuild / version / docs
+
+SkyUI MCM keeps rebuild + last-rebuild timestamp, Start Sex / Edit Stage hotkey enable/remap, and points players at those UIs. New settings are always added to the manifest first.
+
+| Category | Options |
+|----------|---------|
+| **Prompt Options** | Hide hermaphrodite from prompt; Public sex accepted |
+| **Rape Options** | Add rape actions (toggle, save, reload; Game Data Explorer Refresh if needed) |
+| **Tag Edit** | Show dialogs for player actions; Show dialogs for non-player actions |
+| **Sex Description Editor** | Enable Start Sex / Edit Stage hotkey; hotkey binding; Hide Edit Stage Description Help |
+| **Direct Narration Blocking** | Narration cooldown (seconds); Narration max distance (meters) |
+| **Framework** | Player sex framework — SexLab or Ostim (when OStimNet is installed) |
+| **Orgasm** | Orgasm delay (seconds) |
 
 ## Requirements
 

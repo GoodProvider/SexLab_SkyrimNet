@@ -3,20 +3,266 @@
 #include "WebUI_Log.h"
 #include "ActionCatalog.h"
 #include "ActionDispatch.h"
+#include "Config.h"
 #include "RE/Skyrim.h"
 
+#include <Windows.h>
 #include <deque>
+#include <filesystem>
+#include <fstream>
 #include <mutex>
+#include <sstream>
 #include <string>
+#include <string_view>
+#include <vector>
 #include <nlohmann/json.hpp>
 
 static PRISMA_UI_API::IVPrismaUI1* PrismaUI = nullptr;
 static PrismaView g_view = 0;
 static std::atomic<bool> g_gameReady{false};
 static std::atomic<bool> g_domReady{false};
+static std::atomic<bool> g_webuiGamePaused{true};
 static std::mutex g_invokeMutex;
 static std::deque<std::string> g_pendingInvokes;
 static std::atomic<uint32_t> g_menuHotkey{0};
+static std::mutex g_rebuildTsMutex;
+static std::string g_lastRebuildTimestamp;
+static std::mutex g_logFileMutex;
+static std::uintmax_t g_logFileOffset = 0;
+
+namespace {
+
+class EmptyArgs : public RE::BSScript::IFunctionArguments
+{
+public:
+    bool operator()(RE::BSScrapArray<RE::BSScript::Variable>& a_dst) const override
+    {
+        a_dst.resize(0);
+        return true;
+    }
+};
+
+std::string ReadPluginVersionFromInfoJson()
+{
+    try {
+        std::ifstream f("Data/SKSE/Plugins/SkyrimNet_SexLab/info.json");
+        if (!f)
+            return SexLabNet::Config::kPluginVersion;
+        auto j = nlohmann::json::parse(f, nullptr, false);
+        if (j.is_discarded())
+            return SexLabNet::Config::kPluginVersion;
+        if (j.contains("version") && j["version"].is_string())
+            return j["version"].get<std::string>();
+    } catch (...) {
+    }
+    return SexLabNet::Config::kPluginVersion;
+}
+
+std::filesystem::path ResolvePluginLogPath()
+{
+    if (auto dir = SKSE::log::log_directory())
+        return *dir / "SkyrimNet_SexLab.log";
+    return {};
+}
+
+std::vector<std::string> SplitLogLines(std::string_view text)
+{
+    std::vector<std::string> lines;
+    std::size_t start = 0;
+    while (start < text.size()) {
+        auto end = text.find('\n', start);
+        if (end == std::string_view::npos) {
+            lines.emplace_back(text.substr(start));
+            break;
+        }
+        auto line = text.substr(start, end - start);
+        if (!line.empty() && line.back() == '\r')
+            line.remove_suffix(1);
+        lines.emplace_back(line);
+        start = end + 1;
+    }
+    return lines;
+}
+
+void PushLogChunk(bool reset, const std::vector<std::string>& lines, const std::string& pathHint)
+{
+    nlohmann::json j;
+    j["reset"] = reset;
+    j["lines"] = lines;
+    j["path"] = pathHint;
+    WebUI_Invoke("appendLogLines(" + j.dump() + ");");
+}
+
+/// Caller must hold g_logFileMutex.
+void ReadLogTailUnlocked(bool resetFromStart)
+{
+    if (resetFromStart)
+        g_logFileOffset = 0;
+    const auto path = ResolvePluginLogPath();
+    if (path.empty() || !std::filesystem::exists(path)) {
+        PushLogChunk(true, {}, path.empty() ? std::string{} : path.string());
+        return;
+    }
+    std::ifstream f(path, std::ios::binary);
+    if (!f) {
+        PushLogChunk(true, {}, path.string());
+        return;
+    }
+    f.seekg(0, std::ios::end);
+    const auto size = static_cast<std::uintmax_t>(f.tellg());
+    constexpr std::uintmax_t kTailBytes = 128 * 1024;
+    std::uintmax_t start = 0;
+    if (size > kTailBytes)
+        start = size - kTailBytes;
+    f.seekg(static_cast<std::streamoff>(start));
+    std::string buf((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    g_logFileOffset = size;
+    auto lines = SplitLogLines(buf);
+    if (start > 0 && !lines.empty())
+        lines.erase(lines.begin());
+    PushLogChunk(true, lines, path.string());
+}
+
+void DispatchMenuNoArg(const char* functionName)
+{
+    SKSE::GetTaskInterface()->AddTask([functionName]() {
+        auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+        if (!vm) {
+            webui_log::error("DispatchMenuNoArg: no VM");
+            return;
+        }
+        RE::TESQuest* quest = RE::TESForm::LookupByEditorID<RE::TESQuest>("SkyrimNet_SexLab");
+        if (!quest)
+            quest = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESQuest>(0x800, "SkyrimNet_SexLab.esp");
+        if (!quest) {
+            webui_log::error("DispatchMenuNoArg: quest not found");
+            return;
+        }
+        auto handle = vm->GetObjectHandlePolicy()->GetHandleForObject(
+            static_cast<RE::VMTypeID>(quest->GetFormType()), quest);
+        RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
+        vm->FindBoundObject(handle, "SkyrimNet_SexLab_Menu", scriptObject);
+        if (!scriptObject) {
+            webui_log::error("DispatchMenuNoArg: Menu script not bound");
+            return;
+        }
+        auto* raw = new EmptyArgs();
+        RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
+        vm->DispatchMethodCall(scriptObject, RE::BSFixedString(functionName), raw, callback);
+        webui_log::info("DispatchMenuNoArg: {}", functionName);
+    });
+}
+
+void Call_RebuildAnimDb()
+{
+    SKSE::GetTaskInterface()->AddTask([]() {
+        auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+        if (!vm) {
+            webui_log::error("Call_RebuildAnimDb: no VM");
+            return;
+        }
+        RE::TESQuest* quest = RE::TESForm::LookupByEditorID<RE::TESQuest>("SkyrimNet_SexLab");
+        if (!quest)
+            quest = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESQuest>(0x800, "SkyrimNet_SexLab.esp");
+        if (!quest) {
+            webui_log::error("Call_RebuildAnimDb: quest not found");
+            return;
+        }
+        auto handle = vm->GetObjectHandlePolicy()->GetHandleForObject(
+            static_cast<RE::VMTypeID>(quest->GetFormType()), quest);
+        RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
+        vm->FindBoundObject(handle, "SkyrimNet_SexLab_AnimDb", scriptObject);
+        if (!scriptObject) {
+            webui_log::error("Call_RebuildAnimDb: AnimDb script not bound");
+            return;
+        }
+        auto* raw = new EmptyArgs();
+        RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
+        vm->DispatchMethodCall(scriptObject, RE::BSFixedString("RebuildDatabase"), raw, callback);
+        webui_log::info("Call_RebuildAnimDb: dispatched");
+    });
+}
+
+void Call_OpenSkyrimNetDashboard()
+{
+    ActionCatalog::ClearMainPanelSelection();
+    WebUI_Invoke("hidePanel('target_menu_panel');");
+    WebUI_Invoke("hidePanel('sex_menu_panel');");
+    WebUI_Invoke("hidePanel('yesno_panel');");
+    PapyrusBindings_WebUI::ClearTargetMenuSession();
+    WebUI_Visibility_Hide();
+    DispatchMenuNoArg("OpenSkyrimNetDashboard");
+}
+
+}  // namespace
+
+namespace SexLabNet {
+
+void SetLastRebuildTimestamp(std::string ts)
+{
+    std::lock_guard lock(g_rebuildTsMutex);
+    g_lastRebuildTimestamp = std::move(ts);
+}
+
+std::string GetLastRebuildTimestamp()
+{
+    std::lock_guard lock(g_rebuildTsMutex);
+    return g_lastRebuildTimestamp;
+}
+
+void InvokeConfigureSettingsPanel()
+{
+    nlohmann::json j;
+    j["version"] = ReadPluginVersionFromInfoJson();
+    j["docsUrl"] = Config::kDocsUrl;
+    {
+        std::lock_guard lock(g_rebuildTsMutex);
+        j["lastRebuild"] = g_lastRebuildTimestamp.empty() ? "never" : g_lastRebuildTimestamp;
+    }
+    WebUI_Invoke("configureSettingsPanel(" + j.dump() + ");");
+}
+
+void InvokeLogPanelOpen()
+{
+    std::lock_guard lock(g_logFileMutex);
+    ReadLogTailUnlocked(true);
+}
+
+void PushLogPanelPoll()
+{
+    std::lock_guard lock(g_logFileMutex);
+    const auto path = ResolvePluginLogPath();
+    if (path.empty() || !std::filesystem::exists(path))
+        return;
+    std::error_code ec;
+    const auto size = std::filesystem::file_size(path, ec);
+    if (ec)
+        return;
+    if (size < g_logFileOffset) {
+        ReadLogTailUnlocked(true);
+        return;
+    }
+    if (size == g_logFileOffset)
+        return;
+    std::ifstream f(path, std::ios::binary);
+    if (!f)
+        return;
+    f.seekg(static_cast<std::streamoff>(g_logFileOffset));
+    std::string buf((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    g_logFileOffset = size;
+    auto lines = SplitLogLines(buf);
+    if (lines.empty())
+        return;
+    if (!buf.empty() && buf.back() != '\n') {
+        const auto& last = lines.back();
+        g_logFileOffset -= last.size();
+        lines.pop_back();
+    }
+    if (!lines.empty())
+        PushLogChunk(false, lines, path.string());
+}
+
+}  // namespace SexLabNet
 
 /// Returns the process-wide KeyHandler singleton used for WebUI hotkeys.
 KeyHandler* KeyHandler::GetSingleton()
@@ -93,7 +339,7 @@ void WebUI_SetGameReady()
     } else {
         webui_log::info("Game ready — WebUI input enabled; ActionCatalog reloaded.");
         auto panels = ActionCatalog::BuildMainPanelsCatalog();
-        WebUI_Invoke("configureMainMenu(" + panels.dump() + ");");
+        WebUI_Invoke("configureControlPanel(" + panels.dump() + ");");
     }
 }
 
@@ -116,6 +362,8 @@ void WebUI_Visibility_Show()
     webui_log::info("WebUI Show + Focus.");
     PrismaUI->Show(g_view);
     PrismaUI->Focus(g_view, true);
+    g_webuiGamePaused = true;
+    WebUI_Invoke("setControlPaused(true);");
 }
 
 /// Unfocuses and hides the PrismaUI overlay without clearing Target_Current.
@@ -124,6 +372,7 @@ void WebUI_Visibility_Hide()
     if (!PrismaUI) return;
     PrismaUI->Unfocus(g_view);
     PrismaUI->Hide(g_view);
+    g_webuiGamePaused = true;
 }
 
 /// Shows the overlay if hidden, otherwise hides it.
@@ -176,7 +425,7 @@ static void FlushPendingInvokes()
 void WebUI_Reset()
 {
     ActionCatalog::ClearMainPanelSelection();
-    WebUI_Invoke("hidePanel('main_menu');");
+    WebUI_Invoke("hidePanel('control_panel');");
     WebUI_Invoke("hidePanel('target_menu_panel');");
     WebUI_Invoke("hidePanel('sex_menu_panel');");
     WebUI_Invoke("hidePanel('yesno_panel');");
@@ -220,7 +469,7 @@ void InitWebUI()
             FlushPendingInvokes();
             if (ActionCatalog::IsLoaded()) {
                 auto panels = ActionCatalog::BuildMainPanelsCatalog();
-                WebUI_Invoke("configureMainMenu(" + panels.dump() + ");");
+                WebUI_Invoke("configureControlPanel(" + panels.dump() + ");");
             }
         });
 
@@ -483,6 +732,23 @@ void InitWebUI()
                 return;
             }
 
+            if (action == "papyrus") {
+                webui_log::info("onAction papyrus label={}", payload.value("label", ""));
+                nlohmann::json opt = payload;
+                if (!opt.contains("parameters"))
+                    opt["parameters"] = params;
+                bool ok = ActionCatalog::ExecutePapyrusOption(opt, player, target);
+                if (!ok)
+                    webui_log::error("onAction: ExecutePapyrusOption failed");
+                // Stay open for live panels unless payload requests close.
+                if (payload.value("closeWebUI", false)) {
+                    WebUI_Invoke("hidePanel('target_menu_panel');");
+                    PapyrusBindings_WebUI::ClearTargetMenuSession();
+                    WebUI_Visibility_Hide();
+                }
+                return;
+            }
+
             if (action != "start") {
                 webui_log::info("onAction: ignoring action={}", action);
                 return;
@@ -539,12 +805,48 @@ void InitWebUI()
             }
         });
 
+        PrismaUI->RegisterJSListener(g_view, "onControlPauseToggle", [](const char*) {
+            if (!PrismaUI || !PrismaUI->IsValid(g_view))
+                return;
+            // Focus() while already focused does not re-apply pauseGame — Unfocus first.
+            const bool nextPaused = !g_webuiGamePaused.load();
+            PrismaUI->Unfocus(g_view);
+            PrismaUI->Focus(g_view, nextPaused);
+            g_webuiGamePaused = nextPaused;
+            webui_log::info("onControlPauseToggle: {} (Unfocus+Focus pauseGame={})",
+                nextPaused ? "paused" : "unpaused", nextPaused);
+            WebUI_Invoke(nextPaused ? "setControlPaused(true);" : "setControlPaused(false);");
+        });
+
+        PrismaUI->RegisterJSListener(g_view, "onSettingsRebuild", [](const char*) {
+            webui_log::info("onSettingsRebuild");
+            Call_RebuildAnimDb();
+            ActionCatalog::SwitchMainPanel("log_panel");
+        });
+
+        PrismaUI->RegisterJSListener(g_view, "onSettingsOpenSkyrimNet", [](const char*) {
+            webui_log::info("onSettingsOpenSkyrimNet");
+            Call_OpenSkyrimNetDashboard();
+        });
+
+        PrismaUI->RegisterJSListener(g_view, "onSettingsRefresh", [](const char*) {
+            SexLabNet::InvokeConfigureSettingsPanel();
+        });
+
+        PrismaUI->RegisterJSListener(g_view, "onLogPanelOpen", [](const char*) {
+            SexLabNet::InvokeLogPanelOpen();
+        });
+
+        PrismaUI->RegisterJSListener(g_view, "onLogPoll", [](const char*) {
+            SexLabNet::PushLogPanelPoll();
+        });
+
         KeyHandler::RegisterSink();
         KeyHandler::GetSingleton()->Register(0x01 /* escape */, []() {
             webui_log::info("Escape key pressed.");
             WebUI_Invoke("handleGlobalEscape();");
         });
-        // Menu hotkey is MCM-driven via WebUI_SetMenuHotkey — not registered here.
+        // Menu hotkey is control-store-driven via Config::ApplyMenuHotkey.
     });
 }
 
