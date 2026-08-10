@@ -943,6 +943,66 @@ namespace PapyrusBindings_WebUI
         }
     }
 
+    void HandleAnimDbResolveTags(const char* value)
+    {
+        if (!value)
+            return;
+        try {
+            auto j = nlohmann::json::parse(value);
+            const std::string request_id = j.value("_request_id", "");
+            const std::string tags = j.value("_tags", "");
+            const int actor_count = j.value("_actor_count", 0);
+            const std::string resolved = AnimationDB::ResolveTags(tags, actor_count);
+            nlohmann::json payload;
+            payload["_request_id"] = request_id;
+            payload["_resolved"] = resolved;
+            payload["_ok"] = !resolved.empty() || tags.empty();
+            std::string js = "animDbResolveTagsResult(" + payload.dump() + ");";
+            WebUI_Invoke(js);
+        } catch (...) {
+            webui_log::warn("HandleAnimDbResolveTags: parse failed");
+        }
+    }
+
+    void HandleNotify(const char* value)
+    {
+        if (!value)
+            return;
+        std::string msg;
+        try {
+            auto j = nlohmann::json::parse(value);
+            msg = j.value("msg", "");
+        } catch (...) {
+            if (value[0] != '\0' && value[0] != '{')
+                msg = value;
+            else {
+                webui_log::warn("HandleNotify: parse failed");
+                return;
+            }
+        }
+        if (msg.empty())
+            return;
+
+        std::string payload = std::move(msg);
+        SKSE::GetTaskInterface()->AddTask([payload]() {
+            auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+            if (!vm) {
+                webui_log::error("HandleNotify: no VM");
+                return;
+            }
+            RE::BSFixedString text(payload.c_str());
+            auto* args = RE::MakeFunctionArguments(std::move(text));
+            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
+            const bool ok = vm->DispatchStaticCall(
+                RE::BSFixedString("Debug"),
+                RE::BSFixedString("Notification"),
+                args,
+                callback);
+            if (!ok)
+                webui_log::warn("HandleNotify: DispatchStaticCall failed");
+        });
+    }
+
     void Call_Open_WebUI_Target(RE::Actor* target)
     {
         if (!target) {

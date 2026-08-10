@@ -110,4 +110,10 @@ namespace PapyrusBindings_WebUI {
     void DispatchManagerMethodIntStr(const char* method, std::int32_t a, const std::string& b);
     void DispatchAnimationMenuExportState(RE::TESForm* thread, RE::TESForm* sl_scene);
     void HandleAnimDbQuery(const char* value);
+
+    /// JS: onAnimDbResolveTags({_request_id, _tags, _actor_count}) → animDbResolveTagsResult
+    void HandleAnimDbResolveTags(const char* value);
+
+    /// JS: onNotify({msg}) → RE::DebugNotification
+    void HandleNotify(const char* value);
 }

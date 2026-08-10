@@ -175,13 +175,13 @@ EndFunction
 ; --------------------------------------------------------------------
 ; Create Creator 
 ; --------------------------------------------------------------------
-SkyrimNet_SexLab_Scene_Creator Function CreateCreator(String intent, Actor[] actors, Actor speaker, Actor target, String method="", String setting_name="")
-    Trace("CreateCreator","intent: "+intent+" actors: "+JoinActorsToJson(actors)+" speaker: "+GetDisplayName(speaker)+" target: "+GetDisplayName(target)+" method: "+method+" setting_name: "+setting_name)
+SkyrimNet_SexLab_Scene_Creator Function CreateCreator(String intent, Actor[] actors, Actor speaker, Actor target, String tags="", String setting_name="")
+    Trace("CreateCreator","intent: "+intent+" actors: "+JoinActorsToJson(actors)+" speaker: "+GetDisplayName(speaker)+" target: "+GetDisplayName(target)+" tags: "+tags+" setting_name: "+setting_name)
     int i = 0
     int num_creators = creators.length 
     while i < num_creators
         if !creators[i].IsActive()
-            if creators[i].Setup(intent, actors, speaker, target, method, setting_name)
+            if creators[i].Setup(intent, actors, speaker, target, tags, setting_name)
                 return creators[i]
             endif
             Trace("CreateCreator", "Setup failed for creators["+i+"], trying next slot")
@@ -640,14 +640,14 @@ Function WebUI_OnSceneCreatorHandoff(String json)
     endif
 
     String intent = JMap.getStr(obj, "_intent", "sexual activities")
-    String method = JMap.getStr(obj, "_method", "")
-    if method == ""
+    String tags = JMap.getStr(obj, "_start_tags", "")
+    if tags == ""
+        tags = JMap.getStr(obj, "_method", "")
+    endif
+    if tags == ""
         String tags_str = JMap.getStr(obj, "_tags", "")
         if tags_str != ""
-            String[] parts = StringUtil.Split(tags_str, ",")
-            if parts && parts.length > 0
-                method = parts[0]
-            endif
+            tags = tags_str
         endif
     endif
     String style = JMap.getStr(obj, "_style", "normally")
@@ -657,7 +657,7 @@ Function WebUI_OnSceneCreatorHandoff(String json)
         target = actors[1]
     endif
 
-    SkyrimNet_SexLab_Scene_Creator creator = CreateCreator(intent, actors, speaker, target, method, "")
+    SkyrimNet_SexLab_Scene_Creator creator = CreateCreator(intent, actors, speaker, target, tags, "")
     if creator == None
         JValue.release(obj)
         Trace("WebUI_OnSceneCreatorHandoff", "CreateCreator returned None", true)
@@ -1012,7 +1012,7 @@ Event Action_Stop(Form f_speaker,Form f_target, String style)
 EndEvent 
 
 Event Action_Start(String intent, Form f_speaker, Form f_target, Form f_victim, \
-    string style, string method, int speaker_position,\ 
+    string style, string tags, int speaker_position,\ 
     String event_hook, String setting_name,\ 
     Form f_participate_3)
     Trace("Action_Start","intent:"+intent)
@@ -1023,7 +1023,7 @@ Event Action_Start(String intent, Form f_speaker, Form f_target, Form f_victim, 
 
     Trace("Action_Start","intent:"+intent\
         +" speaker:"+GetDisplayName(speaker)+" target:"+GetDisplayName(target)+" victim:"+GetDisplayName(Victim)\
-        +" style:"+style+" method:"+method+" speaker_position:"+speaker_position+" event_hook:"+event_hook+" setting_name:"+setting_name\
+        +" style:"+style+" tags:"+tags+" speaker_position:"+speaker_position+" event_hook:"+event_hook+" setting_name:"+setting_name\
         +" participate_3:"+GetDisplayName(participate_3))
 
     if speaker == None 
@@ -1057,7 +1057,7 @@ Event Action_Start(String intent, Form f_speaker, Form f_target, Form f_victim, 
         endif 
     endif 
 
-    SkyrimNet_SexLab_Scene_Creator creator = CreateCreator(intent, actors, speaker, target, method, setting_name)
+    SkyrimNet_SexLab_Scene_Creator creator = CreateCreator(intent, actors, speaker, target, tags, setting_name)
     ; TargetMenu Start: consume one-shot even if CreateCreator fails (avoid leak to next scene).
     Bool skipSceneCreator = SkyrimNet_SexLab_WebUI.ConsumeSkipSceneCreator()
     if creator == None 

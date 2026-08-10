@@ -318,16 +318,18 @@ namespace ActionCatalog
                     EqualsIgnoreCase(pm.name, "stripped") || EqualsIgnoreCase(pm.name, "victim")) {
                     source = "target";
                 }
-                if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name])) {
-                    source = dict[pm.name].value("source", source);
-                } else if (EqualsIgnoreCase(pm.type, "speaker") || EqualsIgnoreCase(pm.name, "speaker") ||
-                           EqualsIgnoreCase(pm.name, "stripper")) {
+                if (EqualsIgnoreCase(pm.type, "speaker") || EqualsIgnoreCase(pm.name, "speaker") ||
+                    EqualsIgnoreCase(pm.name, "stripper")) {
                     source = "player";
-                    if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name]))
-                        source = dict[pm.name].value("source", "player");
                 }
-
-                RE::Actor* actor = ResolveSource(source, player, focusTarget);
+                RE::Actor* actor = nullptr;
+                if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name])) {
+                    actor = ResolveActorDictEntry(dict[pm.name], player, focusTarget);
+                    if (!actor)
+                        actor = ResolveSource(dict[pm.name].value("source", source), player, focusTarget);
+                } else {
+                    actor = ResolveSource(source, player, focusTarget);
+                }
                 if (!actor) {
                     webui_log::error(
                         "ExecuteAction: missing Actor for '{}' (action {}, source {})",
@@ -348,6 +350,10 @@ namespace ActionCatalog
                     value = StringValueOf(dict[pm.name], pm.name);
             } else if (dict.contains(pm.name)) {
                 value = StringValueOf(dict[pm.name], pm.name);
+            } else if (EqualsIgnoreCase(pm.name, "tags") && dict.contains("method")) {
+                value = StringValueOf(dict["method"], "method");
+            } else if (EqualsIgnoreCase(pm.name, "method") && dict.contains("tags")) {
+                value = StringValueOf(dict["tags"], "tags");
             } else {
                 webui_log::error("ExecuteAction: unset dynamic '{}' on action {}", pm.name, actionName);
                 value = FirstPipeValue(pm.description);
@@ -467,14 +473,14 @@ namespace ActionCatalog
         }
 
         nlohmann::json dict = nlohmann::json::object();
+        // Merge order matches ExecuteAction: defaults first, then UI parameters (UI wins).
+        const auto& opts = TargetOptions();
+        MergeDict(dict, DefaultsParametersOf(opts));
         nlohmann::json params = optionPayload.value("parameters", nlohmann::json::object());
         if (params.is_object()) {
             for (auto it = params.begin(); it != params.end(); ++it)
                 dict[it.key()] = NormalizeParamValue(it.value());
         }
-
-        const auto& opts = TargetOptions();
-        MergeDict(dict, DefaultsParametersOf(opts));
 
         std::vector<ParamMapping> mapping;
         if (optionPayload.contains("parameterMapping") && optionPayload["parameterMapping"].is_array()) {
@@ -508,16 +514,18 @@ namespace ActionCatalog
                     EqualsIgnoreCase(pm.name, "stripped") || EqualsIgnoreCase(pm.name, "victim")) {
                     source = "target";
                 }
-                if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name])) {
-                    source = dict[pm.name].value("source", source);
-                } else if (EqualsIgnoreCase(pm.type, "speaker") || EqualsIgnoreCase(pm.name, "speaker") ||
-                           EqualsIgnoreCase(pm.name, "stripper")) {
+                if (EqualsIgnoreCase(pm.type, "speaker") || EqualsIgnoreCase(pm.name, "speaker") ||
+                    EqualsIgnoreCase(pm.name, "stripper")) {
                     source = "player";
-                    if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name]))
-                        source = dict[pm.name].value("source", "player");
                 }
-
-                RE::Actor* actor = ResolveSource(source, player, focusTarget);
+                RE::Actor* actor = nullptr;
+                if (dict.contains(pm.name) && IsActorDictEntry(dict[pm.name])) {
+                    actor = ResolveActorDictEntry(dict[pm.name], player, focusTarget);
+                    if (!actor)
+                        actor = ResolveSource(dict[pm.name].value("source", source), player, focusTarget);
+                } else {
+                    actor = ResolveSource(source, player, focusTarget);
+                }
                 if (!actor) {
                     webui_log::error(
                         "ExecutePapyrusOption: missing Actor for '{}' (fn {}, source {})",
@@ -538,6 +546,10 @@ namespace ActionCatalog
                     value = StringValueOf(dict[pm.name], pm.name);
             } else if (dict.contains(pm.name)) {
                 value = StringValueOf(dict[pm.name], pm.name);
+            } else if (EqualsIgnoreCase(pm.name, "tags") && dict.contains("method")) {
+                value = StringValueOf(dict["method"], "method");
+            } else if (EqualsIgnoreCase(pm.name, "method") && dict.contains("tags")) {
+                value = StringValueOf(dict["tags"], "tags");
             } else {
                 value = FirstPipeValue(pm.description);
             }
@@ -808,7 +820,7 @@ namespace ActionCatalog
                     out.intent = value;
                 else if (EqualsIgnoreCase(pm.name, "style"))
                     out.style = value.empty() ? "normally" : value;
-                else if (EqualsIgnoreCase(pm.name, "method"))
+                else if (EqualsIgnoreCase(pm.name, "method") || EqualsIgnoreCase(pm.name, "tags"))
                     out.method = value;
                 else if (EqualsIgnoreCase(pm.name, "direction"))
                     out.direction = value;
@@ -942,6 +954,7 @@ namespace ActionCatalog
         state["_intent"] = params.intent;
         state["_style"] = params.style.empty() ? "normally" : params.style;
         state["_method"] = params.method;
+        state["_start_tags"] = params.method;
         state["_event_hook"] = "";
         state["_num_actors"] = static_cast<int>(seedOrder.size());
         state["_tags"] = SexLabTagFromMethod(params.method);

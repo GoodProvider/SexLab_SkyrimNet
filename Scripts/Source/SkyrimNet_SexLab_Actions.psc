@@ -62,60 +62,46 @@ EndFunction
 ; One
 ;-------------------------------------------
 
-Function StartScene_Consensual_One(String intent, Actor speaker, string style="", String method="", String setting_name="")
-    Trace("StartScene_Consensual_One",intent+" "+speaker.GetDisplayName()+" style: "+style+" method: "+method)
-    StartScene_Event(intent, speaker, style=style, method=method, setting_name=setting_name) 
+Bool Function StartScene_Consensual_One(String intent, Actor speaker, string style="", String tags="", String setting_name="")
+    Trace("StartScene_Consensual_One",intent+" "+speaker.GetDisplayName()+" style: "+style+" tags: "+tags)
+    return StartScene_Event(intent, speaker, style=style, tags=tags, setting_name=setting_name)
 EndFunction
 
-Function StartScene_Nonconsensual_One(String intent, Actor speaker, string style="", String method="", String setting_name="")
-    Trace("StartScene_Nonconsensual_One",intent+" "+speaker.GetDisplayName()+" style: "+style+" method: "+method)
-    StartScene_Event(intent, speaker, victim=speaker, style=style, method=method, setting_name=setting_name) 
+Bool Function StartScene_Nonconsensual_One(String intent, Actor speaker, string style="", String tags="", String setting_name="")
+    Trace("StartScene_Nonconsensual_One",intent+" "+speaker.GetDisplayName()+" style: "+style+" tags: "+tags)
+    return StartScene_Event(intent, speaker, victim=speaker, style=style, tags=tags, setting_name=setting_name)
 EndFunction
 
 ;-------------------------------------------
 ; Two
 ;-------------------------------------------
 
-Function StartScene_Consensual_Two(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="")
-    Trace("StartScene_Consensual_Two","intent:"+intent+" speaker:"+speaker.GetDisplayName()+" + "+target.GetDisplayName()+" style: "+style+" direction: "+direction+" intent: "+intent+" method:"+method+" setting_name:"+setting_name)
-
-    ; Hug idle is bi-directional, so is ignored 
-    if method == "hug" || method == "single hug"
-        target.playIdleWithTarget(pa_HugA, speaker) 
-        Actor sender = speaker 
-        Actor receiver = target 
-        if direction == "get" || direction == "getting"
-            sender = target 
-            receiver = speaker 
-        endif 
-        String msg = sender.GetDisplayName()+" hugs "+receiver.GetDisplayName()+"."
-        DirectNarration(msg, speaker, target)
-        return
-    endif 
-    StartScene_Event(intent, speaker, target, None, style, method, direction, setting_name=setting_name) 
+Bool Function StartScene_Consensual_Two(String intent, Actor speaker, Actor target, string style="", string tags="", String direction="", String setting_name="")
+    Trace("StartScene_Consensual_Two","intent:"+intent+" speaker:"+speaker.GetDisplayName()+" + "+target.GetDisplayName()+" style: "+style+" direction: "+direction+" tags:"+tags+" setting_name:"+setting_name)
+    return StartScene_Event(intent, speaker, target, None, style, tags, direction, setting_name=setting_name)
 EndFunction
 
-Function StartScene_Nonconsensual_Two(String intent, Actor speaker, Actor target=None, Actor victim,string style="", string method="", String direction="", String setting_name="")
-    Trace("StartScene_Nonconsensual_Two",GetDisplayName(speaker)+" "+GetDisplayName(target)+" victim:"+GetDisplayName(victim)+" style: "+style+" method:"+method+" direction: "+direction+" setting_name:"+setting_name)
-    StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name) 
+Bool Function StartScene_Nonconsensual_Two(String intent, Actor speaker, Actor target=None, Actor victim,string style="", string tags="", String direction="", String setting_name="")
+    Trace("StartScene_Nonconsensual_Two",GetDisplayName(speaker)+" "+GetDisplayName(target)+" victim:"+GetDisplayName(victim)+" style: "+style+" tags:"+tags+" direction: "+direction+" setting_name:"+setting_name)
+    return StartScene_Event(intent, speaker, target, victim, style, tags, direction, setting_name=setting_name)
 EndFunction
 
-Function StartScene_Nonconsensual_Two_SpeakerVictim(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="")
-    Trace("StartScene_Nonconsensual_Two_SpeakerVictim",GetDisplayName(speaker)+" "+GetDisplayName(target)+" style: "+style+" method:"+method+" direction: "+direction+" setting_name:"+setting_name)
+Bool Function StartScene_Nonconsensual_Two_SpeakerVictim(String intent, Actor speaker, Actor target, string style="", string tags="", String direction="", String setting_name="")
+    Trace("StartScene_Nonconsensual_Two_SpeakerVictim",GetDisplayName(speaker)+" "+GetDisplayName(target)+" style: "+style+" tags:"+tags+" direction: "+direction+" setting_name:"+setting_name)
     Actor victim = speaker
-    StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name) 
+    return StartScene_Event(intent, speaker, target, victim, style, tags, direction, setting_name=setting_name)
 EndFunction
-Function StartScene_Nonconsensual_Two_TargetVictim(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="")
-    Trace("StartScene_Nonconsensual_Two_TargetVictim",GetDisplayName(speaker)+" "+GetDisplayName(target)+" style: "+style+" method:"+method+" direction: "+direction+" setting_name:"+setting_name)
+Bool Function StartScene_Nonconsensual_Two_TargetVictim(String intent, Actor speaker, Actor target, string style="", string tags="", String direction="", String setting_name="")
+    Trace("StartScene_Nonconsensual_Two_TargetVictim",GetDisplayName(speaker)+" "+GetDisplayName(target)+" style: "+style+" tags:"+tags+" direction: "+direction+" setting_name:"+setting_name)
     Actor victim = target
-    StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name) 
+    return StartScene_Event(intent, speaker, target, victim, style, tags, direction, setting_name=setting_name)
 EndFunction
 
 ;-------------------------------------------
 ; Threesome
 ;-------------------------------------------
 
-Function StartScene_Consensual_Three(String intent, Actor speaker, Actor target, string style="", string method="", String direction="", String setting_name="", Actor participate)
+Bool Function StartScene_Consensual_Three(String intent, Actor speaker, Actor target, string style="", string tags="", String direction="", String setting_name="", Actor participate)
     Int unique = 0
     if speaker != None
         unique += 1
@@ -128,26 +114,23 @@ Function StartScene_Consensual_Three(String intent, Actor speaker, Actor target,
     endif
 
     if unique <= 1
-        StartScene_Consensual_One(intent, speaker, style, method, setting_name)
-        return
+        return StartScene_Consensual_One(intent, speaker, style, tags, setting_name)
     elseif unique == 2
         Actor second = target
         if second == None || second == speaker
             second = participate
         endif
-        StartScene_Consensual_Two(intent, speaker, second, style, method, direction, setting_name)
-        return
+        return StartScene_Consensual_Two(intent, speaker, second, style, tags, direction, setting_name)
     endif
 
-    Trace("StartScene_Consensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style+" method: "+method+" direction: "+direction+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
-    StartScene_Event(intent, speaker, target, None, style, method, direction, setting_name=setting_name, participate_3=participate)
+    Trace("StartScene_Consensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" style: "+style+" tags: "+tags+" direction: "+direction+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
+    return StartScene_Event(intent, speaker, target, None, style, tags, direction, setting_name=setting_name, participate_3=participate)
 EndFunction
 
 
-Function StartScene_Nonconsensual_Three(String intent, Actor speaker, Actor target, Actor victim, string style="", string method="", String direction="", String setting_name="", Actor participate)
+Bool Function StartScene_Nonconsensual_Three(String intent, Actor speaker, Actor target, Actor victim, string style="", string tags="", String direction="", String setting_name="", Actor participate)
     if victim == None || (victim != speaker && victim != target && victim != participate)
-        StartScene_Consensual_Three(intent, speaker, target, style, method, direction, setting_name, participate)
-        return
+        return StartScene_Consensual_Three(intent, speaker, target, style, tags, direction, setting_name, participate)
     endif
 
     Int unique = 0
@@ -162,19 +145,17 @@ Function StartScene_Nonconsensual_Three(String intent, Actor speaker, Actor targ
     endif
 
     if unique <= 1
-        StartScene_Nonconsensual_One(intent, speaker, style, method, setting_name)
-        return
+        return StartScene_Nonconsensual_One(intent, speaker, style, tags, setting_name)
     elseif unique == 2
         Actor second = target
         if second == None || second == speaker
             second = participate
         endif
-        StartScene_Nonconsensual_Two(intent, speaker, second, victim, style, method, direction, setting_name)
-        return
+        return StartScene_Nonconsensual_Two(intent, speaker, second, victim, style, tags, direction, setting_name)
     endif
 
-    Trace("StartScene_Nonconsensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" victim:"+GetDisplayName(victim)+" style: "+style+" method: "+method+" direction: "+direction+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
-    StartScene_Event(intent, speaker, target, victim, style, method, direction, setting_name=setting_name, participate_3=participate) 
+    Trace("StartScene_Nonconsensual_Three","intent:"+GetDisplayName(speaker)+" + "+GetDisplayName(target)+" victim:"+GetDisplayName(victim)+" style: "+style+" tags: "+tags+" direction: "+direction+" setting_name:"+setting_name+" participate:"+GetDisplayName(participate))
+    return StartScene_Event(intent, speaker, target, victim, style, tags, direction, setting_name=setting_name, participate_3=participate)
 EndFunction
 
 ;-------------------------------------------
@@ -195,18 +176,18 @@ EndFunction
 ; Refused
 ;------------------------------------------------------------------------------
 
-Function StartScene_Refused_Two(String intent, Actor speaker, Actor target, string style="", string method="", string direction="")
+Function StartScene_Refused_Two(String intent, Actor speaker, Actor target, string style="", string tags="", string direction="")
     String speaker_name = GetDisplayName(speaker)
     String target_name = GetDisplayName(target)
-    Trace("StartScene_Refused_Two","intent: "+intent+" "+speaker_name+" + "+target_name+" style: "+style+" direction: "+direction+" method: "+method)
+    Trace("StartScene_Refused_Two","intent: "+intent+" "+speaker_name+" + "+target_name+" style: "+style+" direction: "+direction+" tags: "+tags)
     if style == "normal" || style == "normally"
         style = "" 
     endif 
     String msg = target_name+" "+style+" refused to allow "+intent+" by "
     if direction == "" || direction == "getting" 
-        msg += direction+" "+method+" from "+speaker.GetDisplayName() 
+        msg += direction+" "+tags+" from "+speaker.GetDisplayName() 
     else 
-        msg += direction+" "+method+" to "+speaker.GetDisplayName() 
+        msg += direction+" "+tags+" to "+speaker.GetDisplayName() 
     endif 
     DirectNarration(msg, target, speaker) 
 EndFunction
@@ -223,11 +204,9 @@ Function SceneStop_Event(Actor speaker, Actor target, String style)
     ModEvent.Send(handle)
 EndFunction 
 
-;--------------------------------------
-; Two actors 
-;--------------------------------------
-Function StartScene_Event(String intent, Actor speaker, Actor target=None, Actor victim=None,\
-     string style="", string method="", String direction="", String event_hook="", String setting_name="",\
+; tags: CSV SexLab tags. Empty skips AnimDB. Non-empty resolve fail -> False (no event).
+Bool Function StartScene_Event(String intent, Actor speaker, Actor target=None, Actor victim=None, \
+     string style="", string tags="", String direction="", String event_hook="", String setting_name="",\
      Actor participate_3=None)
 
     if target == None && participate_3 != None 
@@ -238,47 +217,60 @@ Function StartScene_Event(String intent, Actor speaker, Actor target=None, Actor
     String speaker_name = GetDisplayName(speaker)
     String target_name = GetDisplayName(target) 
     String victim_name = GetDisplayName(victim) 
-    String participate_3_name = GetDisplayName(participate_3) 
-    
-    if method == "pussy"
-        method = "vaginal"
-    elseif method == "mouth"
-        method = "oral"
-    elseif method == "ass" 
-        method = "anal"
-    endif 
+    String participate_3_name = GetDisplayName(participate_3)
 
-    if method == "whipping"
-        method = "whip"
-    endif 
+    int actor_count = 1
+    if target != None
+        actor_count += 1
+        if participate_3 != None
+            actor_count += 1
+        endif
+    endif
 
-    if method == "hugging"
-        method = "hug"
-    endif 
+    String resolved = tags
+    if tags != ""
+        resolved = SkyrimNet_SexLab_AnimDb.AnimDb_ResolveTags(tags, actor_count)
+        if resolved == ""
+            Trace("StartScene_Event", "AnimDB ResolveTags empty for tags='"+tags+"' actors="+actor_count)
+            return False
+        endif
+    endif
 
-    if method == "cuddle"
-        method = "cuddling"
-    endif 
+    ; Lone hug -> idle
+    if resolved == "hug" && target != None && pa_HugA != None
+        target.playIdleWithTarget(pa_HugA, speaker)
+        Actor sender = speaker
+        Actor receiver = target
+        if direction == "get" || direction == "getting"
+            sender = target
+            receiver = speaker
+        endif
+        String msg = sender.GetDisplayName()+" hugs "+receiver.GetDisplayName()+"."
+        DirectNarration(msg, speaker, target)
+        return True
+    endif
 
     int speaker_position = 0 
     if target != None 
-        ; Victim wrappers: TargetVictim → speaker pos1 (dominant); SpeakerVictim → speaker pos0 (submissive)
         if victim != None && victim == speaker
             speaker_position = 0
         elseif victim != None && victim == target
             speaker_position = 1
         else
-            ; Consensual: Speaker is sentence subject. pos0=submissive, pos1=dominant.
-            ; Penetration: position_1 fucks position_0; oral: position_0 gives, position_1 receives.
             if direction == "fucking" || direction == "fuck a" || direction == "fucking a"
                 speaker_position = 1
             elseif direction == "fucked in"
                 speaker_position = 0
+            elseif intent == "cuddling" || intent == "showing affection" || intent == "comforting"
+                ; Hug/cuddle: giver is SexLab pos1 (unlike oral, where giver is pos0).
+                if direction == "getting" || direction == "get"
+                    speaker_position = 0
+                elseif direction == "giving" || direction == "give"
+                    speaker_position = 1
+                endif
             elseif direction == "getting" || direction == "get"
-                ; Speaker receives (e.g. gets oral) → dominant slot
                 speaker_position = 1
             elseif direction == "giving" || direction == "give"
-                ; Speaker gives service (e.g. gives oral) → submissive slot
                 speaker_position = 0
             endif
         endif
@@ -286,7 +278,7 @@ Function StartScene_Event(String intent, Actor speaker, Actor target=None, Actor
 
     String event_name = "SkyrimNet_SexLab_Action_Start"
     Trace("StartScene_Event","event_name:"+event_name+" intent:"+intent+" speaker:"+speaker_name+" target:"+target_name+" victim:"+victim_name\
-        +" style:"+style+" speaker_position:"+speaker_position+" method:"+method+" event_hook:"+event_hook+" setting_name:"+setting_name\
+        +" style:"+style+" speaker_position:"+speaker_position+" tags:"+resolved+" event_hook:"+event_hook+" setting_name:"+setting_name\
         +" participate_3_name:"+participate_3_name)
 
     int handle = ModEvent.Create(event_name)
@@ -295,12 +287,13 @@ Function StartScene_Event(String intent, Actor speaker, Actor target=None, Actor
     ModEvent.PushForm(handle, target)
     ModEvent.PushForm(handle, victim)
     ModEvent.PushString(handle, style)
-    ModEvent.PushString(handle, method)
+    ModEvent.PushString(handle, resolved)
     ModEvent.PushInt(handle, speaker_position)
     ModEvent.PushString(handle, event_hook)
     ModEvent.PushString(handle, setting_name)
     ModEvent.PushForm(handle, participate_3)
     ModEvent.Send(handle)
+    return True
 EndFunction 
 
 

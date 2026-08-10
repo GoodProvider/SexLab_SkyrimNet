@@ -1,5 +1,42 @@
 # Knowledgebase
 
+## Nonsexual gender fallback / keep suppress (2026-08-10)
+
+- **Policy / AnimDB none peel** (query-time; creator chips unchanged): after SexLab `GetAnimationsByTags` misses, (1) gender/position off with full must+suppress → (2) peel must-tags other than first (tail→front, keep `tags[0]`) → (3) peel suppress end→front with `tags[0]` → (4) drop front must-tag keeping full suppress (skip unconstrained 0+0). Never SexLab-random when original tags/suppress were set (`FinishStartScene` aborts).
+- **`manager.empty` trap:** Scene Manager allocates `empty` as `sslBaseAnimation[2]` for identity compares. Never treat `anims.length > 0` alone as a hit — use `anims != manager.empty` (and `!= cancel`). Peel used to return after step1 miss because the sentinel looked non-empty.
+- F/F + `nonsexual` often yields **0** from SexLab; AnimDB `_creature: exclude` + no gender/position finds F/M nonsexual while holding suppress as long as the peel allows.
+- Callers: `SelectAnimations`, `ResolveAnimationsFromTags`, `SelectAnimationsDialog` final start.
+- **Cuddle Custom:** fetch `scenes/{setting}.json` `tags_suppress` into `_tags_suppress` (fallback hardcode matches `nonsexual.json`); `filterByOnce='none'`.
+- **`SelectAnimationsDialog`:** probe/final miss never clears creator tags/suppress; peel is query-only then return to editor if still empty.
+
+## Scene Menu filter-by downgrade (2026-08-10)
+
+- Filter strictness in `MatchesFilter`: `positions` (per-slot `_pos_genders` + `_pos_race_keys`) ⊂ `gender` (aggregate counts, any arrangement) ⊂ `none` (`_actor_count` + tags + creature). Relaxing along that order can only gain animations.
+- Each Scene Menu open arms the chain; `animDbQueryResult` steps one mode looser whenever the anim query returns zero and fallbacks remain. Tags query re-issues with the relaxed filter so available tags match the list.
+- **Ordering trap:** in creator mode `scEnrichActorMeta()` resolves genders/race keys **after** the first query, so the opening `positions` pass runs on placeholder `_gender: 0`. Without re-arming on the `'e'` meta result the chain burns down to `none` before real genders exist. Re-arm from `SC.filterStart`, not the strictest mode, or the cuddle `none` seed flips back to `positions`.
+- `animDbQueryResult` drops anim payloads whose `_request_id` != `'a' + SC.animQueryId`; C++ echoes the id verbatim and only `scRefreshAnims` issues `a`-prefixed queries, so a stale empty reply can no longer consume a chain step.
+- Chain relaxes the **mode only** — actor count, tag chips, creature require/exclude, and **has description** still apply at `none`, so an empty list remains possible.
+
+## StartScene tags CSV + CuddlePanel (2026-08-08)
+
+- Papyrus `StartScene_*` take **`tags`** (comma-separated), return **`Bool`**. Empty tags → skip AnimDB, still start. Non-empty → `AnimDb_ResolveTags` (sanitize + largest front-preferring subset, always lowercase); fail → False, no ModEvent.
+- `AnimDb_CsvHasTag(csv, tag)` for membership checks (kissing → setting, etc.).
+- YAML AI params stay named **`method`** (single value); ActionDispatch maps `method`↔`tags` positionally.
+- TargetMenu root **cuddle** (`panel: cuddle`): sentence UI. **Start** probes `AnimDb_ResolveTags` — hit → close WebUI + SceneStart with resolved tags; miss → `onNotify` → Papyrus `Debug.Notification`, stay open. **Custom** seeds Scene Creator (`SC.filterByOnce = 'none'`, consumed by `configureSceneCreator`) with Scene Setting `tags_suppress` fetched into `_tags_suppress`, and keeps WebUI open.
+- CuddlePanel also has **intent** (`showing affection` default | `comforting` | `cuddling`) and **Scene Setting** (`nonsexual` default | kissing / male_position_0–2 | `default`); Start/Custom pass both. Those three intents use hug-giver pos1.
+
+## Parameters Position formId on Start (2026-08-08)
+
+- Position 0/1 pulldowns write `{ type: "Actor", formId }` into `paramDict` (target/speaker). Custom/scene-seed already used `ResolveActorDictEntry`.
+- **Bug:** `ExecuteAction` / `ExecutePapyrusOption` ignored `formId` and always `ResolveSource` (player/focus) — picking Toy had no effect on Start.
+- **Fix:** Both paths resolve Actor dict via `ResolveActorDictEntry` first, then fall back to `source`.
+- **Also:** `ExecutePapyrusOption` must apply UI params **after** `defaultsParameters` (same as `ExecuteAction`). Defaults-last wiped Cuddle `speaker`/`target` formIds back to `playerActor`/`currentActor`.
+
+## TargetMenu Parameters pulldown clip (2026-08-08)
+
+- `#right-dynamics { overflow-y: auto }` makes `overflow-x: visible` ineffective (CSS forces both axes). Right-opening `.pulldown-menu` children were clipped while Start/Custom (outside the scroller) still worked.
+- Fix: `createPulldown` opens menus with `position: fixed` + `getBoundingClientRect` (`positionOpenPulldownMenu`); clear on close. Affects all action→Parameters paths (comfort/affection/punish/sex/masturbation/outfit), not cascade/papyrus option rows.
+
 ## Scratch files `z-*.*` (standing rule)
 
 Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / notes only — not product docs or agent source of truth.
@@ -131,6 +168,7 @@ The **Speaker is always the subject** of LLM-facing sentences. `speaker_position
 - `StartScene_Nonconsensual_Two_TargetVictim` → speaker at **pos1** (target is victim).
 - `StartScene_Nonconsensual_Two_SpeakerVictim` → speaker at **pos0** (speaker is victim).
 - Consensual direction tokens (Speaker as subject): `fucking` / `fuck a` / `fucking a` / service `getting` → pos1; `fucked in` / service `giving` → pos0.
+- **Cuddling intents** (`cuddling` / `showing affection` / `comforting`): opposite of oral — `giving` → pos1 (hug giver / male slot); `getting` → pos0.
 
 ## Intent start/finish mirror (2026-07-23)
 

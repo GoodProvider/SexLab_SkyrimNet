@@ -147,8 +147,8 @@ EndFunction
 ; Setup 
 ; -------------------------------------------------------
 
-Bool Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, String _method="", String setting_name="")
-    DbgEnter("Setup", "intent:"+_intent+" actors:["+JoinActors(_actors)+"] speaker:"+GetDisplayName(_speaker)+" target:"+GetDisplayName(_target)+" method:"+_method+" setting_name:"+setting_name)
+Bool Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _target, String _tags="", String setting_name="")
+    DbgEnter("Setup", "intent:"+_intent+" actors:["+JoinActors(_actors)+"] speaker:"+GetDisplayName(_speaker)+" target:"+GetDisplayName(_target)+" tags:"+_tags+" setting_name:"+setting_name)
     Bool links_ok = Setup_CheckLinks()
     if !links_ok
         DbgReturn("Setup", "Setup_CheckLinks failed")
@@ -206,25 +206,35 @@ Bool Function Setup(String _intent, Actor[] _actors, Actor _speaker, Actor _targ
     scene_creator_menu_called = false
     start_scene_pending = false
 
-    if (_method == "tentacles" || _method == "tentacle") && setting_name == "" 
-        setting_name =  "pleasure_pain"
-    endif 
-    ; LLM comfort/nonsexual general hard-code nonsexual_male_position_1; Menu already uses this for kissing.
-    if _method == "kissing"
+    if SkyrimNet_SexLab_AnimDb.AnimDb_CsvHasTag(_tags, "tentacles") || SkyrimNet_SexLab_AnimDb.AnimDb_CsvHasTag(_tags, "tentacle")
+        if setting_name == ""
+            setting_name = "pleasure_pain"
+        endif
+    endif
+    if SkyrimNet_SexLab_AnimDb.AnimDb_CsvHasTag(_tags, "kissing")
         setting_name = "nonsexual_kissing"
-    endif 
+    endif
 
     LoadSetting("default")
     if setting_name != ""
         LoadSetting(setting_name) 
     endif 
 
-    SetMethod(_method)
-    ; Cuddle YAML uses sitting|laying for narration posture; SexLab packs tag "cuddling".
-    if _method == "sitting" || _method == "laying"
-        AddTag("cuddling")
-    else
-        AddTag(_method)
+    SetMethod(_tags)
+    if _tags != ""
+        String[] parts = StringUtil.Split(_tags, ",")
+        ; Narration "method" uses first tag only (CSV can be multi-tag).
+        if parts && parts.length > 0 && parts[0] != ""
+            SetMethod(parts[0])
+        endif
+        int ti = 0
+        while parts && ti < parts.length
+            String t = parts[ti]
+            if t != ""
+                AddTag(t)
+            endif
+            ti += 1
+        endwhile
     endif
     SetNames() 
     Trace("Setup", GetString())
@@ -309,6 +319,14 @@ EndFunction
 
 SkyrimNet_SexLab_Scene Function FinishStartScene(sslBaseAnimation[] animations)
     DbgEnter("FinishStartScene")
+    ; Tags/suppress drive anim type — empty list must not SexLab-random into something else.
+    if (num_tags > 0 || num_tags_suppress > 0) && (animations == manager.empty || !animations || animations.length == 0)
+        Trace("FinishStartScene", "no animations with tags/suppress active — aborting (no SexLab random)", True)
+        Release()
+        DbgReturn("FinishStartScene", "None")
+        return None
+    endif
+
     sslThreadModel model = sexlab.NewThread()
     DbgMsg("StartScene", "sexlab.NewThread() returned model="+model)
     if model == None
@@ -319,6 +337,7 @@ SkyrimNet_SexLab_Scene Function FinishStartScene(sslBaseAnimation[] animations)
     endif
 
     ; If no animation list is provided (empty), SexLab randomly selects.
+    ; Unsafe when tags/suppress are set — gated above.
     DbgMsg("StartScene", "model.SetAnimations count="+animations.length)
     if animations != manager.empty && animations.length > 0
         model.SetAnimations(animations) 
@@ -1149,10 +1168,11 @@ String Function BuildYesNoQuestion()
     String player_name = player.GetDisplayName()
     String question = ""
     pending_rejection = ""
-    String intent_method = intent 
-    if method != "" 
-        intent_method += " by "+method 
-    endif 
+    String intent_method = intent
+    ; Skip "by method" when method duplicates intent (e.g. cuddling by cuddling).
+    if method != "" && method != intent
+        intent_method += " by "+method
+    endif
     if num_victims == 0
         int[] player_mask = Utility.CreateIntArray(num_actors, 1)
         int i = 0
@@ -1527,6 +1547,10 @@ sslBaseAnimation[] Function ResolveAnimationsFromTags()
     endif 
     sslBaseAnimation[] animations = sexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, require)
     if animations == manager.empty || !animations || animations.length == 0
+        if num_tags > 0 || num_tags_suppress > 0
+            Trace("ResolveAnimationsFromTags", "GetAnimationsByTags empty — AnimDB none peel")
+            return SelectAnimationsAnimDbNoneFallback()
+        endif
         return manager.empty
     endif
     return animations
@@ -1599,16 +1623,175 @@ sslBaseAnimation[] Function SelectAnimations()
         DbgMsg("SelectAnimations", "sexlab.GetAnimationsByTags actors="+num_actors+" tags="+tags_string+" suppress="+tags_suppress_string+" require="+require)
         animations = sexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, require)
         DbgMsg("SelectAnimations", "sexlab.GetAnimationsByTags returned count="+animations.length)
+        ; Prefer AnimDB none peel (gender/pos → secondary must → suppress → front tag).
+        if (animations == manager.empty || !animations || animations.length == 0) && (num_tags > 0 || num_tags_suppress > 0)
+            Trace("SelectAnimations", "GetAnimationsByTags empty — AnimDB none peel")
+            animations = SelectAnimationsAnimDbNoneFallback()
+        endif
     endif
 
-    ; empty = no forced list; StartScene skips SetAnimations and SexLab randomly selects.
+    ; empty = no forced list; StartScene skips SetAnimations and SexLab randomly selects
+    ; unless tags/suppress are set (FinishStartScene aborts instead).
     if animations == manager.empty || !animations || animations.length == 0
+        if num_tags > 0 || num_tags_suppress > 0
+            Trace("SelectAnimations", "no animations matching tags/suppress", True)
+        endif
         DbgReturn("SelectAnimations", "manager.empty")
         return manager.empty
     endif
     DbgReturn("SelectAnimations", "animations")
     return animations  
-EndFunction 
+EndFunction
+
+; True only for a real resolved list. manager.empty is length-2 sentinel — never use length alone.
+bool Function HasAnimList(sslBaseAnimation[] anims)
+    return anims && anims != manager.empty && anims != manager.cancel && anims.length > 0
+EndFunction
+
+; AnimDB filterBy=none peel (query-time; does not mutate tags[] / tags_suppress[]):
+; 1) gender/position off — full must + full suppress
+; 2) peel must tags other than first (keep tags[0]), full suppress
+; 3) peel suppress end→front (must = tags[0] if any)
+; 4) drop front must-tag (empty must; suppress already walked — skip if unconstrained)
+sslBaseAnimation[] Function SelectAnimationsAnimDbNoneFallback()
+    DbgEnter("SelectAnimationsAnimDbNoneFallback")
+    int mustMax = num_tags
+    int suppressMax = num_tags_suppress
+    if mustMax <= 0 && suppressMax <= 0
+        DbgReturn("SelectAnimationsAnimDbNoneFallback", "no tags")
+        return manager.empty
+    endif
+
+    ; Step 1: full must + full suppress, no gender/position
+    Trace("SelectAnimationsAnimDbNoneFallback", "step1 full must="+mustMax+" suppress="+suppressMax)
+    sslBaseAnimation[] found = QuerySexLabAnimsFromAnimDb(mustMax, suppressMax)
+    if HasAnimList(found)
+        DbgReturn("SelectAnimationsAnimDbNoneFallback", "step1 count="+found.length)
+        return found
+    endif
+
+    ; Step 2: peel secondary must-tags (tail→front), keep tags[0], full suppress
+    int m = mustMax - 1
+    while m >= 1
+        Trace("SelectAnimationsAnimDbNoneFallback", "step2 must="+m+" suppress="+suppressMax)
+        found = QuerySexLabAnimsFromAnimDb(m, suppressMax)
+        if HasAnimList(found)
+            DbgReturn("SelectAnimationsAnimDbNoneFallback", "step2 count="+found.length)
+            return found
+        endif
+        m -= 1
+    endwhile
+
+    ; Step 3: peel suppress end→front; must = {tags[0]} if present else empty
+    int mustKeep = 0
+    if mustMax > 0
+        mustKeep = 1
+    endif
+    int s = suppressMax - 1
+    while s >= 0
+        Trace("SelectAnimationsAnimDbNoneFallback", "step3 must="+mustKeep+" suppress="+s)
+        found = QuerySexLabAnimsFromAnimDb(mustKeep, s)
+        if HasAnimList(found)
+            DbgReturn("SelectAnimationsAnimDbNoneFallback", "step3 count="+found.length)
+            return found
+        endif
+        s -= 1
+    endwhile
+
+    ; Step 4: drop front must-tag; keep full suppress if any (unconstrained skipped).
+    if mustMax > 0 && suppressMax > 0
+        Trace("SelectAnimationsAnimDbNoneFallback", "step4 must=0 suppress="+suppressMax)
+        found = QuerySexLabAnimsFromAnimDb(0, suppressMax)
+        if HasAnimList(found)
+            DbgReturn("SelectAnimationsAnimDbNoneFallback", "step4 count="+found.length)
+            return found
+        endif
+    elseif mustMax > 0
+        Trace("SelectAnimationsAnimDbNoneFallback", "step4 drop front tag; no suppress left — unconstrained skipped")
+    endif
+    DbgReturn("SelectAnimationsAnimDbNoneFallback", "empty")
+    return manager.empty
+EndFunction
+
+; mustCount / suppressCount = prefix lengths of tags[] / tags_suppress[] (0 = omit that list).
+sslBaseAnimation[] Function QuerySexLabAnimsFromAnimDb(int mustCount, int suppressCount)
+    if mustCount < 0
+        mustCount = 0
+    endif
+    if suppressCount < 0
+        suppressCount = 0
+    endif
+    if mustCount > num_tags
+        mustCount = num_tags
+    endif
+    if suppressCount > num_tags_suppress
+        suppressCount = num_tags_suppress
+    endif
+    if mustCount <= 0 && suppressCount <= 0
+        return manager.empty
+    endif
+
+    int filter = JMap.object()
+    JMap.setInt(filter, "_actor_count", num_actors)
+    JMap.setStr(filter, "_creature", "exclude")
+
+    int must_arr = JArray.object()
+    int mi = 0
+    while mi < mustCount
+        if tags[mi] != ""
+            JArray.addStr(must_arr, tags[mi])
+        endif
+        mi += 1
+    endwhile
+    JMap.setObj(filter, "_must_tags", must_arr)
+
+    int suppress_arr = JArray.object()
+    int si = 0
+    while si < suppressCount
+        if tags_suppress[si] != ""
+            JArray.addStr(suppress_arr, tags_suppress[si])
+        endif
+        si += 1
+    endwhile
+    JMap.setObj(filter, "_suppress_tags", suppress_arr)
+
+    String filter_json = ObjectToLowerCaseKeyJson(filter)
+    JValue.release(filter)
+
+    String result = SkyrimNet_SexLab_AnimDb.AnimDb_QueryTopNAnims(filter_json, 32)
+    if result == "" || result == "[]"
+        return manager.empty
+    endif
+
+    int arr = JValue.objectFromPrototype(result)
+    if arr == 0 || JArray.count(arr) <= 0
+        return manager.empty
+    endif
+
+    sslBaseAnimation[] animations = sslUtility.EmptyAnimationArray()
+    int i = 0
+    int count = JArray.count(arr)
+    while i < count
+        int row = JArray.getObj(arr, i)
+        String reg = JMap.getStr(row, "_registry", "")
+        if reg != ""
+            sslBaseAnimation anim = sexlab.GetAnimationByRegistry(reg)
+            if anim == None
+                anim = sexlab.GetCreatureAnimationByRegistry(reg)
+            endif
+            if anim != None
+                animations = sslUtility.PushAnimation(anim, animations)
+            endif
+        endif
+        i += 1
+    endwhile
+
+    if !animations || animations.length == 0
+        return manager.empty
+    endif
+    return animations
+EndFunction
+ 
 
 
 ; ----------------------------------------
@@ -1641,11 +1824,8 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
         sslBaseAnimation[] anims =  SexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, true)
         DbgMsg("SelectAnimationsDialog", "sexlab.GetAnimationsByTags probe returned count="+anims.length)
         if anims.length == 0
-            Trace("SelectAnimationsDialog", "No animations found, dropping initial tag: ["+tags_string+"] tags_suppress:["+tags_suppress_string+"]")
-            num_tags = 0 
-            num_tags_suppress = 0
-            tags_string = "" 
-            tags_suppress_string = "" 
+            ; Keep tags and suppress — Scene Menu / Start will relax gender before dropping either.
+            Trace("SelectAnimationsDialog", "SexLab probe empty; keeping tags=["+tags_string+"] suppress=["+tags_suppress_string+"]")
         endif 
     endif 
 
@@ -1743,17 +1923,21 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
         DbgMsg("SelectAnimationsDialog", "sexlab.GetAnimationsByTags final tags="+tags_string)
         sslBaseAnimation[] anims =  SexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, true)
         DbgMsg("SelectAnimationsDialog", "sexlab.GetAnimationsByTags final returned count="+anims.length)
-        if anims.length > 0
+        if anims.length == 0 && (num_tags > 0 || num_tags_suppress > 0)
+            Trace("SelectAnimationsDialog", "SexLab final empty — AnimDB none peel")
+            anims = SelectAnimationsAnimDbNoneFallback()
+            if HasAnimList(anims)
+                DbgMsg("SelectAnimationsDialog", "AnimDB none peel returned count="+anims.length)
+            endif
+        endif
+        if HasAnimList(anims)
             if groups_owned
                 JValue.release(groups)
             endif
             DbgReturn("SelectAnimationsDialog", "anims")
             return anims 
         else
-            Trace("SelectAnimationsDialog","No animations found for: "+tags_string, True )
-            if num_tags > 0
-               num_tags -= 1 
-            endif 
+            Trace("SelectAnimationsDialog","No animations found for: "+tags_string+" (will not strip tags/suppress; edit manually)", True )
         endif 
     endwhile 
     if groups_owned

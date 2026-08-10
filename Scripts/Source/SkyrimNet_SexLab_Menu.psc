@@ -229,7 +229,7 @@ Function Target_Menu_Selection(Actor target, Actor player)
         if debug_mode && main.handler_dom.IsDOMSlave(target) 
             main.handler_dom.StartScene_Nonconsensual_Two_SpeakerVictim(punish_intent, target, player, player, method=method, setting_name=setting_name)
         else
-            actions.StartScene_Nonconsensual_Two_TargetVictim(punish_intent, player, target, method=method, setting_name=setting_name)
+            actions.StartScene_Nonconsensual_Two_TargetVictim(punish_intent, player, target, tags=method, setting_name=setting_name)
         endif 
     elseif button == affection
         if mcm.sexlab_ostim_player == 0 || !main.ostimnet_found    
@@ -249,7 +249,7 @@ Function Target_Menu_Selection(Actor target, Actor player)
             if method == "kissing" 
                 setting_name = "nonsexual_kissing"
             endif 
-            actions.StartScene_Consensual_Two("showing physical affection",player, target=target, style="gently", method=method,setting_name=setting_name)
+            actions.StartScene_Consensual_Two("showing physical affection",player, target=target, style="gently", tags=method,setting_name=setting_name)
         else
             Debug.Notification("Affection is not available while OStim is the active framework.")
         endif 
@@ -551,7 +551,7 @@ Function MultiTarget_Menu_Selection(Actor player)
             creator.Release()
         endif 
     else 
-        SkyrimNet_SexLab_Scene_Creator creator = manager.CreateCreator(intent, actors_selected, speaker, target, method=method, setting_name=setting_name)
+        SkyrimNet_SexLab_Scene_Creator creator = manager.CreateCreator(intent, actors_selected, speaker, target, tags=method, setting_name=setting_name)
         if creator == None 
             Trace("MultiTarget_Menu_Selection", "CreateCreator returned None, aborting")
             return 

@@ -2328,9 +2328,48 @@
             return row;
         }
 
+        function clearPulldownMenuPosition(menu) {
+            if (!menu) return;
+            menu.style.position = '';
+            menu.style.left = '';
+            menu.style.top = '';
+            menu.style.right = '';
+            menu.style.minWidth = '';
+            menu.style.maxHeight = '';
+            menu.style.zIndex = '';
+        }
+
+        // Fixed coords so menus escape overflow scrollers (e.g. #right-dynamics).
+        function positionOpenPulldownMenu(root) {
+            const valueEl = root.querySelector('.pulldown-value');
+            const menu = root.querySelector('.pulldown-menu');
+            if (!valueEl || !menu) return;
+            const gap = 8;
+            const rect = valueEl.getBoundingClientRect();
+            const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+            const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+            const minW = Math.max(rect.width, 160);
+            let left = rect.right + gap;
+            if (left + minW > vw - gap)
+                left = Math.max(gap, rect.left - minW - gap);
+            let top = rect.top;
+            const maxH = Math.max(80, Math.min(0.5 * vh, vh - top - gap));
+            if (top + 40 > vh - gap)
+                top = Math.max(gap, vh - maxH - gap);
+            menu.style.position = 'fixed';
+            menu.style.left = left + 'px';
+            menu.style.top = top + 'px';
+            menu.style.right = 'auto';
+            menu.style.minWidth = minW + 'px';
+            menu.style.maxHeight = maxH + 'px';
+            menu.style.zIndex = '50';
+        }
+
         function closeAllPulldowns(except) {
             document.querySelectorAll('.pulldown.open').forEach((el) => {
-                if (el !== except) el.classList.remove('open');
+                if (el === except) return;
+                el.classList.remove('open');
+                clearPulldownMenuPosition(el.querySelector('.pulldown-menu'));
             });
         }
 
@@ -2362,6 +2401,7 @@
                             e.stopPropagation();
                             paint(v);
                             root.classList.remove('open');
+                            clearPulldownMenuPosition(menu);
                             if (onChange) onChange(v, i);
                         };
                     }
@@ -2374,6 +2414,8 @@
                 const willOpen = !root.classList.contains('open');
                 closeAllPulldowns(root);
                 root.classList.toggle('open', willOpen);
+                if (willOpen) positionOpenPulldownMenu(root);
+                else clearPulldownMenuPosition(menu);
             };
 
             paint(valueEl.textContent);
@@ -2506,6 +2548,10 @@
         function firePapyrusOption(opt, extraParams) {
             if (!opt || typeof window.onAction !== 'function') return;
             const parameters = Object.assign({}, extraParams || {});
+            const closeWebUI = parameters.closeWebUI != null
+                ? !!parameters.closeWebUI
+                : !!opt.closeWebUI;
+            delete parameters.closeWebUI;
             const payload = {
                 action: 'papyrus',
                 label: opt.label || '',
@@ -2515,9 +2561,14 @@
                 executionFunctionName: opt.executionFunctionName || '',
                 parameterMapping: opt.parameterMapping || [],
                 parameters,
-                closeWebUI: !!opt.closeWebUI
+                closeWebUI
             };
             window.onAction(JSON.stringify(payload));
+        }
+
+        function notifyPlayer(msg) {
+            if (typeof window.onNotify === 'function')
+                window.onNotify(JSON.stringify({ msg: String(msg || '') }));
         }
 
         function selectPapyrusOption(opt) {
@@ -2631,6 +2682,313 @@
             return 'expect';
         }
 
+        let cuddleUi = {
+            direction: 'giving',
+            activity: 'cuddle',
+            posture: 'laying',
+            withFormId: 0,
+            intent: 'showing affection',
+            settingName: 'nonsexual'
+        };
+        const CUDDLE_INTENTS = ['showing affection', 'comforting', 'cuddling'];
+        const CUDDLE_SETTINGS = [
+            'nonsexual',
+            'nonsexual_kissing',
+            'nonsexual_male_position_0',
+            'nonsexual_male_position_1',
+            'nonsexual_male_position_2',
+            'default'
+        ];
+        let cuddleResolvePending = null;
+
+        function cuddleActorPool() {
+            const pool = [];
+            const seen = new Set();
+            const add = (a) => {
+                if (!a) return;
+                const fid = formIdU32(a.formId);
+                if (!fid || seen.has(fid)) return;
+                seen.add(fid);
+                pool.push({
+                    name: a.name || a.label || '?',
+                    label: a.label || a.name || '?',
+                    formId: fid,
+                    uuid: a.uuid,
+                    selectable: a.selectable !== false,
+                    status: a.status || 'ok',
+                    gender: a.gender
+                });
+            };
+            (nearbyActors || []).forEach(add);
+            if (playerActor) add(playerActor);
+            if (targetActor) add(targetActor);
+            return pool;
+        }
+
+        function cuddleRemapActivity(ui) {
+            const t = String(ui || '').toLowerCase();
+            if (t === 'cuddle') return 'cuddling';
+            if (t === 'kiss') return 'kissing';
+            if (t === 'hugging' || t === 'hug') return 'hug';
+            return t;
+        }
+
+        function cuddleBuildTagsCsv() {
+            const method = cuddleRemapActivity(cuddleUi.activity) || String(cuddleUi.activity || '').toLowerCase();
+            const posture = String(cuddleUi.posture || '').toLowerCase();
+            return method + ',' + posture;
+        }
+
+        function cuddlePickWithDefault(pool, currentFid) {
+            const cur = formIdU32(currentFid);
+            const playerFid = formIdU32(playerActor && playerActor.formId);
+            const others = pool.filter(a => formIdU32(a.formId) !== cur && a.selectable);
+            if (cuddleUi.withFormId) {
+                const hit = others.find(a => formIdU32(a.formId) === formIdU32(cuddleUi.withFormId));
+                if (hit) return hit;
+            }
+            const npc = others.find(a => formIdU32(a.formId) !== playerFid);
+            if (npc) return npc;
+            const player = others.find(a => formIdU32(a.formId) === playerFid);
+            if (player) return player;
+            return pool.find(a => formIdU32(a.formId) !== cur) || null;
+        }
+
+        function cuddleResolveActors() {
+            const pool = cuddleActorPool();
+            const curFid = formIdU32(targetActor && targetActor.formId);
+            const cur = pool.find(a => formIdU32(a.formId) === curFid) || pool[0];
+            const wit = cuddlePickWithDefault(pool, cur && cur.formId);
+            if (!cur || !wit || formIdU32(cur.formId) === formIdU32(wit.formId))
+                return null;
+            return { cur, wit };
+        }
+
+        const NONSEXUAL_SUPPRESS_FALLBACK =
+            'oral,vaginal,anal,masturbation,handjob,boobjob,thighjob,fisting,dildo,fingering,footjob';
+
+        function cuddleApplySceneCreator(state) {
+            SC.filterByOnce = 'none';
+            if (typeof configureSceneCreator === 'function')
+                configureSceneCreator(state);
+            if (typeof showPanel === 'function')
+                showPanel('scene_creator_panel');
+            else if (typeof window.onMainPanelChange === 'function')
+                window.onMainPanelChange(JSON.stringify({ key: 'scene_creator_panel' }));
+        }
+
+        async function cuddleLoadSettingSuppress(settingName) {
+            const name = String(settingName || 'nonsexual').trim() || 'nonsexual';
+            try {
+                const res = await fetch('../../../SKSE/Plugins/SkyrimNet_SexLab/scenes/' + name + '.json');
+                if (!res.ok) throw new Error('http ' + res.status);
+                const data = await res.json();
+                const raw = data && data.tags_suppress != null ? data.tags_suppress : '';
+                if (Array.isArray(raw))
+                    return raw.map(String).join(',');
+                return String(raw || '');
+            } catch (e) {
+                if (name === 'nonsexual' || name.indexOf('nonsexual') === 0)
+                    return NONSEXUAL_SUPPRESS_FALLBACK;
+                return '';
+            }
+        }
+
+        function cuddleCustom() {
+            const pair = cuddleResolveActors();
+            if (!pair) return;
+            const { cur, wit } = pair;
+            const direction = cuddleUi.direction;
+            const giving = direction !== 'getting';
+            // Cuddle: receiver@0, giver@1 (opposite of oral service cast).
+            const a0 = giving ? wit : cur;
+            const a1 = giving ? cur : wit;
+            const toPos = (a) => ({
+                _name: (a && (a.name || a.label)) || '?',
+                _uuid: (a && a.uuid) || String(formIdU32(a && a.formId)),
+                _form_id: formIdU32(a && a.formId),
+                _dressed: 1,
+                _no_orgasm: 0,
+                _victim: 0,
+                _speaking: '',
+                _gender: (a && a.gender != null) ? a.gender : 0,
+                _race_key: ''
+            });
+            const tag = cuddleRemapActivity(cuddleUi.activity) || 'cuddling';
+            const posture = String(cuddleUi.posture || '').toLowerCase();
+            const startTags = posture ? (tag + ',' + posture) : tag;
+            const settingName = cuddleUi.settingName || 'nonsexual';
+            const state = {
+                _creator_sid: 0,
+                _from_target_menu: true,
+                _intent: cuddleUi.intent || 'showing affection',
+                _style: 'gently',
+                _method: tag,
+                _start_tags: startTags,
+                _tags: tag,
+                _tags_suppress: '',
+                _num_actors: 2,
+                _positions: [toPos(a0), toPos(a1)],
+                _scene_presets: [settingName],
+                _group_tags: {},
+                _group_order: []
+            };
+            cuddleLoadSettingSuppress(settingName).then((suppress) => {
+                state._tags_suppress = suppress || '';
+                cuddleApplySceneCreator(state);
+            }).catch(() => {
+                state._tags_suppress = NONSEXUAL_SUPPRESS_FALLBACK;
+                cuddleApplySceneCreator(state);
+            });
+        }
+
+        function cuddleStart(opt) {
+            const pair = cuddleResolveActors();
+            if (!pair) return;
+            const { cur, wit } = pair;
+            const tagsCsv = cuddleBuildTagsCsv();
+            const reqId = 'cuddle' + Date.now();
+            cuddleResolvePending = {
+                id: reqId,
+                opt,
+                cur,
+                wit,
+                direction: cuddleUi.direction,
+                intent: cuddleUi.intent || 'showing affection',
+                settingName: cuddleUi.settingName || 'nonsexual',
+                tagsCsv
+            };
+            if (typeof window.onAnimDbResolveTags !== 'function') {
+                notifyPlayer('No matching animations for those tags.');
+                cuddleResolvePending = null;
+                return;
+            }
+            window.onAnimDbResolveTags(JSON.stringify({
+                _request_id: reqId,
+                _tags: tagsCsv,
+                _actor_count: 2
+            }));
+        }
+
+        function animDbResolveTagsResult(payload) {
+            const rid = String((payload && payload._request_id) || '');
+            const pending = cuddleResolvePending;
+            cuddleResolvePending = null;
+            if (!pending || rid !== pending.id) return;
+            const resolved = String((payload && payload._resolved) || '');
+            if (!resolved) {
+                notifyPlayer('No matching animations for those tags.');
+                return;
+            }
+            firePapyrusOption(pending.opt, {
+                speaker: { type: 'Actor', formId: formIdU32(pending.cur.formId) },
+                target: { type: 'Actor', formId: formIdU32(pending.wit.formId) },
+                intent: pending.intent || 'showing affection',
+                setting_name: pending.settingName || 'nonsexual',
+                tags: resolved,
+                direction: pending.direction,
+                closeWebUI: true
+            });
+            if (typeof hidePanel === 'function') {
+                hidePanel('target_menu_panel');
+                hidePanel('control_panel');
+            }
+        }
+
+        function renderCuddlePanelBody(body, opt) {
+            const pool = cuddleActorPool();
+            const curFid = formIdU32(targetActor && targetActor.formId);
+            let cur = pool.find(a => formIdU32(a.formId) === curFid) || pool[0];
+            let wit = cuddlePickWithDefault(pool, cur && cur.formId);
+            if (wit) cuddleUi.withFormId = formIdU32(wit.formId);
+
+            const addField = (labelText, node) => {
+                const field = document.createElement('div');
+                field.className = 'dyn-field';
+                const lab = document.createElement('label');
+                lab.textContent = labelText;
+                field.appendChild(lab);
+                field.appendChild(node);
+                body.appendChild(field);
+            };
+
+            // CurrentActor
+            const curLabels = pool.map(a => a.label);
+            const curSeed = cur ? cur.label : (curLabels[0] || '—');
+            addField('Current', createPulldown(curLabels, curSeed, (picked, idx) => {
+                const entry = (idx != null && idx >= 0 && idx < pool.length) ? pool[idx]
+                    : pool.find(a => a.label === picked);
+                if (!entry) return;
+                requestControlActorFocus(entry, { force: true });
+                if (formIdU32(cuddleUi.withFormId) === formIdU32(entry.formId))
+                    cuddleUi.withFormId = 0;
+                renderPapyrusPanel();
+            }, new Set(pool.filter(a => !a.selectable).map(a => a.label))));
+
+            // direction
+            addField('giving/getting', createPulldown(['giving', 'getting'], cuddleUi.direction, (v) => {
+                cuddleUi.direction = v;
+            }));
+
+            // activity
+            addField('cuddle/kiss/hugging', createPulldown(['cuddle', 'kiss', 'hugging'], cuddleUi.activity, (v) => {
+                cuddleUi.activity = v;
+            }));
+
+            // posture
+            addField('standing/laying/sitting', createPulldown(['standing', 'laying', 'sitting'], cuddleUi.posture, (v) => {
+                cuddleUi.posture = v;
+            }));
+
+            // with TargetActor
+            const withPool = pool.filter(a => formIdU32(a.formId) !== formIdU32(cur && cur.formId));
+            const withLabels = withPool.map(a => a.label);
+            const withSeed = wit ? wit.label : (withLabels[0] || '—');
+            if (!withPool.length) {
+                const miss = document.createElement('div');
+                miss.textContent = '—';
+                addField('with', miss);
+            } else {
+                addField('with', createPulldown(withLabels, withSeed, (picked, idx) => {
+                    const entry = (idx != null && idx >= 0 && idx < withPool.length) ? withPool[idx]
+                        : withPool.find(a => a.label === picked);
+                    if (!entry) return;
+                    cuddleUi.withFormId = formIdU32(entry.formId);
+                }, new Set(withPool.filter(a => !a.selectable).map(a => a.label))));
+            }
+
+            addField('intent', createPulldown(CUDDLE_INTENTS, cuddleUi.intent, (v) => {
+                cuddleUi.intent = v;
+            }));
+
+            addField('Scene Setting', createPulldown(CUDDLE_SETTINGS, cuddleUi.settingName, (v) => {
+                cuddleUi.settingName = v;
+            }));
+
+            const bar = document.createElement('div');
+            bar.className = 'bottom-bar';
+            const same = !cur || !wit || formIdU32(cur.formId) === formIdU32(wit && wit.formId);
+            const customBtn = document.createElement('div');
+            customBtn.className = 'action-btn';
+            customBtn.textContent = 'Custom';
+            if (same) customBtn.classList.add('disabled');
+            customBtn.onclick = () => {
+                if (customBtn.classList.contains('disabled')) return;
+                cuddleCustom();
+            };
+            const startBtn = document.createElement('div');
+            startBtn.className = 'action-btn';
+            startBtn.textContent = 'Start';
+            if (same) startBtn.classList.add('disabled');
+            startBtn.onclick = () => {
+                if (startBtn.classList.contains('disabled')) return;
+                cuddleStart(opt);
+            };
+            bar.appendChild(customBtn);
+            bar.appendChild(startBtn);
+            body.appendChild(bar);
+        }
+
         function renderPapyrusPanel() {
             const host = document.getElementById('target-cascade-host');
             if (!host) return;
@@ -2647,6 +3005,13 @@
 
             const body = document.createElement('div');
             const kind = opt.panel;
+
+            if (kind === 'cuddle') {
+                renderCuddlePanelBody(body, opt);
+                panel.appendChild(body);
+                host.appendChild(panel);
+                return;
+            }
 
             if (kind === 'position') {
                 if (!tmCastDraft) tmCastDraft = tmBuildCastDraft(true);
@@ -3495,10 +3860,16 @@
             stage: 1,
             stageCount: 0,
             nearbyRange: 100,
-            filterBy: 'positions'
+            filterBy: 'positions',
+            filterStart: 'positions',
+            filterChain: [],
+            filterAuto: true,
+            filterByOnce: ''
         };
 
         const SC_NEARBY_RANGES = [100, 200, 400, 800, 1600];
+        // Strictest to loosest; the open-time downgrade walks this order until a query returns anims.
+        const SC_FILTER_ORDER = ['positions', 'gender', 'none'];
 
         function scRenderRangePulldown() {
             const host = document.getElementById('sc-range-pulldown');
@@ -3514,6 +3885,32 @@
                     window.onNearbyRangeChange(JSON.stringify({ _range: n }));
                 }
             }));
+        }
+
+        function scRenderFilterByPulldown() {
+            const host = document.getElementById('sc-filter-by-pulldown');
+            if (!host) return;
+            host.innerHTML = '';
+            if (!SC.filterBy) SC.filterBy = 'positions';
+            host.appendChild(createPulldown(['none', 'gender', 'positions'], SC.filterBy, v => {
+                SC.filterBy = v;
+                SC.filterAuto = false;
+                SC.filterChain = [];
+                scRefreshAnims();
+                scRefreshTags();
+            }));
+        }
+
+        // Arms the open-time downgrade: start at startMode (default strictest) and keep the
+        // looser modes as fallbacks for scRefreshAnims to walk when a query returns nothing.
+        function scArmFilterDowngrade(startMode) {
+            let i = SC_FILTER_ORDER.indexOf(startMode || '');
+            if (i < 0) i = 0;
+            SC.filterBy = SC_FILTER_ORDER[i];
+            SC.filterStart = SC_FILTER_ORDER[i];
+            SC.filterChain = SC_FILTER_ORDER.slice(i + 1);
+            SC.filterAuto = true;
+            scRenderFilterByPulldown();
         }
 
         function configureSceneCreator(state) {
@@ -3574,16 +3971,9 @@
             typeHost.innerHTML = '';
             const typeValues = ['any'].concat(SC.groupOrder);
             typeHost.appendChild(createPulldown(typeValues, 'any', v => { SC.tagType = v; scRefreshTags(); }));
-            const filterByHost = document.getElementById('sc-filter-by-pulldown');
-            if (filterByHost) {
-                filterByHost.innerHTML = '';
-                if (!SC.filterBy) SC.filterBy = 'positions';
-                filterByHost.appendChild(createPulldown(['none', 'gender', 'positions'], SC.filterBy, v => {
-                    SC.filterBy = v;
-                    scRefreshAnims();
-                    scRefreshTags();
-                }));
-            }
+            const forcedFilterBy = SC.filterByOnce || '';
+            SC.filterByOnce = '';
+            scArmFilterDowngrade(forcedFilterBy);
             scApplyModeChrome();
             scEnsurePositionSeed();
             scRenderPositions();
@@ -3903,6 +4293,9 @@
                 }
             });
             if (changed) scRenderPositions();
+            // Genders/race keys land after the first open-time query, so restart the downgrade
+            // rather than letting the placeholder-gender pass decide the mode.
+            if (rid.startsWith('e') && SC.filterAuto) scArmFilterDowngrade(SC.filterStart);
             scRefreshTags();
             scRefreshAnims();
         }
@@ -4349,7 +4742,16 @@
         function animDbQueryResult(payload) {
             const rid = payload._request_id || '';
             if (String(rid).startsWith('a')) {
+                if (String(rid) !== 'a' + SC.animQueryId) return;
                 const anims = payload._anims || [];
+                if (!anims.length && SC.filterChain.length) {
+                    SC.filterBy = SC.filterChain.shift();
+                    scRenderFilterByPulldown();
+                    scRefreshTags();
+                    scRefreshAnims();
+                    return;
+                }
+                SC.filterChain = [];
                 SC.lastAnims = anims;
                 SC.lastAnimRegistries = anims.map(a => a._registry).filter(Boolean);
                 document.getElementById('sc-anim-count').textContent = `animations ${anims.length}/${payload._total_enabled || '?'}`;
