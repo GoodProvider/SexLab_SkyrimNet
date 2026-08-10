@@ -76,17 +76,25 @@ namespace AnimationDB
         {
             std::vector<std::string> out;
             std::string cur;
+            auto flush = [&]() {
+                // trim
+                size_t b = 0;
+                while (b < cur.size() && (cur[b] == ' ' || cur[b] == '\t'))
+                    ++b;
+                size_t e = cur.size();
+                while (e > b && (cur[e - 1] == ' ' || cur[e - 1] == '\t'))
+                    --e;
+                if (e > b)
+                    out.push_back(ToLower(cur.substr(b, e - b)));
+                cur.clear();
+            };
             for (char c : csv) {
-                if (c == ',') {
-                    if (!cur.empty())
-                        out.push_back(ToLower(std::move(cur)));
-                    cur.clear();
-                } else {
+                if (c == ',')
+                    flush();
+                else
                     cur.push_back(c);
-                }
             }
-            if (!cur.empty())
-                out.push_back(ToLower(std::move(cur)));
+            flush();
             return out;
         }
 
@@ -469,6 +477,115 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
         std::transform(s.begin(), s.end(), s.begin(),
             [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         return s;
+    }
+
+    std::string SanitizeTag(std::string tag)
+    {
+        tag = ToLower(std::move(tag));
+        // trim
+        size_t b = 0;
+        while (b < tag.size() && (tag[b] == ' ' || tag[b] == '\t'))
+            ++b;
+        size_t e = tag.size();
+        while (e > b && (tag[e - 1] == ' ' || tag[e - 1] == '\t'))
+            --e;
+        if (e <= b)
+            return {};
+        tag = tag.substr(b, e - b);
+        if (tag == "pussy")
+            return "vaginal";
+        if (tag == "mouth" || tag == "tongue")
+            return "oral";
+        if (tag == "ass")
+            return "anal";
+        if (tag == "whipping")
+            return "whip";
+        if (tag == "hugging")
+            return "hug";
+        if (tag == "cuddle")
+            return "cuddling";
+        if (tag == "single hug")
+            return "hug";
+        return tag;
+    }
+
+    std::vector<std::string> ParseSanitizeTagsCsv(const std::string& csv)
+    {
+        std::vector<std::string> out;
+        std::unordered_set<std::string> seen;
+        for (const auto& raw : SplitCsv(csv)) {
+            std::string t = SanitizeTag(raw);
+            if (t.empty() || seen.contains(t))
+                continue;
+            seen.insert(t);
+            out.push_back(std::move(t));
+        }
+        return out;
+    }
+
+    namespace
+    {
+        bool AnyAnimHasAllTagsLocked(const std::vector<std::string>& must, int actor_count)
+        {
+            FilterSpec spec;
+            spec.must_tags = must;
+            spec.require_all = true;
+            spec.enabled_only = true;
+            if (actor_count > 0)
+                spec.actor_count = actor_count;
+            for (const auto& [_, row] : g_rows) {
+                if (MatchesFilter(row, spec))
+                    return true;
+            }
+            return false;
+        }
+    }
+
+    std::string ResolveTags(const std::string& tags_csv, int actor_count)
+    {
+        auto tags = ParseSanitizeTagsCsv(tags_csv);
+        if (tags.empty())
+            return {};
+
+        std::lock_guard lock(g_mutex);
+        const int n = static_cast<int>(tags.size());
+        // Largest subset first; within size, lex combinations prefer earlier indices.
+        for (int k = n; k >= 1; --k) {
+            std::vector<int> idx(static_cast<size_t>(k));
+            for (int i = 0; i < k; ++i)
+                idx[static_cast<size_t>(i)] = i;
+            while (true) {
+                std::vector<std::string> subset;
+                subset.reserve(static_cast<size_t>(k));
+                for (int i : idx)
+                    subset.push_back(tags[static_cast<size_t>(i)]);
+                if (AnyAnimHasAllTagsLocked(subset, actor_count))
+                    return TagsCsv(subset);
+
+                // next combination in lex order
+                int t = k - 1;
+                while (t >= 0 && idx[static_cast<size_t>(t)] == n - k + t)
+                    --t;
+                if (t < 0)
+                    break;
+                ++idx[static_cast<size_t>(t)];
+                for (int j = t + 1; j < k; ++j)
+                    idx[static_cast<size_t>(j)] = idx[static_cast<size_t>(j - 1)] + 1;
+            }
+        }
+        return {};
+    }
+
+    bool CsvHasTag(const std::string& tags_csv, const std::string& tag)
+    {
+        const std::string needle = SanitizeTag(tag);
+        if (needle.empty())
+            return false;
+        for (const auto& t : ParseSanitizeTagsCsv(tags_csv)) {
+            if (t == needle)
+                return true;
+        }
+        return false;
     }
 
     std::filesystem::path PluginDataDir()

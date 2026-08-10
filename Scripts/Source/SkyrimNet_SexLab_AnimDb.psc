@@ -18,6 +18,8 @@ String Function AnimDb_GetByRegistry(String registry) global native
 String Function AnimDb_GetStageDescription(String registry, int stage) global native
 String Function AnimDb_SubstituteActors(String desc, String actors_json) global native
 Bool Function AnimDb_SaveAnimLocal(String registry, String json) global native
+String Function AnimDb_ResolveTags(String tags_csv, int actor_count) global native
+Bool Function AnimDb_CsvHasTag(String tags_csv, String tag) global native
 
 int BATCH_SIZE = 48
 int walk_index = 0
@@ -355,6 +357,14 @@ EndFunction
 
 Bool Function SaveAnimLocal(String registry, String json)
     return AnimDb_SaveAnimLocal(registry, json)
+EndFunction
+
+String Function ResolveTags(String tags_csv, int actor_count)
+    return AnimDb_ResolveTags(tags_csv, actor_count)
+EndFunction
+
+Bool Function CsvHasTag(String tags_csv, String tag)
+    return AnimDb_CsvHasTag(tags_csv, tag)
 EndFunction
 
 ; ---- Replacements for former Stages APIs ----

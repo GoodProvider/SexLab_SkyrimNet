@@ -90,5 +90,14 @@ namespace AnimationDB
         std::vector<std::string>& out_csv_per_pos);
 
     std::string ToLower(std::string s);
+    /// Sanitize aliases + lowercase; empty if blank after trim.
+    std::string SanitizeTag(std::string tag);
+    /// Split CSV, sanitize each, dedupe preserving order.
+    std::vector<std::string> ParseSanitizeTagsCsv(const std::string& csv);
+    /// Largest front-preferring subset matching ≥1 enabled anim. Empty input → "". actor_count≤0 ignores count.
+    std::string ResolveTags(const std::string& tags_csv, int actor_count);
+    /// True if needle (sanitized) is an element of tags_csv (sanitized elements).
+    bool CsvHasTag(const std::string& tags_csv, const std::string& tag);
+
     std::filesystem::path PluginDataDir();
 }

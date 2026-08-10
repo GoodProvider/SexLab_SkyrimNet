@@ -217,6 +217,20 @@ namespace PapyrusBindings_AnimationDB
         }
     }
 
+    RE::BSFixedString AnimDb_ResolveTags(RE::StaticFunctionTag*, RE::BSFixedString tags_csv,
+        std::int32_t actor_count)
+    {
+        return RE::BSFixedString(
+            AnimationDB::ResolveTags(tags_csv.c_str() ? tags_csv.c_str() : "", actor_count));
+    }
+
+    bool AnimDb_CsvHasTag(RE::StaticFunctionTag*, RE::BSFixedString tags_csv, RE::BSFixedString tag)
+    {
+        return AnimationDB::CsvHasTag(
+            tags_csv.c_str() ? tags_csv.c_str() : "",
+            tag.c_str() ? tag.c_str() : "");
+    }
+
     bool Register_AnimationDB_Functions(RE::BSScript::IVirtualMachine* a_vm)
     {
         if (!a_vm) {
@@ -237,6 +251,8 @@ namespace PapyrusBindings_AnimationDB
         a_vm->RegisterFunction("AnimDb_GetStageDescription", scriptName, AnimDb_GetStageDescription);
         a_vm->RegisterFunction("AnimDb_SubstituteActors", scriptName, AnimDb_SubstituteActors);
         a_vm->RegisterFunction("AnimDb_SaveAnimLocal", scriptName, AnimDb_SaveAnimLocal);
+        a_vm->RegisterFunction("AnimDb_ResolveTags", scriptName, AnimDb_ResolveTags);
+        a_vm->RegisterFunction("AnimDb_CsvHasTag", scriptName, AnimDb_CsvHasTag);
 
         webui_log::info("Successfully registered Papyrus functions for {}", scriptName);
         return true;
