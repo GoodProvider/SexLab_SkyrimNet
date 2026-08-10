@@ -35,6 +35,7 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 - Focus actor owns the active scene (or `"new"` creator state). Duplicate scene pulldowns on Scene Menu / AnimationPanel were removed.
 - Soft reload still uses JS `SCENE_CONNECTION` + Papyrus `WebUI_OnSceneConnectionChange` / `SceneCreator_Configure` / `Animation_Menu_Configure` when the ControlPanel actor changes or a main panel opens (`mainPanelDidOpen`).
 - **Scene Menu** (`scene_creator_panel`): multi-select anim pool. On `new`: Start/Cancel. On active scene: Stop, A/N column, Update (SexLab in-thread cap 128), stage prev/next.
+- **Filter-by downgrade:** each open arms `positions → gender → none` (`scArmFilterDowngrade`); a query returning zero anims steps to the next looser mode and re-queries, so the pulldown shows the mode actually used. Re-armed once actor meta resolves (genders arrive after the first query). Picking a mode manually pins it for that open. Callers wanting a different start set `SC.filterByOnce` before `configureSceneCreator` (cuddle **Custom** uses `none`, which leaves no fallbacks).
 - **AnimationPanel**: registries capped at **10**, single-select focus; positions are anim-slot / AnimDb (not actors). Prev/Next/Stop enabled only on an active scene connection. Done saves AnimDb (`onAnimRegistrySave` when not live).
 - **Animation open preference:** C++ remembers whether Animation was the selected main panel across hide. Hotkey restores Animation only when the focus actor is in SexLab **and** that preference is true.
 
