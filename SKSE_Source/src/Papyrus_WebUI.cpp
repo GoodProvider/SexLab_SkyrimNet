@@ -120,11 +120,28 @@ namespace PapyrusBindings_WebUI
         j["_pos_genders"] = row.pos_genders;
         j["_pos_no_orgasm"] = row.pos_no_orgasm;
         j["_pos_speaking_modifiers"] = row.pos_speaking_modifiers;
+        j["_clothed"] = row.pos_clothed;
         j["_stage_has_description"] = row.stage_has_description;
         nlohmann::json sd = nlohmann::json::object();
         for (const auto& [k, v] : row.stage_descriptions)
             sd[std::to_string(k)] = v;
         j["_stage_descriptions"] = sd;
+        nlohmann::json ss = nlohmann::json::object();
+        for (const auto& [k, v] : row.stage_speaking)
+            ss[std::to_string(k)] = v;
+        j["_stage_speaking"] = ss;
+        nlohmann::json sc = nlohmann::json::object();
+        for (const auto& [k, v] : row.stage_clothed)
+            sc[std::to_string(k)] = v;
+        j["_stage_clothed"] = sc;
+        nlohmann::json st = nlohmann::json::object();
+        for (const auto& [k, v] : row.stage_tags)
+            st[std::to_string(k)] = v;
+        j["_stage_tags"] = st;
+        j["_transitions"] = row.transitions.is_object() ? row.transitions : nlohmann::json::object();
+        j["_file_tags"] = row.file_tags;
+        if (!row.creator.empty())
+            j["_creator"] = row.creator;
         return j;
     }
 

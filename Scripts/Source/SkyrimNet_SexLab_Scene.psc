@@ -63,6 +63,7 @@ bool Property scene_creator_menu_called = False Auto
 ; Description of the scene
 ; --------------------------------------------
 String description_last = ""
+int stage_last = 0
 
 ; --------------------------------------------
 ; Thread
@@ -913,6 +914,7 @@ EndFunction
 ; --------------------------------------------
 Function AnimationStart()
     description_last = ""
+    stage_last = 0
     ; Re-entrant mid-scene AnimationStart must not force STATUS_SETUP (would re-run
     ; first-start/initiator path) or clear orgasm_messages_set while leaving non-empty
     ; slots (flush skips; Combined will not refill). Only reset orgasm stash on first start.
@@ -957,6 +959,7 @@ Function StageStart()
 
     String orgasm_narration = OrgasmMessagesToNarration()
     String desc = GetDescription()
+    int cur_stage = thread.stage
 
     ; Send a DN if its a start and includes a player
     ; if not player send DN if allowed by cool off 
@@ -983,8 +986,19 @@ Function StageStart()
         bool change_scene = false
         if desc != "" && description_last != ""
             if desc != description_last
-                ; Scene-change is prefixed; orgasm block is appended from orgasm_narration below.
-                narration = "Scene changes to "+desc
+                ; Prefer anidata transitions["from-to"]; else constructed "Scene changes to".
+                String transition = ""
+                if stage_last > 0 && cur_stage > 0
+                    int delta = cur_stage - stage_last
+                    if delta == 1 || delta == -1
+                        transition = animdb.GetThreadTransition(thread, stage_last, cur_stage)
+                    endif
+                endif
+                if transition != ""
+                    narration = transition
+                else
+                    narration = "Scene changes to "+desc
+                endif
                 change_scene = true
             else 
                 desc = ""
@@ -1015,6 +1029,9 @@ Function StageStart()
     ; path sets desc="" and must not wipe the prior value (would skip later Scene changes to).
     if desc != ""
         description_last = desc
+    endif
+    if cur_stage > 0
+        stage_last = cur_stage
     endif
 
     ; If this thread is being tracked print the thread's status 
@@ -1919,7 +1936,6 @@ Function WebUI_SaveMenuState(int obj)
                 if template != ""
                     int stage_obj = JMap.object()
                     JMap.setStr(stage_obj, "description", template)
-                    JMap.setStr(stage_obj, "version", "2.0")
                     JMap.setObj(payload, "stage "+stage_no, stage_obj)
                 endif
             endif

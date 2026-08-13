@@ -848,7 +848,6 @@ Function WebUI_OnAnimRegistrySave(String json)
                 if template != ""
                     int stage_obj = JMap.object()
                     JMap.setStr(stage_obj, "description", template)
-                    JMap.setStr(stage_obj, "version", "2.0")
                     JMap.setObj(payload, "stage "+stage_no, stage_obj)
                 endif
             endif

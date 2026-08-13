@@ -10,6 +10,7 @@
 | Author actions / scenes | docs/authors/actions.md, docs/reference/scene-settings.md |
 | Author prompts | docs/authors/prompts.md + docs/reference/{json-keys,protocol-tokens,orgasm-narration}.md |
 | Author animations | docs/authors/animations.md |
+| Anidata schema 3.0 | docs/developers/anidata-schema.md |
 | Develop Papyrus / ESP | docs/developers/papyrus.md, docs/reference/papyrus-rules.md |
 | Develop WebUI / SKSE | docs/developers/webui.md |
 | Agent policy | AGENTS.md (safety, confidence, commits) |

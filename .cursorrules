@@ -21,6 +21,7 @@ SkyrimNet ↔ SexLab bridge.
 | Actions | [docs/authors/actions.md](docs/authors/actions.md) |
 | Prompts | [docs/authors/prompts.md](docs/authors/prompts.md) |
 | Animations | [docs/authors/animations.md](docs/authors/animations.md) |
+| Anidata schema 3.0 | [docs/developers/anidata-schema.md](docs/developers/anidata-schema.md) |
 | Papyrus | [docs/developers/papyrus.md](docs/developers/papyrus.md) |
 | WebUI | [docs/developers/webui.md](docs/developers/webui.md) |
 | Papyrus rules | [docs/reference/papyrus-rules.md](docs/reference/papyrus-rules.md) |

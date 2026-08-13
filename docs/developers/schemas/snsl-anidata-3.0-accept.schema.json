@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skyrimnet-sexlab.local/schemas/snsl-anidata-3.0-accept.json",
+  "title": "SkyrimNet_SexLab animation data 3.0 (accept profile)",
+  "description": "Any animation metadata file the consumer will read, including hand-authored and 2.0 files. Nothing required. Applied after keys are normalized to lowercase. Actor-count and consecutive-stage checks belong to the application.",
+  "type": "object",
+  "propertyNames": {
+    "$ref": "#/$defs/lowercase_key"
+  },
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "creator": {
+      "type": "string"
+    },
+    "orgasm_expected": {
+      "$ref": "#/$defs/binary_actor_array"
+    },
+    "speaking_modifiers": {
+      "$ref": "#/$defs/speaking_modifiers"
+    },
+    "clothed": {
+      "$ref": "#/$defs/binary_actor_array"
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    },
+    "transitions": {
+      "$ref": "#/$defs/transitions"
+    }
+  },
+  "patternProperties": {
+    "^stage[ _]?[0-9]+$": {
+      "$ref": "#/$defs/stage"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "lowercase_key": {
+      "type": "string",
+      "pattern": "^[^A-Z]*$"
+    },
+    "speaking_token": {
+      "type": "string",
+      "enum": ["_pleasure_", "_pain_", "_gagged_", "_kissing_"]
+    },
+    "binary_actor_array": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "enum": [0, 1]
+      }
+    },
+    "tags": {
+      "type": "array",
+      "description": "SNSL stage/animation tags. Empty array is a real value. Does not replace SexLab registry tags.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "speaking_modifiers": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/$defs/speaking_token"
+            }
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "stage": {
+      "anyOf": [
+        {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/lowercase_key"
+          },
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "speaking_modifiers": {
+              "$ref": "#/$defs/speaking_modifiers"
+            },
+            "clothed": {
+              "$ref": "#/$defs/binary_actor_array"
+            },
+            "tags": {
+              "$ref": "#/$defs/tags"
+            },
+            "version": {
+              "type": "string",
+              "description": "Schema 2.0 per-stage version; accepted and ignored."
+            }
+          },
+          "additionalProperties": true
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "transitions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[0-9]+-[0-9]+$"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}

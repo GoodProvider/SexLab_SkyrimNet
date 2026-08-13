@@ -37,7 +37,8 @@ Relative paths for other machines: [docs/reference/papyrus-rules.md](docs/refere
 | Players | [docs/players/overview.md](docs/players/overview.md) |
 | Action YAML | [docs/authors/actions.md](docs/authors/actions.md) |
 | Prompts | [docs/authors/prompts.md](docs/authors/prompts.md) |
-| Animations | [docs/authors/animations.md](docs/authors/animations.md) |
+| Animations (authors) | [docs/authors/animations.md](docs/authors/animations.md) |
+| Anidata schema 3.0 | [docs/developers/anidata-schema.md](docs/developers/anidata-schema.md) |
 | Papyrus / ESP | [docs/developers/papyrus.md](docs/developers/papyrus.md) |
 | WebUI / SKSE | [docs/developers/webui.md](docs/developers/webui.md) |
 | Release docs | [release-guide.xml](release-guide.xml) + [release-checkpoint.xml](release-checkpoint.xml) |
@@ -52,6 +53,7 @@ Relative paths for other machines: [docs/reference/papyrus-rules.md](docs/refere
 | External JSON keys | [docs/reference/json-keys.md](docs/reference/json-keys.md) |
 | Orgasm narration gate | [docs/reference/orgasm-narration.md](docs/reference/orgasm-narration.md) |
 | Scene JSON keys | [docs/reference/scene-settings.md](docs/reference/scene-settings.md) |
+| Animation data (anidata) 3.0 | [docs/developers/anidata-schema.md](docs/developers/anidata-schema.md) |
 
 ## Compile
 

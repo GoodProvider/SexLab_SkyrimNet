@@ -2,6 +2,7 @@
 
 Per-stage SexLab animation descriptions for SkyrimNet_SexLab.
 
+**Format contract (schema 3.0):** [../developers/anidata-schema.md](../developers/anidata-schema.md).  
 Orgasm narration when a stage climaxes: [../reference/orgasm-narration.md](../reference/orgasm-narration.md).
 
 ## Paths
@@ -12,60 +13,25 @@ Orgasm narration when a stage climaxes: [../reference/orgasm-narration.md](../re
 | `SKSE/Plugins/SkyrimNet_SexLab/animations/(author)/` | Shared packs |
 | `animations/GoodProvider/` | Example pack |
 
+Files are keyed by SexLab **registrar** (`<registrar>.json`). Display-name filenames still load
+with a warning; port packs with `tools/port_anidata_v3.py`.
+
 ## In-game editor
 
-You are strongly encouraged to add and share stage descriptions. Press the **Sex Description Editor** hot key on an actor in sex:
+Press the **Sex Description Editor** hot key on an actor in sex:
 
-- If the animation's stage already has a description, you can view or replace it.
-- If not, a text field lets you add one; names are filled in and you can accept or reject. Empty results usually mean wrong variable names.
-- Set `orgasm_expected` and change sex style (if Tag Editor dialogs are on).
+- View or replace an existing stage description, or add one (actor placeholders filled in).
+- Set `orgasm_expected` and sex style when Tag Editor dialogs are on.
 
-Edit files with any text editor after creation. Type actor indices alone if you need to see who is who.
-
-ESC cancels cleanly. Save aborts if existing JSON fails to parse (avoids wiping with `{}`).
+ESC cancels. Save aborts if existing JSON fails to parse.
 
 ## Fallback
 
-No stage description → tag-based. Current stage empty → last earlier stage with text.
-
-## JSON format
-
-Keys are **case-sensitive** (JContainers). Use lowercase `"stage N"` and `"version"`.
-
-```json
-{
-    "stage 1": {
-        "description": "{{sl.actors.1}} fingers {{sl.actors.0}}.",
-        "version": "2.0"
-    },
-    "orgasm_expected": [1, 0],
-    "speaking_modifiers": ["_pleasure_", ""],
-    "clothed": [0, 1]
-}
-```
-
-Inja `2.0`: actors are an array; if there is a victim, it is normally first; `{{sl.actors.0}}`, `{{sl.actors.1}}`, `{{sl.actors.2}}`, …
-
-### orgasm_expected
-
-Int array by thread position: `0` no orgasm expected, `1` expects orgasm.
-
-### speaking_modifiers
-
-Per-position protocol tokens (e.g. `_pleasure_`, `_pain_`). When JSON is missing, defaults from `orgasm_expected`: `1` → `_pleasure_`, `0` → empty.
-
-### clothed
-
-Per-position `0` unclothed / `1` clothed (dressed).
-
-### Sex style (Tag Editor)
-
-Forcefully fucking / having sex / gently making love.
-
-Victim and orgasm **deny** are scene-only and are never stored in animation JSON.
+No stage description → tag-based. Current stage empty → last earlier stage with text.  
+Stage change with a `transitions` entry → that text; otherwise `"Scene changes to " + description`.
 
 ## Sharing
 
-Please send packs by zipping your `_local_` folder with an author name (anonymous OK): Discord, or email da.good.provider@gmail.com.
-
-Install shared packs under `animations/(author_name)/`. Keep personal overrides in `_local_` (loaded last, wins). Examples: `animations/GoodProvider/`.
+Zip your `_local_` folder with an author name (anonymous OK): Discord, or email
+da.good.provider@gmail.com. Install under `animations/(author_name)/`. Keep personal overrides
+in `_local_`.

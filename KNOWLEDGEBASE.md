@@ -1,5 +1,13 @@
 # Knowledgebase
 
+## Anidata schema 3.0 (2026-08-12)
+
+- Contract: `docs/developers/anidata-schema.md` (+ accept/emit schemas under `docs/developers/schemas/`).
+- Lookup: `<registry>.json` first, then display-name fallback (warn). Pack `_local_` last. No silent same-registrar merge.
+- Port: `tools/port_anidata_v3.py --data-root <mods>` renames unambiguous display-name files; unmatched stay on display-name fallback.
+- Stage change narration: `transitions["from-to"]` replaces `"Scene changes to "+desc` in `Scene.StageStart` when present.
+- Rebuild AnimDB after upgrading so new SQLite columns / JSON packs are ingested.
+
 ## Nonsexual gender fallback / keep suppress (2026-08-10)
 
 - **Policy / AnimDB none peel** (query-time; creator chips unchanged): after SexLab `GetAnimationsByTags` misses, (1) gender/position off with full must+suppress → (2) peel must-tags other than first (tail→front, keep `tags[0]`) → (3) peel suppress end→front with `tags[0]` → (4) drop front must-tag keeping full suppress (skip unconstrained 0+0). Never SexLab-random when original tags/suppress were set (`FinishStartScene` aborts).
