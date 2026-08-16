@@ -30,6 +30,6 @@
 ## Recommendations
 
 - SKSE, Address Library, USSEP, PapyrusUtil, po3 Extender/Tweaks, Stay At the System Page NG
-- Body: CBBE or BHUNP; [The New Gentlemen](https://www.loverslab.com/files/file/5355-schlongs-of-skyrim-se/) / Gentlewomen as needed
+- Body: CBBE or BHUNP; [The New Gentlemen](https://www.nexusmods.com/skyrimspecialedition/mods/104215) / Gentlewomen as needed
 - SexLab Tools; Billyy SLAL packs
 - Devious Devices stack + [SkyrimNet DDUNDNG](https://github.com/naitro2010/SkyrimNet_UDNG/releases/download/alpha2/SkyrimNetDDUDNG.zip) if using DD
