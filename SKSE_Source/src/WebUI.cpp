@@ -518,19 +518,27 @@ void InitWebUI()
                     creator_sid, fromTargetMenu);
                 WebUI_Invoke("hidePanel('scene_creator_panel');");
                 PapyrusBindings_WebUI::ClearSceneCreatorPending();
-                if (!PapyrusBindings_WebUI::TargetMenuSessionActive)
+                if (action == "start") {
+                    WebUI_Invoke("hidePanel('target_menu_panel');");
+                    WebUI_Invoke("hidePanel('control_panel');");
+                    PapyrusBindings_WebUI::ClearTargetMenuSession();
                     WebUI_Visibility_Hide();
-                if (action == "start" && fromTargetMenu) {
-                    j["_from_target_menu"] = true;
-                    PapyrusBindings_WebUI::DispatchManagerMethodStrOnly("WebUI_OnSceneCreatorHandoff", j.dump());
-                } else if (action == "start") {
-                    PapyrusBindings_WebUI::DispatchManagerMethodIntStr("WebUI_OnSceneCreatorResult", creator_sid,
-                        j.dump());
-                } else if (fromTargetMenu) {
-                    webui_log::info("onSceneCreatorResult: target-menu cancel");
+                    if (fromTargetMenu) {
+                        j["_from_target_menu"] = true;
+                        PapyrusBindings_WebUI::DispatchManagerMethodStrOnly("WebUI_OnSceneCreatorHandoff", j.dump());
+                    } else {
+                        PapyrusBindings_WebUI::DispatchManagerMethodIntStr("WebUI_OnSceneCreatorResult", creator_sid,
+                            j.dump());
+                    }
                 } else {
-                    PapyrusBindings_WebUI::DispatchManagerMethodIntStr("WebUI_OnSceneCreatorResult", creator_sid,
-                        "{\"_action\":\"cancel\"}");
+                    if (!PapyrusBindings_WebUI::TargetMenuSessionActive)
+                        WebUI_Visibility_Hide();
+                    if (fromTargetMenu) {
+                        webui_log::info("onSceneCreatorResult: target-menu cancel");
+                    } else {
+                        PapyrusBindings_WebUI::DispatchManagerMethodIntStr("WebUI_OnSceneCreatorResult", creator_sid,
+                            "{\"_action\":\"cancel\"}");
+                    }
                 }
             } catch (...) {
                 webui_log::warn("onSceneCreatorResult: bad JSON");
@@ -744,12 +752,21 @@ void InitWebUI()
                 nlohmann::json opt = payload;
                 if (!opt.contains("parameters"))
                     opt["parameters"] = params;
+                // SceneStartPanel Start: player already clicked Start — skip YesNo / Scene Creator.
+                const std::string papyrusFn = payload.value("executionFunctionName", "");
+                const bool skipSceneCreator = payload.value("closeWebUI", false)
+                    && ActionCatalog::IsSceneStartExecution(papyrusFn);
+                if (skipSceneCreator)
+                    PapyrusBindings_WebUI::SkipSceneCreatorOnce = true;
                 bool ok = ActionCatalog::ExecutePapyrusOption(opt, player, target);
-                if (!ok)
+                if (!ok) {
                     webui_log::error("onAction: ExecutePapyrusOption failed");
+                    PapyrusBindings_WebUI::SkipSceneCreatorOnce = false;
+                }
                 // Stay open for live panels unless payload requests close.
                 if (payload.value("closeWebUI", false)) {
                     WebUI_Invoke("hidePanel('target_menu_panel');");
+                    WebUI_Invoke("hidePanel('control_panel');");
                     PapyrusBindings_WebUI::ClearTargetMenuSession();
                     WebUI_Visibility_Hide();
                 }

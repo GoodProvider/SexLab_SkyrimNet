@@ -1,11 +1,30 @@
 {
-  "type": "pulldown",
+  "type": "papyrus",
   "label": "sex",
-  "options": [
-    { "type": "action", "name": "SexLab_Start_Fucking", "label": "fucking" },
-    { "type": "action", "name": "SexLab_Start_Giving", "label": "giving" },
-    { "type": "action", "name": "SexLab_Sexual_Assault_Target", "label": "assault" },
-    { "type": "action", "name": "SexLab_Sexual_Assault_Speaker", "label": "assault (by target)" }
+  "panel": "scene_start",
+  "plugin": "SkyrimNet_SexLab.esp",
+  "questFormId": "0x800",
+  "scriptName": "SkyrimNet_SexLab_Actions",
+  "executionFunctionName": "StartScene_Consensual_Two",
+  "panelDefaults": {
+    "subject": "player",
+    "object": "currentActor",
+    "objectRelation": "with",
+    "andThird": "none",
+    "intent": "sexual activities",
+    "direction": "fucking",
+    "method": "pussy",
+    "style": "normally",
+    "settingName": "default"
+  },
+  "parameterMapping": [
+    { "type": "dynamic", "name": "intent", "description": "sexual activities" },
+    { "type": "speaker", "name": "speaker" },
+    { "type": "target", "name": "target" },
+    { "type": "dynamic", "name": "style", "description": "forcefully|normally|gently" },
+    { "type": "dynamic", "name": "tags", "description": "comma-separated tags" },
+    { "type": "dynamic", "name": "direction", "description": "fucking|fucked in" },
+    { "type": "dynamic", "name": "setting_name", "description": "scene setting json name" }
   ],
   "eligibilityRules": [
     {

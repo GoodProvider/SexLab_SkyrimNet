@@ -1150,6 +1150,36 @@
             font-size: var(--text-base);
         }
 
+        .dyn-field.disabled {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        #intent-panel {
+            position: fixed;
+            left: 50%;
+            top: 40%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            min-width: min(320px, 40vw);
+            max-width: min(420px, 70vw);
+        }
+
+        #intent-panel-text {
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(28, 28, 33, 0.9);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-family: var(--font-ui);
+            font-size: var(--text-base);
+            padding: var(--space-xs) var(--space-sm);
+            min-height: var(--target-min);
+            outline: none;
+            margin: var(--space-sm) 0;
+        }
+
     </style>
 </head>
 <body>
@@ -2441,6 +2471,8 @@
             tmCastDraft = null;
             selectedActionName = null;
             selectedActionLabel = null;
+            ssUi.seededForLabel = '';
+            ssCloseIntentPanel();
             const host = document.getElementById('target-cascade-host');
             if (host) host.innerHTML = '';
         }
@@ -2452,6 +2484,8 @@
             tmCastDraft = null;
             selectedActionName = null;
             selectedActionLabel = null;
+            ssUi.seededForLabel = '';
+            ssCloseIntentPanel();
             const host = document.getElementById('target-cascade-host');
             if (host) host.innerHTML = '';
         }
@@ -2552,14 +2586,20 @@
                 ? !!parameters.closeWebUI
                 : !!opt.closeWebUI;
             delete parameters.closeWebUI;
+            const executionFunctionName = parameters.executionFunctionName
+                || opt.executionFunctionName || '';
+            delete parameters.executionFunctionName;
+            const parameterMapping = parameters.parameterMapping
+                || opt.parameterMapping || [];
+            delete parameters.parameterMapping;
             const payload = {
                 action: 'papyrus',
                 label: opt.label || '',
                 plugin: opt.plugin || opt.questPlugin || 'SkyrimNet_SexLab.esp',
                 questFormId: opt.questFormId || '0x800',
                 scriptName: opt.scriptName || 'SkyrimNet_SexLab_Actions',
-                executionFunctionName: opt.executionFunctionName || '',
-                parameterMapping: opt.parameterMapping || [],
+                executionFunctionName,
+                parameterMapping,
                 parameters,
                 closeWebUI
             };
@@ -2682,26 +2722,46 @@
             return 'expect';
         }
 
-        let cuddleUi = {
+        const SS_METHODS_GIVING = [
+            'handjob', 'boobjob', 'fisting', 'dildo', 'fingering', 'footjob', 'oral', 'thighjob',
+            'cuddling', 'kissing', 'hug', 'sitting', 'laying', 'standing', 'spooning', 'headpat',
+            'spanking', 'whip', 'masturbation'
+        ];
+        const SS_METHODS_FUCKING = ['pussy', 'ass', 'mouth'];
+        const SS_DIRECTIONS = ['giving', 'getting', 'fucked in', 'fucking'];
+        const SS_INTENTS = ['show affection', 'comfort', 'sexual activities', 'sexual assault', 'punish', 'custom'];
+        const SS_INTENT_TO_PAPYRUS = {
+            'show affection': 'showing affection',
+            'comfort': 'comforting'
+        };
+        const SS_SETTINGS = [
+            'nonsexual', 'nonsexual_kissing', 'nonsexual_male_position_0', 'nonsexual_male_position_1',
+            'nonsexual_male_position_2', 'default', 'no_penis', 'pleasure_pain',
+            'punish_spanking', 'punish_spanking_victim_nude', 'punish_whipping_oral', 'punish_pleasure_pain_rape'
+        ];
+        const SS_AFFECTION_METHODS = {
+            cuddling: 1, kissing: 1, hug: 1, sitting: 1, laying: 1, standing: 1, spooning: 1, headpat: 1
+        };
+        let ssUi = {
+            seededForLabel: '',
+            seedObjectRelation: 'with',
+            seedAndThird: 'none',
+            subjectFormId: 0,
+            objectFormId: 0,
+            thirdFormId: 0,
+            andThird: 'none',
+            objectRelation: 'with',
             direction: 'giving',
-            activity: 'cuddle',
-            posture: 'laying',
-            withFormId: 0,
-            intent: 'showing affection',
+            method: 'cuddling',
+            intent: 'show affection',
+            customIntent: '',
+            intentBeforeCustom: 'show affection',
+            style: 'gently',
             settingName: 'nonsexual'
         };
-        const CUDDLE_INTENTS = ['showing affection', 'comforting', 'cuddling'];
-        const CUDDLE_SETTINGS = [
-            'nonsexual',
-            'nonsexual_kissing',
-            'nonsexual_male_position_0',
-            'nonsexual_male_position_1',
-            'nonsexual_male_position_2',
-            'default'
-        ];
-        let cuddleResolvePending = null;
+        let ssResolvePending = null;
 
-        function cuddleActorPool() {
+        function ssActorPool() {
             const pool = [];
             const seen = new Set();
             const add = (a) => {
@@ -2725,59 +2785,215 @@
             return pool;
         }
 
-        function cuddleRemapActivity(ui) {
-            const t = String(ui || '').toLowerCase();
+        function ssFind(pool, formId) {
+            const fid = formIdU32(formId);
+            return pool.find(a => formIdU32(a.formId) === fid) || null;
+        }
+
+        function ssSelectable(pool) {
+            return pool.filter(a => a.selectable);
+        }
+
+        function ssActorBySource(pool, source) {
+            const playerFid = formIdU32(playerActor && playerActor.formId);
+            const curFid = formIdU32(targetActor && targetActor.formId);
+            const sel = ssSelectable(pool);
+            if (source === 'player')
+                return ssFind(sel, playerFid) || sel[0] || pool[0] || null;
+            if (source === 'currentActor')
+                return ssFind(sel, curFid) || sel.find(a => formIdU32(a.formId) !== playerFid) || sel[0] || pool[0] || null;
+            return sel[0] || pool[0] || null;
+        }
+
+        function ssPickOther(pool, excludeFids) {
+            const skip = new Set((excludeFids || []).map(formIdU32).filter(Boolean));
+            const playerFid = formIdU32(playerActor && playerActor.formId);
+            const others = ssSelectable(pool).filter(a => !skip.has(formIdU32(a.formId)));
+            const npc = others.find(a => formIdU32(a.formId) !== playerFid);
+            if (npc) return npc;
+            return others[0] || null;
+        }
+
+        function ssGivingFamily(direction) {
+            const d = String(direction || '').toLowerCase();
+            return d === 'giving' || d === 'getting';
+        }
+
+        function ssMethodList(direction) {
+            return ssGivingFamily(direction) ? SS_METHODS_GIVING.slice() : SS_METHODS_FUCKING.slice();
+        }
+
+        function ssRemapMethod(method) {
+            const t = String(method || '').toLowerCase();
+            if (t === 'pussy') return 'vaginal';
+            if (t === 'mouth') return 'oral';
+            if (t === 'ass') return 'anal';
             if (t === 'cuddle') return 'cuddling';
-            if (t === 'kiss') return 'kissing';
-            if (t === 'hugging' || t === 'hug') return 'hug';
+            if (t === 'hugging') return 'hug';
+            if (t === 'whipping') return 'whip';
             return t;
         }
 
-        function cuddleBuildTagsCsv() {
-            const method = cuddleRemapActivity(cuddleUi.activity) || String(cuddleUi.activity || '').toLowerCase();
-            const posture = String(cuddleUi.posture || '').toLowerCase();
-            return method + ',' + posture;
+        function ssPapyrusIntent() {
+            if (ssUi.intent === 'custom')
+                return ssUi.customIntent || 'sexual activities';
+            return SS_INTENT_TO_PAPYRUS[ssUi.intent] || ssUi.intent;
         }
 
-        function cuddlePickWithDefault(pool, currentFid) {
-            const cur = formIdU32(currentFid);
-            const playerFid = formIdU32(playerActor && playerActor.formId);
-            const others = pool.filter(a => formIdU32(a.formId) !== cur && a.selectable);
-            if (cuddleUi.withFormId) {
-                const hit = others.find(a => formIdU32(a.formId) === formIdU32(cuddleUi.withFormId));
-                if (hit) return hit;
+        function ssIsAffection() {
+            const m = ssRemapMethod(ssUi.method);
+            const setting = String(ssUi.settingName || '');
+            return !!SS_AFFECTION_METHODS[m] || setting.indexOf('nonsexual') === 0;
+        }
+
+        function ssApplyGates(pool) {
+            const n = ssSelectable(pool).length;
+            if (n < 2) {
+                ssUi.objectRelation = 'none';
+                ssUi.objectFormId = 0;
+                ssUi.andThird = 'none';
+                ssUi.thirdFormId = 0;
+            } else if (n < 3) {
+                ssUi.andThird = 'none';
+                ssUi.thirdFormId = 0;
             }
-            const npc = others.find(a => formIdU32(a.formId) !== playerFid);
-            if (npc) return npc;
-            const player = others.find(a => formIdU32(a.formId) === playerFid);
-            if (player) return player;
-            return pool.find(a => formIdU32(a.formId) !== cur) || null;
         }
 
-        function cuddleResolveActors() {
-            const pool = cuddleActorPool();
-            const curFid = formIdU32(targetActor && targetActor.formId);
-            const cur = pool.find(a => formIdU32(a.formId) === curFid) || pool[0];
-            const wit = cuddlePickWithDefault(pool, cur && cur.formId);
-            if (!cur || !wit || formIdU32(cur.formId) === formIdU32(wit.formId))
-                return null;
-            return { cur, wit };
+        function ssApplyDefaults(opt, pool) {
+            const label = displayLabel(opt);
+            const d = (opt && (opt.panelDefaults || opt.paneldefaults)) || {};
+            if (ssUi.seededForLabel === label)
+                return;
+            ssUi.seededForLabel = label;
+            ssUi.seedObjectRelation = d.objectRelation || 'with';
+            ssUi.seedAndThird = d.andThird || 'none';
+            ssUi.objectRelation = ssUi.seedObjectRelation;
+            ssUi.andThird = ssUi.seedAndThird;
+            ssUi.direction = d.direction || 'giving';
+            ssUi.method = d.method || ssMethodList(ssUi.direction)[0];
+            ssUi.intent = d.intent || 'sexual activities';
+            ssUi.customIntent = '';
+            ssUi.intentBeforeCustom = ssUi.intent === 'custom' ? 'sexual activities' : ssUi.intent;
+            ssUi.style = d.style || 'normally';
+            ssUi.settingName = d.settingName || 'default';
+            const sub = ssActorBySource(pool, d.subject || 'player');
+            ssUi.subjectFormId = sub ? formIdU32(sub.formId) : 0;
+            if (ssUi.objectRelation !== 'none') {
+                const obj = ssActorBySource(pool, d.object || 'currentActor');
+                ssUi.objectFormId = obj ? formIdU32(obj.formId) : 0;
+                if (ssUi.objectFormId && ssUi.objectFormId === ssUi.subjectFormId) {
+                    const other = ssPickOther(pool, [ssUi.subjectFormId]);
+                    ssUi.objectFormId = other ? formIdU32(other.formId) : 0;
+                }
+            } else {
+                ssUi.objectFormId = 0;
+            }
+            if (ssUi.andThird === 'and') {
+                const third = ssPickOther(pool, [ssUi.subjectFormId, ssUi.objectFormId]);
+                ssUi.thirdFormId = third ? formIdU32(third.formId) : 0;
+                if (!ssUi.thirdFormId)
+                    ssUi.andThird = 'none';
+            } else {
+                ssUi.thirdFormId = 0;
+            }
+            const methods = ssMethodList(ssUi.direction);
+            if (methods.indexOf(ssUi.method) < 0)
+                ssUi.method = methods[0];
+            ssApplyGates(pool);
+        }
+
+        function ssResolveCast(pool) {
+            const subject = ssFind(pool, ssUi.subjectFormId) || ssSelectable(pool)[0] || pool[0] || null;
+            let object = null;
+            let third = null;
+            if (ssUi.objectRelation !== 'none')
+                object = ssFind(pool, ssUi.objectFormId);
+            if (ssUi.andThird === 'and')
+                third = ssFind(pool, ssUi.thirdFormId);
+            if (ssUi.objectRelation === 'none' && third) {
+                object = third;
+                third = null;
+            }
+            return { subject, object, third };
+        }
+
+        function ssDuplicates(cast) {
+            const ids = [];
+            if (cast.subject) ids.push(formIdU32(cast.subject.formId));
+            if (cast.object) ids.push(formIdU32(cast.object.formId));
+            if (cast.third) ids.push(formIdU32(cast.third.formId));
+            return new Set(ids).size !== ids.length;
+        }
+
+        function ssCanCustom(cast) {
+            return !!(cast && cast.subject);
+        }
+
+        function ssCanStart(pool, cast) {
+            if (!ssCanCustom(cast)) return false;
+            if (ssDuplicates(cast)) return false;
+            const n = ssSelectable(pool).length;
+            if (ssUi.seedObjectRelation !== 'none' && n < 2) return false;
+            if (ssUi.objectRelation !== 'none' && !cast.object) return false;
+            if (ssUi.andThird === 'and' && !cast.third && ssUi.objectRelation !== 'none') return false;
+            if (ssUi.andThird === 'and' && ssUi.objectRelation === 'none' && !cast.object) return false;
+            return true;
+        }
+
+        function ssActorCount(cast) {
+            let n = 1;
+            if (cast.object) n += 1;
+            if (cast.third) n += 1;
+            return n;
+        }
+
+        function ssIsHugGiverPose(intent, method) {
+            const i = String(intent || '').toLowerCase();
+            if (i === 'cuddling' || i === 'showing affection' || i === 'comforting'
+                || i === 'show affection' || i === 'comfort')
+                return true;
+            const m = ssRemapMethod(method);
+            return m === 'cuddling' || m === 'kissing' || m === 'hug';
+        }
+
+        function ssSpeakerPosition(intent, direction, objectIsVictim) {
+            if (objectIsVictim)
+                return 1;
+            const d = String(direction || '').toLowerCase();
+            if (d === 'fucking' || d === 'fuck a' || d === 'fucking a')
+                return 1;
+            if (d === 'fucked in')
+                return 0;
+            if (ssIsHugGiverPose(intent, ssUi.method)) {
+                if (d === 'getting' || d === 'get') return 0;
+                if (d === 'giving' || d === 'give') return 1;
+            }
+            if (d === 'getting' || d === 'get') return 1;
+            if (d === 'giving' || d === 'give') return 0;
+            return 0;
         }
 
         const NONSEXUAL_SUPPRESS_FALLBACK =
             'oral,vaginal,anal,masturbation,handjob,boobjob,thighjob,fisting,dildo,fingering,footjob';
 
-        function cuddleApplySceneCreator(state) {
-            SC.filterByOnce = 'none';
+        function ssApplySceneCreator(state) {
+            if (typeof closeTargetPulldowns === 'function')
+                closeTargetPulldowns();
+            if (typeof renderTargetMenu === 'function')
+                renderTargetMenu();
+            SC.filterByOnce = ssIsAffection() ? 'none' : '';
             if (typeof configureSceneCreator === 'function')
                 configureSceneCreator(state);
             if (typeof showPanel === 'function')
                 showPanel('scene_creator_panel');
             else if (typeof window.onMainPanelChange === 'function')
                 window.onMainPanelChange(JSON.stringify({ key: 'scene_creator_panel' }));
+            // Refresh nearby so Scene Creator Include lists everyone in range.
+            if (typeof window.onNearbyRangeChange === 'function')
+                window.onNearbyRangeChange(JSON.stringify({ _range: SC.nearbyRange || 100 }));
         }
 
-        async function cuddleLoadSettingSuppress(settingName) {
+        async function ssLoadSettingSuppress(settingName) {
             const name = String(settingName || 'nonsexual').trim() || 'nonsexual';
             try {
                 const res = await fetch('../../../SKSE/Plugins/SkyrimNet_SexLab/scenes/' + name + '.json');
@@ -2794,195 +3010,433 @@
             }
         }
 
-        function cuddleCustom() {
-            const pair = cuddleResolveActors();
-            if (!pair) return;
-            const { cur, wit } = pair;
-            const direction = cuddleUi.direction;
-            const giving = direction !== 'getting';
-            // Cuddle: receiver@0, giver@1 (opposite of oral service cast).
-            const a0 = giving ? wit : cur;
-            const a1 = giving ? cur : wit;
-            const toPos = (a) => ({
+        function ssToPos(a, victim) {
+            const affection = ssIsAffection();
+            return {
                 _name: (a && (a.name || a.label)) || '?',
                 _uuid: (a && a.uuid) || String(formIdU32(a && a.formId)),
                 _form_id: formIdU32(a && a.formId),
-                _dressed: 1,
+                _dressed: affection ? 1 : 0,
                 _no_orgasm: 0,
-                _victim: 0,
-                _speaking: '',
+                _victim: victim ? 1 : 0,
+                _speaking: affection ? '' : '_pleasure_',
                 _gender: (a && a.gender != null) ? a.gender : 0,
                 _race_key: ''
-            });
-            const tag = cuddleRemapActivity(cuddleUi.activity) || 'cuddling';
-            const posture = String(cuddleUi.posture || '').toLowerCase();
-            const startTags = posture ? (tag + ',' + posture) : tag;
-            const settingName = cuddleUi.settingName || 'nonsexual';
+            };
+        }
+
+        function ssActorDict(a) {
+            return { type: 'Actor', formId: formIdU32(a && a.formId) };
+        }
+
+        function ssMappingOne() {
+            return [
+                { type: 'dynamic', name: 'intent' },
+                { type: 'speaker', name: 'speaker' },
+                { type: 'dynamic', name: 'style' },
+                { type: 'dynamic', name: 'tags' },
+                { type: 'dynamic', name: 'setting_name' }
+            ];
+        }
+
+        function ssMappingTwo() {
+            return [
+                { type: 'dynamic', name: 'intent' },
+                { type: 'speaker', name: 'speaker' },
+                { type: 'target', name: 'target' },
+                { type: 'dynamic', name: 'style' },
+                { type: 'dynamic', name: 'tags' },
+                { type: 'dynamic', name: 'direction' },
+                { type: 'dynamic', name: 'setting_name' }
+            ];
+        }
+
+        function ssMappingThree() {
+            return ssMappingTwo().concat([{ type: 'dynamic', name: 'participate' }]);
+        }
+
+        function ssMappingThreeVictim() {
+            return [
+                { type: 'dynamic', name: 'intent' },
+                { type: 'speaker', name: 'speaker' },
+                { type: 'target', name: 'target' },
+                { type: 'dynamic', name: 'victim' },
+                { type: 'dynamic', name: 'style' },
+                { type: 'dynamic', name: 'tags' },
+                { type: 'dynamic', name: 'direction' },
+                { type: 'dynamic', name: 'setting_name' },
+                { type: 'dynamic', name: 'participate' }
+            ];
+        }
+
+        function ssFireSpec(cast) {
+            const count = ssActorCount(cast);
+            const toVictim = ssUi.objectRelation === 'to victim';
+            const assault = ssUi.intent === 'sexual assault' || ssUi.intent === 'punish';
+            if (count <= 1) {
+                return {
+                    executionFunctionName: assault
+                        ? 'StartScene_Nonconsensual_One'
+                        : 'StartScene_Consensual_One',
+                    parameterMapping: ssMappingOne()
+                };
+            }
+            if (count === 2) {
+                return {
+                    executionFunctionName: toVictim
+                        ? 'StartScene_Nonconsensual_Two_TargetVictim'
+                        : 'StartScene_Consensual_Two',
+                    parameterMapping: ssMappingTwo()
+                };
+            }
+            if (toVictim) {
+                return {
+                    executionFunctionName: 'StartScene_Nonconsensual_Three',
+                    parameterMapping: ssMappingThreeVictim()
+                };
+            }
+            return {
+                executionFunctionName: 'StartScene_Consensual_Three',
+                parameterMapping: ssMappingThree()
+            };
+        }
+
+        function ssCustom(opt) {
+            const pool = ssActorPool();
+            const cast = ssResolveCast(pool);
+            if (!ssCanCustom(cast)) return;
+            const intent = ssPapyrusIntent();
+            const tag = ssRemapMethod(ssUi.method);
+            const settingName = ssUi.settingName || 'default';
+            const toVictim = ssUi.objectRelation === 'to victim';
+            const speakerPos = ssSpeakerPosition(intent, ssUi.direction, toVictim);
+            const positions = [];
+            const seen = new Set();
+            const pushPos = (a, victim) => {
+                if (!a) return;
+                const fid = formIdU32(a.formId);
+                if (!fid || seen.has(fid)) return;
+                seen.add(fid);
+                positions.push(ssToPos(a, victim));
+            };
+            if (!cast.object) {
+                pushPos(cast.subject, false);
+            } else if (speakerPos === 0) {
+                pushPos(cast.subject, false);
+                pushPos(cast.object, toVictim);
+            } else {
+                pushPos(cast.object, toVictim);
+                pushPos(cast.subject, false);
+            }
+            pushPos(cast.third, false);
             const state = {
                 _creator_sid: 0,
                 _from_target_menu: true,
-                _intent: cuddleUi.intent || 'showing affection',
-                _style: 'gently',
+                _intent: intent,
+                _style: ssUi.style || 'normally',
                 _method: tag,
-                _start_tags: startTags,
+                _start_tags: tag,
                 _tags: tag,
                 _tags_suppress: '',
-                _num_actors: 2,
-                _positions: [toPos(a0), toPos(a1)],
+                _num_actors: positions.length,
+                _positions: positions,
                 _scene_presets: [settingName],
                 _group_tags: {},
                 _group_order: []
             };
-            cuddleLoadSettingSuppress(settingName).then((suppress) => {
-                state._tags_suppress = suppress || '';
-                cuddleApplySceneCreator(state);
+            const fallback = (settingName === 'nonsexual' || settingName.indexOf('nonsexual') === 0)
+                ? NONSEXUAL_SUPPRESS_FALLBACK : '';
+            ssLoadSettingSuppress(settingName).then((suppress) => {
+                state._tags_suppress = suppress || fallback;
+                ssApplySceneCreator(state);
             }).catch(() => {
-                state._tags_suppress = NONSEXUAL_SUPPRESS_FALLBACK;
-                cuddleApplySceneCreator(state);
+                state._tags_suppress = fallback;
+                ssApplySceneCreator(state);
             });
         }
 
-        function cuddleStart(opt) {
-            const pair = cuddleResolveActors();
-            if (!pair) return;
-            const { cur, wit } = pair;
-            const tagsCsv = cuddleBuildTagsCsv();
-            const reqId = 'cuddle' + Date.now();
-            cuddleResolvePending = {
+        function ssStart(opt) {
+            const pool = ssActorPool();
+            const cast = ssResolveCast(pool);
+            if (!ssCanStart(pool, cast)) return;
+            const tag = ssRemapMethod(ssUi.method);
+            const reqId = 'ss' + Date.now();
+            const spec = ssFireSpec(cast);
+            ssResolvePending = {
                 id: reqId,
                 opt,
-                cur,
-                wit,
-                direction: cuddleUi.direction,
-                intent: cuddleUi.intent || 'showing affection',
-                settingName: cuddleUi.settingName || 'nonsexual',
-                tagsCsv
+                cast,
+                spec,
+                direction: ssUi.direction,
+                intent: ssPapyrusIntent(),
+                style: ssUi.style || 'normally',
+                settingName: ssUi.settingName || 'default',
+                toVictim: ssUi.objectRelation === 'to victim'
             };
             if (typeof window.onAnimDbResolveTags !== 'function') {
                 notifyPlayer('No matching animations for those tags.');
-                cuddleResolvePending = null;
+                ssResolvePending = null;
                 return;
             }
             window.onAnimDbResolveTags(JSON.stringify({
                 _request_id: reqId,
-                _tags: tagsCsv,
-                _actor_count: 2
+                _tags: tag,
+                _actor_count: ssActorCount(cast)
             }));
         }
 
         function animDbResolveTagsResult(payload) {
             const rid = String((payload && payload._request_id) || '');
-            const pending = cuddleResolvePending;
-            cuddleResolvePending = null;
+            const pending = ssResolvePending;
+            ssResolvePending = null;
             if (!pending || rid !== pending.id) return;
             const resolved = String((payload && payload._resolved) || '');
             if (!resolved) {
                 notifyPlayer('No matching animations for those tags.');
                 return;
             }
-            firePapyrusOption(pending.opt, {
-                speaker: { type: 'Actor', formId: formIdU32(pending.cur.formId) },
-                target: { type: 'Actor', formId: formIdU32(pending.wit.formId) },
-                intent: pending.intent || 'showing affection',
-                setting_name: pending.settingName || 'nonsexual',
+            const params = {
+                speaker: ssActorDict(pending.cast.subject),
+                intent: pending.intent,
+                style: pending.style,
+                setting_name: pending.settingName,
                 tags: resolved,
                 direction: pending.direction,
+                executionFunctionName: pending.spec.executionFunctionName,
+                parameterMapping: pending.spec.parameterMapping,
                 closeWebUI: true
-            });
+            };
+            if (pending.cast.object)
+                params.target = ssActorDict(pending.cast.object);
+            if (pending.cast.third)
+                params.participate = ssActorDict(pending.cast.third);
+            if (pending.toVictim && pending.cast.object)
+                params.victim = ssActorDict(pending.cast.object);
+            firePapyrusOption(pending.opt, params);
+            ssCloseIntentPanel();
             if (typeof hidePanel === 'function') {
                 hidePanel('target_menu_panel');
                 hidePanel('control_panel');
             }
         }
 
-        function renderCuddlePanelBody(body, opt) {
-            const pool = cuddleActorPool();
-            const curFid = formIdU32(targetActor && targetActor.formId);
-            let cur = pool.find(a => formIdU32(a.formId) === curFid) || pool[0];
-            let wit = cuddlePickWithDefault(pool, cur && cur.formId);
-            if (wit) cuddleUi.withFormId = formIdU32(wit.formId);
+        function ssEnsureIntentPanel() {
+            let el = document.getElementById('intent-panel');
+            if (el) return el;
+            const host = document.getElementById('overlay-panels') || document.body;
+            el = document.createElement('div');
+            el.id = 'intent-panel';
+            el.className = 'panel';
+            el.style.display = 'none';
+            const header = document.createElement('div');
+            header.className = 'section-header';
+            header.textContent = 'intent';
+            el.appendChild(header);
+            const input = document.createElement('input');
+            input.id = 'intent-panel-text';
+            input.type = 'text';
+            el.appendChild(input);
+            const bar = document.createElement('div');
+            bar.className = 'bottom-bar';
+            const cancel = document.createElement('div');
+            cancel.className = 'option-cancel';
+            cancel.textContent = 'Cancel';
+            cancel.onclick = () => ssIntentCancel();
+            const ok = document.createElement('div');
+            ok.className = 'action-btn';
+            ok.textContent = 'Ok';
+            ok.onclick = () => ssIntentOk();
+            bar.appendChild(cancel);
+            bar.appendChild(ok);
+            el.appendChild(bar);
+            host.appendChild(el);
+            return el;
+        }
 
-            const addField = (labelText, node) => {
-                const field = document.createElement('div');
-                field.className = 'dyn-field';
-                const lab = document.createElement('label');
-                lab.textContent = labelText;
-                field.appendChild(lab);
-                field.appendChild(node);
-                body.appendChild(field);
-            };
+        function ssOpenIntentPanel() {
+            const el = ssEnsureIntentPanel();
+            const input = document.getElementById('intent-panel-text');
+            if (input) input.value = ssUi.customIntent || '';
+            el.style.display = 'block';
+        }
 
-            // CurrentActor
-            const curLabels = pool.map(a => a.label);
-            const curSeed = cur ? cur.label : (curLabels[0] || '—');
-            addField('Current', createPulldown(curLabels, curSeed, (picked, idx) => {
+        function ssCloseIntentPanel() {
+            const el = document.getElementById('intent-panel');
+            if (el) el.style.display = 'none';
+        }
+
+        function ssIntentCancel() {
+            ssUi.intent = ssUi.intentBeforeCustom || 'sexual activities';
+            ssCloseIntentPanel();
+            renderPapyrusPanel();
+        }
+
+        function ssIntentOk() {
+            const input = document.getElementById('intent-panel-text');
+            ssUi.customIntent = String((input && input.value) || '').trim();
+            if (!ssUi.customIntent) {
+                ssIntentCancel();
+                return;
+            }
+            ssUi.intent = 'custom';
+            ssCloseIntentPanel();
+            renderPapyrusPanel();
+        }
+
+        function ssActorPulldown(pool, current, onPick) {
+            if (!pool.length) {
+                const miss = document.createElement('div');
+                miss.textContent = '—';
+                return miss;
+            }
+            const labels = pool.map(a => a.label);
+            const seed = current ? current.label : (labels[0] || '—');
+            return createPulldown(labels, seed, (picked, idx) => {
                 const entry = (idx != null && idx >= 0 && idx < pool.length) ? pool[idx]
                     : pool.find(a => a.label === picked);
                 if (!entry) return;
-                requestControlActorFocus(entry, { force: true });
-                if (formIdU32(cuddleUi.withFormId) === formIdU32(entry.formId))
-                    cuddleUi.withFormId = 0;
+                onPick(entry);
+            }, new Set(pool.filter(a => !a.selectable).map(a => a.label)));
+        }
+
+        function renderSceneStartPanelBody(body, opt) {
+            const pool = ssActorPool();
+            ssApplyDefaults(opt, pool);
+            ssApplyGates(pool);
+
+            const nSel = ssSelectable(pool).length;
+            const objectDisabled = nSel < 2;
+            const thirdDisabled = nSel < 3;
+
+            let subject = ssFind(pool, ssUi.subjectFormId) || ssSelectable(pool)[0] || pool[0] || null;
+            if (subject) ssUi.subjectFormId = formIdU32(subject.formId);
+            let object = ssUi.objectRelation !== 'none' ? ssFind(pool, ssUi.objectFormId) : null;
+            if (object && formIdU32(object.formId) === ssUi.subjectFormId)
+                object = ssPickOther(pool, [ssUi.subjectFormId]);
+            if (object) ssUi.objectFormId = formIdU32(object.formId);
+            else if (ssUi.objectRelation !== 'none') ssUi.objectFormId = 0;
+            let third = ssUi.andThird === 'and' ? ssFind(pool, ssUi.thirdFormId) : null;
+            if (third && (formIdU32(third.formId) === ssUi.subjectFormId
+                || (object && formIdU32(third.formId) === formIdU32(object.formId))))
+                third = ssPickOther(pool, [ssUi.subjectFormId, object && object.formId]);
+            if (third) ssUi.thirdFormId = formIdU32(third.formId);
+            else if (ssUi.andThird === 'and') ssUi.thirdFormId = 0;
+
+            const addField = (labelTextOrNode, node, disabled) => {
+                const field = document.createElement('div');
+                field.className = 'dyn-field' + (disabled ? ' disabled' : '');
+                if (typeof labelTextOrNode === 'string') {
+                    const lab = document.createElement('label');
+                    lab.textContent = labelTextOrNode;
+                    field.appendChild(lab);
+                } else if (labelTextOrNode) {
+                    field.appendChild(labelTextOrNode);
+                }
+                if (node) field.appendChild(node);
+                body.appendChild(field);
+            };
+
+            addField('Subject', ssActorPulldown(pool, subject, (entry) => {
+                ssUi.subjectFormId = formIdU32(entry.formId);
+                if (ssUi.objectFormId === ssUi.subjectFormId) ssUi.objectFormId = 0;
+                if (ssUi.thirdFormId === ssUi.subjectFormId) ssUi.thirdFormId = 0;
                 renderPapyrusPanel();
-            }, new Set(pool.filter(a => !a.selectable).map(a => a.label))));
-
-            // direction
-            addField('giving/getting', createPulldown(['giving', 'getting'], cuddleUi.direction, (v) => {
-                cuddleUi.direction = v;
             }));
 
-            // activity
-            addField('cuddle/kiss/hugging', createPulldown(['cuddle', 'kiss', 'hugging'], cuddleUi.activity, (v) => {
-                cuddleUi.activity = v;
-            }));
+            addField('and', createPulldown(['none', 'and'], ssUi.andThird, (v) => {
+                ssUi.andThird = v;
+                if (v !== 'and') ssUi.thirdFormId = 0;
+                renderPapyrusPanel();
+            }), thirdDisabled);
 
-            // posture
-            addField('standing/laying/sitting', createPulldown(['standing', 'laying', 'sitting'], cuddleUi.posture, (v) => {
-                cuddleUi.posture = v;
-            }));
-
-            // with TargetActor
-            const withPool = pool.filter(a => formIdU32(a.formId) !== formIdU32(cur && cur.formId));
-            const withLabels = withPool.map(a => a.label);
-            const withSeed = wit ? wit.label : (withLabels[0] || '—');
-            if (!withPool.length) {
-                const miss = document.createElement('div');
-                miss.textContent = '—';
-                addField('with', miss);
-            } else {
-                addField('with', createPulldown(withLabels, withSeed, (picked, idx) => {
-                    const entry = (idx != null && idx >= 0 && idx < withPool.length) ? withPool[idx]
-                        : withPool.find(a => a.label === picked);
-                    if (!entry) return;
-                    cuddleUi.withFormId = formIdU32(entry.formId);
-                }, new Set(withPool.filter(a => !a.selectable).map(a => a.label))));
+            if (ssUi.andThird === 'and' && !thirdDisabled) {
+                const thirdPool = pool.filter(a => {
+                    const fid = formIdU32(a.formId);
+                    if (fid === ssUi.subjectFormId) return false;
+                    if (ssUi.objectRelation !== 'none' && fid === ssUi.objectFormId) return false;
+                    return true;
+                });
+                addField('third', ssActorPulldown(thirdPool, third, (entry) => {
+                    ssUi.thirdFormId = formIdU32(entry.formId);
+                    renderPapyrusPanel();
+                }));
             }
 
-            addField('intent', createPulldown(CUDDLE_INTENTS, cuddleUi.intent, (v) => {
-                cuddleUi.intent = v;
+            addField('direction', createPulldown(SS_DIRECTIONS, ssUi.direction, (v) => {
+                const wasGiving = ssGivingFamily(ssUi.direction);
+                ssUi.direction = v;
+                if (ssGivingFamily(v) !== wasGiving) {
+                    const methods = ssMethodList(v);
+                    if (methods.indexOf(ssUi.method) < 0)
+                        ssUi.method = methods[0];
+                }
+                renderPapyrusPanel();
             }));
 
-            addField('Scene Setting', createPulldown(CUDDLE_SETTINGS, cuddleUi.settingName, (v) => {
-                cuddleUi.settingName = v;
+            addField('method', createPulldown(ssMethodList(ssUi.direction), ssUi.method, (v) => {
+                ssUi.method = v;
+            }));
+
+            const relPd = createPulldown(['with', 'to victim', 'none'], ssUi.objectRelation, (v) => {
+                ssUi.objectRelation = v;
+                if (v === 'none') ssUi.objectFormId = 0;
+                renderPapyrusPanel();
+            });
+            addField(relPd, null, objectDisabled);
+
+            if (ssUi.objectRelation !== 'none' && !objectDisabled) {
+                const objPool = pool.filter(a => formIdU32(a.formId) !== ssUi.subjectFormId);
+                addField('Object', ssActorPulldown(objPool, object, (entry) => {
+                    ssUi.objectFormId = formIdU32(entry.formId);
+                    if (ssUi.thirdFormId === ssUi.objectFormId) ssUi.thirdFormId = 0;
+                    renderPapyrusPanel();
+                }));
+            }
+
+            const intentSeed = ssUi.intent === 'custom' && ssUi.customIntent
+                ? ('custom: ' + ssUi.customIntent)
+                : ssUi.intent;
+            const intentValues = SS_INTENTS.slice();
+            if (ssUi.intent === 'custom' && ssUi.customIntent && intentValues.indexOf(intentSeed) < 0)
+                intentValues[intentValues.length - 1] = intentSeed;
+            addField('intent', createPulldown(intentValues, ssUi.intent === 'custom' ? intentSeed : ssUi.intent, (v) => {
+                if (v === 'custom' || String(v).indexOf('custom:') === 0) {
+                    ssUi.intentBeforeCustom = ssUi.intent === 'custom'
+                        ? ssUi.intentBeforeCustom
+                        : ssUi.intent;
+                    ssOpenIntentPanel();
+                    return;
+                }
+                ssUi.intent = v;
+                ssUi.intentBeforeCustom = v;
+            }));
+
+            addField('style', createPulldown(['forcefully', 'normally', 'gently'], ssUi.style, (v) => {
+                ssUi.style = v;
+            }));
+
+            addField('Scene Setting', createPulldown(SS_SETTINGS, ssUi.settingName, (v) => {
+                ssUi.settingName = v;
             }));
 
             const bar = document.createElement('div');
             bar.className = 'bottom-bar';
-            const same = !cur || !wit || formIdU32(cur.formId) === formIdU32(wit && wit.formId);
+            const cast = ssResolveCast(pool);
             const customBtn = document.createElement('div');
             customBtn.className = 'action-btn';
             customBtn.textContent = 'Custom';
-            if (same) customBtn.classList.add('disabled');
+            if (!ssCanCustom(cast)) customBtn.classList.add('disabled');
             customBtn.onclick = () => {
                 if (customBtn.classList.contains('disabled')) return;
-                cuddleCustom();
+                ssCustom(opt);
             };
             const startBtn = document.createElement('div');
             startBtn.className = 'action-btn';
             startBtn.textContent = 'Start';
-            if (same) startBtn.classList.add('disabled');
+            if (!ssCanStart(pool, cast)) startBtn.classList.add('disabled');
             startBtn.onclick = () => {
                 if (startBtn.classList.contains('disabled')) return;
-                cuddleStart(opt);
+                ssStart(opt);
             };
             bar.appendChild(customBtn);
             bar.appendChild(startBtn);
@@ -3006,8 +3460,8 @@
             const body = document.createElement('div');
             const kind = opt.panel;
 
-            if (kind === 'cuddle') {
-                renderCuddlePanelBody(body, opt);
+            if (kind === 'scene_start' || kind === 'cuddle') {
+                renderSceneStartPanelBody(body, opt);
                 panel.appendChild(body);
                 host.appendChild(panel);
                 return;
@@ -4120,7 +4574,10 @@
                 // Target is the distance anchor when present → treat as nearest (0).
                 addPool(targetActor.name || 'Target', targetActor.uuid, targetActor.formId, 0);
             }
-            softNearbyActors().forEach(a => {
+            (nearbyActors || []).forEach(a => {
+                if (!a) return;
+                const st = String(a.status || '');
+                if (st === 'child' || st === 'dead') return;
                 addPool(a.name, a.uuid, a.formId != null ? a.formId : 0, a.dist);
             });
             return [...byUuid.values()];
@@ -4842,6 +5299,11 @@
         function scStart() {
             if (typeof window.onSceneCreatorResult !== 'function') return;
             window.onSceneCreatorResult(JSON.stringify(scBuildResult('start')));
+            if (typeof hidePanel === 'function') {
+                hidePanel('scene_creator_panel');
+                hidePanel('target_menu_panel');
+                hidePanel('control_panel');
+            }
         }
 
         function scCancel() {

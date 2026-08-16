@@ -1,28 +1,31 @@
 {
   "type": "papyrus",
-  "label": "masturbation",
+  "label": "threesome",
   "panel": "scene_start",
   "plugin": "SkyrimNet_SexLab.esp",
   "questFormId": "0x800",
   "scriptName": "SkyrimNet_SexLab_Actions",
-  "executionFunctionName": "StartScene_Consensual_One",
+  "executionFunctionName": "StartScene_Consensual_Three",
   "panelDefaults": {
-    "subject": "currentActor",
+    "subject": "player",
     "object": "currentActor",
-    "objectRelation": "none",
-    "andThird": "none",
+    "objectRelation": "with",
+    "andThird": "and",
     "intent": "sexual activities",
-    "direction": "giving",
-    "method": "masturbation",
+    "direction": "fucking",
+    "method": "pussy",
     "style": "normally",
     "settingName": "default"
   },
   "parameterMapping": [
     { "type": "dynamic", "name": "intent", "description": "sexual activities" },
     { "type": "speaker", "name": "speaker" },
+    { "type": "target", "name": "target" },
     { "type": "dynamic", "name": "style", "description": "forcefully|normally|gently" },
     { "type": "dynamic", "name": "tags", "description": "comma-separated tags" },
-    { "type": "dynamic", "name": "setting_name", "description": "scene setting json name" }
+    { "type": "dynamic", "name": "direction", "description": "fucking|fucked in" },
+    { "type": "dynamic", "name": "setting_name", "description": "scene setting json name" },
+    { "type": "dynamic", "name": "participate", "description": "third participating actor" }
   ],
   "eligibilityRules": [
     {

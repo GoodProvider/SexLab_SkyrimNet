@@ -1,15 +1,30 @@
 {
-  "type": "pulldown",
+  "type": "papyrus",
   "label": "punish",
-  "options": [
-    { "type": "action", "name": "SexLab_Punish_Rape_Target", "label": "rape" },
-    { "type": "action", "name": "SexLab_Punish_Rape_Target_By_Target", "label": "rape (by target)" },
-    { "type": "action", "name": "SexLab_Punish_Spanking_Target", "label": "spanking" },
-    { "type": "action", "name": "SexLab_Punish_Spanking_Speaker", "label": "spanking (by target)" },
-    { "type": "action", "name": "SexLab_Punish_Spanking_Victim_Nude_Target", "label": "spanking nude" },
-    { "type": "action", "name": "SexLab_Punish_Spanking_Victim_Nude_Speaker", "label": "spanking nude (by target)" },
-    { "type": "action", "name": "SexLab_Punish_Whipping_Oral_Target", "label": "whip" },
-    { "type": "action", "name": "SexLab_Punish_Whipping_Oral_Speaker", "label": "whip (by target)" }
+  "panel": "scene_start",
+  "plugin": "SkyrimNet_SexLab.esp",
+  "questFormId": "0x800",
+  "scriptName": "SkyrimNet_SexLab_Actions",
+  "executionFunctionName": "StartScene_Nonconsensual_Two_TargetVictim",
+  "panelDefaults": {
+    "subject": "player",
+    "object": "currentActor",
+    "objectRelation": "to victim",
+    "andThird": "none",
+    "intent": "punish",
+    "direction": "giving",
+    "method": "spanking",
+    "style": "forcefully",
+    "settingName": "punish_spanking"
+  },
+  "parameterMapping": [
+    { "type": "dynamic", "name": "intent", "description": "punish" },
+    { "type": "speaker", "name": "speaker" },
+    { "type": "target", "name": "target" },
+    { "type": "dynamic", "name": "style", "description": "forcefully|normally|gently" },
+    { "type": "dynamic", "name": "tags", "description": "comma-separated tags" },
+    { "type": "dynamic", "name": "direction", "description": "giving|getting" },
+    { "type": "dynamic", "name": "setting_name", "description": "scene setting json name" }
   ],
   "eligibilityRules": [
     {

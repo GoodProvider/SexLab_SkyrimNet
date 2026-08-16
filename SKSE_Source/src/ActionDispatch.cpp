@@ -1,4 +1,5 @@
 #include "ActionDispatch.h"
+#include "Config.h"
 #include "WebUI_Log.h"
 #include "WebUI.h"
 #include "Papyrus_WebUI.h"
@@ -621,6 +622,21 @@ namespace ActionCatalog
         return true;
     }
 
+    bool IsSceneStartExecution(const std::string& fn)
+    {
+        constexpr const char* kPrefix = "startscene_";
+        constexpr size_t kPrefixLen = 11;
+        if (fn.size() < kPrefixLen)
+            return false;
+        for (size_t i = 0; i < kPrefixLen; ++i) {
+            if (std::tolower(static_cast<unsigned char>(fn[i])) !=
+                static_cast<unsigned char>(kPrefix[i]))
+                return false;
+        }
+        // StartScene_Refused_* is narration-only, not a creator open.
+        return fn.find("Refused") == std::string::npos && fn.find("refused") == std::string::npos;
+    }
+
     namespace
     {
         struct ResolvedSceneParams {
@@ -637,16 +653,6 @@ namespace ActionCatalog
             std::vector<RE::Actor*> actorsResolved;
             bool hasPlayer = false;
         };
-
-        bool IsSceneStartExecution(const std::string& fn)
-        {
-            if (fn.size() < 11)
-                return false;
-            if (!EqualsIgnoreCase(fn.substr(0, 11), "StartScene_"))
-                return false;
-            // StartScene_Refused_* is narration-only, not a creator open.
-            return fn.find("Refused") == std::string::npos && fn.find("refused") == std::string::npos;
-        }
 
         std::string RemapMethod(std::string method)
         {
@@ -873,7 +879,7 @@ namespace ActionCatalog
             if (!actor)
                 return "Unknown";
             uint64_t uuid = PublicFormIDToUUID ? PublicFormIDToUUID(actor->GetFormID()) : 0;
-            if (uuid && PublicGetActorNameByUUID) {
+            if (uuid && SexLabNet::CrossDllStdStringSafe() && PublicGetActorNameByUUID) {
                 std::string n = PublicGetActorNameByUUID(uuid);
                 if (!n.empty())
                     return n;

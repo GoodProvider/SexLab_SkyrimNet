@@ -261,8 +261,8 @@ Bool Function StartScene_Event(String intent, Actor speaker, Actor target=None, 
                 speaker_position = 1
             elseif direction == "fucked in"
                 speaker_position = 0
-            elseif intent == "cuddling" || intent == "showing affection" || intent == "comforting"
-                ; Hug/cuddle: giver is SexLab pos1 (unlike oral, where giver is pos0).
+            elseif IsHugGiverPose(intent, tags) || IsHugGiverPose(intent, resolved)
+                ; Hug/cuddle/kiss: giver is SexLab pos1 (unlike oral, where giver is pos0).
                 if direction == "getting" || direction == "get"
                     speaker_position = 0
                 elseif direction == "giving" || direction == "give"
@@ -296,6 +296,26 @@ Bool Function StartScene_Event(String intent, Actor speaker, Actor target=None, 
     return True
 EndFunction 
 
+; Hug/cuddle/kiss giver @ SexLab pos1. Matches YAML long intents, SceneStartPanel short
+; labels (show affection / comfort), and method tags even when intent is unrelated.
+Bool Function IsHugGiverPose(String intent, String tags)
+    if intent == "cuddling" || intent == "showing affection" || intent == "comforting"
+        return True
+    endif
+    if intent == "show affection" || intent == "comfort"
+        return True
+    endif
+    if SkyrimNet_SexLab_AnimDb.AnimDb_CsvHasTag(tags, "cuddling")
+        return True
+    endif
+    if SkyrimNet_SexLab_AnimDb.AnimDb_CsvHasTag(tags, "kissing")
+        return True
+    endif
+    if SkyrimNet_SexLab_AnimDb.AnimDb_CsvHasTag(tags, "hug")
+        return True
+    endif
+    return False
+EndFunction
 
 ;--------------------------------------
 ; Functions 

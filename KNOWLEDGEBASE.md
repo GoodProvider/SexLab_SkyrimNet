@@ -14,7 +14,7 @@
 - **`manager.empty` trap:** Scene Manager allocates `empty` as `sslBaseAnimation[2]` for identity compares. Never treat `anims.length > 0` alone as a hit — use `anims != manager.empty` (and `!= cancel`). Peel used to return after step1 miss because the sentinel looked non-empty.
 - F/F + `nonsexual` often yields **0** from SexLab; AnimDB `_creature: exclude` + no gender/position finds F/M nonsexual while holding suppress as long as the peel allows.
 - Callers: `SelectAnimations`, `ResolveAnimationsFromTags`, `SelectAnimationsDialog` final start.
-- **Cuddle Custom:** fetch `scenes/{setting}.json` `tags_suppress` into `_tags_suppress` (fallback hardcode matches `nonsexual.json`); `filterByOnce='none'`.
+- **SceneStart Custom:** fetch `scenes/{setting}.json` `tags_suppress` into `_tags_suppress` (fallback hardcode matches `nonsexual.json`); `filterByOnce='none'` for nonsexual/affection methods.
 - **`SelectAnimationsDialog`:** probe/final miss never clears creator tags/suppress; peel is query-only then return to editor if still empty.
 
 ## Scene Menu filter-by downgrade (2026-08-10)
@@ -25,13 +25,14 @@
 - `animDbQueryResult` drops anim payloads whose `_request_id` != `'a' + SC.animQueryId`; C++ echoes the id verbatim and only `scRefreshAnims` issues `a`-prefixed queries, so a stale empty reply can no longer consume a chain step.
 - Chain relaxes the **mode only** — actor count, tag chips, creature require/exclude, and **has description** still apply at `none`, so an empty list remains possible.
 
-## StartScene tags CSV + CuddlePanel (2026-08-08)
+## StartScene tags CSV + SceneStartPanel (2026-08-13)
 
 - Papyrus `StartScene_*` take **`tags`** (comma-separated), return **`Bool`**. Empty tags → skip AnimDB, still start. Non-empty → `AnimDb_ResolveTags` (sanitize + largest front-preferring subset, always lowercase); fail → False, no ModEvent.
 - `AnimDb_CsvHasTag(csv, tag)` for membership checks (kissing → setting, etc.).
 - YAML AI params stay named **`method`** (single value); ActionDispatch maps `method`↔`tags` positionally.
-- TargetMenu root **cuddle** (`panel: cuddle`): sentence UI. **Start** probes `AnimDb_ResolveTags` — hit → close WebUI + SceneStart with resolved tags; miss → `onNotify` → Papyrus `Debug.Notification`, stay open. **Custom** seeds Scene Creator (`SC.filterByOnce = 'none'`, consumed by `configureSceneCreator`) with Scene Setting `tags_suppress` fetched into `_tags_suppress`, and keeps WebUI open.
-- CuddlePanel also has **intent** (`showing affection` default | `comforting` | `cuddling`) and **Scene Setting** (`nonsexual` default | kissing / male_position_0–2 | `default`); Start/Custom pass both. Those three intents use hug-giver pos1.
+- TargetMenu inactive start rows share **`panel: scene_start`** (cuddle, punish, sex, masturbation, raped by, rapes, threesome). `panelDefaults` seed Subject / Object / `andThird` / intent / direction / method / style / setting. **Start** probes `AnimDb_ResolveTags` — hit → close WebUI + existing `StartScene_One/Two/Three` (JS picks; Object `to victim` → TargetVictim / Nonconsensual_Three); miss → `onNotify`, stay open. **Custom** closes SceneStartPanel, seeds Scene Creator (`SC.filterByOnce = 'none'` only for nonsexual/affection methods) with Scene Setting `tags_suppress` fetched into `_tags_suppress`, then refreshes nearby so Include lists all in-range actors except `child`/`dead`.
+- Layout: Subject; `none|and` + optional third actor; direction (giving/getting vs fucking/fucked in filters method); Object relation `with|to victim|none` + Object actor; intent (custom opens IntentPanel); style; Scene Setting. UI intents `show affection` / `comfort` map to Papyrus `showing affection` / `comforting`. Hug-giver @ SexLab pos1 when intent is those labels **or** method is `cuddling|kissing|hug` (`StartScene_Event` + Custom JS). Selectable pool gates: only player → Object disabled; player+one → `and`/third disabled. **Custom** stays enabled whenever Subject is set (missing Object / third / duplicates still open Scene Creator); **Start** keeps the stricter cast gates.
+- Third is `participate` only (never a second victim). Solo + assault/punish uses `StartScene_Nonconsensual_One`.
 
 ## Parameters Position formId on Start (2026-08-08)
 
@@ -64,12 +65,13 @@ Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / not
 - Anim switch: `SeedOverlayFromAnimDb` — per-registry `user_anim_defaults` win, else AnimDB, else orgasm→speaking helper (`1`→`_pleasure_`, `0`→`""`).
 - Live panels (`panel` on option JSON): `change_actors` (eligible replace-in-slot), `position` (index ▲▼ → `TM_ChangeActors`), `animation_list`, `victim`, `orgasm`, `speaking`, `clothed`. Stop pulldown: silent / stop / explain. LLM YAML deferred: `todo/active_action_yaml.md`.
 
-## Debug SKSE DLL + PublicGetPluginConfigValue CTD (2026-08-05)
+## Debug SKSE DLL + PublicGetPluginConfigValue CTD (2026-08-05, harden 2026-08-16)
 
 - **Symptom:** CTD on load / `kDataLoaded` — Crash Logger `EXCEPTION_ACCESS_VIOLATION` in `SkyrimNet_SexLab.dll` during `std::string` teardown (`std::exchange`).
-- **Stack:** `plugin.cpp` → `Config::ApplyFromConfig` → `ApplyMenuHotkey` → `EditStageHotkeyEnabled` → `GetValue` → SkyrimNet `PublicGetPluginConfigValue` (returns `std::string` by value across DLL).
-- **Cause:** Debug-built `SkyrimNet_SexLab.dll` (~7.7 MB) against Release SkyrimNet — CRT/ABI mismatch on cross-DLL `std::string`. Stack shows `0xCCCCCCCC` fill and path `sexlab.controls.editStageHotkeyEnabled`.
-- **Fix:** Deploy Release DLL via `CMake: Build SKSE (Release)` + `Copy DLL to SKSE/Plugins (Release)` (~2.5 MB). Do not ship Debug. Harden `GetValue` only if Release still AVs.
+- **Stack:** `plugin.cpp` → `Config::ApplyFromConfig` → `ApplyMenuHotkey` → `EditStageHotkeyEnabled` → `GetValue` → SkyrimNet `PublicGetPluginConfigValue` (returns `std::string` by value across DLL). Same AV later from `PublicGetActorNameByUUID` in WebUI.
+- **Cause:** Debug-built `SkyrimNet_SexLab.dll` (~7.96 MB, `/MTd`) against Release SkyrimNet (`/MD`) — `std::string` layout mismatch. Stack shows `0xCCCCCCCC` fill and path `sexlab.controls.editStageHotkeyEnabled`. AV is on return/destructor; memcpy / `.c_str()` after the call cannot help.
+- **Also:** `CMake: Build SKSE (Debug)` copies over `SKSE/Plugins/` (e.g. 2026-08-16 2:39 PM overwrote a 2:17 PM Release). In-game config needs Release.
+- **Fix:** `_DEBUG` skips all SkyrimNet exports that return `std::string` (`CrossDllStdStringSafe` in `Config.h`) and uses hardcoded fallbacks. Ship / test config with `CMake: Build SKSE (Release)` (~2.66 MB).
 - **Crash logs (this machine):** `C:\Users\bhuff\OneDrive\Documents\my games\Skyrim Special Edition\SKSE\crash-*.log` (OneDrive Documents).
 
 ## Plugin config / control store (2026-08-04)
@@ -96,7 +98,7 @@ Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / not
 - **Ingest**: Papyrus `SkyrimNet_SexLab_AnimDb` walks `GetBySlot` in batches (not SexLab `GetByTags` — 125-cap lossy). C++ `InferOrgasmExpected` seeds `pos_no_orgasm` / speaking mods; stage descriptions from `animations/**/*.json` (`_local_` last wins).
 - **YesNo / SceneCreator are async**: PrismaUI cannot block like SkyMessage. `SelectAnimations` returns `manager.ui_pending`; C++ JS listeners dispatch `Scene_Manager.WebUI_OnYesNoResult` / `WebUI_OnSceneCreatorResult` → `ContinueAfterYesNo` / `ContinueAfterSceneCreator` → `FinishStartScene`.
 - **Yes always opens SceneCreatorMenu**; **Yes (Random)** skips editor; NPC–NPC opens creator when config `sexlab.tagEdit.nonPlayerDialogs` is on. Escape on YesNo = No (Silent).
-- **TargetMenu Custom / Start**: root panel only; each pulldown + Parameters are sibling panels in a row **above** Scene Creator. Action click opens Parameters (no immediate start). **Custom** / **Start** close the cascade then fire; Custom opens Scene Creator (`_from_target_menu`, `_creator_sid:0`); Start on SC → `WebUI_OnSceneCreatorHandoff`. **Start** always `ExecuteAction` then **closes WebUI** (clear session + hide; PrismaUI `Focus(..., pauseGame=true)` must not stay focused or SexLab `StartThread` fails). For scene-start actions sets `SkipSceneCreatorOnce` → `ConsumeSkipSceneCreator` → `scene_creator_menu_called` so Papyrus skips Scene Creator **and** YesNo (Yes/Random). Tag Edit MCM no longer intercepts TargetMenu Start.
+- **TargetMenu Custom / Start**: root panel only; each pulldown + Parameters are sibling panels in a row **above** Scene Creator. Action click opens Parameters (no immediate start). **Custom** / **Start** close the cascade then fire; Custom opens Scene Creator (`_from_target_menu`, `_creator_sid:0`); Start on SC → `WebUI_OnSceneCreatorHandoff`. **Start** always `ExecuteAction` then **closes WebUI** (clear session + hide; PrismaUI `Focus(..., pauseGame=true)` must not stay focused or SexLab `StartThread` fails). Scene Creator **Start** also closes WebUI even when TargetMenu session is still active (Custom path). For scene-start actions sets `SkipSceneCreatorOnce` → `ConsumeSkipSceneCreator` → `scene_creator_menu_called` so Papyrus skips Scene Creator **and** YesNo (Yes/Random). SceneStartPanel **Start** (`action:"papyrus"` + `closeWebUI` + `StartScene_*`, not `Refused`) sets the same flag; outfit/live papyrus rows do not. Tag Edit MCM no longer intercepts TargetMenu Start.
 - **Cuddle tags**: LLM/general method `cuddle` → `cuddling` (`RemapTag` / `Actions` / C++ `RemapMethod`). Dedicated cuddle actions keep UI method `sitting|laying` for narration but `Setup` adds SexLab tag `cuddling` (not sitting/laying — those are position tags and miss Ace cuddle packs).
 - **`scene_creator_menu_called`**: once per creator / SexLab thread; `TryOpenSceneCreatorMenu` gates Papyrus first-open; Load/Save refresh still calls `SceneCreator_Open` directly. TargetMenu Custom may re-`configureSceneCreator` while TargetMenu stays open (`TargetMenuSessionActive`; HideAllPanels spares TargetMenu until Cancel). **Do not** keep TargetMenu open across Start — paused overlay blocks SexLab.
 - **Scene Creator anim list**: query cap is 125 (SexLab `GetList`). Do **not** embed `JSON.stringify(anim)` in each row `onclick` — with 125 rows that freezes CEF during `configureSceneCreator` and the panel never paints. Keep rows in `SC.lastAnims` and pass an index. Rendered as a 5-column table (genders / modifiers / name / num stages / description); WebUI `AnimRowToJson` includes `_stage_descriptions` so the description column can substitute `{{sl.actors.N}}` from Scene Creator positions.

@@ -1,27 +1,29 @@
 {
   "type": "papyrus",
-  "label": "masturbation",
+  "label": "raped by",
   "panel": "scene_start",
   "plugin": "SkyrimNet_SexLab.esp",
   "questFormId": "0x800",
   "scriptName": "SkyrimNet_SexLab_Actions",
-  "executionFunctionName": "StartScene_Consensual_One",
+  "executionFunctionName": "StartScene_Nonconsensual_Two_TargetVictim",
   "panelDefaults": {
     "subject": "currentActor",
-    "object": "currentActor",
-    "objectRelation": "none",
+    "object": "player",
+    "objectRelation": "to victim",
     "andThird": "none",
-    "intent": "sexual activities",
-    "direction": "giving",
-    "method": "masturbation",
-    "style": "normally",
-    "settingName": "default"
+    "intent": "sexual assault",
+    "direction": "fucking",
+    "method": "pussy",
+    "style": "forcefully",
+    "settingName": "pleasure_pain"
   },
   "parameterMapping": [
-    { "type": "dynamic", "name": "intent", "description": "sexual activities" },
+    { "type": "dynamic", "name": "intent", "description": "sexual assault" },
     { "type": "speaker", "name": "speaker" },
+    { "type": "target", "name": "target" },
     { "type": "dynamic", "name": "style", "description": "forcefully|normally|gently" },
     { "type": "dynamic", "name": "tags", "description": "comma-separated tags" },
+    { "type": "dynamic", "name": "direction", "description": "fucking|fucked in" },
     { "type": "dynamic", "name": "setting_name", "description": "scene setting json name" }
   ],
   "eligibilityRules": [

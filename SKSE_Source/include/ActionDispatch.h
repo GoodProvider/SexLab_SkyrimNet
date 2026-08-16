@@ -19,6 +19,9 @@ namespace ActionCatalog
         RE::Actor* player,
         RE::Actor* focusTarget);
 
+    /// True when executionFunctionName is StartScene_* (not StartScene_Refused_*).
+    bool IsSceneStartExecution(const std::string& executionFunctionName);
+
     /// True when action resolves as a scene-start (used to gate Custom / SkipSceneCreatorOnce).
     /// editTags* args still apply when callers want MCM gating; TargetMenu Start passes true/true.
     bool ShouldOpenSceneCreatorFromTargetMenu(
