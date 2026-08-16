@@ -39,6 +39,8 @@ void WebUI_Visibility_Show();
 void WebUI_Visibility_Hide();
 void WebUI_Visibility_Toggle();
 void WebUI_Invoke(const std::string& script);
+/// Push OStimNet-gated SexLab/OStim ControlPanel pulldown (setFrameworkToggle).
+void WebUI_InvokeFrameworkToggle();
 void WebUI_Reset();
 void Reset_To_Default();
 /// MCM-driven menu hotkey: register dxScanCode when enabled, else unregister.

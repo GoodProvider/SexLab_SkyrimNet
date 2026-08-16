@@ -23,10 +23,10 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 | TargetMenu (same width)     |                                     |
 ```
 
-- **ControlPanel** (`#control-panel`): row 1 title `SkyrimNet SexLab`; row 2 `main_panel` pulldown (from `webui/main_panels/`, with JS builtin fallback); row 3 pause/unpause; row 4 **actor focus** pulldown (`#control-actor-pulldown`). Main-panel list includes **None** (clears the right main-panel host). Pulldowns open to the **right** over the main-panel area with an opaque background.
+- **ControlPanel** (`#control-panel`): row 1 title `SkyrimNet SexLab`; row 2 `main_panel` pulldown (from `webui/main_panels/`, with JS builtin fallback); row 3 pause/unpause; row 4 OStimNet-gated **framework** pulldown (`#framework-row`, `sexlab`/`ostim`, no label, hidden unless OStimNet); row 5 **actor focus** pulldown (`#control-actor-pulldown`). Main-panel list includes **None** (clears the right main-panel host). Pulldowns open to the **right** over the main-panel area with an opaque background.
 - **Actor focus pulldown:** nearby actors (player pinned first), sorted sexlab → eligible → ineligible, then distance. Labels: name cropped to 10 chars; `(sexlab)` selectable; no suffix = eligible; `(reason)` greyed (`child`/`cmbt`/`ostim`/`dead`/`load`, ≤5 chars). Selection sets `Target_Current` for TargetMenu / Scene Menu / AnimationPanel (`onControlActorChange` → `WebUI_OnControlActorFocus`). Default: crosshair if present, else nearest selectable non-player, else player.
 - **Pause toggle:** WebUI opens with `Focus(view, true)` (game paused; button shows **unpause**). Click unpause → `Focus(view, false)` (game runs, UI stays focused/visible; button shows **pause**). Needed so AnimDB/`RegisterForSingleUpdate` and Log tailing can progress while the overlay stays open.
-- **TargetMenu:** stacked under ControlPanel in the left column (no actor name header — focus is the ControlPanel pulldown). OStimNet framework toggle shows sexlab/ostim only (no “framework” label).
+- **TargetMenu:** stacked under ControlPanel in the left column (no actor name header — focus is the ControlPanel pulldown).
 - **Main panel host:** one visible panel at a time, selected by the pulldown (builtin Scene Menu / Animation / Log / Settings).
 - Sex Menu / YesNo remain overlay panels outside the main_panel pulldown.
 

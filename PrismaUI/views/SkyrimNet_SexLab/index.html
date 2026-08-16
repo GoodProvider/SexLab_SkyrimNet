@@ -122,20 +122,23 @@
             min-width: 0;
         }
 
-        #control-actor-pulldown {
+        #control-actor-pulldown,
+        #framework-row {
             width: 100%;
             min-width: 0;
             box-sizing: border-box;
         }
 
         #control-panel-host .pulldown,
-        #control-actor-pulldown .pulldown {
+        #control-actor-pulldown .pulldown,
+        #framework-row .pulldown {
             width: 100%;
             min-width: 0;
             box-sizing: border-box;
         }
 
-        #control-actor-pulldown .pulldown-value {
+        #control-actor-pulldown .pulldown-value,
+        #framework-row .pulldown-value {
             width: 100%;
             min-width: 0;
             overflow: hidden;
@@ -143,7 +146,8 @@
         }
 
         #control-panel-host .pulldown-menu,
-        #control-actor-pulldown .pulldown-menu {
+        #control-actor-pulldown .pulldown-menu,
+        #framework-row .pulldown-menu {
             left: calc(100% + var(--space-sm));
             top: 0;
             right: auto;
@@ -1189,12 +1193,11 @@
             <div class="control-panel-title">SkyrimNet SexLab</div>
             <div id="control-panel-host"></div>
             <div class="action-btn" id="control-pause-btn" onclick="controlPauseToggle()">unpause</div>
+            <div id="framework-row" style="display:none"></div>
             <div id="control-actor-pulldown"></div>
         </div>
         <div id="target-menu-row" style="display:none">
             <div id="target-panel" class="panel">
-
-                <div id="framework-row" class="field-row" style="display:none"></div>
 
                 <div id="global-params"></div>
                 <div id="left-options"></div>
@@ -1458,7 +1461,7 @@
             }
         }
 
-        /// OStimNet-gated SexLab/OStim toggle under the target name.
+        /// OStimNet-gated SexLab/OStim toggle on ControlPanel above the actor pulldown.
         /// enabled=false hides the row; current should be "sexlab" or "ostim".
         function setFrameworkToggle(enabled, current) {
             const row = document.getElementById('framework-row');

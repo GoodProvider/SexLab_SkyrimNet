@@ -52,7 +52,7 @@ Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / not
 
 ## ControlPanel actor focus + active TargetMenu (2026-08-07)
 
-- ControlPanel bottom `#control-actor-pulldown` owns focus for TargetMenu / Scene Menu / AnimationPanel. `#target-name` and Scene/Animation **scene** pulldowns removed.
+- ControlPanel bottom `#control-actor-pulldown` owns focus for TargetMenu / Scene Menu / AnimationPanel. `#target-name` and Scene/Animation **scene** pulldowns removed. OStimNet framework pulldown (`#framework-row`) sits on ControlPanel above the actor row.
 - Nearby list (C++ `PopulateNearbyActors`): player first; then status `sexlab` → `ok` → ineligible (`child`/`cmbt`/`ostim`/`dead`/`load`); then distance. Labels crop name to 10 + status suffix. Soft Scene Menu pool = `selectable && status==ok`.
 - Hotkey always `Open_WebUI_Target` (+ `WebUI_AfterTargetOpen` default pick). MultiTarget retired for this path. Animation main-panel preference persists across hide; restore via `WebUI_MaybeRestoreAnimationPanel` only when focus is SexLab-animating **and** preference true.
 - Active panels: `position` (▲▼ slot), `change_actors` (replace focus slot from eligible nearby), victim/orgasm/speaking/clothed single-actor.
@@ -79,7 +79,7 @@ Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / not
 - **Source of truth:** `SKSE/Plugins/SkyrimNet/config/plugins/SkyrimNet_SexLab/manifest.yaml` (`schema.fields`). New settings always go in the manifest; MCM may mirror utilities only.
 - **IDs:** C++ `PublicGetPluginConfigValue("SkyrimNet_SexLab", path, def)`; Papyrus `SkyrimNetApi.GetConfig*("Plugin_SkyrimNet_SexLab", path, def)`.
 - **Practical split:** C++ owns control-store hotkey (`sexlab.controls.editStageHotkey*` VK→DX via `MapVirtualKeyA`), WebUI Settings panel, and syncing `skyrimnet_sexlab_public_sex_accepted` / `hide_hermaphrodites` / `ostim_player` globals on load. MCM can also enable/remap the same KeyHandler via DX `WebUI_SetHotkey`. Papyrus only `GetConfig*` at Menu / Utilities / Scene / Creator / Manager call sites. No plugin `PatchConfig`.
-- **TargetMenu framework toggle** still writes the ostim_player **global** for live eligibility; next load re-syncs from control store.
+- **ControlPanel framework toggle** still writes the ostim_player **global** for live eligibility; next load re-syncs from control store.
 - **Settings main panel:** `webui/main_panels/1000_settings.json` → `settings_panel` (rebuild → switches to Log, version from `info.json`, docs URL text, Open SkyrimNet dashboard). MCM shows redirect text + rebuild + last-rebuild timestamp.
 - **Log main panel:** `webui/main_panels/0900_log_panel.json` → `log_panel`. Source: `SKSE::log::log_directory()` + `SkyrimNet_SexLab.log`. JS regex filter; follow-tail until user scrolls away. Settings Rebuild AnimDB switches here so progress lines are visible.
 - **No Prisma deep-link** to Plugins → SkyrimNet_SexLab; `TriggerToggleDashboard()` only toggles the SkyrimNet dashboard. **ShellExecute** for GitHub docs is unreliable in-game — show the URL as text instead.
@@ -120,7 +120,7 @@ Caprica fails natives that declare a parameter named `scriptName` with `no viabl
 
 ## ControlPanel / main_panels (2026-08-02)
 
-Left column: ControlPanel (`#control-panel`: title + main_panel pulldown + pause/unpause + **actor focus pulldown**) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/main_panels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`. Catalog invoke: `configureControlPanel`. Actor focus → `onControlActorChange` → `ApplyControlActorFocus` / `WebUI_OnControlActorFocus`.
+Left column: ControlPanel (`#control-panel`: title + main_panel pulldown + pause/unpause + OStimNet framework pulldown + **actor focus pulldown**) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/main_panels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`. Catalog invoke: `configureControlPanel`. Actor focus → `onControlActorChange` → `ApplyControlActorFocus` / `WebUI_OnControlActorFocus`. `WebUI_Visibility_Show` pushes `setFrameworkToggle`.
 
 - **Pause toggle (2026-08-05):** PrismaUI `Focus(view, true)` pauses the game (default on Show). ControlPanel button toggles pause while the view stays shown. **Quirk:** calling `Focus` again while already focused does **not** change `pauseGame` — must `Unfocus` then `Focus(pauseGame)` to switch. Button label: **unpause** when paused, **pause** when running.
 

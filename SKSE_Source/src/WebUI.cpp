@@ -343,6 +343,22 @@ void WebUI_SetGameReady()
     }
 }
 
+/// Pushes the OStimNet-gated SexLab/OStim ControlPanel pulldown.
+/// Prefer live ostim_player global; fall back to control store.
+void WebUI_InvokeFrameworkToggle()
+{
+    auto* dh = RE::TESDataHandler::GetSingleton();
+    const bool ostimnet = dh && dh->LookupModByName("TT_OStimNet.esp") != nullptr;
+    const char* fw = SexLabNet::Config::GetSingleton().FrameworkPlayerIndex() == 1 ? "ostim" : "sexlab";
+    if (auto* g = RE::TESForm::LookupByEditorID<RE::TESGlobal>("skyrimnet_sexlab_ostim_player")) {
+        if (g->value == 1.0f)
+            fw = "ostim";
+        else if (g->value == 0.0f)
+            fw = "sexlab";
+    }
+    WebUI_Invoke(std::string("setFrameworkToggle(") + (ostimnet ? "true" : "false") + ", '" + fw + "');");
+}
+
 /// Shows and focuses the PrismaUI overlay after refreshing nearby actors for the menu.
 /// No-ops if PrismaUI is missing, no game is loaded, or the view path is invalid.
 void WebUI_Visibility_Show()
@@ -358,6 +374,7 @@ void WebUI_Visibility_Show()
     }
 
     PapyrusBindings_WebUI::PopulateNearbyActors();
+    WebUI_InvokeFrameworkToggle();
 
     webui_log::info("WebUI Show + Focus.");
     PrismaUI->Show(g_view);
