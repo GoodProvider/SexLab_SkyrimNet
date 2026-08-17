@@ -2984,7 +2984,7 @@
                 closeTargetPulldowns();
             if (typeof renderTargetMenu === 'function')
                 renderTargetMenu();
-            SC.filterByOnce = ssIsAffection() ? 'none' : '';
+            SC.filterByOnce = ssIsAffection() ? 'none' : SC_FILTER_DEFAULT;
             if (typeof configureSceneCreator === 'function')
                 configureSceneCreator(state);
             if (typeof showPanel === 'function')
@@ -4286,6 +4286,11 @@
         }
 
         // ── Scene Creator / Scene Menu ────────────────────────────
+        // Strictest to loosest; the open-time downgrade walks this order until a query returns anims.
+        const SC_FILTER_ORDER = ['positions', 'gender', 'none'];
+        const SC_FILTER_DEFAULT = 'gender';
+        const SC_FILTER_OPTIONS = ['gender', 'none', 'positions'];
+
         let SC = {
             creator_sid: 0,
             scene_sid: -1,
@@ -4317,16 +4322,14 @@
             stage: 1,
             stageCount: 0,
             nearbyRange: 100,
-            filterBy: 'positions',
-            filterStart: 'positions',
+            filterBy: SC_FILTER_DEFAULT,
+            filterStart: SC_FILTER_DEFAULT,
             filterChain: [],
             filterAuto: true,
             filterByOnce: ''
         };
 
         const SC_NEARBY_RANGES = [100, 200, 400, 800, 1600];
-        // Strictest to loosest; the open-time downgrade walks this order until a query returns anims.
-        const SC_FILTER_ORDER = ['positions', 'gender', 'none'];
 
         function scRenderRangePulldown() {
             const host = document.getElementById('sc-range-pulldown');
@@ -4348,8 +4351,8 @@
             const host = document.getElementById('sc-filter-by-pulldown');
             if (!host) return;
             host.innerHTML = '';
-            if (!SC.filterBy) SC.filterBy = 'positions';
-            host.appendChild(createPulldown(['none', 'gender', 'positions'], SC.filterBy, v => {
+            if (!SC.filterBy) SC.filterBy = SC_FILTER_DEFAULT;
+            host.appendChild(createPulldown(SC_FILTER_OPTIONS, SC.filterBy, v => {
                 SC.filterBy = v;
                 SC.filterAuto = false;
                 SC.filterChain = [];
@@ -4358,11 +4361,11 @@
             }));
         }
 
-        // Arms the open-time downgrade: start at startMode (default strictest) and keep the
+        // Arms the open-time downgrade: start at startMode (default gender) and keep the
         // looser modes as fallbacks for scRefreshAnims to walk when a query returns nothing.
         function scArmFilterDowngrade(startMode) {
-            let i = SC_FILTER_ORDER.indexOf(startMode || '');
-            if (i < 0) i = 0;
+            let i = SC_FILTER_ORDER.indexOf(startMode || SC_FILTER_DEFAULT);
+            if (i < 0) i = SC_FILTER_ORDER.indexOf(SC_FILTER_DEFAULT);
             SC.filterBy = SC_FILTER_ORDER[i];
             SC.filterStart = SC_FILTER_ORDER[i];
             SC.filterChain = SC_FILTER_ORDER.slice(i + 1);
@@ -4428,7 +4431,7 @@
             typeHost.innerHTML = '';
             const typeValues = ['any'].concat(SC.groupOrder);
             typeHost.appendChild(createPulldown(typeValues, 'any', v => { SC.tagType = v; scRefreshTags(); }));
-            const forcedFilterBy = SC.filterByOnce || '';
+            const forcedFilterBy = SC.filterByOnce || SC_FILTER_DEFAULT;
             SC.filterByOnce = '';
             scArmFilterDowngrade(forcedFilterBy);
             scApplyModeChrome();
@@ -4970,7 +4973,7 @@
 
         function scBuildFilter() {
             const filter = { _actor_count: SC.positions.length, _must_tags: SC.tags, _suppress_tags: SC.suppress, _require_all: SC.tags.length > 0 };
-            const mode = SC.filterBy || 'positions';
+            const mode = SC.filterBy || SC_FILTER_DEFAULT;
             const hasCreature = SC.positions.some(p => (p._gender | 0) >= 2 || (p._race_key || ''));
             filter._creature = hasCreature ? 'require' : 'exclude';
             if (mode === 'positions') {

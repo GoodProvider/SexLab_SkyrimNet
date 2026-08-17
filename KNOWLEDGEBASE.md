@@ -1,5 +1,12 @@
 # Knowledgebase
 
+## Scene Menu Start Control Panel new → Handoff (2026-08-16)
+
+- Control Panel → Scene Menu → connection **new** seeds a provisional session (`_creator_sid:0`, `_from_target_menu:0`) with **no pooled** `Scene_Creator`. C++ Start then dispatches `WebUI_OnSceneCreatorResult(0, json)` because only `_from_target_menu` selects `WebUI_OnSceneCreatorHandoff`.
+- `GetCreatorBySid(0)` misses → used to return with no Trace; SexLab never started. Result now Traces and falls through to Handoff (`CreateCreator` + `FinishStartScene`).
+- Do **not** set `_from_target_menu` on Control Panel new — JS disables Load/Save presets when that flag is true. TargetMenu Custom keeps the flag; sid 0 is also a valid YesNo pool slot so C++ cannot infer provisional from sid alone.
+- Same provisional seed in `Menu.SyncPanelsForActor` when focus is not SexLab-animating.
+
 ## Anidata schema 3.0 (2026-08-12)
 
 - Contract: `docs/developers/anidata-schema.md` (+ accept/emit schemas under `docs/developers/schemas/`).
@@ -14,14 +21,14 @@
 - **`manager.empty` trap:** Scene Manager allocates `empty` as `sslBaseAnimation[2]` for identity compares. Never treat `anims.length > 0` alone as a hit — use `anims != manager.empty` (and `!= cancel`). Peel used to return after step1 miss because the sentinel looked non-empty.
 - F/F + `nonsexual` often yields **0** from SexLab; AnimDB `_creature: exclude` + no gender/position finds F/M nonsexual while holding suppress as long as the peel allows.
 - Callers: `SelectAnimations`, `ResolveAnimationsFromTags`, `SelectAnimationsDialog` final start.
-- **SceneStart Custom:** fetch `scenes/{setting}.json` `tags_suppress` into `_tags_suppress` (fallback hardcode matches `nonsexual.json`); `filterByOnce='none'` for nonsexual/affection methods.
+- **SceneStart Custom:** fetch `scenes/{setting}.json` `tags_suppress` into `_tags_suppress` (fallback hardcode matches `nonsexual.json`); `filterByOnce='none'` for nonsexual/affection methods, otherwise Scene Creator default `gender`.
 - **`SelectAnimationsDialog`:** probe/final miss never clears creator tags/suppress; peel is query-only then return to editor if still empty.
 
 ## Scene Menu filter-by downgrade (2026-08-10)
 
 - Filter strictness in `MatchesFilter`: `positions` (per-slot `_pos_genders` + `_pos_race_keys`) ⊂ `gender` (aggregate counts, any arrangement) ⊂ `none` (`_actor_count` + tags + creature). Relaxing along that order can only gain animations.
 - Each Scene Menu open arms the chain; `animDbQueryResult` steps one mode looser whenever the anim query returns zero and fallbacks remain. Tags query re-issues with the relaxed filter so available tags match the list.
-- **Ordering trap:** in creator mode `scEnrichActorMeta()` resolves genders/race keys **after** the first query, so the opening `positions` pass runs on placeholder `_gender: 0`. Without re-arming on the `'e'` meta result the chain burns down to `none` before real genders exist. Re-arm from `SC.filterStart`, not the strictest mode, or the cuddle `none` seed flips back to `positions`.
+- **Ordering trap:** in creator mode `scEnrichActorMeta()` resolves genders/race keys **after** the first query, so the opening `gender` pass runs on placeholder `_gender: 0`. Without re-arming on the `'e'` meta result the chain burns down to `none` before real genders exist. Re-arm from `SC.filterStart`, not the default mode, or the cuddle `none` seed flips back to `gender`.
 - `animDbQueryResult` drops anim payloads whose `_request_id` != `'a' + SC.animQueryId`; C++ echoes the id verbatim and only `scRefreshAnims` issues `a`-prefixed queries, so a stale empty reply can no longer consume a chain step.
 - Chain relaxes the **mode only** — actor count, tag chips, creature require/exclude, and **has description** still apply at `none`, so an empty list remains possible.
 
@@ -30,7 +37,7 @@
 - Papyrus `StartScene_*` take **`tags`** (comma-separated), return **`Bool`**. Empty tags → skip AnimDB, still start. Non-empty → `AnimDb_ResolveTags` (sanitize + largest front-preferring subset, always lowercase); fail → False, no ModEvent.
 - `AnimDb_CsvHasTag(csv, tag)` for membership checks (kissing → setting, etc.).
 - YAML AI params stay named **`method`** (single value); ActionDispatch maps `method`↔`tags` positionally.
-- TargetMenu inactive start rows share **`panel: scene_start`** (cuddle, punish, sex, masturbation, raped by, rapes, threesome). `panelDefaults` seed Subject / Object / `andThird` / intent / direction / method / style / setting. **Start** probes `AnimDb_ResolveTags` — hit → close WebUI + existing `StartScene_One/Two/Three` (JS picks; Object `to victim` → TargetVictim / Nonconsensual_Three); miss → `onNotify`, stay open. **Custom** closes SceneStartPanel, seeds Scene Creator (`SC.filterByOnce = 'none'` only for nonsexual/affection methods) with Scene Setting `tags_suppress` fetched into `_tags_suppress`, then refreshes nearby so Include lists all in-range actors except `child`/`dead`.
+- TargetMenu inactive start rows share **`panel: scene_start`** (cuddle, punish, sex, masturbation, raped by, rapes, threesome). `panelDefaults` seed Subject / Object / `andThird` / intent / direction / method / style / setting. **Start** probes `AnimDb_ResolveTags` — hit → close WebUI + existing `StartScene_One/Two/Three` (JS picks; Object `to victim` → TargetVictim / Nonconsensual_Three); miss → `onNotify`, stay open. **Custom** closes SceneStartPanel, seeds Scene Creator (`SC.filterByOnce = 'none'` only for nonsexual/affection methods, otherwise `gender`) with Scene Setting `tags_suppress` fetched into `_tags_suppress`, then refreshes nearby so Include lists all in-range actors except `child`/`dead`.
 - Layout: Subject; `none|and` + optional third actor; direction (giving/getting vs fucking/fucked in filters method); Object relation `with|to victim|none` + Object actor; intent (custom opens IntentPanel); style; Scene Setting. UI intents `show affection` / `comfort` map to Papyrus `showing affection` / `comforting`. Hug-giver @ SexLab pos1 when intent is those labels **or** method is `cuddling|kissing|hug` (`StartScene_Event` + Custom JS). Selectable pool gates: only player → Object disabled; player+one → `and`/third disabled. **Custom** stays enabled whenever Subject is set (missing Object / third / duplicates still open Scene Creator); **Start** keeps the stricter cast gates.
 - Third is `participate` only (never a second victim). Solo + assault/punish uses `StartScene_Nonconsensual_One`.
 
@@ -87,7 +94,7 @@ Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / not
 ## AnimationDB creature / race-key filter (2026-08-02)
 
 - Scene Creator sets `_creature: require|exclude` from SexLab classification only (`GetGender` 2/3 + `sslCreatureAnimationSlots.GetRaceKey`). Do **not** treat non-creature as “human.”
-- **Filter by pulldown** (`none` / `gender` / `positions`, default `positions`): `none` and `gender` apply `_creature` require/exclude without forcing `_position_match`. `gender` sends `_gender_match` + aggregate `_males`/`_females`/`_male_creatures`/`_female_creatures`. `positions` uses `_position_match` + `_pos_genders`; when any creature is present also `_pos_race_keys` (exact lowercase match vs AnimationDB `pos_race_keys`). Dog → only `"Dogs"` (primary GetRaceKey), not `creatures.json` display names.
+- **Filter by pulldown** (`gender` / `none` / `positions`, default `gender`): `none` and `gender` apply `_creature` require/exclude without forcing `_position_match`. `gender` sends `_gender_match` + aggregate `_males`/`_females`/`_male_creatures`/`_female_creatures`. `positions` uses `_position_match` + `_pos_genders`; when any creature is present also `_pos_race_keys` (exact lowercase match vs AnimationDB `pos_race_keys`). Dog → only `"Dogs"` (primary GetRaceKey), not `creatures.json` display names.
 - Anim list sort: selected/active → has-description → gender-position string (`FFM` from `_pos_genders`, 0/2→M 1/3→F).
 - Positions carry `_race_key` from Papyrus `BuildWebUIState` / `GetRaceKeyForActor`. TargetMenu C++ open and nearby-add enrich via `onResolveActorMeta` → `WebUI_OnResolveActorMeta` → `actorAnimMetaResult`.
 - WebUI `ParseFilterJson` must accept `_creature`, `_pos_race_keys`, `_gender_match`, `_males`, `_females`, `_male_creatures`, `_female_creatures` (parity with Papyrus AnimationDB parse).
