@@ -1,10 +1,9 @@
 {
-    "Stage 1": {
-        "description": "{{sl.actors.0}} lays on back. {{sl.actors.1}} lays between {{sl.actors.0}}'s legs forcing them wide, fucking {{sl.actors.0}}, and hands wrapped around {{sl.actors.0}}'s throat.",
-        "Version": "2.0"
-    },
-    "Stage 2": {
-        "description": "{{sl.actors.0}} lays on back, uselessly pushing back against {{sl.actors.1}}'s body with one hand. {{sl.actors.1}} lays between {{sl.actors.0}}'s legs forcing them wide, fucking {{sl.actors.0}}, and hands wrapped around {{sl.actors.0}}'s throat.",
-        "Version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.0}} lays on back. {{sl.actors.1}} lays between {{sl.actors.0}}'s legs forcing them wide, fucking {{sl.actors.0}}, and hands wrapped around {{sl.actors.0}}'s throat."
+  },
+  "stage 2": {
+    "description": "{{sl.actors.0}} lays on back, uselessly pushing back against {{sl.actors.1}}'s body with one hand. {{sl.actors.1}} lays between {{sl.actors.0}}'s legs forcing them wide, fucking {{sl.actors.0}}, and hands wrapped around {{sl.actors.0}}'s throat."
+  }
 }

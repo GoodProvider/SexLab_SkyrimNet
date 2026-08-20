@@ -16,6 +16,7 @@ int Function AnimDb_TotalEnabled() global native
 int Function AnimDb_TotalCount() global native
 String Function AnimDb_GetByRegistry(String registry) global native
 String Function AnimDb_GetStageDescription(String registry, int stage) global native
+String Function AnimDb_GetTransition(String registry, int from_stage, int to_stage) global native
 String Function AnimDb_SubstituteActors(String desc, String actors_json) global native
 Bool Function AnimDb_SaveAnimLocal(String registry, String json) global native
 String Function AnimDb_ResolveTags(String tags_csv, int actor_count) global native
@@ -351,6 +352,10 @@ String Function GetStageDescription(String registry, int stage)
     return AnimDb_GetStageDescription(registry, stage)
 EndFunction
 
+String Function GetTransition(String registry, int from_stage, int to_stage)
+    return AnimDb_GetTransition(registry, from_stage, to_stage)
+EndFunction
+
 String Function SubstituteActors(String desc, String actors_json)
     return AnimDb_SubstituteActors(desc, actors_json)
 EndFunction
@@ -407,6 +412,29 @@ String Function GetThreadStageDescription(sslThreadController thread, int stage_
     return AnimDb_SubstituteActors(desc, actors_json)
 EndFunction
 
+String Function GetThreadTransition(sslThreadController thread, int from_stage, int to_stage)
+    if !thread || !thread.animation || from_stage < 1 || to_stage < 1
+        return ""
+    endif
+    String reg = thread.animation.Registry
+    String text = AnimDb_GetTransition(reg, from_stage, to_stage)
+    if text == ""
+        return ""
+    endif
+    Actor[] actors = thread.Positions
+    String actors_json = "["
+    int i = 0
+    while actors && i < actors.length
+        if i > 0
+            actors_json += ","
+        endif
+        actors_json += "\""+EscapeJson(actors[i].GetDisplayName())+"\""
+        i += 1
+    endwhile
+    actors_json += "]"
+    return AnimDb_SubstituteActors(text, actors_json)
+EndFunction
+
 int[] Function GetOrgasmExpected(sslThreadController thread)
     Actor[] actors = thread.Positions
     int n = 0
@@ -452,7 +480,7 @@ String Function SpeakingDefaultFromOrgasmExpected(int orgasm_expected) global
     return ""
 EndFunction
 
-; Per-position speaking from AnimDB row; empty slots filled via SpeakingDefaultFromOrgasmExpected.
+; Per-position speaking from AnimDB row (prefer resolved stage map); empty slots filled via SpeakingDefaultFromOrgasmExpected.
 String[] Function GetSpeakingModifiers(sslThreadController thread)
     Actor[] actors = thread.Positions
     int n = 0
@@ -481,7 +509,21 @@ String[] Function GetSpeakingModifiers(sslThreadController thread)
     if obj == 0
         return out
     endif
-    int speak_arr = JMap.getObj(obj, "_pos_speaking_modifiers")
+    int speak_arr = 0
+    int stage_map = JMap.getObj(obj, "_stage_speaking")
+    if stage_map != 0
+        int stage = thread.stage
+        if stage < 1
+            stage = 1
+        endif
+        speak_arr = JMap.getObj(stage_map, stage as string)
+        if speak_arr == 0
+            speak_arr = JMap.getObj(stage_map, ""+stage)
+        endif
+    endif
+    if speak_arr == 0
+        speak_arr = JMap.getObj(obj, "_pos_speaking_modifiers")
+    endif
     if speak_arr == 0
         speak_arr = JMap.getObj(obj, "speaking_modifiers")
     endif
@@ -515,7 +557,10 @@ int[] Function GetClothed(sslThreadController thread)
     if obj == 0
         return out
     endif
-    int clothed_arr = JMap.getObj(obj, "clothed")
+    int clothed_arr = JMap.getObj(obj, "_clothed")
+    if clothed_arr == 0
+        clothed_arr = JMap.getObj(obj, "clothed")
+    endif
     if clothed_arr != 0
         int i = 0
         while i < n && i < JArray.count(clothed_arr)

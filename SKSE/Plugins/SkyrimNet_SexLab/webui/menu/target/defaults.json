@@ -1,8 +1,0 @@
-{
-  "defaultsParameters": {
-    "style": { "type": "String", "default": "normally" },
-    "speaker": { "type": "Actor", "source": "playerActor" },
-    "target": { "type": "Actor", "source": "currentActor" },
-    "style": { "type": "String", "default": "normally", "values": ["forcefully", "normally", "gently"] }
-  }
-}

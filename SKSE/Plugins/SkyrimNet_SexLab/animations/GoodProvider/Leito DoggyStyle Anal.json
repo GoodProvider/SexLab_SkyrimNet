@@ -1,18 +1,15 @@
 {
-    "Stage 1": {
-        "description": "{{sl.actors.0}} is on hands and knees. {{sl.actors.1}} kneels behind {{sl.actors.0}} holding {{sl.actors.0}} in place with one hand and fingers {{sl.actors.0}}'s ass with the other. ",
-        "Version": "2.0"
-    },
-    "Stage 2": {
-        "description": "{{sl.actors.0}} is on hands and knees. {{sl.actors.1}} squats behind and fucks {{sl.actors.0}}'s ass. ",
-        "Version": "2.0"
-    },
-    "Stage 3": {
-        "description": "{{sl.actors.0}} is on hands and knees. {{sl.actors.1}} squats behind, holds {{sl.actors.0}} in place and fucks {{sl.actors.0}}'s ass. ",
-        "Version": "2.0"
-    },
-    "Stage 4": {
-        "description": "{{sl.actors.0}} forced to lay flat with arms and legs spread by {{sl.actors.1}}'s weight.{{sl.actors.1}} lays on top, pounding down into {{sl.actors.0}}'s ass. ",
-        "Version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.0}} is on hands and knees. {{sl.actors.1}} kneels behind {{sl.actors.0}} holding {{sl.actors.0}} in place with one hand and fingers {{sl.actors.0}}'s ass with the other. "
+  },
+  "stage 2": {
+    "description": "{{sl.actors.0}} is on hands and knees. {{sl.actors.1}} squats behind and fucks {{sl.actors.0}}'s ass. "
+  },
+  "stage 3": {
+    "description": "{{sl.actors.0}} is on hands and knees. {{sl.actors.1}} squats behind, holds {{sl.actors.0}} in place and fucks {{sl.actors.0}}'s ass. "
+  },
+  "stage 4": {
+    "description": "{{sl.actors.0}} forced to lay flat with arms and legs spread by {{sl.actors.1}}'s weight.{{sl.actors.1}} lays on top, pounding down into {{sl.actors.0}}'s ass. "
+  }
 }

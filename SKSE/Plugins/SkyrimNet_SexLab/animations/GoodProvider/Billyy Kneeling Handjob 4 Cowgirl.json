@@ -1,14 +1,12 @@
 {
-    "Stage 1": {
-        "description": "{{sl.actors.1}} lays raised on elbows looking at {{sl.actors.0}}. {{sl.actors.0}} straddling {{sl.actors.1}} and giving {{sl.actors.1}}'s cock a hand job.",
-        "Version": "2.0"
-    },
-    "Stage 5": {
-        "description": "{{sl.actors.1}} lays raised on elbows looking at {{sl.actors.0}}. {{sl.actors.0}} straddling {{sl.actors.1}} and giving {{sl.actors.1}}'s cock a two handed job.",
-        "Version": "2.0"
-    },
-    "Stage 4": {
-        "description": "{{sl.actors.1}} lays raised on elbows looking at {{sl.actors.0}}. {{sl.actors.0}} straddling {{sl.actors.1}}, covers mouth with hand, and giving {{sl.actors.1}}'s cock a hand job.",
-        "Version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.1}} lays raised on elbows looking at {{sl.actors.0}}. {{sl.actors.0}} straddling {{sl.actors.1}} and giving {{sl.actors.1}}'s cock a hand job."
+  },
+  "stage 4": {
+    "description": "{{sl.actors.1}} lays raised on elbows looking at {{sl.actors.0}}. {{sl.actors.0}} straddling {{sl.actors.1}}, covers mouth with hand, and giving {{sl.actors.1}}'s cock a hand job."
+  },
+  "stage 5": {
+    "description": "{{sl.actors.1}} lays raised on elbows looking at {{sl.actors.0}}. {{sl.actors.0}} straddling {{sl.actors.1}} and giving {{sl.actors.1}}'s cock a two handed job."
+  }
 }

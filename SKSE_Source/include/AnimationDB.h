@@ -31,9 +31,19 @@ namespace AnimationDB
         std::vector<std::string> pos_race_keys;
         std::vector<std::string> tags;
         std::vector<int> pos_no_orgasm;
-        std::vector<std::string> pos_speaking_modifiers;
-        std::unordered_map<int, std::string> stage_descriptions;
+        std::vector<std::string> pos_speaking_modifiers; // CSV-per-position (stage 1 resolved; Papyrus compat)
+        std::vector<int> pos_clothed;                    // 0/1 per position (stage 1 resolved)
+        std::unordered_map<int, std::string> stage_descriptions; // resolved (carry-forward)
         std::vector<int> stage_has_description;
+        /// Per-stage resolved speaking: stage → vector of CSV strings (one per actor).
+        std::unordered_map<int, std::vector<std::string>> stage_speaking;
+        /// Per-stage resolved clothed: stage → 0/1 per actor.
+        std::unordered_map<int, std::vector<int>> stage_clothed;
+        /// Per-stage resolved SNSL tags: stage → tag list.
+        std::unordered_map<int, std::vector<std::string>> stage_tags;
+        nlohmann::json transitions = nlohmann::json::object();
+        std::vector<std::string> file_tags; // SNSL animation-level tags (not SexLab registry tags)
+        std::string creator;
         std::int64_t sync_gen = 0;
     };
 
@@ -78,6 +88,7 @@ namespace AnimationDB
 
     std::optional<AnimRow> GetByRegistry(const std::string& registry);
     std::string GetStageDescription(const std::string& registry, int stage);
+    std::string GetTransition(const std::string& registry, int from_stage, int to_stage);
     std::string SubstituteActors(const std::string& desc, const std::vector<std::string>& actor_names);
     bool SaveAnimLocal(const std::string& registry, const nlohmann::json& payload);
 

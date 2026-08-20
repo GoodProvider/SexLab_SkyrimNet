@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### SKSE / WebUI
+- Menu hotkey always toggles ControlPanel: hide immediately when the overlay is visible (any focus actor); open TargetMenu only when hidden
+
 ## [0.31.4](https://github.com/GoodProvider/SkyrimNet_SexLab/releases/tag/0.31.4) — since [0.31.3](https://github.com/GoodProvider/SkyrimNet_SexLab/releases/tag/0.31.3)
 
 ### Actions / scenes

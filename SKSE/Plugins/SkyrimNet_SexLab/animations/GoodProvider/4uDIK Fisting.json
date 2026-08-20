@@ -1,14 +1,12 @@
 {
-    "Stage 1": {
-        "description": "{{sl.actors.1}} on hand and knees, gives oral sex to {{sl.actors.0}}. {{sl.actors.0}} lays with back slightly raised.",
-        "version": "2.0"
-    },
-    "Stage 2": {
-        "description": "{{sl.actors.1}} on hand and knees, gives fingering {{sl.actors.0}}. {{sl.actors.0}} lays with back slightly raised.",
-        "version": "2.0"
-    },
-    "Stage 3": {
-        "description": "{{sl.actors.1}} on hand and knees, gives fisting {{sl.actors.0}}. {{sl.actors.0}} lays with back slightly raised.",
-        "version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.1}} on hand and knees, gives oral sex to {{sl.actors.0}}. {{sl.actors.0}} lays with back slightly raised."
+  },
+  "stage 2": {
+    "description": "{{sl.actors.1}} on hand and knees, gives fingering {{sl.actors.0}}. {{sl.actors.0}} lays with back slightly raised."
+  },
+  "stage 3": {
+    "description": "{{sl.actors.1}} on hand and knees, gives fisting {{sl.actors.0}}. {{sl.actors.0}} lays with back slightly raised."
+  }
 }

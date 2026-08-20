@@ -1,27 +1,18 @@
 {
-  "Stage 1": {
-    "Description": "{{sl.actors.0}} stands, trying to push away {{sl.actors.0}}, turning her head away from its putrid breath.",
-    "id": "Stage 1",
-    "Version": "2.0"
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.0}} stands, trying to push away {{sl.actors.0}}, turning her head away from its putrid breath."
   },
-  "Stage 2": {
-    "Description": "{{sl.actors.1}} throws {sl.actprs.0}} on the ground and starts fucking her, even as she still tries to push it away.",
-    "id": "Stage 2",
-    "Version": "2.0"
+  "stage 2": {
+    "description": "{{sl.actors.1}} throws {sl.actprs.0}} on the ground and starts fucking her, even as she still tries to push it away."
   },
-  "Stage 3": {
-    "Description": "{{sl.actors.0}} see it lift her right leg up to give itself a better acess to her pussy. She looks away, still machinaly pushing away against {{sl.actors.1}} as its cock rails her.",
-    "id": "Stage 3",
-    "Version": "2.0"
+  "stage 3": {
+    "description": "{{sl.actors.0}} see it lift her right leg up to give itself a better acess to her pussy. She looks away, still machinaly pushing away against {{sl.actors.1}} as its cock rails her."
   },
-  "Stage 4": {
-    "Description": "Resigned, no longer able to fight, {{sl.actors.0}} spreads her legs, watching into glowing undead eyes as {{sl.actors.1}} takes her.",
-    "id": "Stage 4",
-    "Version": "2.0"
+  "stage 4": {
+    "description": "Resigned, no longer able to fight, {{sl.actors.0}} spreads her legs, watching into glowing undead eyes as {{sl.actors.1}} takes her."
   },
-  "Stage 5": {
-    "Description": "{{sl.actors.0}} makes one last, weak and desperate attempt to push {{sl.actors.1}} away as she feels its cock twitch, but its for naught. It cums inside her.",
-    "id": "Stage 5",
-    "Version": "2.0"
+  "stage 5": {
+    "description": "{{sl.actors.0}} makes one last, weak and desperate attempt to push {{sl.actors.1}} away as she feels its cock twitch, but its for naught. It cums inside her."
   }
 }

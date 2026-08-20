@@ -1,14 +1,12 @@
 {
-    "Stage 1": {
-        "description": "{{sl.actors.1}} holds {{sl.actors.0}} from behind.",
-        "version": "2.0"
-    },
-    "Stage 2": {
-        "description": "{{sl.actors.1}} holds both of {{sl.actors.0}}'s arms to the side and fucking them. {{sl.actors.0}} on knees, ass in the air, and face on the floor.",
-        "version": "2.0"
-    },
-    "Stage 3": {
-        "description": "{{sl.actors.1}} holds both hands behind back an fucks {{sl.actors.0}}. {{sl.actors.0}} lays on belly.",
-        "version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.1}} holds {{sl.actors.0}} from behind."
+  },
+  "stage 2": {
+    "description": "{{sl.actors.1}} holds both of {{sl.actors.0}}'s arms to the side and fucking them. {{sl.actors.0}} on knees, ass in the air, and face on the floor."
+  },
+  "stage 3": {
+    "description": "{{sl.actors.1}} holds both hands behind back an fucks {{sl.actors.0}}. {{sl.actors.0}} lays on belly."
+  }
 }

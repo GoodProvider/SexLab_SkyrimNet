@@ -330,7 +330,7 @@ RE::BSEventNotifyControl KeyHandler::ProcessEvent(RE::InputEvent* const* a_event
 }
 
 /// Marks that a save is loaded so Show / hotkeys are allowed to open the WebUI.
-/// Reloads ActionCatalog so actions_index / menu/target / main_panels pick up file changes.
+/// Reloads ActionCatalog so actions_index / TargetMenu / MainPanels pick up file changes.
 void WebUI_SetGameReady()
 {
     g_gameReady = true;
@@ -380,6 +380,9 @@ void WebUI_Visibility_Show()
     PrismaUI->Show(g_view);
     PrismaUI->Focus(g_view, true);
     g_webuiGamePaused = true;
+    // Start / Cancel hide ControlPanel in JS. Show must restore it — same-actor
+    // Target_Menu_Open used to skip showPanel and left a blank left column.
+    WebUI_Invoke("showControlPanel();");
     WebUI_Invoke("setControlPaused(true);");
 }
 
@@ -392,13 +395,19 @@ void WebUI_Visibility_Hide()
     g_webuiGamePaused = true;
 }
 
+/// True when PrismaUI is missing, the view is invalid, or the overlay is hidden.
+bool WebUI_IsHidden()
+{
+    if (!PrismaUI || !PrismaUI->IsValid(g_view))
+        return true;
+    return PrismaUI->IsHidden(g_view);
+}
+
 /// Shows the overlay if hidden, otherwise hides it.
 void WebUI_Visibility_Toggle()
 {
     webui_log::info("WebUI visibility toggled.");
-    if (!PrismaUI) return;
-
-    if (PrismaUI->IsHidden(g_view)) {
+    if (WebUI_IsHidden()) {
         WebUI_Visibility_Show();
     } else {
         WebUI_Visibility_Hide();
@@ -460,7 +469,7 @@ void Reset_To_Default()
 
 /// One-shot WebUI bootstrap: PrismaUI API, action catalog, view, JS listeners, hotkeys.
 /// View path must exist under Data/PrismaUI/views/SkyrimNet_SexLab/index.html.
-/// Escape hides UI; backslash opens target menu (crosshair) or multi-target picker.
+/// Escape hides UI; menu hotkey toggles ControlPanel (hide if visible, else ProcessHotkey).
 void InitWebUI()
 {
     static std::once_flag s_initFlag;
@@ -920,6 +929,13 @@ void WebUI_SetMenuHotkey(uint32_t dxScanCode, bool enabled)
     KeyHandler::GetSingleton()->Register(dxScanCode, [dxScanCode]() {
         if (!g_gameReady) {
             webui_log::info("WebUI hotkey blocked — no game loaded.");
+            return;
+        }
+        // Always toggle: visible overlay closes immediately (any focus actor).
+        // Do not dispatch ProcessHotkey on close — AfterTargetOpen would reconfigure.
+        if (!WebUI_IsHidden()) {
+            webui_log::info("WebUI hotkey: hide overlay");
+            WebUI_Visibility_Hide();
             return;
         }
         PapyrusBindings_WebUI::Call_ProcessHotkey(static_cast<std::int32_t>(dxScanCode));

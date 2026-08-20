@@ -1,14 +1,12 @@
 {
-    "Stage 1": {
-        "description": "{{sl.actors.0}} is on {{sl.actors.1}}'s shoulder and {{sl.actors.2}} gives oral sex to {{sl.actors.0}}.",
-        "version": "2.0"
-    },
-    "Stage 2": {
-        "description": "{{sl.actors.0}} is fucked in the pussy by {{sl.actors.1}} and the ass by {{sl.actors.2}}.",
-        "version": "2.0"
-    },
-    "Stage 3": {
-        "description": "{{sl.actors.0}} is fucked in the pussy by {{sl.actors.1}} and the ass by {{sl.actors.2}}. {{sl.actors.1}} lays on the ground.",
-        "version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.0}} is on {{sl.actors.1}}'s shoulder and {{sl.actors.2}} gives oral sex to {{sl.actors.0}}."
+  },
+  "stage 2": {
+    "description": "{{sl.actors.0}} is fucked in the pussy by {{sl.actors.1}} and the ass by {{sl.actors.2}}."
+  },
+  "stage 3": {
+    "description": "{{sl.actors.0}} is fucked in the pussy by {{sl.actors.1}} and the ass by {{sl.actors.2}}. {{sl.actors.1}} lays on the ground."
+  }
 }

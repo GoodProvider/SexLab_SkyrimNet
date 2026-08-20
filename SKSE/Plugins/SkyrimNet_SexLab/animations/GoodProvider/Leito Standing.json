@@ -1,14 +1,12 @@
 {
-    "Stage 2": {
-        "description": "{{sl.actors.0}} and {{sl.actors.1}} facing each other. {{sl.actors.0}}'s hands are on {{sl.actors.1}}'s shoulders. {{sl.actors.1}}'s hands are on {{sl.actors.0}}'s waist. They have sex.",
-        "Version": "2.0"
-    },
-    "Stage 4": {
-        "description": "{{sl.actors.1}} holds up {{sl.actors.0}} by the thighs and fucks {{sl.actors.0}}. {{sl.actors.0}}'s feet are up in the air and arms are around {{sl.actors.1}}'s neck.",
-        "Version": "2.0"
-    },
-    "Stage 5": {
-        "description": "{{sl.actors.1}} holds up {{sl.actors.0}} by the thighs and fucks {{sl.actors.0}}. {{sl.actors.0}}'s feet are up in the air, arms are around {{sl.actors.1}}'s neck, and head on {{sl.actors.1}}'s shoulder.",
-        "Version": "2.0"
-    }
+  "version": "3.0",
+  "stage 2": {
+    "description": "{{sl.actors.0}} and {{sl.actors.1}} facing each other. {{sl.actors.0}}'s hands are on {{sl.actors.1}}'s shoulders. {{sl.actors.1}}'s hands are on {{sl.actors.0}}'s waist. They have sex."
+  },
+  "stage 4": {
+    "description": "{{sl.actors.1}} holds up {{sl.actors.0}} by the thighs and fucks {{sl.actors.0}}. {{sl.actors.0}}'s feet are up in the air and arms are around {{sl.actors.1}}'s neck."
+  },
+  "stage 5": {
+    "description": "{{sl.actors.1}} holds up {{sl.actors.0}} by the thighs and fucks {{sl.actors.0}}. {{sl.actors.0}}'s feet are up in the air, arms are around {{sl.actors.1}}'s neck, and head on {{sl.actors.1}}'s shoulder."
+  }
 }

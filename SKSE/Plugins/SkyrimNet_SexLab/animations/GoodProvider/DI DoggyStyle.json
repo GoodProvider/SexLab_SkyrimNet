@@ -1,10 +1,9 @@
 {
-    "Stage 1": {
-        "description": "{{sl.actors.0}} kneels on hands and knees, with feet kicking. {{sl.actors.1}} fucks {{sl.actors.0}} doggy style.",
-        "Version": "2.0"
-    },
-    "Stage 2": {
-        "description": "{{sl.actors.0}} kneels on hands and knees. {{sl.actors.1}} slaps {{sl.actors.0}}'s ass, causing {{sl.actors.0}} to stop struggling. {{sl.actors.1}} fucks {{sl.actors.0}} doggy style.",
-        "Version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.0}} kneels on hands and knees, with feet kicking. {{sl.actors.1}} fucks {{sl.actors.0}} doggy style."
+  },
+  "stage 2": {
+    "description": "{{sl.actors.0}} kneels on hands and knees. {{sl.actors.1}} slaps {{sl.actors.0}}'s ass, causing {{sl.actors.0}} to stop struggling. {{sl.actors.1}} fucks {{sl.actors.0}} doggy style."
+  }
 }

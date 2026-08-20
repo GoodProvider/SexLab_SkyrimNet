@@ -1,18 +1,15 @@
 {
-    "Stage 1": {
-        "description": "{{sl.actors.1}} lays on back with {{sl.actors.0}} on top, while they give each other oral sex. ",
-        "Version": "2.0"
-    },
-    "Stage 2": {
-        "description": "{{sl.actors.1}} lays on back, holding {{sl.actors0}} over them by the waist, and fucks {{sl.actors.0}}. {{sl.actors.0}} faces up standing on hands and feet.",
-        "Version": "2.0"
-    },
-    "Stage 4": {
-        "description": "{{sl.actors.1}} lays on back, raised up on elbows, and fucks up into {{sl.actors.0}}. {{sl.actors.0}} faces away from {{sl.actors.1}}, on knees and hands, and rocks hips on {{sl.actors.1}}'s cock. ",
-        "Version": "2.0"
-    },
-    "Stage 5": {
-        "description": "{{sl.actors.1}} lays on back. {{sl.actors.0}} faces away from {{sl.actors.0}}, on knees over {{sl.actors.1}}'s cock, with legs shaking.",
-        "Version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.1}} lays on back with {{sl.actors.0}} on top, while they give each other oral sex. "
+  },
+  "stage 2": {
+    "description": "{{sl.actors.1}} lays on back, holding {{sl.actors0}} over them by the waist, and fucks {{sl.actors.0}}. {{sl.actors.0}} faces up standing on hands and feet."
+  },
+  "stage 4": {
+    "description": "{{sl.actors.1}} lays on back, raised up on elbows, and fucks up into {{sl.actors.0}}. {{sl.actors.0}} faces away from {{sl.actors.1}}, on knees and hands, and rocks hips on {{sl.actors.1}}'s cock. "
+  },
+  "stage 5": {
+    "description": "{{sl.actors.1}} lays on back. {{sl.actors.0}} faces away from {{sl.actors.0}}, on knees over {{sl.actors.1}}'s cock, with legs shaking."
+  }
 }

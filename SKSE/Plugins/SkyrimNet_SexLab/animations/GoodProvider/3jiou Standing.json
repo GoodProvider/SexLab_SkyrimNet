@@ -1,18 +1,15 @@
 {
-    "Stage 1": {
-        "description": "{{sl.actors.1}} and {{sl.actors.0}} stand, while {{sl.actors.1}} fucks {{sl.actors.0}} from behind.",
-        "Version": "2.0"
-    },
-    "Stage 3": {
-        "description": "{{sl.actors.1}} stands still, while {{sl.actors.0}} rocks back and forth on {{sl.actors.1}}'s cock.",
-        "Version": "2.0"
-    },
-    "Stage 2": {
-        "description": "{{sl.actors.1}} stands behind {{sl.actors.0}} fucking them from behind. ",
-        "Version": "2.0"
-    },
-    "Stage 6": {
-        "description": "{{sl.actors.1}} fucks {{sl.actors.0}} from behind. {{sl.actors.0}} turns back to kiss {{sl.actors.1}}.",
-        "Version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.1}} and {{sl.actors.0}} stand, while {{sl.actors.1}} fucks {{sl.actors.0}} from behind."
+  },
+  "stage 2": {
+    "description": "{{sl.actors.1}} stands behind {{sl.actors.0}} fucking them from behind. "
+  },
+  "stage 3": {
+    "description": "{{sl.actors.1}} stands still, while {{sl.actors.0}} rocks back and forth on {{sl.actors.1}}'s cock."
+  },
+  "stage 6": {
+    "description": "{{sl.actors.1}} fucks {{sl.actors.0}} from behind. {{sl.actors.0}} turns back to kiss {{sl.actors.1}}."
+  }
 }

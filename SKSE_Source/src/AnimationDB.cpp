@@ -109,6 +109,33 @@ namespace AnimationDB
             return true;
         }
 
+        bool TableHasColumn(const char* table, const char* column)
+        {
+            sqlite3_stmt* stmt = nullptr;
+            std::string sql = std::string("PRAGMA table_info(") + table + ")";
+            if (sqlite3_prepare_v2(g_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
+                return false;
+            bool found = false;
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                const unsigned char* name = sqlite3_column_text(stmt, 1);
+                if (name && _stricmp(reinterpret_cast<const char*>(name), column) == 0) {
+                    found = true;
+                    break;
+                }
+            }
+            sqlite3_finalize(stmt);
+            return found;
+        }
+
+        bool EnsureColumn(const char* table, const char* column, const char* type_sql)
+        {
+            if (TableHasColumn(table, column))
+                return true;
+            std::string sql = std::string("ALTER TABLE ") + table + " ADD COLUMN " + column + " " + type_sql;
+            webui_log::info("AnimationDB: adding column {}.{}", table, column);
+            return Exec(sql.c_str());
+        }
+
         bool MigrateSchema()
         {
             const char* ddl = R"SQL(
@@ -132,7 +159,14 @@ CREATE TABLE IF NOT EXISTS animations (
   pos_speaking_modifiers TEXT,
   stage_descriptions TEXT,
   stage_has_description TEXT,
-  sync_gen INTEGER
+  sync_gen INTEGER,
+  pos_clothed TEXT,
+  stage_speaking TEXT,
+  stage_clothed TEXT,
+  stage_tags TEXT,
+  transitions TEXT,
+  file_tags TEXT,
+  creator TEXT
 );
 CREATE TABLE IF NOT EXISTS animation_tags (
   registry TEXT,
@@ -145,7 +179,184 @@ CREATE TABLE IF NOT EXISTS meta (
 );
 CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
 )SQL";
-            return Exec(ddl);
+            if (!Exec(ddl))
+                return false;
+            // Older DBs created before 3.0 columns — add if missing.
+            if (!EnsureColumn("animations", "pos_clothed", "TEXT"))
+                return false;
+            if (!EnsureColumn("animations", "stage_speaking", "TEXT"))
+                return false;
+            if (!EnsureColumn("animations", "stage_clothed", "TEXT"))
+                return false;
+            if (!EnsureColumn("animations", "stage_tags", "TEXT"))
+                return false;
+            if (!EnsureColumn("animations", "transitions", "TEXT"))
+                return false;
+            if (!EnsureColumn("animations", "file_tags", "TEXT"))
+                return false;
+            if (!EnsureColumn("animations", "creator", "TEXT"))
+                return false;
+            return true;
+        }
+
+        std::string JoinCsv(const std::vector<std::string>& parts)
+        {
+            std::ostringstream oss;
+            for (size_t i = 0; i < parts.size(); ++i) {
+                if (i)
+                    oss << ',';
+                oss << parts[i];
+            }
+            return oss.str();
+        }
+
+        /// Parse speaking_modifiers: nested token arrays OR legacy flat CSV/string per actor.
+        /// Returns nullopt if value is not a usable array.
+        std::optional<std::vector<std::string>> ParseSpeakingModifiersValue(const nlohmann::json& v)
+        {
+            if (!v.is_array())
+                return std::nullopt;
+            std::vector<std::string> out;
+            out.reserve(v.size());
+            for (const auto& el : v) {
+                if (el.is_array()) {
+                    std::vector<std::string> tokens;
+                    for (const auto& t : el) {
+                        if (t.is_string()) {
+                            auto s = t.get<std::string>();
+                            if (!s.empty())
+                                tokens.push_back(s);
+                        }
+                    }
+                    out.push_back(JoinCsv(tokens));
+                } else if (el.is_string()) {
+                    // Legacy flat CSV or single token string — keep as CSV (trim empties via SplitCsv join)
+                    out.push_back(JoinCsv(SplitCsv(el.get<std::string>())));
+                } else if (el.is_null()) {
+                    out.push_back("");
+                } else {
+                    out.push_back("");
+                }
+            }
+            return out;
+        }
+
+        nlohmann::json SpeakingCsvToNestedJson(const std::vector<std::string>& csv_per_pos)
+        {
+            nlohmann::json arr = nlohmann::json::array();
+            for (const auto& csv : csv_per_pos) {
+                nlohmann::json tokens = nlohmann::json::array();
+                for (const auto& t : SplitCsv(csv))
+                    tokens.push_back(t);
+                arr.push_back(tokens);
+            }
+            return arr;
+        }
+
+        /// Lowercase object keys; false on case-only key conflict.
+        bool LowerKeyObject(const nlohmann::json& in, nlohmann::json& out, const std::string& ctx)
+        {
+            out = nlohmann::json::object();
+            if (!in.is_object())
+                return false;
+            for (auto it = in.begin(); it != in.end(); ++it) {
+                std::string lk = ToLower(it.key());
+                if (out.contains(lk)) {
+                    webui_log::error("AnimationDB: fatal case-conflicting keys in {} (key '{}')", ctx,
+                        it.key());
+                    return false;
+                }
+                out[lk] = it.value();
+            }
+            return true;
+        }
+
+        bool ParseStageKey(const std::string& key_l, int& stage_out)
+        {
+            // Accept "stage 1", "stage1", "stage 01" after lowercasing.
+            if (key_l.rfind("stage", 0) != 0)
+                return false;
+            size_t i = 5;
+            while (i < key_l.size() && (key_l[i] == ' ' || key_l[i] == '_' || key_l[i] == '\t'))
+                ++i;
+            if (i >= key_l.size() || !std::isdigit(static_cast<unsigned char>(key_l[i])))
+                return false;
+            try {
+                stage_out = std::stoi(key_l.substr(i));
+            } catch (...) {
+                return false;
+            }
+            return stage_out >= 1;
+        }
+
+        nlohmann::json StageSpeakingToJson(const std::unordered_map<int, std::vector<std::string>>& m)
+        {
+            nlohmann::json o = nlohmann::json::object();
+            for (const auto& [k, v] : m)
+                o[std::to_string(k)] = v;
+            return o;
+        }
+
+        nlohmann::json StageClothedToJson(const std::unordered_map<int, std::vector<int>>& m)
+        {
+            nlohmann::json o = nlohmann::json::object();
+            for (const auto& [k, v] : m)
+                o[std::to_string(k)] = v;
+            return o;
+        }
+
+        nlohmann::json StageTagsToJson(const std::unordered_map<int, std::vector<std::string>>& m)
+        {
+            nlohmann::json o = nlohmann::json::object();
+            for (const auto& [k, v] : m)
+                o[std::to_string(k)] = v;
+            return o;
+        }
+
+        void JsonToStageSpeaking(const nlohmann::json& j,
+            std::unordered_map<int, std::vector<std::string>>& out)
+        {
+            out.clear();
+            if (!j.is_object())
+                return;
+            for (auto it = j.begin(); it != j.end(); ++it) {
+                try {
+                    int stage = std::stoi(it.key());
+                    if (it.value().is_array())
+                        out[stage] = JsonToVecStr(it.value());
+                } catch (...) {
+                }
+            }
+        }
+
+        void JsonToStageClothed(const nlohmann::json& j, std::unordered_map<int, std::vector<int>>& out)
+        {
+            out.clear();
+            if (!j.is_object())
+                return;
+            for (auto it = j.begin(); it != j.end(); ++it) {
+                try {
+                    int stage = std::stoi(it.key());
+                    if (it.value().is_array())
+                        out[stage] = JsonToVecInt(it.value());
+                } catch (...) {
+                }
+            }
+        }
+
+        void JsonToStageTags(const nlohmann::json& j, std::unordered_map<int, std::vector<std::string>>& out)
+        {
+            out.clear();
+            if (!j.is_object())
+                return;
+            for (auto it = j.begin(); it != j.end(); ++it) {
+                try {
+                    int stage = std::stoi(it.key());
+                    if (it.value().is_array())
+                        out[stage] = JsonToVecStr(it.value());
+                } catch (...) {
+                }
+            }
         }
 
         void RebuildTagIndexLocked()
@@ -164,7 +375,8 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
             const char* sql =
                 "SELECT registry,name,enabled,source,position_count,stage_count,males,females,"
                 "male_creatures,female_creatures,has_creature,race_type,pos_genders,pos_race_keys,"
-                "tags,pos_no_orgasm,pos_speaking_modifiers,stage_descriptions,stage_has_description,sync_gen "
+                "tags,pos_no_orgasm,pos_speaking_modifiers,stage_descriptions,stage_has_description,sync_gen,"
+                "pos_clothed,stage_speaking,stage_clothed,stage_tags,transitions,file_tags,creator "
                 "FROM animations";
             if (sqlite3_prepare_v2(g_db, sql, -1, &stmt, nullptr) != SQLITE_OK)
                 return;
@@ -211,6 +423,17 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
                 } catch (...) {
                 }
                 row.sync_gen = sqlite3_column_int64(stmt, 19);
+                try {
+                    row.pos_clothed = JsonToVecInt(nlohmann::json::parse(col(20).empty() ? "[]" : col(20)));
+                    JsonToStageSpeaking(nlohmann::json::parse(col(21).empty() ? "{}" : col(21)), row.stage_speaking);
+                    JsonToStageClothed(nlohmann::json::parse(col(22).empty() ? "{}" : col(22)), row.stage_clothed);
+                    JsonToStageTags(nlohmann::json::parse(col(23).empty() ? "{}" : col(23)), row.stage_tags);
+                    auto tr = nlohmann::json::parse(col(24).empty() ? "{}" : col(24));
+                    row.transitions = tr.is_object() ? tr : nlohmann::json::object();
+                    row.file_tags = JsonToVecStr(nlohmann::json::parse(col(25).empty() ? "[]" : col(25)));
+                } catch (...) {
+                }
+                row.creator = col(26);
                 g_rows[row.registry] = std::move(row);
             }
             sqlite3_finalize(stmt);
@@ -223,8 +446,9 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
             const char* sql =
                 "INSERT INTO animations(registry,name,enabled,source,position_count,stage_count,males,females,"
                 "male_creatures,female_creatures,has_creature,race_type,pos_genders,pos_race_keys,tags,"
-                "pos_no_orgasm,pos_speaking_modifiers,stage_descriptions,stage_has_description,sync_gen) "
-                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                "pos_no_orgasm,pos_speaking_modifiers,stage_descriptions,stage_has_description,sync_gen,"
+                "pos_clothed,stage_speaking,stage_clothed,stage_tags,transitions,file_tags,creator) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
                 "ON CONFLICT(registry) DO UPDATE SET "
                 "name=excluded.name,enabled=excluded.enabled,source=excluded.source,"
                 "position_count=excluded.position_count,stage_count=excluded.stage_count,"
@@ -234,7 +458,10 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
                 "pos_race_keys=excluded.pos_race_keys,tags=excluded.tags,"
                 "pos_no_orgasm=excluded.pos_no_orgasm,pos_speaking_modifiers=excluded.pos_speaking_modifiers,"
                 "stage_descriptions=excluded.stage_descriptions,"
-                "stage_has_description=excluded.stage_has_description,sync_gen=excluded.sync_gen";
+                "stage_has_description=excluded.stage_has_description,sync_gen=excluded.sync_gen,"
+                "pos_clothed=excluded.pos_clothed,stage_speaking=excluded.stage_speaking,"
+                "stage_clothed=excluded.stage_clothed,stage_tags=excluded.stage_tags,"
+                "transitions=excluded.transitions,file_tags=excluded.file_tags,creator=excluded.creator";
             if (sqlite3_prepare_v2(g_db, sql, -1, &stmt, nullptr) != SQLITE_OK)
                 return;
 
@@ -266,6 +493,13 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
             bind_text(JsonDump(stage_desc));
             bind_text(JsonDump(VecIntToJson(row.stage_has_description)));
             sqlite3_bind_int64(stmt, i++, row.sync_gen);
+            bind_text(JsonDump(VecIntToJson(row.pos_clothed)));
+            bind_text(JsonDump(StageSpeakingToJson(row.stage_speaking)));
+            bind_text(JsonDump(StageClothedToJson(row.stage_clothed)));
+            bind_text(JsonDump(StageTagsToJson(row.stage_tags)));
+            bind_text(JsonDump(row.transitions.is_object() ? row.transitions : nlohmann::json::object()));
+            bind_text(JsonDump(VecStrToJson(row.file_tags)));
+            bind_text(row.creator);
             sqlite3_step(stmt);
             sqlite3_finalize(stmt);
 
@@ -284,13 +518,9 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
             g_rows[row.registry] = row;
         }
 
-        void LoadAnimJsonForName(const std::string& display_name, AnimRow& row,
-            std::optional<std::vector<int>>& orgasm_override)
+        /// Collect pack dirs: non-_local_ first, _local_ last (wins on conflict).
+        std::vector<std::filesystem::path> AnimPackDirs(const std::filesystem::path& root)
         {
-            auto root = PluginDataDir() / "animations";
-            if (!std::filesystem::is_directory(root))
-                return;
-
             std::vector<std::filesystem::path> packs;
             std::filesystem::path local_pack;
             for (const auto& ent : std::filesystem::directory_iterator(root)) {
@@ -303,69 +533,275 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
                     packs.push_back(ent.path());
             }
             if (!local_pack.empty())
-                packs.push_back(local_pack); // last wins
+                packs.push_back(local_pack);
+            return packs;
+        }
 
-            const std::string fname = display_name + ".json";
-            nlohmann::json merged = nlohmann::json::object();
+        /// Find single winning path for fname across packs. Conflict → warn, last wins.
+        std::optional<std::filesystem::path> ResolveAnimFilePath(
+            const std::vector<std::filesystem::path>& packs, const std::string& fname,
+            const std::string& registry)
+        {
+            std::vector<std::filesystem::path> hits;
             for (const auto& pack : packs) {
                 auto path = pack / fname;
-                if (!std::filesystem::exists(path))
-                    continue;
-                try {
-                    std::ifstream in(path);
-                    nlohmann::json info = nlohmann::json::parse(in);
-                    if (!info.is_object())
-                        continue;
-                    for (auto it = info.begin(); it != info.end(); ++it)
-                        merged[it.key()] = it.value();
-                } catch (...) {
+                if (std::filesystem::exists(path))
+                    hits.push_back(path);
+            }
+            if (hits.empty())
+                return std::nullopt;
+            if (hits.size() > 1) {
+                webui_log::warn(
+                    "AnimationDB: anidata conflict for registry '{}' file '{}' ({} packs); using {}",
+                    registry, fname, hits.size(), hits.back().string());
+            }
+            return hits.back();
+        }
+
+        void ApplyAnimJsonToRow(const nlohmann::json& raw, AnimRow& row,
+            std::optional<std::vector<int>>& orgasm_override, std::vector<char>* speaking_from_file_out)
+        {
+            nlohmann::json info;
+            if (!LowerKeyObject(raw, info, row.registry.empty() ? row.name : row.registry))
+                return;
+
+            if (!info.contains("version")) {
+                webui_log::error("AnimationDB: anidata missing version for '{}' (treating as 3.0)",
+                    row.registry.empty() ? row.name : row.registry);
+            }
+
+            if (info.contains("creator") && info["creator"].is_string())
+                row.creator = info["creator"].get<std::string>();
+
+            // Animation-level optional fields (present vs absent).
+            std::optional<std::vector<std::string>> anim_speaking;
+            std::optional<std::vector<int>> anim_clothed;
+            std::optional<std::vector<std::string>> anim_tags;
+            bool anim_speaking_present = false;
+            bool anim_clothed_present = false;
+            bool anim_tags_present = false;
+
+            if (info.contains("orgasm_expected") && info["orgasm_expected"].is_array()) {
+                auto ov = JsonToVecInt(info["orgasm_expected"]);
+                if (static_cast<int>(ov.size()) == row.position_count)
+                    orgasm_override = ov;
+                else if (!ov.empty())
+                    webui_log::warn(
+                        "AnimationDB: orgasm_expected length {} != position_count {} for '{}'; ignoring",
+                        ov.size(), row.position_count, row.registry);
+            }
+
+            if (info.contains("speaking_modifiers")) {
+                anim_speaking = ParseSpeakingModifiersValue(info["speaking_modifiers"]);
+                anim_speaking_present = anim_speaking.has_value();
+                if (!anim_speaking_present)
+                    webui_log::warn("AnimationDB: bad speaking_modifiers for '{}'", row.registry);
+            }
+            if (info.contains("clothed") && info["clothed"].is_array()) {
+                anim_clothed = JsonToVecInt(info["clothed"]);
+                anim_clothed_present = true;
+            }
+            if (info.contains("tags") && info["tags"].is_array()) {
+                anim_tags = JsonToVecStr(info["tags"]);
+                anim_tags_present = true;
+                row.file_tags = *anim_tags;
+            } else {
+                row.file_tags.clear();
+            }
+
+            if (info.contains("transitions") && info["transitions"].is_object()) {
+                nlohmann::json tr_out = nlohmann::json::object();
+                for (auto it = info["transitions"].begin(); it != info["transitions"].end(); ++it) {
+                    if (it.value().is_string())
+                        tr_out[ToLower(it.key())] = it.value().get<std::string>();
                 }
+                row.transitions = std::move(tr_out);
+            } else {
+                row.transitions = nlohmann::json::object();
+            }
+
+            struct StageRaw {
+                bool has_desc = false;
+                std::string desc;
+                bool has_speaking = false;
+                std::vector<std::string> speaking;
+                bool has_clothed = false;
+                std::vector<int> clothed;
+                bool has_tags = false;
+                std::vector<std::string> tags;
+            };
+            std::unordered_map<int, StageRaw> stages;
+
+            for (auto it = info.begin(); it != info.end(); ++it) {
+                int stage = 0;
+                if (!ParseStageKey(it.key(), stage))
+                    continue;
+                StageRaw raw_s;
+                if (it.value().is_string()) {
+                    raw_s.has_desc = true;
+                    raw_s.desc = it.value().get<std::string>();
+                } else if (it.value().is_object()) {
+                    nlohmann::json st;
+                    if (!LowerKeyObject(it.value(), st, row.registry + " stage " + std::to_string(stage)))
+                        continue;
+                    // Ignore per-stage version.
+                    if (st.contains("description") && st["description"].is_string()) {
+                        raw_s.has_desc = true;
+                        raw_s.desc = st["description"].get<std::string>();
+                    }
+                    if (st.contains("speaking_modifiers")) {
+                        auto sp = ParseSpeakingModifiersValue(st["speaking_modifiers"]);
+                        if (sp) {
+                            raw_s.has_speaking = true;
+                            raw_s.speaking = *sp;
+                        }
+                    }
+                    if (st.contains("clothed") && st["clothed"].is_array()) {
+                        raw_s.has_clothed = true;
+                        raw_s.clothed = JsonToVecInt(st["clothed"]);
+                    }
+                    if (st.contains("tags") && st["tags"].is_array()) {
+                        raw_s.has_tags = true;
+                        raw_s.tags = JsonToVecStr(st["tags"]);
+                    }
+                }
+                stages[stage] = std::move(raw_s);
             }
 
             row.stage_descriptions.clear();
-            for (auto it = merged.begin(); it != merged.end(); ++it) {
-                std::string key = it.key();
-                std::string key_l = ToLower(key);
-                if (key_l == "orgasm_expected") {
-                    if (it.value().is_array()) {
-                        std::vector<int> ov;
-                        for (const auto& el : it.value()) {
-                            if (el.is_number_integer())
-                                ov.push_back(el.get<int>());
-                            else if (el.is_number())
-                                ov.push_back(static_cast<int>(el.get<double>()));
-                        }
-                        if (static_cast<int>(ov.size()) == row.position_count)
-                            orgasm_override = ov;
+            row.stage_speaking.clear();
+            row.stage_clothed.clear();
+            row.stage_tags.clear();
+
+            // Resolved carry state (animation-level seeds like stage 0).
+            std::string last_desc;
+            bool have_speaking = anim_speaking_present;
+            std::vector<std::string> cur_speaking = anim_speaking_present ? *anim_speaking : std::vector<std::string>{};
+            bool have_clothed = anim_clothed_present;
+            std::vector<int> cur_clothed = anim_clothed_present ? *anim_clothed : std::vector<int>{};
+            bool have_tags = anim_tags_present;
+            std::vector<std::string> cur_tags = anim_tags_present ? *anim_tags : std::vector<std::string>{};
+
+            const int npos = std::max(0, row.position_count);
+            const int nstages = std::max(0, row.stage_count);
+
+            for (int s = 1; s <= nstages; ++s) {
+                auto sit = stages.find(s);
+                if (sit != stages.end()) {
+                    const StageRaw& r = sit->second;
+                    // description: empty string = absent
+                    if (r.has_desc && !r.desc.empty())
+                        last_desc = r.desc;
+                    if (r.has_speaking) {
+                        have_speaking = true;
+                        cur_speaking = r.speaking;
                     }
-                    continue;
-                }
-                // "stage 1" / "Stage 1"
-                if (key_l.rfind("stage", 0) == 0) {
-                    int stage = 0;
-                    try {
-                        auto sp = key.find_first_of("0123456789");
-                        if (sp != std::string::npos)
-                            stage = std::stoi(key.substr(sp));
-                    } catch (...) {
-                        continue;
+                    if (r.has_clothed) {
+                        have_clothed = true;
+                        cur_clothed = r.clothed;
                     }
-                    if (stage < 1)
-                        continue;
-                    std::string desc;
-                    if (it.value().is_object() && it.value().contains("description") &&
-                        it.value()["description"].is_string())
-                        desc = it.value()["description"].get<std::string>();
-                    else if (it.value().is_string())
-                        desc = it.value().get<std::string>();
-                    row.stage_descriptions[stage] = desc;
+                    if (r.has_tags) {
+                        have_tags = true;
+                        cur_tags = r.tags;
+                    }
                 }
+                if (!last_desc.empty())
+                    row.stage_descriptions[s] = last_desc;
+                if (have_speaking)
+                    row.stage_speaking[s] = cur_speaking;
+                if (have_clothed)
+                    row.stage_clothed[s] = cur_clothed;
+                if (have_tags)
+                    row.stage_tags[s] = cur_tags;
             }
-            row.stage_has_description.assign(std::max(0, row.stage_count), 0);
-            for (int s = 1; s <= row.stage_count; ++s) {
+
+            row.stage_has_description.assign(nstages, 0);
+            for (int s = 1; s <= nstages; ++s) {
                 auto it = row.stage_descriptions.find(s);
                 if (it != row.stage_descriptions.end() && !it->second.empty())
                     row.stage_has_description[s - 1] = 1;
+            }
+
+            // pos_clothed: resolved stage 1 / anim / default 0
+            row.pos_clothed.assign(npos, 0);
+            if (have_clothed || (nstages >= 1 && row.stage_clothed.contains(1))) {
+                const auto& src = (nstages >= 1 && row.stage_clothed.contains(1))
+                                      ? row.stage_clothed[1]
+                                      : cur_clothed;
+                for (int i = 0; i < npos; ++i) {
+                    if (i < static_cast<int>(src.size()))
+                        row.pos_clothed[i] = src[static_cast<size_t>(i)] ? 1 : 0;
+                    else
+                        webui_log::warn(
+                            "AnimationDB: clothed missing actor {} for '{}'; defaulting 0", i, row.registry);
+                }
+            }
+
+            // Speaking CSV for Papyrus = resolved stage 1 / anim-level. Mark which actors
+            // the file supplied (including empty ""). PushAnim fills the rest after orgasm.
+            row.pos_speaking_modifiers.assign(npos, "");
+            if (speaking_from_file_out)
+                speaking_from_file_out->assign(static_cast<size_t>(npos), 0);
+
+            bool speaking_resolved = have_speaking || (nstages >= 1 && row.stage_speaking.contains(1));
+            std::vector<std::string> speak_src;
+            if (nstages >= 1 && row.stage_speaking.contains(1))
+                speak_src = row.stage_speaking[1];
+            else if (have_speaking)
+                speak_src = cur_speaking;
+
+            if (speaking_resolved) {
+                for (int i = 0; i < npos; ++i) {
+                    if (i < static_cast<int>(speak_src.size())) {
+                        row.pos_speaking_modifiers[static_cast<size_t>(i)] = speak_src[static_cast<size_t>(i)];
+                        if (speaking_from_file_out)
+                            (*speaking_from_file_out)[static_cast<size_t>(i)] = 1;
+                    } else {
+                        webui_log::warn(
+                            "AnimationDB: speaking_modifiers missing actor {} for '{}'; will default", i,
+                            row.registry);
+                    }
+                }
+            }
+        }
+
+        void LoadAnimJson(const std::string& registry, const std::string& display_name, AnimRow& row,
+            std::optional<std::vector<int>>& orgasm_override, std::vector<char>* speaking_from_file_out)
+        {
+            auto root = PluginDataDir() / "animations";
+            if (!std::filesystem::is_directory(root))
+                return;
+
+            auto packs = AnimPackDirs(root);
+            // Prefer <registry>.json; else fall back to <display name>.json with warning.
+            std::optional<std::filesystem::path> path;
+            std::string used_fname;
+            if (!registry.empty()) {
+                used_fname = registry + ".json";
+                path = ResolveAnimFilePath(packs, used_fname, registry);
+            }
+            if (!path && !display_name.empty()) {
+                used_fname = display_name + ".json";
+                path = ResolveAnimFilePath(packs, used_fname, registry);
+                if (path) {
+                    webui_log::warn(
+                        "AnimationDB: using display-name anidata '{}' for registry '{}' (prefer registrar filename)",
+                        used_fname, registry);
+                }
+            }
+            if (!path)
+                return;
+
+            try {
+                std::ifstream in(*path);
+                nlohmann::json info = nlohmann::json::parse(in);
+                if (!info.is_object())
+                    return;
+                ApplyAnimJsonToRow(info, row, orgasm_override, speaking_from_file_out);
+            } catch (const std::exception& e) {
+                webui_log::warn("AnimationDB: failed to parse {}: {}", path->string(), e.what());
+            } catch (...) {
+                webui_log::warn("AnimationDB: failed to parse {}", path->string());
             }
         }
 
@@ -648,6 +1084,12 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
     void InferSpeakingModifiers(const std::vector<int>& pos_no_orgasm,
         const std::unordered_set<std::string>& tags, std::vector<std::string>& out_csv_per_pos)
     {
+        // Tag-derived: gentle / nonsexual activity → empty list for all actors.
+        if (HasTag(tags, "cuddling") || HasTag(tags, "kissing") || HasTag(tags, "hug") ||
+            HasTag(tags, "holding") || HasTag(tags, "lovingkiss")) {
+            out_csv_per_pos.assign(pos_no_orgasm.size(), "");
+            return;
+        }
         // orgasm_expected 1 (pos_no_orgasm 0) → _pleasure_; not expected → empty.
         // Pain tags may append _pain_ for position 0 when expected.
         out_csv_per_pos.assign(pos_no_orgasm.size(), "");
@@ -809,13 +1251,39 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
 
         std::unordered_set<std::string> tagset(row.tags.begin(), row.tags.end());
         std::optional<std::vector<int>> orgasm_file;
-        LoadAnimJsonForName(row.name, row, orgasm_file);
+        std::vector<char> speaking_from_file;
+        LoadAnimJson(row.registry, row.name, row, orgasm_file, &speaking_from_file);
 
         auto orgasm = InferOrgasmExpected(row.position_count, row.pos_genders, tagset, orgasm_file);
         row.pos_no_orgasm.resize(orgasm.size());
         for (size_t i = 0; i < orgasm.size(); ++i)
             row.pos_no_orgasm[i] = 1 - orgasm[i];
-        InferSpeakingModifiers(row.pos_no_orgasm, tagset, row.pos_speaking_modifiers);
+
+        // Prefer resolved SNSL stage-1 tags (including empty []) over SexLab tags.
+        std::unordered_set<std::string> tags_for_infer;
+        if (row.stage_tags.contains(1)) {
+            const auto& t = row.stage_tags[1];
+            tags_for_infer.insert(t.begin(), t.end());
+        } else {
+            tags_for_infer = tagset;
+        }
+
+        std::vector<std::string> inferred;
+        InferSpeakingModifiers(row.pos_no_orgasm, tags_for_infer, inferred);
+        if (row.pos_speaking_modifiers.size() < orgasm.size())
+            row.pos_speaking_modifiers.resize(orgasm.size());
+        if (speaking_from_file.size() < orgasm.size())
+            speaking_from_file.resize(orgasm.size(), 0);
+        for (size_t i = 0; i < orgasm.size(); ++i) {
+            if (!speaking_from_file[i] && i < inferred.size())
+                row.pos_speaking_modifiers[i] = inferred[i];
+        }
+        if (row.stage_count >= 1)
+            row.stage_speaking[1] = row.pos_speaking_modifiers;
+
+        if (row.pos_clothed.size() < orgasm.size())
+            row.pos_clothed.resize(orgasm.size(), 0);
+
         row.sync_gen = g_sync_gen;
         UpsertRowLocked(row);
         return true;
@@ -925,6 +1393,18 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
         return it->second;
     }
 
+    std::string GetTransition(const std::string& registry, int from_stage, int to_stage)
+    {
+        auto row = GetByRegistry(registry);
+        if (!row || !row->transitions.is_object())
+            return {};
+        const std::string key = std::to_string(from_stage) + "-" + std::to_string(to_stage);
+        auto it = row->transitions.find(key);
+        if (it == row->transitions.end() || !it->is_string())
+            return {};
+        return it->get<std::string>();
+    }
+
     std::string SubstituteActors(const std::string& desc, const std::vector<std::string>& actor_names)
     {
         std::string out = desc;
@@ -944,7 +1424,8 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
         std::lock_guard lock(g_mutex);
         if (!g_db)
             return false;
-        auto it = g_rows.find(ToLower(registry));
+        const std::string reg_key = ToLower(registry);
+        auto it = g_rows.find(reg_key);
         if (it == g_rows.end())
             return false;
 
@@ -953,13 +1434,8 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
         std::error_code ec;
         std::filesystem::create_directories(local_dir, ec);
 
-        // Prefer original-case name for file: payload _name, else stored row.name
-        std::string fname = row.name + ".json";
-        if (payload.contains("_name") && payload["_name"].is_string())
-            fname = payload["_name"].get<std::string>() + ".json";
-        else if (payload.contains("name") && payload["name"].is_string())
-            fname = payload["name"].get<std::string>() + ".json";
-
+        // Schema 3.0: write by registrar name, not display name.
+        const std::string fname = row.registry + ".json";
         nlohmann::json file = nlohmann::json::object();
         auto path = local_dir / fname;
         if (std::filesystem::exists(path)) {
@@ -973,9 +1449,40 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
             }
         }
 
-        if (payload.contains("stage_descriptions") && payload["stage_descriptions"].is_object()) {
-            for (auto it2 = payload["stage_descriptions"].begin(); it2 != payload["stage_descriptions"].end();
-                 ++it2) {
+        nlohmann::json payload_l;
+        if (!LowerKeyObject(payload, payload_l, "SaveAnimLocal:" + row.registry))
+            payload_l = payload; // fall through with original keys if conflict
+
+        file["version"] = "3.0";
+        if (payload_l.contains("creator") && payload_l["creator"].is_string()) {
+            file["creator"] = payload_l["creator"];
+            row.creator = payload_l["creator"].get<std::string>();
+        }
+
+        auto apply_stage_desc = [&](int stage, const std::string& desc) {
+            if (stage < 1)
+                return;
+            nlohmann::json stage_obj = nlohmann::json::object();
+            if (file.contains("stage " + std::to_string(stage)) &&
+                file["stage " + std::to_string(stage)].is_object()) {
+                stage_obj = file["stage " + std::to_string(stage)];
+                // Drop legacy per-stage version.
+                nlohmann::json cleaned = nlohmann::json::object();
+                for (auto sit = stage_obj.begin(); sit != stage_obj.end(); ++sit) {
+                    if (ToLower(sit.key()) == "version")
+                        continue;
+                    cleaned[sit.key()] = sit.value();
+                }
+                stage_obj = std::move(cleaned);
+            }
+            stage_obj["description"] = desc;
+            file["stage " + std::to_string(stage)] = stage_obj;
+            row.stage_descriptions[stage] = desc;
+        };
+
+        if (payload_l.contains("stage_descriptions") && payload_l["stage_descriptions"].is_object()) {
+            for (auto it2 = payload_l["stage_descriptions"].begin();
+                 it2 != payload_l["stage_descriptions"].end(); ++it2) {
                 int stage = 0;
                 try {
                     stage = std::stoi(it2.key());
@@ -983,36 +1490,97 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
                     continue;
                 }
                 std::string desc = it2.value().is_string() ? it2.value().get<std::string>() : "";
-                nlohmann::json stage_obj = nlohmann::json::object();
-                stage_obj["version"] = "2.0";
-                stage_obj["description"] = desc;
-                file["stage " + std::to_string(stage)] = stage_obj;
-                row.stage_descriptions[stage] = desc;
+                apply_stage_desc(stage, desc);
             }
         }
-        if (payload.contains("orgasm_expected") && payload["orgasm_expected"].is_array()) {
-            file["orgasm_expected"] = payload["orgasm_expected"];
-            auto ov = JsonToVecInt(payload["orgasm_expected"]);
+
+        // Also accept canonical "stage N" keys on the payload.
+        for (auto it2 = payload_l.begin(); it2 != payload_l.end(); ++it2) {
+            int stage = 0;
+            if (!ParseStageKey(it2.key(), stage))
+                continue;
+            std::string desc;
+            if (it2.value().is_string()) {
+                desc = it2.value().get<std::string>();
+            } else if (it2.value().is_object()) {
+                nlohmann::json st;
+                if (LowerKeyObject(it2.value(), st, row.registry + " save stage")) {
+                    if (st.contains("description") && st["description"].is_string())
+                        desc = st["description"].get<std::string>();
+                    // Merge other stage fields (speaking/clothed/tags) without version.
+                    nlohmann::json stage_obj = nlohmann::json::object();
+                    if (file.contains("stage " + std::to_string(stage)) &&
+                        file["stage " + std::to_string(stage)].is_object())
+                        stage_obj = file["stage " + std::to_string(stage)];
+                    if (!desc.empty() || (st.contains("description")))
+                        stage_obj["description"] = desc;
+                    if (st.contains("speaking_modifiers"))
+                        stage_obj["speaking_modifiers"] =
+                            SpeakingCsvToNestedJson(
+                                ParseSpeakingModifiersValue(st["speaking_modifiers"])
+                                    .value_or(std::vector<std::string>{}));
+                    if (st.contains("clothed"))
+                        stage_obj["clothed"] = st["clothed"];
+                    if (st.contains("tags"))
+                        stage_obj["tags"] = st["tags"];
+                    stage_obj.erase("version");
+                    file["stage " + std::to_string(stage)] = stage_obj;
+                    if (!desc.empty() || st.contains("description"))
+                        row.stage_descriptions[stage] = desc;
+                    continue;
+                }
+            }
+            apply_stage_desc(stage, desc);
+        }
+
+        if (payload_l.contains("orgasm_expected") && payload_l["orgasm_expected"].is_array()) {
+            file["orgasm_expected"] = payload_l["orgasm_expected"];
+            auto ov = JsonToVecInt(payload_l["orgasm_expected"]);
             if (static_cast<int>(ov.size()) == row.position_count) {
                 row.pos_no_orgasm.resize(ov.size());
                 for (size_t i = 0; i < ov.size(); ++i)
                     row.pos_no_orgasm[i] = 1 - ov[i];
             }
         }
-        if (payload.contains("pos_no_orgasm") && payload["pos_no_orgasm"].is_array()) {
-            row.pos_no_orgasm = JsonToVecInt(payload["pos_no_orgasm"]);
+        if (payload_l.contains("pos_no_orgasm") && payload_l["pos_no_orgasm"].is_array()) {
+            row.pos_no_orgasm = JsonToVecInt(payload_l["pos_no_orgasm"]);
             nlohmann::json ov = nlohmann::json::array();
             for (int v : row.pos_no_orgasm)
                 ov.push_back(1 - v);
             file["orgasm_expected"] = ov;
         }
-        if (payload.contains("speaking_modifiers") && payload["speaking_modifiers"].is_array()) {
-            file["speaking_modifiers"] = payload["speaking_modifiers"];
-            row.pos_speaking_modifiers = JsonToVecStr(payload["speaking_modifiers"]);
+
+        if (payload_l.contains("speaking_modifiers") && payload_l["speaking_modifiers"].is_array()) {
+            auto parsed = ParseSpeakingModifiersValue(payload_l["speaking_modifiers"]);
+            if (parsed) {
+                file["speaking_modifiers"] = SpeakingCsvToNestedJson(*parsed);
+                row.pos_speaking_modifiers = *parsed;
+                if (row.stage_count >= 1)
+                    row.stage_speaking[1] = *parsed;
+            }
         }
-        if (payload.contains("clothed") && payload["clothed"].is_array()) {
-            file["clothed"] = payload["clothed"];
-            // clothed 1 = dressed / no_stripping; mirror into row if we track dressed separately later
+        if (payload_l.contains("clothed") && payload_l["clothed"].is_array()) {
+            file["clothed"] = payload_l["clothed"];
+            row.pos_clothed = JsonToVecInt(payload_l["clothed"]);
+            for (int& v : row.pos_clothed)
+                v = v ? 1 : 0;
+            if (row.stage_count >= 1)
+                row.stage_clothed[1] = row.pos_clothed;
+        }
+        if (payload_l.contains("tags") && payload_l["tags"].is_array()) {
+            file["tags"] = payload_l["tags"];
+            row.file_tags = JsonToVecStr(payload_l["tags"]);
+            if (row.stage_count >= 1)
+                row.stage_tags[1] = row.file_tags;
+        }
+        if (payload_l.contains("transitions") && payload_l["transitions"].is_object()) {
+            nlohmann::json tr = nlohmann::json::object();
+            for (auto tit = payload_l["transitions"].begin(); tit != payload_l["transitions"].end(); ++tit) {
+                if (tit.value().is_string())
+                    tr[ToLower(tit.key())] = tit.value().get<std::string>();
+            }
+            file["transitions"] = tr;
+            row.transitions = tr;
         }
 
         row.stage_has_description.assign(std::max(0, row.stage_count), 0);
@@ -1020,6 +1588,41 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
             auto sit = row.stage_descriptions.find(s);
             if (sit != row.stage_descriptions.end() && !sit->second.empty())
                 row.stage_has_description[s - 1] = 1;
+        }
+
+        // Rebuild stage keys canonically without per-stage version.
+        {
+            nlohmann::json stages_out = nlohmann::json::object();
+            std::vector<std::string> drop_keys;
+            for (auto fit = file.begin(); fit != file.end(); ++fit) {
+                int stage = 0;
+                if (!ParseStageKey(ToLower(fit.key()), stage))
+                    continue;
+                drop_keys.push_back(fit.key());
+                if (!fit.value().is_object()) {
+                    if (fit.value().is_string()) {
+                        nlohmann::json o = nlohmann::json::object();
+                        o["description"] = fit.value().get<std::string>();
+                        stages_out["stage " + std::to_string(stage)] = o;
+                    }
+                    continue;
+                }
+                nlohmann::json cleaned = nlohmann::json::object();
+                for (auto sit = fit.value().begin(); sit != fit.value().end(); ++sit) {
+                    if (ToLower(sit.key()) == "version")
+                        continue;
+                    cleaned[ToLower(sit.key()) == "description"       ? "description"
+                            : ToLower(sit.key()) == "speaking_modifiers" ? "speaking_modifiers"
+                            : ToLower(sit.key()) == "clothed"           ? "clothed"
+                            : ToLower(sit.key()) == "tags"              ? "tags"
+                                                                         : sit.key()] = sit.value();
+                }
+                stages_out["stage " + std::to_string(stage)] = cleaned;
+            }
+            for (const auto& k : drop_keys)
+                file.erase(k);
+            for (auto sit = stages_out.begin(); sit != stages_out.end(); ++sit)
+                file[sit.key()] = sit.value();
         }
 
         try {
@@ -1030,6 +1633,7 @@ CREATE INDEX IF NOT EXISTS idx_anim_tags_tag ON animation_tags(tag);
         }
         UpsertRowLocked(row);
         RebuildTagIndexLocked();
+        webui_log::info("AnimationDB: SaveAnimLocal wrote {}", path.string());
         return true;
     }
 }

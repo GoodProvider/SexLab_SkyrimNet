@@ -1,18 +1,12 @@
 {
-    "stage 1": {
-        "description": "{{sl.actors.0}} on hands and knees, shaking ass backward towards {{sl.actors.1}}. {{sl.actors.1}} kneels and strocks their cock.",
-        "version": "2.0"
-    },
-    "stage 2": {
-        "description": "{{sl.actors.0}} on hands and knees, shaking ass backwards towards a kneeling {{sl.actors.1}}. {{sl.actors.0}} teases {{sl.actors.1}}'s cock with one foot.",
-        "version": "2.0"
-    },
-    "stage 3": {
-        "description": "{{sl.actors.0}} lays on side, looking backwards, and teasing {{sl.actors.0}} teases {{sl.actors.1}}'s cock with one foot. {{sl.actors.1}} kneels, holding {{sl.actors.0}}'s leg and licking it.",
-        "version": "2.0"
-    },
-    "orgasm_denied": [
-        1,
-        0
-    ]
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.0}} on hands and knees, shaking ass backward towards {{sl.actors.1}}. {{sl.actors.1}} kneels and strocks their cock."
+  },
+  "stage 2": {
+    "description": "{{sl.actors.0}} on hands and knees, shaking ass backwards towards a kneeling {{sl.actors.1}}. {{sl.actors.0}} teases {{sl.actors.1}}'s cock with one foot."
+  },
+  "stage 3": {
+    "description": "{{sl.actors.0}} lays on side, looking backwards, and teasing {{sl.actors.0}} teases {{sl.actors.1}}'s cock with one foot. {{sl.actors.1}} kneels, holding {{sl.actors.0}}'s leg and licking it."
+  }
 }

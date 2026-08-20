@@ -1,18 +1,15 @@
 {
-    "Stage 1": {
-        "description": "{{sl.actors.1}} lays behind {{sl.actors.0}} and reaches around and fingers {{sl.actors.0}}.",
-        "version": "2.0"
-    },
-    "Stage 2": {
-        "description": "{{sl.actors.1}} spooning {{sl.actors.0}} from behind and makes love with {{sl.actors.0}}.",
-        "version": "2.0"
-    },
-    "Stage 3": {
-        "description": "{{sl.actors.1}} spooning {{sl.actors.0}} from behind and makes love with {{sl.actors.0}}. {{sl.actors.0}} holds up and open her leg.",
-        "version": "2.0"
-    },
-    "Stage 4": {
-        "description": "{{sl.actors.1}} spooning {{sl.actors.0}} from behind and makes love with {{sl.actors.0}}. {{sl.actors.0}} looks into {{sl.actors.1}}'s eyes and fingers themself.",
-        "version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.1}} lays behind {{sl.actors.0}} and reaches around and fingers {{sl.actors.0}}."
+  },
+  "stage 2": {
+    "description": "{{sl.actors.1}} spooning {{sl.actors.0}} from behind and makes love with {{sl.actors.0}}."
+  },
+  "stage 3": {
+    "description": "{{sl.actors.1}} spooning {{sl.actors.0}} from behind and makes love with {{sl.actors.0}}. {{sl.actors.0}} holds up and open her leg."
+  },
+  "stage 4": {
+    "description": "{{sl.actors.1}} spooning {{sl.actors.0}} from behind and makes love with {{sl.actors.0}}. {{sl.actors.0}} looks into {{sl.actors.1}}'s eyes and fingers themself."
+  }
 }

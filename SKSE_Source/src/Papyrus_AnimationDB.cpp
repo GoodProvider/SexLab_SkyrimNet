@@ -102,11 +102,28 @@ namespace PapyrusBindings_AnimationDB
             j["_tags"] = row.tags;
             j["_pos_no_orgasm"] = row.pos_no_orgasm;
             j["_pos_speaking_modifiers"] = row.pos_speaking_modifiers;
+            j["_clothed"] = row.pos_clothed;
             j["_stage_has_description"] = row.stage_has_description;
             nlohmann::json sd = nlohmann::json::object();
             for (const auto& [k, v] : row.stage_descriptions)
                 sd[std::to_string(k)] = v;
             j["_stage_descriptions"] = sd;
+            nlohmann::json ss = nlohmann::json::object();
+            for (const auto& [k, v] : row.stage_speaking)
+                ss[std::to_string(k)] = v;
+            j["_stage_speaking"] = ss;
+            nlohmann::json sc = nlohmann::json::object();
+            for (const auto& [k, v] : row.stage_clothed)
+                sc[std::to_string(k)] = v;
+            j["_stage_clothed"] = sc;
+            nlohmann::json st = nlohmann::json::object();
+            for (const auto& [k, v] : row.stage_tags)
+                st[std::to_string(k)] = v;
+            j["_stage_tags"] = st;
+            j["_transitions"] = row.transitions.is_object() ? row.transitions : nlohmann::json::object();
+            j["_file_tags"] = row.file_tags;
+            if (!row.creator.empty())
+                j["_creator"] = row.creator;
             return j;
         }
     }
@@ -189,6 +206,13 @@ namespace PapyrusBindings_AnimationDB
             AnimationDB::GetStageDescription(registry.c_str() ? registry.c_str() : "", stage));
     }
 
+    RE::BSFixedString AnimDb_GetTransition(RE::StaticFunctionTag*, RE::BSFixedString registry,
+        std::int32_t from_stage, std::int32_t to_stage)
+    {
+        return RE::BSFixedString(AnimationDB::GetTransition(
+            registry.c_str() ? registry.c_str() : "", from_stage, to_stage));
+    }
+
     RE::BSFixedString AnimDb_SubstituteActors(RE::StaticFunctionTag*, RE::BSFixedString desc,
         RE::BSFixedString actors_json)
     {
@@ -249,6 +273,7 @@ namespace PapyrusBindings_AnimationDB
         a_vm->RegisterFunction("AnimDb_TotalCount", scriptName, AnimDb_TotalCount);
         a_vm->RegisterFunction("AnimDb_GetByRegistry", scriptName, AnimDb_GetByRegistry);
         a_vm->RegisterFunction("AnimDb_GetStageDescription", scriptName, AnimDb_GetStageDescription);
+        a_vm->RegisterFunction("AnimDb_GetTransition", scriptName, AnimDb_GetTransition);
         a_vm->RegisterFunction("AnimDb_SubstituteActors", scriptName, AnimDb_SubstituteActors);
         a_vm->RegisterFunction("AnimDb_SaveAnimLocal", scriptName, AnimDb_SaveAnimLocal);
         a_vm->RegisterFunction("AnimDb_ResolveTags", scriptName, AnimDb_ResolveTags);

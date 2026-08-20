@@ -1,27 +1,18 @@
 {
-  "Stage 1": {
-    "Description": "{{sl.actors.0}} is thrown on the floor, face down. As she tried to get up, {{sl.actors.1}} straddles her, pinning her down.",
-    "id": "Stage 1",
-    "Version": "2.0"
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.0}} is thrown on the floor, face down. As she tried to get up, {{sl.actors.1}} straddles her, pinning her down."
   },
-  "Stage 2": {
-    "Description": "{{sl.actors.0}} yelps as her head suddenly pulled up, forcing her to arch her back. {{sl.actors.1}} sitting on top of her leans over her shoulder and gives her a putrid, unwellcome kiss, its boner resting between her ass cheeks.",
-    "id": "Stage 2",
-    "Version": "2.0"
+  "stage 2": {
+    "description": "{{sl.actors.0}} yelps as her head suddenly pulled up, forcing her to arch her back. {{sl.actors.1}} sitting on top of her leans over her shoulder and gives her a putrid, unwellcome kiss, its boner resting between her ass cheeks."
   },
-  "Stage 3": {
-    "Description": "{{sl.actors.0}} gasps, as {{sl.actors.1}} boner invades her pussy. Her mouth is immediately covered by its hand, muffling her and forcing her to arch her back, making penetration deeper.",
-    "id": "Stage 3",
-    "Version": "2.0"
+  "stage 3": {
+    "description": "{{sl.actors.0}} gasps, as {{sl.actors.1}} boner invades her pussy. Her mouth is immediately covered by its hand, muffling her and forcing her to arch her back, making penetration deeper."
   },
-  "Stage 4": {
-    "Description": "{{sl.actors.1}} grabs both {{sl.actors.0}} hands and pulls them back, arching her further back. She whines and screams, as undead rails her hard from behind.",
-    "id": "Stage 5",
-    "Version": "2.0"
-	},
-  "Stage 5": {
-    "Description": "{{sl.actors.0}}s fight is gone, she is spent and just moans involounteraly as {{sl.actors.1}} fills her pussy with cum. As she lies limp on the floor, undead roughly grabs her head and gives her another putrid kiss.",
-    "id": "Stage 5",
-    "Version": "2.0"
+  "stage 4": {
+    "description": "{{sl.actors.1}} grabs both {{sl.actors.0}} hands and pulls them back, arching her further back. She whines and screams, as undead rails her hard from behind."
+  },
+  "stage 5": {
+    "description": "{{sl.actors.0}}s fight is gone, she is spent and just moans involounteraly as {{sl.actors.1}} fills her pussy with cum. As she lies limp on the floor, undead roughly grabs her head and gives her another putrid kiss."
   }
 }

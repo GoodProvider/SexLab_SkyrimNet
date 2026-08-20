@@ -1,18 +1,12 @@
 {
-    "orgasm_denied": [
-        1,
-        0
-    ],
-    "stage 1": {
-        "description": "{{sl.actors.0}} hugs {{sl.actors.1}} from behind.",
-        "version": "2.0"
-    },
-    "stage 2": {
-        "description": "{{sl.actors.0}} lays on back behind {{sl.actors.1}} and strocks {{sl.actors.1}}'s leg with their leg.",
-        "version": "2.0"
-    },
-    "stage 3": {
-        "description": "{{sl.actors.0}} lays on back wrapping around {{sl.actors.1}}. {{sl.actors.1}} lays back against {{sl.actors.0}} while {{sl.actors.0}} gives {{sl.actors.1}} a footjob.",
-        "version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.0}} hugs {{sl.actors.1}} from behind."
+  },
+  "stage 2": {
+    "description": "{{sl.actors.0}} lays on back behind {{sl.actors.1}} and strocks {{sl.actors.1}}'s leg with their leg."
+  },
+  "stage 3": {
+    "description": "{{sl.actors.0}} lays on back wrapping around {{sl.actors.1}}. {{sl.actors.1}} lays back against {{sl.actors.0}} while {{sl.actors.0}} gives {{sl.actors.1}} a footjob."
+  }
 }

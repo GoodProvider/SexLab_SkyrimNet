@@ -61,16 +61,15 @@ Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / not
 
 - ControlPanel bottom `#control-actor-pulldown` owns focus for TargetMenu / Scene Menu / AnimationPanel. `#target-name` and Scene/Animation **scene** pulldowns removed. OStimNet framework pulldown (`#framework-row`) sits on ControlPanel above the actor row.
 - Nearby list (C++ `PopulateNearbyActors`): player first; then status `sexlab` → `ok` → ineligible (`child`/`cmbt`/`ostim`/`dead`/`load`); then distance. Labels crop name to 10 + status suffix. Soft Scene Menu pool = `selectable && status==ok`.
-- Hotkey always `Open_WebUI_Target` (+ `WebUI_AfterTargetOpen` default pick). MultiTarget retired for this path. Animation main-panel preference persists across hide; restore via `WebUI_MaybeRestoreAnimationPanel` only when focus is SexLab-animating **and** preference true.
-- Active panels: `position` (▲▼ slot), `change_actors` (replace focus slot from eligible nearby), victim/orgasm/speaking/clothed single-actor.
+- Hotkey **always toggles** overlay visibility: visible → C++ `WebUI_Visibility_Hide` (no Papyrus); hidden → `Open_WebUI_Target` (+ `WebUI_AfterTargetOpen` default pick). Close does not require the same focus actor. MultiTarget retired for this path. Animation main-panel preference persists across hide; restore via `WebUI_MaybeRestoreAnimationPanel` only when focus is SexLab-animating **and** preference true.
+- Active panels: `stop` (speaker + silent/stop/explain), `stage` (index/description table), `position` (whole-cast Scene Creator table), `animation` (AnimationPanel name picker in the main host).
 
-## Active TargetMenu `type: papyrus` (2026-08-06)
+## Active TargetMenu `type: papyrus` (2026-08-06, Actor/Scene split 2026-08-16)
 
-- Mid-scene TargetMenu options under `webui/menu/target/options/0*_active_*.json` use **`type: papyrus`** (no `name`, no YAML / `actions_index`). JS `onAction({action:"papyrus",...})` → C++ `ExecutePapyrusOption` → `SkyrimNet_SexLab_Actions.TM_*`.
-- Eligibility: `SexLabAnimatingFaction` rank `> 0` only (no ostim gate). Target = scene picker via ControlPanel focus.
-- Storage: Animation JSON durable; AnimDB cache; Scene overlay this-thread only. Save (`TM_SaveAnimationSettings` / AnimationPanel Save) → SQL + JSON (`orgasm_expected`, `speaking_modifiers`, `clothed`). Victim/deny never durable; deny saves as expected=`1`.
+- Mid-scene TargetMenu options under `webui/TargetMenu/Scene/options/*.json` use **`type: papyrus`** (no `name`, no YAML / `actions_index`). JS `onAction({action:"papyrus",...})` → C++ `ExecutePapyrusOption` → `SkyrimNet_SexLab_Actions.TM_*`. Actor (not animating) options live in `webui/TargetMenu/Actor/options/`. Catalog pick is ControlPanel focus `SexLabAnimatingFaction` — no per-option faction eligibility on Scene JSON.
+- Storage: Animation JSON durable; AnimDB cache; Scene overlay this-thread only. Save (`TM_SaveAnimationSettings` / AnimationPanel Save) → SQL + JSON (`orgasm_expected`, `speaking_modifiers`, `clothed`). Victim/deny never durable; deny saves as expected=`1`. Full speaking token CSV is persisted (not token `[0]` only).
 - Anim switch: `SeedOverlayFromAnimDb` — per-registry `user_anim_defaults` win, else AnimDB, else orgasm→speaking helper (`1`→`_pleasure_`, `0`→`""`).
-- Live panels (`panel` on option JSON): `change_actors` (eligible replace-in-slot), `position` (index ▲▼ → `TM_ChangeActors`), `animation_list`, `victim`, `orgasm`, `speaking`, `clothed`. Stop pulldown: silent / stop / explain. LLM YAML deferred: `todo/active_action_yaml.md`.
+- Live Scene panels (`panel` on option JSON): `stop` (speaker pulldown + silent/stop/explain), `stage` (`TM_GoToStage` / `TM_SetStageDescription`), `position` (whole-cast table → `TM_ChangeActors` / clothed / O expect vs not / V / speaking chips), `animation` (opens AnimationPanel picker; `TM_SetAnimationIndex`). LLM YAML deferred: `todo/active_action_yaml.md`.
 
 ## Debug SKSE DLL + PublicGetPluginConfigValue CTD (2026-08-05, harden 2026-08-16)
 
@@ -87,8 +86,8 @@ Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / not
 - **IDs:** C++ `PublicGetPluginConfigValue("SkyrimNet_SexLab", path, def)`; Papyrus `SkyrimNetApi.GetConfig*("Plugin_SkyrimNet_SexLab", path, def)`.
 - **Practical split:** C++ owns control-store hotkey (`sexlab.controls.editStageHotkey*` VK→DX via `MapVirtualKeyA`), WebUI Settings panel, and syncing `skyrimnet_sexlab_public_sex_accepted` / `hide_hermaphrodites` / `ostim_player` globals on load. MCM can also enable/remap the same KeyHandler via DX `WebUI_SetHotkey`. Papyrus only `GetConfig*` at Menu / Utilities / Scene / Creator / Manager call sites. No plugin `PatchConfig`.
 - **ControlPanel framework toggle** still writes the ostim_player **global** for live eligibility; next load re-syncs from control store.
-- **Settings main panel:** `webui/main_panels/1000_settings.json` → `settings_panel` (rebuild → switches to Log, version from `info.json`, docs URL text, Open SkyrimNet dashboard). MCM shows redirect text + rebuild + last-rebuild timestamp.
-- **Log main panel:** `webui/main_panels/0900_log_panel.json` → `log_panel`. Source: `SKSE::log::log_directory()` + `SkyrimNet_SexLab.log`. JS regex filter; follow-tail until user scrolls away. Settings Rebuild AnimDB switches here so progress lines are visible.
+- **Settings main panel:** `webui/MainPanels/1000_settings.json` → `settings_panel` (rebuild → switches to Log, version from `info.json`, docs URL text, Open SkyrimNet dashboard). MCM shows redirect text + rebuild + last-rebuild timestamp.
+- **Log main panel:** `webui/MainPanels/0900_log_panel.json` → `log_panel`. Source: `SKSE::log::log_directory()` + `SkyrimNet_SexLab.log`. JS regex filter; follow-tail until user scrolls away. Settings Rebuild AnimDB switches here so progress lines are visible.
 - **No Prisma deep-link** to Plugins → SkyrimNet_SexLab; `TriggerToggleDashboard()` only toggles the SkyrimNet dashboard. **ShellExecute** for GitHub docs is unreliable in-game — show the URL as text instead.
 
 ## AnimationDB creature / race-key filter (2026-08-02)
@@ -111,8 +110,8 @@ Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / not
 - **Scene Creator anim list**: query cap is 125 (SexLab `GetList`). Do **not** embed `JSON.stringify(anim)` in each row `onclick` — with 125 rows that freezes CEF during `configureSceneCreator` and the panel never paints. Keep rows in `SC.lastAnims` and pass an index. Rendered as a 5-column table (genders / modifiers / name / num stages / description); WebUI `AnimRowToJson` includes `_stage_descriptions` so the description column can substitute `{{sl.actors.N}}` from Scene Creator positions.
 - **Scene presets**: Load/Save write `scenes/<name>.json` (no OS dialog); preserve `event_hook`. Do not `LoadSetting` on Start after UI edits — that overwrites tags.
 - **Victim mask**: After WebUI V toggles, call `RebuildVictimsFromMask` — never `SetNames`/`SetMasks` (those rebuild the mask from `victims[]` and wipe UI).
-- **AnimationMenu:** hotkey opens TargetMenu + ControlPanel focus; Animation main panel restores only if preferred-open and focus is SexLab-animating. Close saves `_local_` anim JSON **only if dirty**; live O/speaking via `WebUI_OnMenuLiveUpdate`; V display-only; no tracking toggle.
-- **Scene Menu dual-mode (2026-08-02 / 2026-08-07):** UI label Scene Menu; scene focus from ControlPanel actor (no duplicate scene pulldown). Active: A/N + Update (SexLab anim list cap **128** via `sslUtility.PushAnimation`); AnimationPanel is single-select AnimDb editor (slot positions, not actors); Prev/Next/Stop only when connected to a live scene. Tags stay UI filters — pool mutates only on Update.
+- **AnimationMenu:** hotkey opens TargetMenu + ControlPanel focus; Animation main panel restores only if preferred-open and focus is SexLab-animating. AnimationPanel is an in-thread **name picker** (filter + scrollable list, no 10-cap); stage/position/stop live on TargetMenu Scene. Escape cancels the overlay (does not save empty AM state).
+- **Scene Menu dual-mode (2026-08-02 / 2026-08-07):** UI label Scene Menu; scene focus from ControlPanel actor (no duplicate scene pulldown). Active: A/N + Update (SexLab anim list cap **128** via `sslUtility.PushAnimation`). Tags stay UI filters — pool mutates only on Update.
 - **Legacy**: `SkyrimNet_SexLab_Stages` is an empty stub for save compatibility; all callers use AnimDb.
 
 ## Caprica rejects formal param name `scriptName` (2026-07-29)
@@ -123,13 +122,15 @@ Caprica fails natives that declare a parameter named `scriptName` with `no viabl
 
 `SkyrimNet_SexLab_API.RegisterTargetMenuOption(Form quest, …)` appends runtime actions to the WebUI Target Menu (end of `options` + `actions` in `BuildUICatalog`). Stores the quest **FormID** (not EditorID) — EditorID lookup often fails for optional handler ESPs and `FindQuest` would fall back to the main quest. Cleared on `kPostLoadGame` / `kNewGame`; handlers must re-register in `Setup` with `self as Form`. Click dispatches via `ExecuteAction` with a single `target` Actor arg.
 
-**Preferred (2026-08-02):** optional handlers ship filesystem `webui/menu/target/options/*.json` with `plugin` + `questFormId` + `scriptName` + `executionFunctionName` (+ optional `requiresPlugin`). UDNG bondage uses this via FOMOD; `RegisterTargetMenuOption` is legacy.
+**Preferred (2026-08-02, dest 2026-08-16):** optional handlers ship filesystem `webui/TargetMenu/Actor/options/*.json` with `plugin` + `questFormId` + `scriptName` + `executionFunctionName` (+ optional `requiresPlugin`). UDNG bondage uses this via FOMOD; `RegisterTargetMenuOption` is legacy (Actor catalog only).
 
-## ControlPanel / main_panels (2026-08-02)
+## ControlPanel / MainPanels (2026-08-02, rename 2026-08-16)
 
-Left column: ControlPanel (`#control-panel`: title + main_panel pulldown + pause/unpause + OStimNet framework pulldown + **actor focus pulldown**) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/main_panels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`. Catalog invoke: `configureControlPanel`. Actor focus → `onControlActorChange` → `ApplyControlActorFocus` / `WebUI_OnControlActorFocus`. `WebUI_Visibility_Show` pushes `setFrameworkToggle`.
+Left column: ControlPanel (`#control-panel`: title + main_panel pulldown + pause/unpause + OStimNet framework pulldown + **actor focus pulldown**) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/MainPanels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`. Catalog invoke: `configureControlPanel`. Actor focus → `onControlActorChange` → `ApplyControlActorFocus` / `WebUI_OnControlActorFocus`. `WebUI_Visibility_Show` pushes `setFrameworkToggle`.
 
 - **Pause toggle (2026-08-05):** PrismaUI `Focus(view, true)` pauses the game (default on Show). ControlPanel button toggles pause while the view stays shown. **Quirk:** calling `Focus` again while already focused does **not** change `pauseGame` — must `Unfocus` then `Focus(pauseGame)` to switch. Button label: **unpause** when paused, **pause** when running.
+
+- **ControlPanel missing after Start (2026-08-16):** Scene Creator / papyrus Start hide `#control-panel`. Same-actor `Target_Menu_Open` used to only `configureTargetMenu` + Show, skipping `showPanel`. Overlay came back with TargetMenu/ControlPanel still `display:none`. Fix: `WebUI_Visibility_Show` invokes `showControlPanel()`; same-actor open also `showPanel('target_menu_panel')`.
 
 - **Scene Menu appear/disappear loop (2026-08-03):** Do **not** call `requestSceneConnectionChange` from `revealMainPanel`. Connection reload → `SceneCreator_Open` (`showPanel` → `onMainPanelChange` → `SwitchMainPanel` → reveal) loops. Soft path: `SceneCreator_Configure` / `Animation_Menu_Configure` (no HideAll/showPanel); `WebUI_OnSceneConnectionChange` and `WebUI_OnAnimUpdate` use Configure; `SwitchMainPanel` invokes `mainPanelDidOpen()` once on **key change** only. `showPanel` for SC/AM is idempotent when already selected.
 
@@ -151,14 +152,17 @@ SexLab/SLSO `SexLabOrgasm` uses `ModEvent.PushForm(eid, ActorRef)`. Handlers tha
 
 **Display scale (2026-08-07):** Matches SkyrimNet dashboard scaling system. Design tokens are **px** (`--text-base: 15px`, `--space-*`, `--radius`, `--target-min: 44px`); global scale is `document.body.style.zoom = clamp(ui_scale,0.75–1.5) * resolutionBaseline()` where baseline is `1` at ≤~1080p height else `(innerHeight/1080)*0.85` (up-only; never shrinks from resolution). User `ui_scale` from `GET {__SN_BASE__||http://localhost:8080}/config?api=get&name=Dashboard`. Fit without crop: `#left-column` / target panels use `max-height` + `overflow-y: auto` (same pattern as SkyrimNet’s `.main` scroll). Re-applies on resize and Settings configure.
 
-**Menu hotkey (2026-08-04):** Control store `sexlab.controls.editStageHotkeyEnabled` + `editStageHotkey` (VK→DX). MCM also has Enable + KeyMap (DX) → `WebUI_SetHotkey`. MCM Setup only re-applies when its toggle is on (does not clear a store-enabled key). Escape stays always registered. Hotkey → `Menu.ProcessHotkey` → WebUI Target / Scene / MultiTarget.
+**Menu hotkey (2026-08-04, toggle 2026-08-16):** Control store `sexlab.controls.editStageHotkeyEnabled` + `editStageHotkey` (VK→DX). MCM also has Enable + KeyMap (DX) → `WebUI_SetHotkey`. MCM Setup only re-applies when its toggle is on (does not clear a store-enabled key). Escape stays always registered. Hotkey hides immediately when the overlay is visible (any actor); otherwise `Menu.ProcessHotkey` → `Open_WebUI_Target`. Same-actor reopen rebuilds catalog, `showPanel('target_menu_panel')`, and Show (ControlPanel included). Do not dispatch `AfterTargetOpen` on close.
 
 ## WebUI target menu catalog (2026-07-28, outfit/actionSwitch 2026-07-31, split layout 2026-07-31)
 
 Target panel UI is driven by:
-- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/menu/target/defaults.json` — `{ "defaultsParameters": { ... } }` (legacy root key `defaults` still accepted).
-- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/menu/target/options/*.json` — one top-level option object per file (`parameter` | `pulldown` | `action` | `actionSwitch`). **Order = lexicographic filename** (numeric prefixes). All JSON keys lowercase. Pulldowns / switches nest via `options[]`; each `action` needs `name` (SkyrimNet id) + `label` (WebUI display only). Optional `parameters` on `action`/`pulldown` overrides defaults. C++ assembles into the in-memory `defaultsParameters` + `options[]` catalog.
+- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/TargetMenu/Actor/defaults.json` — `{ "defaultsParameters": { ... } }` (legacy root key `defaults` still accepted).
+- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/TargetMenu/Actor/options/*.json` — start-scene + outfit when focus is **not** in SexLabAnimatingFaction.
+- `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/TargetMenu/Scene/options/*.json` — live-scene group editors when focus **is** animating.
 - `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/actions_index.json` — generated from SkyrimNet action YAMLs (`tools/generate_actions_index.py`); `{ "actions": [...] }` only (no `by_category`).
+
+**Order = lexicographic filename** (numeric prefixes). All JSON keys lowercase. Pulldowns / switches nest via `options[]`; each `action` needs `name` (SkyrimNet id) + `label` (WebUI display only). Optional `parameters` on `action`/`pulldown` overrides defaults. C++ loads both trees and `BuildUICatalog` picks Actor vs Scene.
 
 **Actor sources** in `defaultsParameters`: prefer `playerActor` (player) and `currentActor` (menu focus). `ActionDispatch::ResolveSource` also accepts legacy `player` / `target` / `focus`.
 

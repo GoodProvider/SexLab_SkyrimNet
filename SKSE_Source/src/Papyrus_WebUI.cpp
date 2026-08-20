@@ -191,7 +191,7 @@ namespace PapyrusBindings_WebUI
     void DispatchAnimationMenuExportState(RE::TESForm* thread, RE::TESForm* sl_scene);
 
     /// Opens the target menu for the given actor and focuses the PrismaUI view.
-    /// Same target again toggles visibility instead of rebuilding.
+    /// Overlay already visible → hide (hotkey toggle), any focus actor.
     void Target_Menu_Open(RE::StaticFunctionTag*, RE::Actor* Target_Input, bool hasStrippedItems,
         bool editTagsPlayer, bool editTagsNonPlayer)
     {
@@ -203,13 +203,21 @@ namespace PapyrusBindings_WebUI
         EditTagsPlayer = editTagsPlayer;
         EditTagsNonPlayer = editTagsNonPlayer;
 
+        if (!WebUI_IsHidden()) {
+            webui_log::info("Target_Menu_Open: overlay visible — hide");
+            WebUI_Visibility_Hide();
+            return;
+        }
+
         if (Target_Current == Target_Input) {
             // Rebuild catalog so eligibilityRules re-evaluate against live focus state.
             if (!ActionCatalog::IsLoaded())
                 ActionCatalog::Load();
             auto catalog = ActionCatalog::BuildUICatalog(hasStrippedItems);
             WebUI_Invoke("configureTargetMenu(" + catalog.dump() + ");");
-            WebUI_Visibility_Toggle();
+            WebUI_Invoke("configureControlPanel(" + ActionCatalog::BuildMainPanelsCatalog().dump() + ");");
+            WebUI_Invoke("showPanel('target_menu_panel');");
+            WebUI_Visibility_Show();
             return;
         }
 
@@ -222,7 +230,9 @@ namespace PapyrusBindings_WebUI
 
         const auto targetFormId = Target_Current->GetFormID();
         uint64_t uuid = (PublicFormIDToUUID) ? PublicFormIDToUUID(targetFormId) : 0;
-        std::string skyrimNetName = (uuid && PublicGetActorNameByUUID) ? PublicGetActorNameByUUID(uuid) : "";
+        std::string skyrimNetName = (uuid && SexLabNet::CrossDllStdStringSafe() && PublicGetActorNameByUUID)
+            ? PublicGetActorNameByUUID(uuid)
+            : "";
         const char* targetName = !skyrimNetName.empty() ? skyrimNetName.c_str() : Target_Current->GetName();
         const char* name = (targetName && targetName[0]) ? targetName : "Unknown";
 
@@ -240,17 +250,6 @@ namespace PapyrusBindings_WebUI
             uuid ? std::to_string(uuid) : std::to_string(static_cast<unsigned>(targetFormId));
         WebUI_Invoke(std::format("setTargetActor('{}', '{}', {});", uuidStr, EscapeJsString(name),
             static_cast<unsigned>(targetFormId)));
-
-        bool ostimnet = RE::TESDataHandler::GetSingleton()->LookupModByName("TT_OStimNet.esp") != nullptr;
-        // Prefer live control store; fall back to global (TargetMenu live toggle).
-        const char* fw = SexLabNet::Config::GetSingleton().FrameworkPlayerIndex() == 1 ? "ostim" : "sexlab";
-        if (auto* g = RE::TESForm::LookupByEditorID<RE::TESGlobal>("skyrimnet_sexlab_ostim_player")) {
-            if (g->value == 1.0f)
-                fw = "ostim";
-            else if (g->value == 0.0f)
-                fw = "sexlab";
-        }
-        WebUI_Invoke(std::format("setFrameworkToggle({}, '{}');", ostimnet ? "true" : "false", fw));
 
         WebUI_Invoke("showPanel('target_menu_panel');");
         WebUI_Visibility_Show();
@@ -451,7 +450,7 @@ namespace PapyrusBindings_WebUI
             if (!actor)
                 return "Unknown";
             uint64_t uuid = PublicFormIDToUUID ? PublicFormIDToUUID(actor->GetFormID()) : 0;
-            if (uuid && PublicGetActorNameByUUID) {
+            if (uuid && SexLabNet::CrossDllStdStringSafe() && PublicGetActorNameByUUID) {
                 std::string n = PublicGetActorNameByUUID(uuid);
                 if (!n.empty())
                     return n;
@@ -856,16 +855,18 @@ namespace PapyrusBindings_WebUI
 
     static void DispatchManagerMethodStr(const char* method, std::int32_t a, const std::string& b)
     {
-        SKSE::GetTaskInterface()->AddTask([method, a, b]() {
+        std::string methodName = method ? method : "";
+        std::string payload = b;
+        SKSE::GetTaskInterface()->AddTask([methodName, a, payload]() {
             auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
             if (!vm) {
-                webui_log::error("DispatchManagerMethod: no VM");
+                webui_log::error("DispatchManagerMethodIntStr: no VM");
                 return;
             }
 
             RE::TESQuest* quest = FindMainQuest();
             if (!quest) {
-                webui_log::error("DispatchManagerMethod: quest not found");
+                webui_log::error("DispatchManagerMethodIntStr: quest not found");
                 return;
             }
 
@@ -874,15 +875,16 @@ namespace PapyrusBindings_WebUI
             RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
             vm->FindBoundObject(handle, "SkyrimNet_SexLab_Scene_Manager", scriptObject);
             if (!scriptObject) {
-                webui_log::error("DispatchManagerMethod: Manager script not bound");
+                webui_log::error("DispatchManagerMethodIntStr: Manager script not bound");
                 return;
             }
 
             int arg_a = static_cast<int>(a);
-            RE::BSFixedString arg_b(b);
+            RE::BSFixedString arg_b(payload.c_str());
             auto* args = RE::MakeFunctionArguments(std::move(arg_a), std::move(arg_b));
             RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
-            vm->DispatchMethodCall(scriptObject, RE::BSFixedString(method), args, callback);
+            vm->DispatchMethodCall(scriptObject, RE::BSFixedString(methodName.c_str()), args, callback);
+            webui_log::info("DispatchManagerMethodIntStr: {}", methodName);
         });
     }
     void DispatchManagerMethodIntInt(const char* method, std::int32_t a, std::int32_t b)
@@ -1147,7 +1149,9 @@ namespace PapyrusBindings_WebUI
 
         const auto targetFormId = actor->GetFormID();
         uint64_t uuid = (PublicFormIDToUUID) ? PublicFormIDToUUID(targetFormId) : 0;
-        std::string skyrimNetName = (uuid && PublicGetActorNameByUUID) ? PublicGetActorNameByUUID(uuid) : "";
+        std::string skyrimNetName = (uuid && SexLabNet::CrossDllStdStringSafe() && PublicGetActorNameByUUID)
+            ? PublicGetActorNameByUUID(uuid)
+            : "";
         const char* targetName = !skyrimNetName.empty() ? skyrimNetName.c_str() : actor->GetName();
         const char* name = (targetName && targetName[0]) ? targetName : "Unknown";
         const std::string uuidStr =

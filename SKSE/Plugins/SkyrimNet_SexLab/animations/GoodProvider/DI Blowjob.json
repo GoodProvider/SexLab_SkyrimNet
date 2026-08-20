@@ -1,14 +1,12 @@
 {
-    "Stage 1": {
-        "description": "{{sl.actors.0}} kneels and strokes {{sl.actors.1}}'s cock. It is not in {{sl.actors.0}}'s mouth yet.",
-        "Version": "2.0"
-    },
-    "Stage 2": {
-        "description": "{{sl.actors.0}} kneels sucking {{sl.actors.1}}'s cock. {{sl.actors.1}}'s hand is behind {{sl.actors.0}}'s head.",
-        "Version": "2.0"
-    },
-    "Stage 3": {
-        "description": "{{sl.actors.0}} kneels sucking {{sl.actors.1}}'s cock and hands pushing against {{sl.actors.1}}'s legs. {{sl.actors.1}}'s hands is behind {{sl.actors.0}}'s head pushing cock down throat.",
-        "Version": "2.0"
-    }
+  "version": "3.0",
+  "stage 1": {
+    "description": "{{sl.actors.0}} kneels and strokes {{sl.actors.1}}'s cock. It is not in {{sl.actors.0}}'s mouth yet."
+  },
+  "stage 2": {
+    "description": "{{sl.actors.0}} kneels sucking {{sl.actors.1}}'s cock. {{sl.actors.1}}'s hand is behind {{sl.actors.0}}'s head."
+  },
+  "stage 3": {
+    "description": "{{sl.actors.0}} kneels sucking {{sl.actors.1}}'s cock and hands pushing against {{sl.actors.1}}'s legs. {{sl.actors.1}}'s hands is behind {{sl.actors.0}}'s head pushing cock down throat."
+  }
 }

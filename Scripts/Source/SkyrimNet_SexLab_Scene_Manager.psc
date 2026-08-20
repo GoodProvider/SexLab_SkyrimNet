@@ -577,11 +577,17 @@ EndFunction
 Function WebUI_OnSceneCreatorResult(int creator_sid, String json)
     SkyrimNet_SexLab_Scene_Creator creator = GetCreatorBySid(creator_sid)
     if creator
+        Trace("WebUI_OnSceneCreatorResult", "sid:"+creator_sid+" creator found")
         creator.ContinueAfterSceneCreator(json)
+    else
+        ; Control Panel Scene Menu "new" (and other provisional sessions) have
+        ; no pooled creator; sid 0 is also a valid pool slot so C++ cannot tell.
+        Trace("WebUI_OnSceneCreatorResult", "no active creator for sid:"+creator_sid+" - handoff")
+        WebUI_OnSceneCreatorHandoff(json)
     endif
 EndFunction
 
-; TargetMenu → C++ Scene Creator Start: no pooled creator yet; build one from JSON and finish.
+; No pooled creator yet (TargetMenu Custom or Control Panel Scene Menu new): build one from JSON and finish.
 Function WebUI_OnSceneCreatorHandoff(String json)
     Trace("WebUI_OnSceneCreatorHandoff", "")
     int obj = JValue.objectFromPrototype(json)
