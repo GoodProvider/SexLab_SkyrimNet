@@ -543,7 +543,31 @@ Function SetPosition(int index, Actor akActor, int no_orgasm, String speaking_mo
     endwhile
     SetActor(index, akActor)
     Trace("SetPosition", "end index:"+index+" name: "+akActor.GetDisplayName()+" no_orgasm: "+JMap.getInt(obj, "no_orgasm")+" speaking_modifiers: "+JoinJArrayStrToJson(speaking_obj))
-Endfunction 
+Endfunction
+
+String Function SpeakingCsvFromIndex(int i)
+    String speaking = ""
+    if !position_objs || i < 0 || i >= position_objs.length || position_objs[i] < 1
+        return speaking
+    endif
+    int speaking_obj = JMap.getObj(position_objs[i], "speaking_modifiers")
+    if speaking_obj < 1
+        return speaking
+    endif
+    int sc = JArray.count(speaking_obj)
+    int si = 0
+    while si < sc
+        String tok = JArray.getStr(speaking_obj, si, "")
+        if tok != ""
+            if speaking != ""
+                speaking += ","
+            endif
+            speaking += tok
+        endif
+        si += 1
+    endwhile
+    return speaking
+EndFunction 
 
 bool Function SetActor(int i, Actor akActor)
     DbgEnter("SetActor", "i:"+i+" "+GetDisplayName(akActor))
@@ -1765,15 +1789,21 @@ String Function BuildWebUIAnimationMenuState()
         JMap.setStr(obj, "_tags", GetTagsString(anim))
     endif
     int in_thread = JArray.object()
+    int in_thread_anims = JArray.object()
     sslBaseAnimation[] anims = thread.Animations
     int ai = 0
     while anims && ai < anims.length
         if anims[ai]
             JArray.addStr(in_thread, anims[ai].Registry)
+            int ao = JMap.object()
+            JMap.setStr(ao, "_registry", anims[ai].Registry)
+            JMap.setStr(ao, "_name", anims[ai].name)
+            JArray.addObj(in_thread_anims, ao)
         endif
         ai += 1
     endwhile
     JMap.setObj(obj, "_in_thread_registries", in_thread)
+    JMap.setObj(obj, "_in_thread_anims", in_thread_anims)
     JMap.setStr(obj, "_intent", intent)
     JMap.setStr(obj, "_style", style)
     JMap.setStr(obj, "_activity", intent)
@@ -2061,14 +2091,11 @@ String Function BuildWebUISceneMenuState()
         JMap.setInt(po, "_form_id", ak.GetFormID())
         int no_org = 0
         int dressed = 0
-        String speaking = speaking_modifiers_DEFAULT
+        String speaking = ""
         if position_objs && i < position_objs.length && position_objs[i] > 0
             no_org = JMap.getInt(position_objs[i], "no_orgasm", 0)
             dressed = JMap.getInt(position_objs[i], "dressed", 0)
-            int speaking_obj = JMap.getObj(position_objs[i], "speaking_modifiers")
-            if speaking_obj > 0 && JArray.count(speaking_obj) > 0
-                speaking = JArray.getStr(speaking_obj, 0, speaking)
-            endif
+            speaking = SpeakingCsvFromIndex(i)
         endif
         JMap.setInt(po, "_dressed", dressed)
         JMap.setInt(po, "_no_orgasm", no_org)
@@ -2091,21 +2118,42 @@ String Function BuildWebUISceneMenuState()
         NotePlayedRegistry(active_reg)
     endif
     JMap.setStr(obj, "_active_registry", active_reg)
+    int in_thread_anims = JArray.object()
     if thread
         sslBaseAnimation[] anims = thread.Animations
         int ai = 0
         while anims && ai < anims.length
             if anims[ai]
                 JArray.addStr(in_thread, anims[ai].Registry)
+                int ao = JMap.object()
+                JMap.setStr(ao, "_registry", anims[ai].Registry)
+                JMap.setStr(ao, "_name", anims[ai].name)
+                JArray.addObj(in_thread_anims, ao)
             endif
             ai += 1
         endwhile
         JMap.setInt(obj, "_stage", thread.stage)
         if thread.animation
             JMap.setInt(obj, "_stage_count", thread.animation.StageCount())
+            int stage_count = thread.animation.StageCount()
+            int stages_arr = JArray.object()
+            i = 1
+            while i <= stage_count
+                int st = JMap.object()
+                JMap.setInt(st, "_stage", i)
+                String template = animdb.GetStageDescription(thread.animation.Registry, i)
+                JMap.setStr(st, "_template", template)
+                String preview = animdb.GetThreadStageDescription(thread, i)
+                JMap.setStr(st, "_preview", preview)
+                JMap.setInt(st, "_current", (i == thread.stage) as int)
+                JArray.addObj(stages_arr, st)
+                i += 1
+            endwhile
+            JMap.setObj(obj, "_stages", stages_arr)
         endif
     endif
     JMap.setObj(obj, "_in_thread_registries", in_thread)
+    JMap.setObj(obj, "_in_thread_anims", in_thread_anims)
     int played = JArray.object()
     i = 0
     while i < played_registries_count
@@ -2502,10 +2550,7 @@ Function TM_SaveAnimationSettings()
         if position_objs && i < position_objs.length && position_objs[i] > 0
             no_org = JMap.getInt(position_objs[i], "no_orgasm", 0)
             dressed = JMap.getInt(position_objs[i], "dressed", 0)
-            int speaking_obj = JMap.getObj(position_objs[i], "speaking_modifiers")
-            if speaking_obj > 0 && JArray.count(speaking_obj) > 0
-                speaking = JArray.getStr(speaking_obj, 0)
-            endif
+            speaking = SpeakingCsvFromIndex(i)
             if JMap.getInt(position_objs[i], "deny_orgasm", 0) == 1
                 no_org = 0
             endif
@@ -2522,4 +2567,23 @@ Function TM_SaveAnimationSettings()
     JValue.release(payload)
     animdb.SaveAnimLocal(registry, save_json)
     ClearUserAnimDefaults(registry)
+EndFunction
+
+Function TM_SetStageDescription(String stageStr, String description)
+    if thread == None || thread.animation == None
+        return
+    endif
+    int stage = stageStr as int
+    if stage < 1
+        return
+    endif
+    int payload = JMap.object()
+    int sd = JMap.object()
+    JMap.setStr(sd, stageStr, description)
+    JMap.setObj(payload, "stage_descriptions", sd)
+    String save_json = ObjectToLowerCaseKeyJson(payload)
+    JValue.release(payload)
+    animdb.SaveAnimLocal(thread.animation.Registry, save_json)
+    SkyrimNet_SexLab_WebUI.SceneCreator_Configure(BuildWebUISceneMenuState())
+    SkyrimNet_SexLab_WebUI.Animation_Menu_Configure(BuildWebUIAnimationMenuState())
 EndFunction

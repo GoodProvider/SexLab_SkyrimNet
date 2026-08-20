@@ -468,6 +468,36 @@ Function TM_StageNext(Actor speaker, Actor target)
     endif
 EndFunction
 
+Function TM_GoToStage(Actor speaker, Actor target, String stageStr)
+    Trace("TM_GoToStage", GetDisplayName(target)+" stage:"+stageStr)
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    sslThreadController th = sl.GetThread()
+    if th == None || th.animation == None
+        return
+    endif
+    int stage = stageStr as int
+    int maxStage = th.animation.StageCount()
+    if stage < 1 || stage > maxStage
+        Trace("TM_GoToStage", "bad stage "+stageStr)
+        return
+    endif
+    th.GoToStage(stage)
+    SkyrimNet_SexLab_WebUI.SceneCreator_Configure(sl.BuildWebUISceneMenuState())
+    SkyrimNet_SexLab_WebUI.Animation_Menu_Configure(sl.BuildWebUIAnimationMenuState())
+EndFunction
+
+Function TM_SetStageDescription(Actor speaker, Actor target, String stageStr, String description)
+    Trace("TM_SetStageDescription", GetDisplayName(target)+" stage:"+stageStr)
+    SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
+    if sl == None
+        return
+    endif
+    sl.TM_SetStageDescription(stageStr, description)
+EndFunction
+
 Function TM_RotatePositions(Actor speaker, Actor target)
     Trace("TM_RotatePositions", GetDisplayName(target))
     SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
@@ -548,6 +578,7 @@ Function TM_SetAnimationIndex(Actor speaker, Actor target, String indexStr)
     th.SetAnimation(idx)
     sl.SeedOverlayFromAnimDb()
     SkyrimNet_SexLab_WebUI.SceneCreator_Configure(sl.BuildWebUISceneMenuState())
+    SkyrimNet_SexLab_WebUI.Animation_Menu_Configure(sl.BuildWebUIAnimationMenuState())
 EndFunction
 
 Function TM_SyncSceneState(Actor speaker, Actor target)

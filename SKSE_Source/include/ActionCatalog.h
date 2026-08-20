@@ -32,7 +32,7 @@ namespace ActionCatalog
         std::string file;
     };
 
-    // Load actions_index.json + menu/target/ + main_panels/ from Data/SKSE/Plugins/SkyrimNet_SexLab/webui/
+    // Load actions_index.json + TargetMenu/Actor + TargetMenu/Scene + MainPanels/ from Data/SKSE/Plugins/SkyrimNet_SexLab/webui/
     bool Load();
     bool IsLoaded();
 
@@ -58,7 +58,7 @@ namespace ActionCatalog
     bool IsAnimationPanelPreferredOpen();
     void SetAnimationPanelPreferredOpen(bool open);
 
-    // Assembled menu/target defaultsParameters + options
+    // Assembled TargetMenu Actor or Scene defaultsParameters + options (matches ControlPanel focus)
     const nlohmann::json& TargetOptions();
 
     std::filesystem::path WebUIDir();

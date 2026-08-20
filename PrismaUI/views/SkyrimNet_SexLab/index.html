@@ -230,6 +230,25 @@
             overflow: hidden;
         }
 
+        #main-panel-host > #animation-menu-panel {
+            overflow: hidden;
+            display: none;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        #main-panel-host > #animation-menu-panel > .target-row,
+        #main-panel-host > #animation-menu-panel > .compact-row {
+            flex: 0 0 auto;
+        }
+
+        #animation-menu-panel #am-anims-list {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            max-height: none;
+        }
+
         #overlay-panels {
             position: absolute;
             top: 10%;
@@ -555,7 +574,8 @@
             margin-right: var(--space-sm);
         }
 
-        #sc-positions-table {
+        #sc-positions-table,
+        #tm-positions-table {
             table-layout: auto;
             width: 100%;
         }
@@ -572,16 +592,24 @@
         #sc-positions-table .col-name,
         #sc-positions-table .col-dressed,
         #sc-positions-table .col-o,
-        #sc-positions-table .col-v {
+        #sc-positions-table .col-v,
+        #tm-positions-table .col-idx,
+        #tm-positions-table .col-move,
+        #tm-positions-table .col-name,
+        #tm-positions-table .col-dressed,
+        #tm-positions-table .col-o,
+        #tm-positions-table .col-v {
             width: 1%;
             white-space: nowrap;
         }
 
-        #sc-positions-table .col-mods {
+        #sc-positions-table .col-mods,
+        #tm-positions-table .col-mods {
             width: auto;
         }
 
-        #sc-positions-table .pos-move {
+        #sc-positions-table .pos-move,
+        #tm-positions-table .pos-move {
             display: inline-flex;
             flex-direction: column;
             gap: 2px;
@@ -593,25 +621,32 @@
             user-select: none;
         }
 
-        #sc-positions-table .pos-move span {
+        #sc-positions-table .pos-move span,
+        #tm-positions-table .pos-move span {
             padding: 0 var(--space-xs);
         }
 
-        #sc-positions-table .pos-move span:hover {
+        #sc-positions-table .pos-move span:hover,
+        #tm-positions-table .pos-move span:hover {
             background: var(--accent-muted);
         }
 
         #sc-positions-table td.col-name,
-        #sc-positions-table td.col-idx {
+        #sc-positions-table td.col-idx,
+        #tm-positions-table td.col-name,
+        #tm-positions-table td.col-idx {
             cursor: pointer;
         }
 
         #sc-positions-table td.col-name:hover,
-        #sc-positions-table td.col-idx:hover {
+        #sc-positions-table td.col-idx:hover,
+        #tm-positions-table td.col-name:hover,
+        #tm-positions-table td.col-idx:hover {
             color: var(--accent);
         }
 
-        #sc-positions-table tr.pos-excluded {
+        #sc-positions-table tr.pos-excluded,
+        #tm-positions-table tr.pos-excluded {
             color: var(--text-muted);
             opacity: 0.75;
         }
@@ -1290,33 +1325,10 @@
 
     <div id="animation-menu-panel" class="panel" style="display:none">
         <div id="am-title" class="target-row">Animation</div>
-        <div class="section-header">Animations</div>
-        <div id="am-anims-list" class="scroll-list" style="max-height:14em; margin-bottom:8px"></div>
-        <div id="am-subtitle" class="compact-row" style="opacity:0.7"></div>
         <div class="compact-row">
-            <span id="am-activity"></span>
-            <span>style</span>
-            <div id="am-style-pulldown"></div>
+            <input id="am-name-filter" type="text" placeholder="filter name" oninput="amRenderAnimList()" />
         </div>
-        <div class="section-header">Positions</div>
-        <table class="data-table" id="am-positions-table"><thead><tr>
-            <th>#</th><th>slot</th><th>dressed</th><th>O</th><th>speaking</th>
-        </tr></thead><tbody></tbody></table>
-        <div class="section-header">Tags</div>
-        <div id="am-tags" class="active-tag-list"></div>
-        <div class="compact-row">
-            <div class="action-btn" id="am-btn-prev" onclick="amPrevNext(-1)">Previous</div>
-            <div class="action-btn" id="am-btn-next" onclick="amPrevNext(1)">Next</div>
-            <span id="am-stage-label"></span>
-        </div>
-        <div class="section-header">Stage descriptions</div>
-        <table class="data-table" id="am-stages-table"><thead><tr>
-            <th>stage</th><th>template</th><th>preview</th>
-        </tr></thead><tbody></tbody></table>
-        <div class="bottom-bar">
-            <div class="option-cancel" id="am-btn-stop" onclick="amStop()">Stop</div>
-            <div class="action-btn" onclick="amDone()">Save</div>
-        </div>
+        <div id="am-anims-list" class="scroll-list"></div>
     </div>
 
     <div id="settings-panel" class="panel" style="display:none">
@@ -1534,6 +1546,8 @@
             if (el) el.style.display = 'flex';
             setControlPaused(true);
             renderControlPanelPulldown();
+            if (typeof renderControlActorPulldown === 'function')
+                renderControlActorPulldown();
         }
 
         function hideControlPanel() {
@@ -1623,7 +1637,7 @@
                 const el = document.getElementById(pid);
                 if (!el) continue;
                 if (pid === want) {
-                    el.style.display = (pid === 'scene-creator-panel' || pid === 'log-panel') ? 'flex' : 'block';
+                    el.style.display = (pid === 'scene-creator-panel' || pid === 'log-panel' || pid === 'animation-menu-panel') ? 'flex' : 'block';
                     if (pid === 'settings-panel' && typeof window.onSettingsRefresh === 'function')
                         window.onSettingsRefresh('{}');
                     if (pid === 'log-panel')
@@ -1870,7 +1884,8 @@
             } else if (pid === 'scene-creator-panel') {
                 scCancel();
             } else if (pid === 'animation-menu-panel') {
-                amDone();
+                if (typeof window.onCancel === 'function') window.onCancel();
+                else hidePanel('animation_menu_panel');
             } else {
                 if (typeof window.onCancel === 'function') window.onCancel();
                 else {
@@ -1889,6 +1904,7 @@
         let leftSelectedOpt = null; // root left-column selection (for highlight)
         let papyrusSelectedOpt = null;
         let tmCastDraft = null; // [{name, formId, in:bool}, ...] for change_actors / rotate
+        let tmStopSpeakerFormId = 0;
 
         /// Hierarchical param remember-store (parent-linked tree → localStorage).
         let paramTreeRoot = null;
@@ -2625,6 +2641,16 @@
                     firePapyrusOption(opt, {});
                 return;
             }
+            if (opt.panel === 'animation') {
+                navStack = [];
+                selectedActionName = null;
+                selectedActionLabel = null;
+                papyrusSelectedOpt = null;
+                if (typeof window.onMainPanelChange === 'function')
+                    window.onMainPanelChange(JSON.stringify({ key: 'animation_menu_panel' }));
+                renderTargetMenu();
+                return;
+            }
             if (opt.explainPrompt) {
                 const msg = window.prompt('Stop narration (Enter to apply, Cancel to abort):', '');
                 if (msg === null) return;
@@ -2723,6 +2749,396 @@
             if (p && Number(p._deny_orgasm) === 1) return 'deny';
             if (p && Number(p._no_orgasm) === 1) return 'not_expected';
             return 'expect';
+        }
+
+        function tmPapyrusFn(opt, fn, extraMapping) {
+            return {
+                plugin: opt.plugin,
+                questFormId: opt.questFormId,
+                scriptName: opt.scriptName,
+                executionFunctionName: fn,
+                parameterMapping: [
+                    { type: 'speaker', name: 'speaker' },
+                    { type: 'target', name: 'target' }
+                ].concat(extraMapping || [])
+            };
+        }
+
+        function tmActorParam(formId) {
+            return { type: 'Actor', formId: Number(formId) || 0 };
+        }
+
+        function tmSceneTargetFormId() {
+            const focusFid = Number((targetActor && targetActor.formId) || 0);
+            const inCast = (SC.positions || []).some(p => tmFormId(p) === focusFid);
+            if (inCast) return focusFid;
+            return tmFormId((SC.positions || [])[0]) || focusFid;
+        }
+
+        function tmStopSpeakerChoices() {
+            const out = [];
+            const seen = new Set();
+            (SC.positions || []).forEach((p, i) => {
+                const fid = tmFormId(p);
+                if (!fid || seen.has(fid)) return;
+                seen.add(fid);
+                out.push({
+                    formId: fid,
+                    label: i + '  ' + tmActorName(p),
+                    dist: -1
+                });
+            });
+            const nearby = (nearbyActors || []).filter(a => a && a.selectable).slice()
+                .sort((a, b) => (Number(a.dist) || 0) - (Number(b.dist) || 0));
+            nearby.forEach(a => {
+                const fid = Number(a.formId || 0);
+                if (!fid || seen.has(fid)) return;
+                seen.add(fid);
+                out.push({
+                    formId: fid,
+                    label: (a.name || a.label || '?'),
+                    dist: Number(a.dist) || 0
+                });
+            });
+            return out;
+        }
+
+        function tmFireStop(opt, fn, extra) {
+            const speakers = tmStopSpeakerChoices();
+            let speakerFid = Number(tmStopSpeakerFormId || 0);
+            if (!speakerFid && speakers.length)
+                speakerFid = speakers[0].formId;
+            const targetFid = tmSceneTargetFormId();
+            firePapyrusOption(Object.assign({}, opt, {
+                executionFunctionName: fn,
+                closeWebUI: true
+            }), Object.assign({
+                speaker: tmActorParam(speakerFid),
+                target: tmActorParam(targetFid)
+            }, extra || {}));
+        }
+
+        function tmRenderStopPanel(body, opt) {
+            const speakers = tmStopSpeakerChoices();
+            const defaultFid = tmSceneTargetFormId();
+            if (!tmStopSpeakerFormId)
+                tmStopSpeakerFormId = defaultFid || (speakers[0] && speakers[0].formId) || 0;
+            const current = speakers.find(s => s.formId === tmStopSpeakerFormId) || speakers[0];
+            const labels = speakers.map(s => s.label);
+            const row = document.createElement('div');
+            row.className = 'compact-row';
+            const lab = document.createElement('span');
+            lab.textContent = 'speaker';
+            row.appendChild(lab);
+            row.appendChild(createPulldown(labels, current ? current.label : '', (v) => {
+                const s = speakers.find(x => x.label === v);
+                tmStopSpeakerFormId = s ? s.formId : 0;
+            }));
+            body.appendChild(row);
+            const btns = document.createElement('div');
+            btns.className = 'compact-row';
+            const silent = document.createElement('div');
+            silent.className = 'action-btn';
+            silent.textContent = 'silent';
+            silent.onclick = () => tmFireStop(opt, 'TM_StopSilent');
+            const stop = document.createElement('div');
+            stop.className = 'action-btn';
+            stop.textContent = 'stop';
+            stop.onclick = () => tmFireStop(opt, 'TM_Stop');
+            const explain = document.createElement('div');
+            explain.className = 'action-btn';
+            explain.textContent = 'explain';
+            explain.onclick = () => {
+                const msg = window.prompt('Stop narration (Enter to apply, Cancel to abort):', '');
+                if (msg === null) return;
+                tmFireStop(opt, 'TM_StopExplain', { narration: msg });
+            };
+            btns.appendChild(silent);
+            btns.appendChild(stop);
+            btns.appendChild(explain);
+            body.appendChild(btns);
+        }
+
+        function tmStageList() {
+            if (Array.isArray(SC.stages) && SC.stages.length)
+                return SC.stages;
+            const n = Number(SC.stageCount) || 0;
+            const cur = Number(SC.stage) || 1;
+            const out = [];
+            for (let s = 1; s <= n; s++)
+                out.push({ _stage: s, _template: '', _preview: '', _current: s === cur ? 1 : 0 });
+            return out;
+        }
+
+        function tmStageSeedTemplate(stages, idx) {
+            const st = stages[idx];
+            if (st && st._template) return st._template;
+            for (let j = idx - 1; j >= 0; j--) {
+                if (stages[j] && stages[j]._template) return stages[j]._template;
+            }
+            return '';
+        }
+
+        function tmRenderStagePanel(body, opt) {
+            const stages = tmStageList();
+            const table = document.createElement('table');
+            table.className = 'data-table';
+            const thead = document.createElement('thead');
+            thead.innerHTML = '<tr><th class="col-idx">#</th><th>description</th></tr>';
+            table.appendChild(thead);
+            const tbody = document.createElement('tbody');
+            stages.forEach((st, idx) => {
+                const n = Number(st._stage != null ? st._stage : idx + 1);
+                const tr = document.createElement('tr');
+                if (Number(st._current) || n === Number(SC.stage))
+                    tr.className = 'current';
+                const tdIdx = document.createElement('td');
+                tdIdx.className = 'col-idx';
+                tdIdx.textContent = String(n);
+                tdIdx.onclick = (e) => {
+                    e.stopPropagation();
+                    firePapyrusOption(opt, { stageStr: String(n) });
+                    papyrusSelectedOpt = null;
+                    renderTargetMenu();
+                };
+                const tdDesc = document.createElement('td');
+                const shown = st._preview || st._template || '';
+                tdDesc.textContent = shown;
+                tdDesc.onclick = (e) => {
+                    e.stopPropagation();
+                    if (tdDesc.querySelector('input')) return;
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.style.width = '100%';
+                    input.value = st._template || tmStageSeedTemplate(stages, idx);
+                    const commit = () => {
+                        const val = input.value;
+                        st._template = val;
+                        firePapyrusOption(tmPapyrusFn(opt, 'TM_SetStageDescription', [
+                            { type: 'dynamic', name: 'stageStr' },
+                            { type: 'dynamic', name: 'description' }
+                        ]), { stageStr: String(n), description: val });
+                    };
+                    input.onblur = commit;
+                    input.onkeydown = (ev) => {
+                        if (ev.key === 'Enter') {
+                            ev.preventDefault();
+                            input.blur();
+                        }
+                    };
+                    tdDesc.textContent = '';
+                    tdDesc.appendChild(input);
+                    input.focus();
+                };
+                tr.appendChild(tdIdx);
+                tr.appendChild(tdDesc);
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            body.appendChild(table);
+        }
+
+        function tmPositionFormIds() {
+            return (SC.positions || []).map(tmFormId).filter(Boolean);
+        }
+
+        function tmFirePositions(opt, ids) {
+            if (!ids.length) return;
+            firePapyrusOption(opt, { formIdsCsv: ids.map(String).join(',') });
+        }
+
+        function tmRenderPositionPanel(body, opt) {
+            const table = document.createElement('table');
+            table.className = 'data-table';
+            table.id = 'tm-positions-table';
+            const thead = document.createElement('thead');
+            thead.innerHTML = '<tr>' +
+                '<th class="col-idx">#</th><th class="col-move"></th><th class="col-name">name</th>' +
+                '<th class="col-dressed">dressed</th><th class="col-o">O</th><th class="col-v">V</th>' +
+                '<th class="col-mods">modifiers</th></tr>';
+            table.appendChild(thead);
+            const tbody = document.createElement('tbody');
+            const positions = SC.positions || [];
+            const ids = tmPositionFormIds();
+            const emptyTd = (cls) => {
+                const td = document.createElement('td');
+                if (cls) td.className = cls;
+                return td;
+            };
+
+            const removeAt = (i) => {
+                if (ids.length <= 1) return;
+                const removed = ids[i];
+                const next = ids.filter((_, j) => j !== i);
+                tmFirePositions(opt, next);
+                const focusFid = Number((targetActor && targetActor.formId) || 0);
+                if (removed === focusFid && next.length) {
+                    const keep = positions.find(p => tmFormId(p) === next[0]);
+                    if (keep && typeof requestControlActorFocus === 'function')
+                        requestControlActorFocus({ formId: next[0], name: tmActorName(keep) }, { force: true });
+                }
+            };
+            const addActor = (a) => {
+                if (ids.length >= 5) return;
+                const fid = Number(a.formId || 0);
+                if (!fid || ids.includes(fid)) return;
+                tmFirePositions(opt, ids.concat([fid]));
+            };
+            const move = (i, dir) => {
+                const j = i + dir;
+                if (j < 0 || j >= ids.length) return;
+                const next = ids.slice();
+                const tmp = next[i];
+                next[i] = next[j];
+                next[j] = tmp;
+                tmFirePositions(opt, next);
+            };
+
+            positions.forEach((p, i) => {
+                const fid = tmFormId(p);
+                const mods = scParseMods(p);
+                const tr = document.createElement('tr');
+                const tdIdx = document.createElement('td');
+                tdIdx.className = 'col-idx';
+                tdIdx.textContent = String(i);
+                tdIdx.onclick = (e) => { e.stopPropagation(); removeAt(i); };
+                const tdMove = document.createElement('td');
+                tdMove.className = 'col-move';
+                const moveBox = document.createElement('div');
+                moveBox.className = 'pos-move';
+                if (i > 0) {
+                    const up = document.createElement('span');
+                    up.textContent = '▲';
+                    up.onclick = (e) => { e.stopPropagation(); move(i, -1); };
+                    moveBox.appendChild(up);
+                }
+                if (i < positions.length - 1) {
+                    const down = document.createElement('span');
+                    down.textContent = '▼';
+                    down.onclick = (e) => { e.stopPropagation(); move(i, 1); };
+                    moveBox.appendChild(down);
+                }
+                tdMove.appendChild(moveBox);
+                const tdName = document.createElement('td');
+                tdName.className = 'col-name';
+                tdName.textContent = tmActorName(p);
+                tdName.onclick = (e) => { e.stopPropagation(); removeAt(i); };
+
+                const tdDressed = document.createElement('td');
+                tdDressed.className = 'col-dressed';
+                const dressedOn = !!Number(p._dressed);
+                tdDressed.innerHTML = `<span class="cell-toggle ${dressedOn ? 'on' : ''}">${dressedOn ? '👕' : '—'}</span>`;
+                tdDressed.querySelector('span').onclick = (e) => {
+                    e.stopPropagation();
+                    p._dressed = dressedOn ? 0 : 1;
+                    firePapyrusOption(tmPapyrusFn(opt, 'TM_SetClothed', [
+                        { type: 'dynamic', name: 'formIdStr' },
+                        { type: 'dynamic', name: 'clothedStr' }
+                    ]), { formIdStr: String(fid), clothedStr: dressedOn ? '0' : '1' });
+                    renderPapyrusPanel();
+                };
+
+                const tdO = document.createElement('td');
+                tdO.className = 'col-o';
+                const noOrg = !!Number(p._no_orgasm);
+                tdO.innerHTML = `<span class="cell-toggle ${noOrg ? 'on' : ''}">O</span>`;
+                tdO.querySelector('span').onclick = (e) => {
+                    e.stopPropagation();
+                    p._no_orgasm = noOrg ? 0 : 1;
+                    firePapyrusOption(tmPapyrusFn(opt, 'TM_SetOrgasmMode', [
+                        { type: 'dynamic', name: 'formIdStr' },
+                        { type: 'dynamic', name: 'mode' }
+                    ]), { formIdStr: String(fid), mode: noOrg ? 'expect' : 'not_expected' });
+                    renderPapyrusPanel();
+                };
+
+                const tdV = document.createElement('td');
+                tdV.className = 'col-v';
+                const vic = !!Number(p._victim);
+                tdV.innerHTML = `<span class="cell-toggle ${vic ? 'on' : ''}">${vic ? 'V' : '—'}</span>`;
+                tdV.querySelector('span').onclick = (e) => {
+                    e.stopPropagation();
+                    p._victim = vic ? 0 : 1;
+                    firePapyrusOption(tmPapyrusFn(opt, 'TM_SetVictim', [
+                        { type: 'dynamic', name: 'formIdStr' },
+                        { type: 'dynamic', name: 'isVictimStr' }
+                    ]), { formIdStr: String(fid), isVictimStr: vic ? '0' : '1' });
+                    renderPapyrusPanel();
+                };
+
+                const tdMods = document.createElement('td');
+                tdMods.className = 'col-mods';
+                const list = document.createElement('div');
+                list.className = 'mod-chip-list';
+                const fireSpeaking = (nextMods) => {
+                    scSetMods(p, nextMods);
+                    firePapyrusOption(tmPapyrusFn(opt, 'TM_SetSpeaking', [
+                        { type: 'dynamic', name: 'formIdStr' },
+                        { type: 'dynamic', name: 'speaking' }
+                    ]), { formIdStr: String(fid), speaking: nextMods.join(',') });
+                    renderPapyrusPanel();
+                };
+                mods.forEach(m => {
+                    const chip = document.createElement('span');
+                    chip.className = 'tag-chip';
+                    chip.textContent = m;
+                    chip.onclick = (e) => {
+                        e.stopPropagation();
+                        fireSpeaking(mods.filter(x => x !== m));
+                    };
+                    list.appendChild(chip);
+                });
+                const available = SC_SPEAKING_MODS.filter(m => !mods.includes(m));
+                if (available.length) {
+                    list.appendChild(createPulldown(available, 'add', v => {
+                        if (!v || mods.includes(v)) return;
+                        fireSpeaking(mods.concat([v]));
+                    }));
+                }
+                tdMods.appendChild(list);
+
+                tr.appendChild(tdIdx);
+                tr.appendChild(tdMove);
+                tr.appendChild(tdName);
+                tr.appendChild(tdDressed);
+                tr.appendChild(tdO);
+                tr.appendChild(tdV);
+                tr.appendChild(tdMods);
+                tbody.appendChild(tr);
+            });
+
+            const inIds = new Set(ids);
+            const excluded = (nearbyActors || []).filter(a => {
+                const fid = Number(a.formId || 0);
+                if (!fid || inIds.has(fid)) return false;
+                if (a.selectable === false) return false;
+                const st = a.status || 'ok';
+                return st === 'ok' || st === 'sexlab';
+            }).sort((a, b) => (Number(a.dist) || 0) - (Number(b.dist) || 0));
+            excluded.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.className = 'pos-excluded';
+                const tdIdx = document.createElement('td');
+                tdIdx.className = 'col-idx';
+                tdIdx.onclick = (e) => { e.stopPropagation(); addActor(a); };
+                const tdName = document.createElement('td');
+                tdName.className = 'col-name';
+                tdName.textContent = a.name || a.label || '?';
+                tdName.onclick = (e) => { e.stopPropagation(); addActor(a); };
+                tr.appendChild(tdIdx);
+                tr.appendChild(emptyTd('col-move'));
+                tr.appendChild(tdName);
+                tr.appendChild(emptyTd('col-dressed'));
+                tr.appendChild(emptyTd('col-o'));
+                tr.appendChild(emptyTd('col-v'));
+                tr.appendChild(emptyTd('col-mods'));
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            const wrap = document.createElement('div');
+            wrap.className = 'sc-positions-scroll';
+            wrap.appendChild(table);
+            body.appendChild(wrap);
         }
 
         const SS_METHODS_GIVING = [
@@ -3470,187 +3886,12 @@
                 return;
             }
 
-            if (kind === 'position') {
-                if (!tmCastDraft) tmCastDraft = tmBuildCastDraft(true);
-                const focusFid = Number((targetActor && targetActor.formId) || 0);
-                const ordered = tmInCastOrdered();
-                const idx = ordered.findIndex(a => a.formId === focusFid);
-                const row = document.createElement('div');
-                row.className = 'compact-row';
-                const label = document.createElement('span');
-                label.textContent = 'position ' + (idx >= 0 ? idx : '—');
-                const up = document.createElement('div');
-                up.className = 'action-btn';
-                up.textContent = '▲';
-                up.onclick = () => {
-                    if (idx < 0) return;
-                    tmMoveInCast(focusFid, -1);
-                    tmFireChangeActors(opt);
-                };
-                const down = document.createElement('div');
-                down.className = 'action-btn';
-                down.textContent = '▼';
-                down.onclick = () => {
-                    if (idx < 0) return;
-                    tmMoveInCast(focusFid, 1);
-                    tmFireChangeActors(opt);
-                };
-                row.appendChild(label);
-                row.appendChild(up);
-                row.appendChild(down);
-                body.appendChild(row);
-                if (idx < 0)
-                    body.appendChild(document.createTextNode('Focus actor is not in the active cast.'));
-            } else if (kind === 'change_actors') {
-                const focusFid = Number((targetActor && targetActor.formId) || 0);
-                const cast = (SC.positions || []).map((p, i) => ({
-                    formId: tmFormId(p),
-                    name: tmActorName(p),
-                    order: i
-                })).filter(a => a.formId);
-                const focusIdx = cast.findIndex(a => a.formId === focusFid);
-                if (focusIdx < 0) {
-                    body.textContent = 'Focus actor is not in the active cast.';
-                } else {
-                    const hint = document.createElement('div');
-                    hint.style.opacity = '0.7';
-                    hint.style.marginBottom = '6px';
-                    hint.textContent = 'Replace ' + (targetActor.name || 'actor') + ' at position ' + focusIdx;
-                    body.appendChild(hint);
-                    const eligible = softNearbyActors().filter(a => Number(a.formId) !== focusFid);
-                    if (!eligible.length) {
-                        body.appendChild(document.createTextNode('No eligible nearby actors.'));
-                    } else {
-                        eligible.forEach(a => {
-                            const row = document.createElement('div');
-                            row.className = 'option';
-                            row.textContent = a.name || a.label || '?';
-                            row.onclick = () => {
-                                const next = cast.map(c => c.formId);
-                                next[focusIdx] = Number(a.formId);
-                                const formIdsCsv = next.map(String).join(',');
-                                firePapyrusOption(opt, { formIdsCsv });
-                                requestControlActorFocus(a, { force: true });
-                            };
-                            body.appendChild(row);
-                        });
-                    }
-                }
-            } else if (kind === 'animation_list') {
-                const regs = SC.inThreadRegistries || [];
-                const active = SC.activeRegistry || '';
-                if (!regs.length) {
-                    body.textContent = 'No in-thread animations.';
-                } else {
-                    regs.forEach((reg, idx) => {
-                        const row = document.createElement('div');
-                        row.className = 'option' + (reg === active ? ' selected' : '');
-                        row.textContent = (reg === active ? 'A ' : '') + (reg || ('#' + idx));
-                        row.onclick = () => {
-                            firePapyrusOption(opt, { indexStr: String(idx) });
-                        };
-                        body.appendChild(row);
-                    });
-                }
-                const custom = document.createElement('div');
-                custom.className = 'action-btn';
-                custom.style.marginTop = '8px';
-                custom.textContent = 'Custom…';
-                custom.onclick = () => {
-                    if (typeof window.onMainPanelChange === 'function')
-                        window.onMainPanelChange(JSON.stringify({ key: 'scene_creator_panel' }));
-                };
-                body.appendChild(custom);
-            } else if (kind === 'victim' || kind === 'orgasm' || kind === 'speaking' || kind === 'clothed') {
-                const positions = SC.positions || [];
-                const focusFid = Number((targetActor && targetActor.formId) || 0);
-                const p = positions.find(x => tmFormId(x) === focusFid);
-                if (!p) {
-                    body.textContent = 'Focus actor is not in the active cast.';
-                } else {
-                    const fid = focusFid;
-                    const nameRow = document.createElement('div');
-                    nameRow.style.marginBottom = '6px';
-                    nameRow.textContent = tmActorName(p);
-                    body.appendChild(nameRow);
-                    if (kind === 'victim') {
-                        const on = !!Number(p._victim);
-                        const btn = document.createElement('span');
-                        btn.className = 'cell-toggle' + (on ? ' on' : '');
-                        btn.textContent = on ? 'V' : '—';
-                        btn.onclick = () => {
-                            p._victim = on ? 0 : 1;
-                            tmFireForActor(opt, fid, { isVictimStr: on ? '0' : '1' });
-                            renderPapyrusPanel();
-                        };
-                        body.appendChild(btn);
-                    } else if (kind === 'orgasm') {
-                        const mode = tmOrgasmMode(p);
-                        const row = document.createElement('div');
-                        row.className = 'compact-row';
-                        ['deny', 'expect', 'not_expected'].forEach(m => {
-                            const btn = document.createElement('span');
-                            btn.className = 'cell-toggle' + (mode === m ? ' on' : '');
-                            btn.style.marginRight = '4px';
-                            btn.textContent = m === 'not_expected' ? 'no' : m;
-                            btn.onclick = () => {
-                                if (m === 'deny') { p._deny_orgasm = 1; p._no_orgasm = 1; }
-                                else if (m === 'not_expected') { p._deny_orgasm = 0; p._no_orgasm = 1; }
-                                else { p._deny_orgasm = 0; p._no_orgasm = 0; }
-                                tmFireForActor(opt, fid, { mode: m });
-                                renderPapyrusPanel();
-                            };
-                            row.appendChild(btn);
-                        });
-                        const force = document.createElement('span');
-                        force.className = 'cell-toggle';
-                        force.textContent = 'force';
-                        force.onclick = () => {
-                            firePapyrusOption({
-                                plugin: opt.plugin,
-                                questFormId: opt.questFormId,
-                                scriptName: opt.scriptName,
-                                executionFunctionName: 'TM_ForceOrgasm',
-                                parameterMapping: [
-                                    { type: 'speaker', name: 'speaker' },
-                                    { type: 'target', name: 'target' },
-                                    { type: 'dynamic', name: 'formIdStr' }
-                                ]
-                            }, { formIdStr: String(fid) });
-                        };
-                        row.appendChild(force);
-                        body.appendChild(row);
-                    } else if (kind === 'speaking') {
-                        const row = document.createElement('div');
-                        row.className = 'compact-row';
-                        const mods = ['_pleasure_', '_pain_', '_gagged_', '_kissing_', ''];
-                        const cur = String(p._speaking || '');
-                        mods.forEach(m => {
-                            const btn = document.createElement('span');
-                            btn.className = 'cell-toggle' + (cur === m ? ' on' : '');
-                            btn.style.marginRight = '4px';
-                            btn.textContent = m ? abbrevMod(m) : '—';
-                            btn.onclick = () => {
-                                p._speaking = m;
-                                tmFireForActor(opt, fid, { speaking: m });
-                                renderPapyrusPanel();
-                            };
-                            row.appendChild(btn);
-                        });
-                        body.appendChild(row);
-                    } else {
-                        const on = !!Number(p._dressed);
-                        const btn = document.createElement('span');
-                        btn.className = 'cell-toggle' + (on ? ' on' : '');
-                        btn.textContent = on ? 'clothed' : 'nude';
-                        btn.onclick = () => {
-                            p._dressed = on ? 0 : 1;
-                            tmFireForActor(opt, fid, { clothedStr: on ? '0' : '1' });
-                            renderPapyrusPanel();
-                        };
-                        body.appendChild(btn);
-                    }
-                }
+            if (kind === 'stop') {
+                tmRenderStopPanel(body, opt);
+            } else if (kind === 'stage') {
+                tmRenderStagePanel(body, opt);
+            } else if (kind === 'position') {
+                tmRenderPositionPanel(body, opt);
             } else {
                 body.textContent = 'Unknown panel: ' + kind;
             }
@@ -4321,6 +4562,7 @@
             playedRegistries: [],
             stage: 1,
             stageCount: 0,
+            stages: [],
             nearbyRange: 100,
             filterBy: SC_FILTER_DEFAULT,
             filterStart: SC_FILTER_DEFAULT,
@@ -4399,6 +4641,9 @@
             if (!Array.isArray(SC.playedRegistries)) SC.playedRegistries = [];
             SC.stage = state._stage || 1;
             SC.stageCount = state._stage_count || 0;
+            SC.stages = Array.isArray(state._stages) ? state._stages : [];
+            if (Array.isArray(state._in_thread_anims) && state._in_thread_anims.length)
+                SC.lastAnims = state._in_thread_anims;
             if (SC.mode === 'active' && SC.inThreadRegistries.length) {
                 // Treat out-of-thread query hits as deselected for multi color; in-thread = selected.
                 SC.deselectedRegistries = [];
@@ -4412,25 +4657,34 @@
             SC.groupOrder = Array.isArray(orderRaw)
                 ? orderRaw.map(String)
                 : Object.keys(SC.groupTags);
-            document.getElementById('sc-intent').value = SC.intent;
+            const intentEl = document.getElementById('sc-intent');
+            if (intentEl) intentEl.value = SC.intent;
             const seedPreset = SC.presets[0] || 'default';
-            document.getElementById('sc-preset-name').value = seedPreset;
+            const presetNameEl = document.getElementById('sc-preset-name');
+            if (presetNameEl) presetNameEl.value = seedPreset;
             const presetHost = document.getElementById('sc-preset-pulldown');
-            presetHost.innerHTML = '';
-            presetHost.appendChild(createPulldown(SC.presets.length ? SC.presets : ['default'], seedPreset, v => {
-                document.getElementById('sc-preset-name').value = v;
-            }));
+            if (presetHost) {
+                presetHost.innerHTML = '';
+                presetHost.appendChild(createPulldown(SC.presets.length ? SC.presets : ['default'], seedPreset, v => {
+                    const el = document.getElementById('sc-preset-name');
+                    if (el) el.value = v;
+                }));
+            }
             const styleHost = document.getElementById('sc-style-pulldown');
-            styleHost.innerHTML = '';
-            styleHost.appendChild(createPulldown(['forcefully', 'normally', 'gently'], SC.style, v => {
-                SC.style = v;
-                if (SC.mode === 'active') scLiveUpdate();
-            }));
+            if (styleHost) {
+                styleHost.innerHTML = '';
+                styleHost.appendChild(createPulldown(['forcefully', 'normally', 'gently'], SC.style, v => {
+                    SC.style = v;
+                    if (SC.mode === 'active') scLiveUpdate();
+                }));
+            }
             scRenderRangePulldown();
             const typeHost = document.getElementById('sc-type-pulldown');
-            typeHost.innerHTML = '';
-            const typeValues = ['any'].concat(SC.groupOrder);
-            typeHost.appendChild(createPulldown(typeValues, 'any', v => { SC.tagType = v; scRefreshTags(); }));
+            if (typeHost) {
+                typeHost.innerHTML = '';
+                const typeValues = ['any'].concat(SC.groupOrder);
+                typeHost.appendChild(createPulldown(typeValues, 'any', v => { SC.tagType = v; scRefreshTags(); }));
+            }
             const forcedFilterBy = SC.filterByOnce || SC_FILTER_DEFAULT;
             SC.filterByOnce = '';
             scArmFilterDowngrade(forcedFilterBy);
@@ -4448,8 +4702,6 @@
             }
             requestSceneConnectionsRefresh();
             if (papyrusSelectedOpt && papyrusSelectedOpt.panel) {
-                if (papyrusSelectedOpt.panel === 'change_actors' || papyrusSelectedOpt.panel === 'rotate')
-                    tmCastDraft = tmBuildCastDraft(papyrusSelectedOpt.panel === 'rotate');
                 if (typeof renderPapyrusPanel === 'function') renderPapyrusPanel();
             }
         }
@@ -5217,7 +5469,9 @@
                 SC.filterChain = [];
                 SC.lastAnims = anims;
                 SC.lastAnimRegistries = anims.map(a => a._registry).filter(Boolean);
-                document.getElementById('sc-anim-count').textContent = `animations ${anims.length}/${payload._total_enabled || '?'}`;
+                const countEl = document.getElementById('sc-anim-count');
+                if (countEl)
+                    countEl.textContent = `animations ${anims.length}/${payload._total_enabled || '?'}`;
                 scRenderAnimList();
                 return;
             }
@@ -5330,7 +5584,7 @@
             live: false
         };
 
-        /// Selected (new) or in-thread (active) anims for AnimationPanel, sorted, max 10.
+        /// In-thread (active) or selected (new) anims for AnimationPanel. No 10-cap.
         function amCandidateAnims() {
             const byReg = new Map();
             (SC.lastAnims || []).forEach(a => {
@@ -5349,7 +5603,7 @@
                     ? (SC.inThreadRegistries || []).includes(reg)
                     : !SC.deselectedRegistries.includes(reg)
             });
-            return indices.map(i => anims[i]).slice(0, 10);
+            return indices.map(i => anims[i]);
         }
 
         function amSyncAnimListFromScene() {
@@ -5364,101 +5618,69 @@
                 return;
             }
             const regs = anims.map(a => a._registry).filter(Boolean);
-            if (!AM.focusRegistry || !regs.includes(AM.focusRegistry)) {
+            const current = SC.activeRegistry || AM.focusRegistry;
+            if (current && regs.includes(current))
+                AM.focusRegistry = current;
+            else if (!AM.focusRegistry || !regs.includes(AM.focusRegistry))
                 AM.focusRegistry = (anims[0] && anims[0]._registry) || regs[0];
-                amLoadFocusRegistry();
-            }
+        }
+
+        function amNameFilter() {
+            const el = document.getElementById('am-name-filter');
+            return ((el && el.value) || '').trim().toLowerCase();
         }
 
         function amRenderAnimList() {
             const host = document.getElementById('am-anims-list');
             if (!host) return;
-            const anims = amCandidateAnims();
+            const filter = amNameFilter();
+            const current = SC.activeRegistry || AM.focusRegistry || '';
+            const anims = amCandidateAnims().filter(a => {
+                if (!filter) return true;
+                const name = String(a._name || '');
+                const reg = String(a._registry || '');
+                return name.toLowerCase().includes(filter) || reg.toLowerCase().includes(filter);
+            });
             const rows = anims.map((a) => {
                 const reg = a._registry || '';
-                const focus = reg === AM.focusRegistry;
-                const an = isSceneConnectionActive() ? scAnimAnLetter(reg) : '';
+                const focus = reg === current;
                 const name = a._name || reg || '(unnamed)';
                 return `<tr class="${focus ? 'selected' : ''}" onclick="amSelectAnim('${String(reg).replace(/'/g, "\\'")}')">` +
-                    `<td class="col-an">${escapeHtml(an)}</td>` +
                     `<td class="col-name">${escapeHtml(name)}</td>` +
                     `</tr>`;
             }).join('');
             host.innerHTML =
                 `<table class="data-table anim-table"><thead><tr>` +
-                `<th class="col-an"></th><th class="col-name">name</th>` +
+                `<th class="col-name">name</th>` +
                 `</tr></thead><tbody>${rows}</tbody></table>`;
         }
 
         function amSelectAnim(reg) {
             AM.focusRegistry = reg;
+            const idx = (SC.inThreadRegistries || []).indexOf(reg);
+            if (idx >= 0 && isSceneConnectionActive()) {
+                firePapyrusOption({
+                    plugin: 'SkyrimNet_SexLab.esp',
+                    questFormId: '0x800',
+                    scriptName: 'SkyrimNet_SexLab_Actions',
+                    executionFunctionName: 'TM_SetAnimationIndex',
+                    parameterMapping: [
+                        { type: 'speaker', name: 'speaker' },
+                        { type: 'target', name: 'target' },
+                        { type: 'dynamic', name: 'indexStr' }
+                    ]
+                }, { indexStr: String(idx) });
+                SC.activeRegistry = reg;
+            }
             amRenderAnimList();
-            amLoadFocusRegistry();
         }
 
         function amLoadFocusRegistry() {
-            const reg = AM.focusRegistry;
-            const a = (SC.lastAnims || []).find(x => x._registry === reg)
-                || amCandidateAnims().find(x => x._registry === reg);
-            if (!a) {
-                AM.positions = [];
-                AM.stages = [];
-                AM.tags = '';
-                amRenderPositions();
-                amRenderStages();
-                return;
-            }
-            const rich = (a._stage_count != null)
-                || (a._stage_descriptions && Object.keys(a._stage_descriptions).length)
-                || (a._pos_genders && a._pos_genders.length)
-                || (a._position_count != null);
-            AM.registry = reg;
-            AM._registry = reg;
-            document.getElementById('am-title').textContent = a._name || reg || 'Animation';
-            document.getElementById('am-subtitle').textContent = reg || '';
-            if (!rich) {
-                // Registry-only stub until AnimDb query row arrives.
-                document.getElementById('am-tags').innerHTML = '';
-                AM.positions = [];
-                AM.stages = [];
-                AM.dirty = false;
-                amApplyLiveChrome();
-                amRenderPositions();
-                amRenderStages();
-                return;
-            }
-            document.getElementById('am-tags').innerHTML = (a._tags || '').split(',').filter(Boolean)
-                .map(t => `<span class="tag-chip">${t}</span>`).join('');
-            const n = a._position_count || (a._pos_genders || []).length || 0;
-            const no = a._pos_no_orgasm || [];
-            const sp = a._pos_speaking_modifiers || [];
-            const dressed = a._pos_dressed || [];
-            AM.positions = [];
-            for (let i = 0; i < n; i++) {
-                let speaking = sp[i];
-                if (Array.isArray(speaking)) speaking = speaking.join(',');
-                AM.positions.push({
-                    _slot: i,
-                    _dressed: dressed[i] ? 1 : 0,
-                    _no_orgasm: no[i] ? 1 : 0,
-                    _speaking: speaking || '_pleasure_'
-                });
-            }
-            const sd = a._stage_descriptions || {};
-            const stageCount = a._stage_count || Object.keys(sd).length || 1;
-            AM.stages = [];
-            for (let s = 1; s <= stageCount; s++) {
-                AM.stages.push({
-                    _stage: s,
-                    _template: sd[s] || sd[String(s)] || '',
-                    _preview: '',
-                    _current: 0
-                });
-            }
-            AM.dirty = false;
-            amApplyLiveChrome();
-            amRenderPositions();
-            amRenderStages();
+            const title = document.getElementById('am-title');
+            const a = (SC.lastAnims || []).find(x => x._registry === AM.focusRegistry)
+                || amCandidateAnims().find(x => x._registry === AM.focusRegistry);
+            if (title)
+                title.textContent = (a && (a._name || a._registry)) || 'Animation';
         }
 
         function configureAnimationMenu(state) {
@@ -5471,34 +5693,16 @@
             SC.activeRegistry = state._registry || state._active_registry || SC.activeRegistry;
             SC.inThreadRegistries = state._in_thread_registries || SC.inThreadRegistries;
             if (state._registry) AM.focusRegistry = state._registry;
-            document.getElementById('am-activity').textContent = state._activity || state._intent || '';
-            document.getElementById('am-stage-label').textContent =
-                `stage ${state._stage || 1}/${state._stage_count || '?'}`;
-            const styleHost = document.getElementById('am-style-pulldown');
-            styleHost.innerHTML = '';
-            styleHost.appendChild(createPulldown(['forcefully', 'normally', 'gently'], AM.style, v => {
-                AM.style = v;
-                if (AM.live) amLiveUpdate();
-            }));
-            // Prefer thread-provided positions only for stage label; body uses anim slots.
-            if (state._registry && !(SC.lastAnims || []).some(a => a._registry === state._registry)) {
-                // Seed minimal anim stub so focus works until query returns
-                SC.lastAnims = SC.lastAnims || [];
-            }
-            if (state._in_thread_registries && state._in_thread_anims) {
+            if (state._in_thread_registries && state._in_thread_anims)
                 SC.lastAnims = state._in_thread_anims;
-            }
-            amApplyLiveChrome();
+            else if (Array.isArray(state._in_thread_anims) && state._in_thread_anims.length)
+                SC.lastAnims = state._in_thread_anims;
+            if (state._stages && state._stages.length)
+                SC.stages = state._stages;
             amRenderAnimList();
             amEnsureFocus();
-            if (AM.focusRegistry) amLoadFocusRegistry();
-            // If thread sent stages for current anim, merge templates
-            if (state._stages && state._stages.length && AM.focusRegistry === (state._registry || AM.focusRegistry)) {
-                AM.stages = state._stages;
-                amRenderStages();
-            }
+            amLoadFocusRegistry();
             requestSceneConnectionsRefresh();
-            if (!(SC.lastAnims && SC.lastAnims.length)) scRefreshAnims();
         }
 
         function amApplyLiveChrome() {
@@ -5515,6 +5719,7 @@
 
         function amRenderPositions() {
             const tbody = document.querySelector('#am-positions-table tbody');
+            if (!tbody) return;
             tbody.innerHTML = AM.positions.map((p, i) => `<tr>
                 <td>${i}</td><td>slot ${i}</td>
                 <td><span class="cell-toggle ${p._dressed ? 'on' : ''}" onclick="amTogglePos(${i}, 'dressed')">${p._dressed ? 'Y' : '—'}</span></td>
@@ -5557,6 +5762,7 @@
 
         function amRenderStages() {
             const tbody = document.querySelector('#am-stages-table tbody');
+            if (!tbody) return;
             tbody.innerHTML = AM.stages.map(st => {
                 const n = st._stage;
                 const cur = st._current ? ' current' : '';

@@ -1,0 +1,14 @@
+{
+  "type": "papyrus",
+  "label": "stop",
+  "plugin": "SkyrimNet_SexLab.esp",
+  "questFormId": "0x800",
+  "scriptName": "SkyrimNet_SexLab_Actions",
+  "executionFunctionName": "TM_Stop",
+  "parameterMapping": [
+    { "type": "speaker", "name": "speaker" },
+    { "type": "target", "name": "target" }
+  ],
+  "panel": "stop",
+  "closeWebUI": true
+}

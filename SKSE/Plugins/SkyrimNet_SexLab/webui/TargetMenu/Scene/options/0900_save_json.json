@@ -1,0 +1,13 @@
+{
+  "type": "papyrus",
+  "label": "save to json",
+  "plugin": "SkyrimNet_SexLab.esp",
+  "questFormId": "0x800",
+  "scriptName": "SkyrimNet_SexLab_Actions",
+  "executionFunctionName": "TM_SaveAnimationSettings",
+  "parameterMapping": [
+    { "type": "speaker", "name": "speaker" },
+    { "type": "target", "name": "target" }
+  ],
+  "confirmSave": true
+}

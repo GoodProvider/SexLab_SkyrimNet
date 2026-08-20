@@ -1,0 +1,14 @@
+{
+  "type": "papyrus",
+  "label": "stage",
+  "plugin": "SkyrimNet_SexLab.esp",
+  "questFormId": "0x800",
+  "scriptName": "SkyrimNet_SexLab_Actions",
+  "executionFunctionName": "TM_GoToStage",
+  "parameterMapping": [
+    { "type": "speaker", "name": "speaker" },
+    { "type": "target", "name": "target" },
+    { "type": "dynamic", "name": "stageStr", "description": "1-based SexLab stage" }
+  ],
+  "panel": "stage"
+}

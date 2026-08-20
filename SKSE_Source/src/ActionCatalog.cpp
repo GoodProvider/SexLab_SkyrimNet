@@ -22,7 +22,8 @@ namespace ActionCatalog
     {
         std::vector<ActionDef> g_actions;
         std::unordered_map<std::string, std::size_t> g_byName;
-        nlohmann::json g_targetOptions = nlohmann::json::object();
+        nlohmann::json g_actorOptions = nlohmann::json::object();
+        nlohmann::json g_sceneOptions = nlohmann::json::object();
         nlohmann::json g_mainPanels = nlohmann::json::array();
         std::string g_currentMainPanelKey;
         bool g_animationPanelPreferredOpen = false;
@@ -636,15 +637,68 @@ namespace ActionCatalog
             });
             return files;
         }
+
+        nlohmann::json LoadOptionFiles(const std::filesystem::path& optionsDir)
+        {
+            nlohmann::json optionsArr = nlohmann::json::array();
+            if (!std::filesystem::is_directory(optionsDir)) {
+                webui_log::warn("ActionCatalog: missing options directory {}", optionsDir.string());
+                return optionsArr;
+            }
+            for (const auto& path : SortedJsonFiles(optionsDir)) {
+                auto raw = ReadFile(path);
+                if (raw.empty()) {
+                    webui_log::warn("ActionCatalog: skipping empty option file {}", path.string());
+                    continue;
+                }
+                auto node = nlohmann::json::parse(raw);
+                if (!node.is_object()) {
+                    webui_log::warn("ActionCatalog: skipping non-object option file {}", path.string());
+                    continue;
+                }
+                optionsArr.push_back(std::move(node));
+            }
+            if (optionsArr.empty())
+                webui_log::warn("ActionCatalog: no option files loaded from {}", optionsDir.string());
+            return optionsArr;
+        }
+
+        nlohmann::json LoadDefaultsParameters(const std::filesystem::path& defaultsPath)
+        {
+            nlohmann::json defaultsParameters = nlohmann::json::object();
+            auto defaultsRaw = ReadFile(defaultsPath);
+            if (defaultsRaw.empty())
+                return defaultsParameters;
+            auto defaultsJson = nlohmann::json::parse(defaultsRaw);
+            if (!defaultsJson.is_object()) {
+                webui_log::warn("ActionCatalog: {} root must be an object", defaultsPath.string());
+                return defaultsParameters;
+            }
+            if (defaultsJson.contains("defaultsParameters") && defaultsJson["defaultsParameters"].is_object())
+                return defaultsJson["defaultsParameters"];
+            if (defaultsJson.contains("defaults") && defaultsJson["defaults"].is_object())
+                return defaultsJson["defaults"];
+            return defaultsParameters;
+        }
+
+        bool FocusIsInSexLabScene()
+        {
+            return PapyrusBindings_WebUI::IsSexLabAnimatingFocus(PapyrusBindings_WebUI::Target_Current);
+        }
+
+        const nlohmann::json& ActiveTargetOptions()
+        {
+            return FocusIsInSexLabScene() ? g_sceneOptions : g_actorOptions;
+        }
     }
 
-    /// Public path to the WebUI JSON config directory (actions_index / menu/target).
+    /// Public path to the WebUI JSON config directory (actions_index / TargetMenu / MainPanels).
     std::filesystem::path WebUIDir()
     {
         return ResolveWebUIDir();
     }
 
-    /// True after a successful Load() of actions_index.json and menu/target.
+    /// True after a successful Load() of actions_index.json and TargetMenu.
     bool IsLoaded()
     {
         return g_loaded;
@@ -655,22 +709,25 @@ namespace ActionCatalog
         return EqualsIgnoreCase(actionName, "outfit_dress") || EqualsIgnoreCase(actionName, "outfit_undress");
     }
 
-    /// Loads actions_index.json, menu/target, and main_panels into the catalog.
+    /// Loads actions_index.json, TargetMenu/Actor, TargetMenu/Scene, and MainPanels into the catalog.
     bool Load()
     {
         g_actions.clear();
         g_byName.clear();
-        g_targetOptions = nlohmann::json::object();
+        g_actorOptions = nlohmann::json::object();
+        g_sceneOptions = nlohmann::json::object();
         g_mainPanels = nlohmann::json::array();
         g_currentMainPanelKey.clear();
         g_loaded = false;
 
         const auto dir = ResolveWebUIDir();
         const auto indexPath = dir / "actions_index.json";
-        const auto menuDir = dir / "menu" / "target";
-        const auto defaultsPath = menuDir / "defaults.json";
-        const auto optionsDir = menuDir / "options";
-        const auto mainPanelsDir = dir / "main_panels";
+        const auto actorDir = dir / "TargetMenu" / "Actor";
+        const auto sceneDir = dir / "TargetMenu" / "Scene";
+        const auto actorDefaultsPath = actorDir / "defaults.json";
+        const auto actorOptionsDir = actorDir / "options";
+        const auto sceneOptionsDir = sceneDir / "options";
+        const auto mainPanelsDir = dir / "MainPanels";
 
         webui_log::info("ActionCatalog loading from {}", dir.string());
 
@@ -708,50 +765,27 @@ namespace ActionCatalog
                 g_actions.push_back(std::move(def));
             }
 
-            auto defaultsRaw = ReadFile(defaultsPath);
-            if (defaultsRaw.empty()) {
-                webui_log::error("ActionCatalog: missing or empty {}", defaultsPath.string());
+            auto actorDefaults = LoadDefaultsParameters(actorDefaultsPath);
+            if (actorDefaults.empty() && ReadFile(actorDefaultsPath).empty()) {
+                webui_log::error("ActionCatalog: missing or empty {}", actorDefaultsPath.string());
                 return false;
             }
-            auto defaultsJson = nlohmann::json::parse(defaultsRaw);
-            if (!defaultsJson.is_object()) {
-                webui_log::error("ActionCatalog: {} root must be an object", defaultsPath.string());
-                return false;
-            }
-
-            nlohmann::json defaultsParameters = nlohmann::json::object();
-            if (defaultsJson.contains("defaultsParameters") && defaultsJson["defaultsParameters"].is_object())
-                defaultsParameters = defaultsJson["defaultsParameters"];
-            else if (defaultsJson.contains("defaults") && defaultsJson["defaults"].is_object())
-                defaultsParameters = defaultsJson["defaults"];
-
-            if (!std::filesystem::is_directory(optionsDir)) {
-                webui_log::error("ActionCatalog: missing options directory {}", optionsDir.string());
+            if (!std::filesystem::is_directory(actorOptionsDir)) {
+                webui_log::error("ActionCatalog: missing options directory {}", actorOptionsDir.string());
                 return false;
             }
 
-            nlohmann::json optionsArr = nlohmann::json::array();
-            for (const auto& path : SortedJsonFiles(optionsDir)) {
-                auto raw = ReadFile(path);
-                if (raw.empty()) {
-                    webui_log::warn("ActionCatalog: skipping empty option file {}", path.string());
-                    continue;
-                }
-                auto node = nlohmann::json::parse(raw);
-                if (!node.is_object()) {
-                    webui_log::warn("ActionCatalog: skipping non-object option file {}", path.string());
-                    continue;
-                }
-                optionsArr.push_back(std::move(node));
-            }
-            if (optionsArr.empty())
-                webui_log::warn("ActionCatalog: no option files loaded from {}", optionsDir.string());
+            auto actorOptionsArr = LoadOptionFiles(actorOptionsDir);
+            WalkOptionsForSynthesis(actorOptionsArr);
+            g_actorOptions = nlohmann::json::object();
+            g_actorOptions["defaultsParameters"] = std::move(actorDefaults);
+            g_actorOptions["options"] = std::move(actorOptionsArr);
 
-            WalkOptionsForSynthesis(optionsArr);
-
-            g_targetOptions = nlohmann::json::object();
-            g_targetOptions["defaultsParameters"] = std::move(defaultsParameters);
-            g_targetOptions["options"] = std::move(optionsArr);
+            auto sceneOptionsArr = LoadOptionFiles(sceneOptionsDir);
+            WalkOptionsForSynthesis(sceneOptionsArr);
+            g_sceneOptions = nlohmann::json::object();
+            g_sceneOptions["defaultsParameters"] = nlohmann::json::object();
+            g_sceneOptions["options"] = std::move(sceneOptionsArr);
 
             for (const auto& path : SortedJsonFiles(mainPanelsDir)) {
                 auto raw = ReadFile(path);
@@ -767,13 +801,14 @@ namespace ActionCatalog
                 g_mainPanels.push_back(std::move(node));
             }
             if (g_mainPanels.empty())
-                webui_log::warn("ActionCatalog: no main_panels loaded from {}", mainPanelsDir.string());
+                webui_log::warn("ActionCatalog: no MainPanels loaded from {}", mainPanelsDir.string());
 
             g_loaded = true;
             webui_log::info(
-                "ActionCatalog loaded {} actions, {} target options, {} main panels",
+                "ActionCatalog loaded {} actions, {} actor options, {} scene options, {} main panels",
                 g_actions.size(),
-                g_targetOptions["options"].size(),
+                g_actorOptions["options"].size(),
+                g_sceneOptions["options"].size(),
                 g_mainPanels.size());
             return true;
         } catch (const std::exception& e) {
@@ -795,7 +830,7 @@ namespace ActionCatalog
     /// Assembled target menu object (defaultsParameters + options) used when building UI params.
     const nlohmann::json& TargetOptions()
     {
-        return g_targetOptions;
+        return ActiveTargetOptions();
     }
 
     /// Builds the JSON catalog JS configureTargetMenu expects (defaultsParameters, options, actions).
@@ -805,14 +840,17 @@ namespace ActionCatalog
         if (!g_loaded)
             Load();
 
+        const auto& src = ActiveTargetOptions();
+        const bool actorCatalog = !FocusIsInSexLabScene();
+
         nlohmann::json catalog;
-        if (g_targetOptions.contains("defaultsParameters") && g_targetOptions["defaultsParameters"].is_object())
-            catalog["defaultsParameters"] = g_targetOptions["defaultsParameters"];
+        if (src.contains("defaultsParameters") && src["defaultsParameters"].is_object())
+            catalog["defaultsParameters"] = src["defaultsParameters"];
         else
-            catalog["defaultsParameters"] = g_targetOptions.value("defaults", nlohmann::json::object());
+            catalog["defaultsParameters"] = src.value("defaults", nlohmann::json::object());
 
         catalog["options"] = ResolveOptionsArray(
-            g_targetOptions.value("options", nlohmann::json::array()),
+            src.value("options", nlohmann::json::array()),
             focusHasStrippedItems);
 
         nlohmann::json actionsObj = nlohmann::json::object();
@@ -840,28 +878,30 @@ namespace ActionCatalog
             actionsObj[def.name] = a;
         }
 
-        for (auto& ext : TargetMenuRegistry::All()) {
-            nlohmann::json opt = nlohmann::json::object();
-            opt["type"] = "action";
-            opt["name"] = ext.actionName;
-            opt["label"] = ext.label;
-            catalog["options"].push_back(opt);
+        if (actorCatalog) {
+            for (auto& ext : TargetMenuRegistry::All()) {
+                nlohmann::json opt = nlohmann::json::object();
+                opt["type"] = "action";
+                opt["name"] = ext.actionName;
+                opt["label"] = ext.label;
+                catalog["options"].push_back(opt);
 
-            nlohmann::json a = nlohmann::json::object();
-            a["name"] = ext.actionName;
-            a["label"] = ext.label;
-            a["customCategory"] = "";
-            a["executionFunctionName"] = ext.executionFunctionName;
-            a["questEditorId"] = "";
-            a["scriptName"] = ext.scriptName;
-            nlohmann::json mapping = nlohmann::json::array();
-            nlohmann::json m = nlohmann::json::object();
-            m["type"] = "target";
-            m["name"] = "target";
-            m["description"] = "";
-            mapping.push_back(m);
-            a["parameterMapping"] = mapping;
-            actionsObj[ext.actionName] = a;
+                nlohmann::json a = nlohmann::json::object();
+                a["name"] = ext.actionName;
+                a["label"] = ext.label;
+                a["customCategory"] = "";
+                a["executionFunctionName"] = ext.executionFunctionName;
+                a["questEditorId"] = "";
+                a["scriptName"] = ext.scriptName;
+                nlohmann::json mapping = nlohmann::json::array();
+                nlohmann::json m = nlohmann::json::object();
+                m["type"] = "target";
+                m["name"] = "target";
+                m["description"] = "";
+                mapping.push_back(m);
+                a["parameterMapping"] = mapping;
+                actionsObj[ext.actionName] = a;
+            }
         }
 
         catalog["actions"] = actionsObj;
