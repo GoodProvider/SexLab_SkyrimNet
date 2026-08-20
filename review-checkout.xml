@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  review-checkout.xml — cold-start companion to review-guide.xml + review-execution-plan.xml.
+
+  Purpose: feed this file together with review-guide.xml to a fresh agent so it can execute
+  or continue the open review without rediscovering ground rules. Durable history remains in
+  review-checkpoint.xml; this checkout mirrors the checkpoint plus the open 2026-07-26 plan.
+-->
+<checkout>
+  <metadata>
+    <project>SkyrimNet_SexLab</project>
+    <summary>Bridge mod between SkyrimNet (LLM) and SexLab Framework.</summary>
+    <language>Papyrus (Skyrim SE/AE)</language>
+    <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
+    <updated>2026-07-26</updated>
+    <key_paths>
+      <scripts_source>Scripts/Source</scripts_source>
+      <action_yamls>SKSE/Plugins/SkyrimNet/config/actions</action_yamls>
+      <prompts>SKSE/Plugins/SkyrimNet/prompts</prompts>
+    </key_paths>
+    <related_artifacts>
+      <artifact role="review rules / persona">review-guide.xml</artifact>
+      <artifact role="durable checkpoint / history">review-checkpoint.xml</artifact>
+      <artifact role="current fix-pass plan">review-execution-plan.xml</artifact>
+      <artifact role="per-pass changelog">reviews/*.review.md</artifact>
+    </related_artifacts>
+    <compile>
+      Use the VS Code / Cursor task "compile: pyro" (pyro against skyrimse.ppj, game path
+      C:\Skyrim\dev\skyrim). Do not invent alternate one-off compile commands.
+    </compile>
+    <dependencies>
+      SexLabFramework, JContainers, StorageUtil, SKSE, SkyrimNet API, PO3_SKSEFunctions,
+      UIExtensions, SkyMessage. SkyrimNet_DOM is optional (../SkyrimNet_DOM/Scripts/Source).
+    </dependencies>
+  </metadata>
+
+  <architecture>
+    <flow>Creator (pooled) -> StartScene -> Manager.CreateSceneByCreator -> Scene.Setup(creator) -> caller MUST creator.Release().</flow>
+    <detail>manager.CreateCreator() returns the first inactive slot from a fixed creators[] pool and marks it ACTIVE; returns None when exhausted. Scene.Setup copies all values out of the creator, so every caller must Release() afterwards to free the slot.</detail>
+    <detail>Manager hooks SexLab thread events and routes to Scene handlers. SkyrimNet consumes scene state as JSON via GetThreadJson / GetThreadsJson (decorator sexlab_get_threads). GetDescription() is prose only (also stuffed into decorator activity).</detail>
+    <detail>DOM is optional: main.handler_dom is either the Interface stub (safe no-op/passthrough on the Main quest) or the real SkyrimNet_SexLab_Handler_DOM.esp. Main.Setup guarantees handler_dom is non-None.</detail>
+    <detail>SeparateOrgasms for Dom slaves: Manager intentionally skips; external SkyrimNet_DOM OnOrgasm -> DOMSlave_Orgasmed -> Manager.OrgasmCustom (which appends " is orgasming.").</detail>
+    <detail>External-consumer JSON keys are bare lowercase (e.g. actors, activity, options, speaking_modifiers, uuid) via ObjectToLowerCaseKeyJson / JsonLowerCaseKeys. Protocol values stay underscore-wrapped (_pleasure_, _pain_, _gagged_, _kissing_).</detail>
+  </architecture>
+
+  <constraints note="Hard rules from review-guide.xml/facts. Do NOT re-report these as findings.">
+    <do_not_report>Compile errors — all Scripts/Source compiles via pyro.</do_not_report>
+    <do_not_report>Case mismatches — Papyrus is case-insensitive.</do_not_report>
+    <do_not_report>GetFormFromFile / CK property wiring — intentional in global functions.</do_not_report>
+    <do_not_report>PagedActors and related calls.</do_not_report>
+    <do_not_report>udng_groups None concern — set correctly.</do_not_report>
+    <ignore>Files/identifiers starting with z-*.</ignore>
+    <ignore>SkyrimNet_Sexlab_Creatures.psc — out of scope per guide.</ignore>
+    <not_dead_code>SkyrimNet_SexLab_WebUI.psc — intentional stub for future SKSE library anchor.</not_dead_code>
+    <not_a_bug id="H9">Manager Dom orgasm early-return — external DOM calls DOMSlave_Orgasmed.</not_a_bug>
+    <fact>GetModByName("Data/SexLab.esm"): 255 = missing; the Data/ prefix is correct.</fact>
+    <fact>ParseString(desc, "sl", json): pass {"actors":[...]}; namespace becomes sl.actors.N.</fact>
+    <fact>JSON keys bare lowercase; do not re-report underscore-key mismatches fixed 2026-07-16.</fact>
+  </constraints>
+
+  <locked_decisions note="Design decisions confirmed by the user; treat as settled.">
+    <decision>Creator.Release() on cancel or once the Scene is created; full pool-slot reset.</decision>
+    <decision>Narration param name is optional_is_dropped everywhere; fallback optional_is_dropped=True.</decision>
+    <decision>RegisterEvent is silent on blank message and on duplicates (silent drop only).</decision>
+    <decision>Shared NarrationCoolOffAllows(source, target); CheckDuplicate calls ContinueActivity when cool-off allows.</decision>
+    <decision>allow_continue_fallback=False on DirectNarration_Optional/RegisterEvent paths (anti-recursion).</decision>
+    <decision>Both source and target None: silent drop; no ContinueActivity from CheckDuplicate.</decision>
+    <decision>Player fallback StorageUtil key used when source is None.</decision>
+    <decision>First StageStart: GetIntentMessage(INTENT_STAGE_START) + append stage desc if non-empty; empty desc -> ContinueActivity(..., True). Non-first or unchanged desc -> ContinueActivity(True).</decision>
+    <decision>Dom Combined narration: silent unless orgasm_expected==1; LLM reminder only when a slave did not orgasm.</decision>
+    <decision>Menu locks actors via LockAllActorLock (mirrors Action_Start); Release on lock failure.</decision>
+    <decision>SkyrimNet_DOM optional: Interface stub + real Handler_DOM must both work.</decision>
+    <decision id="M4">Style DirectNarration: exactly one DN when style changes on a live Scene (EditDescriptions style button). No DN from Scene_Creator or Interface.SetStyleDialog.</decision>
+    <decision id="YAML-Victim">Fixed-role nonconsensual two-actor actions use StartScene_Nonconsensual_Two_TargetVictim / _SpeakerVictim. Dynamic victim uses StartScene_Nonconsensual_Two with explicit victim. Never pass speaking_victim in action YAMLs.</decision>
+    <decision id="YAML-Names">Action YAML name values must be unique; static mappings use value; dynamic mappings use description; prefer Papyrus slot names (method, how).</decision>
+    <decision id="Direction-Tokens">Actions.psc accepts fucking|fuck a|fucking a|fucked in|getting|get|giving|give for consensual speaker_position (victim wrappers override).</decision>
+    <decision id="2026-07-26-02">SelectAnimations before NewThread; Initialize only on post-NewThread abort. sex3 giving setting_name "". LLM cuddle/outfit dresses|undresses with Papyrus/tag remap. MultiTarget blank intent → sexual activities.</decision>
+  </locked_decisions>
+
+  <open_plan>
+    <file>review-execution-plan.xml</file>
+    <pass>2026-07-26-03</pass>
+    <status>applied — see reviews/2026-07-26-03.review.md</status>
+    <headline>
+      Applied deferred M5 kissing→nonsexual_kissing; M7 Dom speaking_modifiers[]; L2 Stages Trace arg order.
+      Still deferred: arousal, M8-legacy, notice schema, PARAMS, L3, S10b, M9-M16.
+    </headline>
+  </open_plan>
+
+  <open_backlog note="Deferred from prior passes; still not scheduled unless pulled into this plan.">
+    <deferred id="H6-arousal">Populate actor arousal or remove 0550 gates (author leave for future).</deferred>
+    <deferred id="M8-legacy">orgasm_expected vs description-walk mismatch (confirm per-stage vs per-animation with author).</deferred>
+    <deferred id="M9-M16">Orgasm editor UX polish; OStim affection path (Menu affection branch no-op under OStim).</deferred>
+    <deferred id="S10b">Convert always-on Trace scaffolding to debug_mode-gated DbgMsg (Scene.psc).</deferred>
+    <deferred id="M8-notice">Unify notice_level string vs numeric schema.</deferred>
+    <deferred id="M9-params">Category parent PARAMS type→method alignment.</deferred>
+    <deferred id="L3-none-cat">sexlab_none_ category / docs.</deferred>
+    <informational id="L-D">Registered-but-unconsumed decorators: Intent (intent), Player_LOS_Distance (distance/los).</informational>
+    <informational id="A-StageCase">Animation JSON stage keys case-sensitive in JContainers; prefer lowercase "stage N" / "version".</informational>
+  </open_backlog>
+
+  <how_to_execute>
+    <step>Read review-guide.xml, this checkout, and review-execution-plan.xml.</step>
+    <step>2026-07-26-02 applied; next pass: regenerate plan from deferred backlog or fresh review.</step>
+    <step>Compile via "compile: pyro"; write reviews/&lt;date&gt;.review.md; update review-checkpoint.xml and this checkout.</step>
+    <step>Respect constraints and locked_decisions; do not re-report superseded or resolved items.</step>
+  </how_to_execute>
+</checkout>

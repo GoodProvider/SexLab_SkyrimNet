@@ -1,0 +1,29 @@
+project:
+  name: "SkyrimNet_SexLab Framework"
+  version: "1.0.0"
+  type: "Skyrim Modding / Papyrus Framework"
+
+technical_stack:
+  language: "Papyrus (Skyrim SE/AE)"
+  compiler: "Russo-2025"[cite: 8]
+  primary_editor: "VS Code"[cite: 8]
+  core_dependencies:
+    - "SexLabFramework"[cite: 1, 8]
+    - "JContainers (JMap, JValue)"[cite: 2, 3, 8]
+    - "PO3_SKSEFunctions"[cite: 2, 3]
+    - "StorageUtil"[cite: 8, 9]
+    - "UIExtensions"[cite: 9]
+    - "SkyUI (SKI_ConfigBase)"[cite: 9]
+
+context_rules:
+  manifest_tracking: true
+  manifest_path_strategy: "manifest/(relative_source_path).md" # e.g., Scripts/Source/cat.psc -> manifest/Scripts/Source/cat.psc.md
+  enforce_strict_types: true
+  auto_reference_check:
+    target: "0x800" # Common base FormID for project quests[cite: 4, 10]
+  
+workflow_priorities:
+  1: "Fix high-severity syntax and type-casting errors"[cite: 1]
+  2: "Resolve JContainers memory leaks (JValue.release)"[cite: 2]
+  3: "Sanitize Game.GetFormFromFile lookups"[cite: 8]
+  4: "Refactor string-concatenated JSON to JMap"[cite: 3]
