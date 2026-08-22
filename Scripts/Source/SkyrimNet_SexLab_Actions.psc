@@ -329,6 +329,10 @@ EndFunction
 ; Narration: direct, silent (RegisterEvent), none
 ; -------------------------------------------------
 Function Outfit_Narrate(Actor Speaker, Actor Target, String style, String token, String narration)
+    ; style silently|silent → no DirectNarration and no RegisterEvent.
+    if style == "silently" || style == "silent"
+        return
+    endif
     Actor listener = Target
     if listener == Speaker
         listener = None
@@ -341,7 +345,7 @@ Function Outfit_Narrate(Actor Speaker, Actor Target, String style, String token,
     endif
 EndFunction
 
-; Refresh WebUI actionSwitch if the target menu is open on this actor.
+; Refresh WebUI catalog if the target menu is open on this actor.
 Function Outfit_RefreshWebUI(Actor Target)
     if Target == None
         return
@@ -419,6 +423,22 @@ EndFunction
 ; -------------------------------------------------
 ; TargetMenu Papyrus APIs (type: papyrus — no SkyrimNet YAML)
 ; -------------------------------------------------
+
+Function TM_Outfit(Actor speaker, Actor target, String style)
+    Trace("TM_Outfit", GetDisplayName(speaker)+" -> "+GetDisplayName(target)+" style:"+style)
+    if speaker == None || target == None
+        return
+    endif
+    String narration = "silent"
+    if style == "silently" || style == "silent"
+        narration = "none"
+    endif
+    if main.HasStrippedItems(target)
+        Outfit_Dress(speaker, target, style, narration)
+    else
+        Outfit_Undress(speaker, target, style, narration)
+    endif
+EndFunction
 
 Function TM_StopSilent(Actor speaker, Actor target)
     Trace("TM_StopSilent", GetDisplayName(speaker)+" -> "+GetDisplayName(target))

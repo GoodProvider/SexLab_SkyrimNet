@@ -1,0 +1,33 @@
+{
+  "type": "papyrus",
+  "label": "undress",
+  "panel": "outfit",
+  "plugin": "SkyrimNet_SexLab.esp",
+  "questFormId": "0x800",
+  "scriptName": "SkyrimNet_SexLab_Actions",
+  "executionFunctionName": "TM_Outfit",
+  "closeWebUI": true,
+  "parameterMapping": [
+    { "type": "speaker", "name": "speaker" },
+    { "type": "target", "name": "target" },
+    { "type": "dynamic", "name": "style" }
+  ],
+  "eligibilityRules": [
+    {
+      "conditions": [
+        {
+          "decoratorName": "papyrus_util",
+          "arguments": [
+            "FormListCount",
+            "currentActor",
+            "skyrimnet_sexlab_storage_items"
+          ],
+          "comparisonOperator": "==",
+          "expectedValue": 0
+        }
+      ],
+      "logicalOperator": "AND",
+      "required": true
+    }
+  ]
+}

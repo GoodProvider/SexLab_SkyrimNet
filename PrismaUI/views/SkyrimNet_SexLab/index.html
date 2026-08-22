@@ -1905,6 +1905,8 @@
         let papyrusSelectedOpt = null;
         let tmCastDraft = null; // [{name, formId, in:bool}, ...] for change_actors / rotate
         let tmStopSpeakerFormId = 0;
+        let outfitUi = { pos0: 0, pos1: 0, style: 'normally' };
+        const OUTFIT_STYLES = ['forcefully', 'normally', 'gently', 'silently'];
 
         /// Hierarchical param remember-store (parent-linked tree → localStorage).
         let paramTreeRoot = null;
@@ -1960,6 +1962,7 @@
             if (s === 'gently' || s === 'gentle') return ['gently', 'gentle'];
             if (s === 'normally' || s === 'normal') return ['normally', 'normal'];
             if (s === 'forcefully' || s === 'forceful') return ['forcefully', 'forceful'];
+            if (s === 'silently' || s === 'silent') return ['silently', 'silent'];
             return [String(v == null ? '' : v)];
         }
 
@@ -2490,6 +2493,8 @@
             tmCastDraft = null;
             selectedActionName = null;
             selectedActionLabel = null;
+            outfitUi.pos0 = 0;
+            outfitUi.pos1 = 0;
             ssUi.seededForLabel = '';
             ssCloseIntentPanel();
             const host = document.getElementById('target-cascade-host');
@@ -3862,6 +3867,85 @@
             body.appendChild(bar);
         }
 
+        function outfitFindActor(pool, fid) {
+            const want = formIdU32(fid);
+            if (!want) return null;
+            return pool.find(a => formIdU32(a.formId) === want) || null;
+        }
+
+        function outfitActorPulldown(pool, current, onPick) {
+            if (!pool.length) {
+                const miss = document.createElement('div');
+                miss.textContent = '—';
+                return miss;
+            }
+            const labels = pool.map(a => a.label);
+            const seed = current ? current.label : (labels[0] || '—');
+            return createPulldown(labels, seed, (picked, idx) => {
+                const entry = (idx != null && idx >= 0 && idx < pool.length) ? pool[idx]
+                    : pool.find(a => a.label === picked);
+                if (!entry) return;
+                onPick(entry);
+            });
+        }
+
+        function renderOutfitPanelBody(body, opt) {
+            const pool = eligibleParamActors();
+            let pos0 = outfitFindActor(pool, outfitUi.pos0)
+                || outfitFindActor(pool, targetActor && targetActor.formId)
+                || pool[0]
+                || null;
+            let pos1 = outfitFindActor(pool, outfitUi.pos1)
+                || outfitFindActor(pool, playerActor && playerActor.formId)
+                || pool[0]
+                || null;
+            if (pos0) outfitUi.pos0 = formIdU32(pos0.formId);
+            if (pos1) outfitUi.pos1 = formIdU32(pos1.formId);
+            if (!OUTFIT_STYLES.includes(outfitUi.style))
+                outfitUi.style = 'normally';
+
+            const lab = String(displayLabel(opt) || '').toLowerCase();
+            const verb = (lab === 'dress' || lab === 'dresses') ? 'dresses' : 'undresses';
+
+            const row = document.createElement('div');
+            row.className = 'compact-row';
+            row.appendChild(outfitActorPulldown(pool, pos1, (entry) => {
+                outfitUi.pos1 = formIdU32(entry.formId);
+            }));
+            row.appendChild(createPulldown(OUTFIT_STYLES, outfitUi.style, (v) => {
+                outfitUi.style = v;
+            }));
+            const verbEl = document.createElement('span');
+            verbEl.textContent = verb;
+            row.appendChild(verbEl);
+            row.appendChild(outfitActorPulldown(pool, pos0, (entry) => {
+                outfitUi.pos0 = formIdU32(entry.formId);
+            }));
+            body.appendChild(row);
+
+            const bar = document.createElement('div');
+            bar.className = 'bottom-bar';
+            const startBtn = document.createElement('div');
+            startBtn.className = 'action-btn';
+            startBtn.textContent = 'Start';
+            if (!outfitUi.pos0 || !outfitUi.pos1) startBtn.classList.add('disabled');
+            startBtn.onclick = () => {
+                if (startBtn.classList.contains('disabled')) return;
+                if (!outfitUi.pos0 || !outfitUi.pos1) return;
+                firePapyrusOption(opt, {
+                    speaker: tmActorParam(outfitUi.pos1),
+                    target: tmActorParam(outfitUi.pos0),
+                    style: outfitUi.style
+                });
+                if (typeof hidePanel === 'function') {
+                    hidePanel('target_menu_panel');
+                    hidePanel('control_panel');
+                }
+            };
+            bar.appendChild(startBtn);
+            body.appendChild(bar);
+        }
+
         function renderPapyrusPanel() {
             const host = document.getElementById('target-cascade-host');
             if (!host) return;
@@ -3892,6 +3976,8 @@
                 tmRenderStagePanel(body, opt);
             } else if (kind === 'position') {
                 tmRenderPositionPanel(body, opt);
+            } else if (kind === 'outfit') {
+                renderOutfitPanelBody(body, opt);
             } else {
                 body.textContent = 'Unknown panel: ' + kind;
             }
