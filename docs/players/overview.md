@@ -49,7 +49,7 @@ Plugin options live in:
 1. **SkyrimNet mod menu** → **SkyrimNet_SexLab** plugin (manifest / control store), or
 2. In-game WebUI **Settings** main panel (main panel pulldown → Settings) for rebuild / version / docs
 
-SkyUI MCM keeps rebuild + last-rebuild timestamp, Start Sex / Edit Stage hotkey enable/remap, and points players at those UIs. New settings are always added to the manifest first.
+AnimDB does not rebuild on load. If it is empty or its animation count does not match SexLab, a notification and a dialog appear (Build/Rebuild or Close). SkyUI MCM keeps rebuild + last-rebuild timestamp, Start Sex / Edit Stage hotkey enable/remap, and points players at those UIs. New settings are always added to the manifest first.
 
 | Category | Options |
 |----------|---------|

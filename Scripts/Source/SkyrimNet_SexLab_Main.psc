@@ -122,7 +122,7 @@ Function Setup()
     animdb = (self as Quest) as SkyrimNet_SexLab_AnimDb
     if animdb != None
         animdb.Setup()
-        animdb.StartSync(False)
+        animdb.CheckAlignmentOnLoad()
     else
         Trace("Setup", "ERROR: Failed to get AnimDb.", true)
     endif

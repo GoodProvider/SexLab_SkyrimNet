@@ -37,6 +37,10 @@ int walk_slots_creature = 0
 int walk_slots_total = 0
 float progress_last_time = 0.0
 
+; Load-time alignment prompt (does not auto-rebuild)
+Bool align_check_pending = False
+int align_mbox_id = 0
+
 Function Trace(String func, String msg, Bool notification=False) global
     String logged = SkyrimNet_SexLab_WebUI.TraceLog("SkyrimNet_SexLab_AnimDb", func, msg)
     if notification
@@ -54,8 +58,95 @@ Function Setup()
     AnimDb_Open()
 EndFunction
 
-; Kick cooperative sync after SexLab is ready.
+; Compare AnimDB vs SexLab after load. Never auto-rebuilds; prompts if counts differ.
+Function CheckAlignmentOnLoad()
+    if walk_active || sync_phase != 0 || align_mbox_id != 0
+        Trace("CheckAlignmentOnLoad", "skip pending walk_active="+walk_active+" phase="+sync_phase+" mbox="+align_mbox_id)
+        return
+    endif
+    if sexlab == None
+        Trace("CheckAlignmentOnLoad", "sexlab is None", True)
+        return
+    endif
+    align_check_pending = True
+    if !sexlab.Enabled
+        Trace("CheckAlignmentOnLoad", "waiting for SexLab")
+        RegisterForModEvent("SexLabEnabled", "OnSexLabEnabled")
+        RegisterForSingleUpdate(1.0)
+        return
+    endif
+    RegisterForSingleUpdate(0.5)
+EndFunction
+
+int Function RefreshSlotCounts()
+    walk_slots_human = 0
+    walk_slots_creature = 0
+    if sexlab
+        if sexlab.AnimSlots
+            walk_slots_human = sexlab.AnimSlots.Slotted
+        endif
+        sslAnimationSlots creature_slots = sexlab.CreatureSlots as sslAnimationSlots
+        if creature_slots
+            walk_slots_creature = creature_slots.Slotted
+        endif
+    endif
+    walk_slots_total = walk_slots_human + walk_slots_creature
+    return walk_slots_total
+EndFunction
+
+Function PromptAlignmentIfNeeded()
+    align_check_pending = False
+    UnregisterForModEvent("SexLabEnabled")
+    int sl_count = RefreshSlotCounts()
+    int db_count = AnimDb_TotalCount()
+    if db_count == sl_count
+        Trace("PromptAlignmentIfNeeded", "aligned db_count="+db_count+" registered="+sl_count)
+        return
+    endif
+    Trace("PromptAlignmentIfNeeded", "SkyrimNet SexLab # animations doesn't match", True)
+    String[] buttons = new String[2]
+    String msg
+    if db_count == 0
+        msg = "AnimDB is empty"
+        buttons[0] = "Build AnimDB"
+        buttons[1] = "Close"
+    else
+        msg = "AnimDB has "+db_count+", SexLab has "+sl_count
+        buttons[0] = "Rebuild AnimDB"
+        buttons[1] = "Close"
+    endif
+    align_mbox_id = SkyMessage.ShowArray_NonBlocking(msg, buttons)
+    if align_mbox_id == 0
+        Trace("PromptAlignmentIfNeeded", "SkyMessage failed", True)
+        return
+    endif
+    RegisterForSingleUpdate(0.1)
+EndFunction
+
+Function FinishAlignmentPrompt()
+    if align_mbox_id == 0
+        return
+    endif
+    if !SkyMessage.IsMessageResultAvailable(align_mbox_id)
+        RegisterForSingleUpdate(0.1)
+        return
+    endif
+    String choice = SkyMessage.GetResultText(align_mbox_id)
+    align_mbox_id = 0
+    if choice == "Build AnimDB" || choice == "Rebuild AnimDB"
+        StartSync(True)
+    else
+        Trace("FinishAlignmentPrompt", "closed without rebuild choice="+choice)
+    endif
+EndFunction
+
+; Kick cooperative sync after SexLab is ready. Callers must opt in (MCM / Settings / alignment prompt).
 Function StartSync(Bool force_rebuild=False)
+    align_check_pending = False
+    if align_mbox_id != 0
+        SkyMessage.Delete(align_mbox_id)
+        align_mbox_id = 0
+    endif
     if sync_phase != 0
         Trace("StartSync", "already walking, requesting restart force="+force_rebuild)
         walk_force = force_rebuild
@@ -79,16 +170,7 @@ EndFunction
 
 Function BeginWalk()
     UnregisterForModEvent("SexLabEnabled")
-    walk_slots_human = 0
-    walk_slots_creature = 0
-    if sexlab.AnimSlots
-        walk_slots_human = sexlab.AnimSlots.Slotted
-    endif
-    sslAnimationSlots creature_slots = sexlab.CreatureSlots as sslAnimationSlots
-    if creature_slots
-        walk_slots_creature = creature_slots.Slotted
-    endif
-    walk_slots_total = walk_slots_human + walk_slots_creature
+    RefreshSlotCounts()
     if !walk_force
         int db_count = AnimDb_TotalCount()
         if db_count == walk_slots_total
@@ -105,7 +187,7 @@ Function BeginWalk()
     walk_total = 0
     progress_last_time = Utility.GetCurrentRealTime()
     AnimDb_BeginSync(walk_force)
-    Trace("BeginWalk", "SkyrimNet_SexLab is loading animations", True)
+    Trace("BeginWalk", "SkyrimNet SexLab loading", True)
     RegisterForSingleUpdate(0.05)
 EndFunction
 
@@ -114,12 +196,28 @@ Function RebuildDatabase()
 EndFunction
 
 Event OnSexLabEnabled()
+    if align_check_pending
+        RegisterForSingleUpdate(0.5)
+        return
+    endif
     if sync_phase == 1
         BeginWalk()
     endif
 EndEvent
 
 Event OnUpdate()
+    if align_mbox_id != 0
+        FinishAlignmentPrompt()
+        return
+    endif
+    if align_check_pending
+        if sexlab && sexlab.Enabled
+            PromptAlignmentIfNeeded()
+        else
+            RegisterForSingleUpdate(1.0)
+        endif
+        return
+    endif
     if sync_phase == 1
         if sexlab && sexlab.Enabled
             BeginWalk()
