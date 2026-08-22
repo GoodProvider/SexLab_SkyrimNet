@@ -439,6 +439,18 @@ namespace PapyrusBindings_WebUI
         WebUI_Invoke(std::string("configureSceneConnections(") + dumped + ");");
     }
 
+    void SceneInfos_Seed(RE::StaticFunctionTag*, RE::BSFixedString state_json)
+    {
+        const char* raw = state_json.c_str() ? state_json.c_str() : "{}";
+        std::string dumped = "{}";
+        try {
+            dumped = nlohmann::json::parse(raw).dump();
+        } catch (...) {
+            webui_log::warn("SceneInfos_Seed: bad state_json");
+        }
+        WebUI_Invoke(std::string("seedSceneInfos(") + dumped + ");");
+    }
+
     /// Formats [script.func] msg, logs it through SKSE, and returns the same string to Papyrus.
     RE::BSFixedString TraceLog(RE::StaticFunctionTag*, RE::BSFixedString script_name,
         RE::BSFixedString func, RE::BSFixedString msg)
@@ -1236,6 +1248,7 @@ namespace PapyrusBindings_WebUI
         a_vm->RegisterFunction("Animation_Menu_Show", scriptName, Animation_Menu_Show);
         a_vm->RegisterFunction("Animation_Menu_Configure", scriptName, Animation_Menu_Configure);
         a_vm->RegisterFunction("SceneConnections_Show", scriptName, SceneConnections_Show);
+        a_vm->RegisterFunction("SceneInfos_Seed", scriptName, SceneInfos_Seed);
         a_vm->RegisterFunction("WebUI_HideAllPanels", scriptName, WebUI_HideAllPanels);
         a_vm->RegisterFunction("WebUI_CloseOverlay", scriptName, WebUI_CloseOverlay);
         a_vm->RegisterFunction("WebUI_SetHotkey", scriptName, WebUI_SetHotkey);

@@ -2278,6 +2278,180 @@ Function WebUI_OnAnimUpdate(String json)
     SkyrimNet_SexLab_WebUI.Animation_Menu_Configure(BuildWebUIAnimationMenuState())
 EndFunction
 
+Function ApplyWebUICommit(int obj)
+    if obj == 0
+        return
+    endif
+    if JMap.getInt(obj, "_pending_stop", 0) == 1
+        Actor speaker = Game.GetPlayer()
+        int spid = JMap.getInt(obj, "_stop_speaker_form_id", 0)
+        if spid != 0
+            Actor sp = Game.GetFormEx(spid) as Actor
+            if sp
+                speaker = sp
+            endif
+        endif
+        Actor target = None
+        if thread && thread.Positions && thread.Positions.length > 0
+            target = thread.Positions[0]
+        endif
+        if target
+            String stop_style = JMap.getStr(obj, "_stop_style", "stop")
+            String narration = JMap.getStr(obj, "_stop_narration", "")
+            if narration != "" && StringUtil.Find(stop_style, "explain") != 0
+                stop_style = "explain:"+narration
+            endif
+            SkyrimNet_SexLab_Actions actions = (manager as Quest) as SkyrimNet_SexLab_Actions
+            if actions
+                actions.SceneStop_Target(speaker, target, stop_style)
+            endif
+        endif
+        return
+    endif
+    if thread == None
+        return
+    endif
+    int i = 0
+    int pos_arr = JMap.getObj(obj, "_positions")
+    int count = JArray.count(pos_arr)
+    if count >= 1 && count <= 5
+        Actor[] next = PapyrusUtil.ActorArray(count)
+        i = 0
+        int valid = 0
+        while i < count
+            int po = JArray.getObj(pos_arr, i)
+            Actor a = None
+            if po > 0
+                int fid = JMap.getInt(po, "_form_id", 0)
+                if fid != 0
+                    a = Game.GetFormEx(fid) as Actor
+                endif
+            endif
+            if a
+                next[valid] = a
+                valid += 1
+            endif
+            i += 1
+        endwhile
+        if valid >= 1
+            if valid != count
+                Actor[] trimmed = PapyrusUtil.ActorArray(valid)
+                i = 0
+                while i < valid
+                    trimmed[i] = next[i]
+                    i += 1
+                endwhile
+                next = trimmed
+            endif
+            bool same = true
+            Actor[] cur = thread.Positions
+            int cn = 0
+            if cur
+                cn = cur.length
+            endif
+            if cn != next.length
+                same = false
+            else
+                i = 0
+                while i < cn && same
+                    if cur[i] != next[i]
+                        same = false
+                    endif
+                    i += 1
+                endwhile
+            endif
+            if !same
+                thread.ChangeActors(next)
+            endif
+        endif
+    endif
+    if JMap.hasKey(obj, "_style")
+        SetStyle(JMap.getStr(obj, "_style", style))
+    endif
+    if JMap.hasKey(obj, "_intent")
+        intent = JMap.getStr(obj, "_intent", intent)
+    endif
+    WebUI_ApplyLivePositions(obj)
+    i = 0
+    while i < count
+        int po = JArray.getObj(pos_arr, i)
+        if po > 0
+            int fid = JMap.getInt(po, "_form_id", 0)
+            Actor a = None
+            if fid != 0
+                a = Game.GetFormEx(fid) as Actor
+            endif
+            if a
+                Bool isVictim = JMap.getInt(po, "_victim", 0) == 1
+                thread.SetVictim(a, isVictim)
+                int deny = JMap.getInt(po, "_deny_orgasm", 0)
+                String mode = "expect"
+                if deny == 1
+                    mode = "deny"
+                elseif JMap.getInt(po, "_no_orgasm", 0) == 1
+                    mode = "not_expected"
+                endif
+                TM_ApplyOrgasmMode(a, mode)
+                Bool clothed = JMap.getInt(po, "_dressed", 0) == 1
+                SkyrimNet_SexLab_Actions actions = (manager as Quest) as SkyrimNet_SexLab_Actions
+                if actions
+                    if clothed
+                        actions.Outfit_Dress(Game.GetPlayer(), a, "silently", "silent")
+                    else
+                        actions.Outfit_Undress(Game.GetPlayer(), a, "silently", "silent")
+                    endif
+                endif
+                TM_ApplyClothed(a, clothed)
+            endif
+        endif
+        i += 1
+    endwhile
+    int want_stage = JMap.getInt(obj, "_stage", 0)
+    if want_stage >= 1 && thread.animation
+        int maxStage = thread.animation.StageCount()
+        if want_stage <= maxStage && want_stage != thread.stage
+            thread.GoToStage(want_stage)
+        endif
+    endif
+    String active_reg = JMap.getStr(obj, "_active_registry", "")
+    if active_reg == ""
+        active_reg = JMap.getStr(obj, "_next_registry", "")
+    endif
+    if active_reg != "" && sexlab
+        sslBaseAnimation next_anim = sexlab.GetAnimationByRegistry(active_reg)
+        if next_anim
+            sslBaseAnimation[] cur = thread.Animations
+            int idx = -1
+            i = 0
+            while cur && i < cur.length
+                if cur[i] && cur[i].Registry == active_reg
+                    idx = i
+                endif
+                i += 1
+            endwhile
+            if idx >= 0
+                thread.SetAnimation(idx)
+                NotePlayedRegistry(active_reg)
+            else
+                thread.AddAnimation(next_anim)
+                cur = thread.Animations
+                idx = -1
+                i = 0
+                while cur && i < cur.length
+                    if cur[i] && cur[i].Registry == active_reg
+                        idx = i
+                    endif
+                    i += 1
+                endwhile
+                if idx >= 0
+                    thread.SetAnimation(idx)
+                    NotePlayedRegistry(active_reg)
+                endif
+            endif
+        endif
+    endif
+EndFunction
+
 ; -------------------------------------------------
 ; TargetMenu helpers
 ; -------------------------------------------------

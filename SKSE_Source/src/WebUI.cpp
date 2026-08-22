@@ -7,6 +7,7 @@
 #include "RE/Skyrim.h"
 
 #include <Windows.h>
+#include <cstring>
 #include <deque>
 #include <filesystem>
 #include <fstream>
@@ -421,19 +422,34 @@ void WebUI_Visibility_Show()
     // Start / Cancel hide ControlPanel in JS. Show must restore it — same-actor
     // Target_Menu_Open used to skip showPanel and left a blank left column.
     WebUI_Invoke("showControlPanel();");
-    WebUI_Invoke("setControlPaused(true);");
+    DispatchMenuNoArg("WebUI_SeedSceneInfos");
 }
 
-/// Unfocuses and hides the PrismaUI overlay without clearing Target_Current.
-/// Restores uncommitted ActorBondage on the handler, then drops the JS map.
-void WebUI_Visibility_Hide()
+static void WebUI_Visibility_HideImpl(bool commit)
 {
+    if (commit)
+        WebUI_Invoke("flushSceneInfos();");
+    else
+        WebUI_Invoke("discardSceneInfos();");
     WebUI_Invoke("bondageReleaseAll();");
     DispatchHandlerBondageClosed();
     if (!PrismaUI) return;
     PrismaUI->Unfocus(g_view);
     PrismaUI->Hide(g_view);
     g_webuiGamePaused = true;
+}
+
+/// Unfocuses and hides the PrismaUI overlay without clearing Target_Current.
+/// Commits confirmed SceneInfos, restores uncommitted ActorBondage on the handler, then drops the JS map.
+void WebUI_Visibility_Hide()
+{
+    WebUI_Visibility_HideImpl(true);
+}
+
+/// Hide without applying SceneInfo (Cancel / Escape). Drops drafts.
+void WebUI_Visibility_HideWithoutCommit()
+{
+    WebUI_Visibility_HideImpl(false);
 }
 
 /// True when PrismaUI is missing, the view is invalid, or the overlay is hidden.
@@ -550,8 +566,7 @@ void InitWebUI()
         PrismaUI->RegisterJSListener(g_view, "onCancel", [](const char*) {
             WebUI_Invoke("hidePanel('target_menu_panel');");
             PapyrusBindings_WebUI::ClearTargetMenuSession();
-            // Keep other panels if any; hide overlay when nothing else needs focus.
-            WebUI_Visibility_Hide();
+            WebUI_Visibility_HideWithoutCommit();
         });
 
         PrismaUI->RegisterJSListener(g_view, "onYesNoResult", [](const char* value) {
@@ -565,7 +580,7 @@ void InitWebUI()
                 WebUI_Invoke("hidePanel('yesno_panel');");
                 // Yes (0) opens SceneCreator next — keep overlay focused. Random/No hide unless TargetMenu stays.
                 if (button != 0 && !PapyrusBindings_WebUI::TargetMenuSessionActive)
-                    WebUI_Visibility_Hide();
+                    WebUI_Visibility_HideWithoutCommit();
                 PapyrusBindings_WebUI::DispatchManagerMethodIntInt("WebUI_OnYesNoResult", creator_sid, button);
             } catch (...) {
                 webui_log::warn("onYesNoResult: bad JSON");
@@ -599,7 +614,7 @@ void InitWebUI()
                     }
                 } else {
                     if (!PapyrusBindings_WebUI::TargetMenuSessionActive)
-                        WebUI_Visibility_Hide();
+                        WebUI_Visibility_HideWithoutCommit();
                     if (fromTargetMenu) {
                         webui_log::info("onSceneCreatorResult: target-menu cancel");
                     } else {
@@ -853,16 +868,38 @@ void InitWebUI()
                 PapyrusBindings_WebUI::SkipSceneCreatorOnce = true;
             }
 
-            // Queue Papyrus first, then close overlay so StartThread runs unpaused
-            // (PrismaUI Focus uses pauseGame=true). Custom keeps TargetMenu open.
+            // Commit SceneInfos first (queued), then close overlay so StartThread runs unpaused.
+            WebUI_Invoke("hidePanel('target_menu_panel');");
+            PapyrusBindings_WebUI::ClearTargetMenuSession();
+            WebUI_Visibility_Hide();
             bool ok = ActionCatalog::ExecuteAction(name, params, player, target);
             if (!ok) {
                 webui_log::error("onAction: ExecuteAction failed for {}", name);
                 PapyrusBindings_WebUI::SkipSceneCreatorOnce = false;
             }
-            WebUI_Invoke("hidePanel('target_menu_panel');");
-            PapyrusBindings_WebUI::ClearTargetMenuSession();
-            WebUI_Visibility_Hide();
+        });
+
+        PrismaUI->RegisterJSListener(g_view, "onSceneInfoCommit", [](const char* value) {
+            if (!value)
+                return;
+            webui_log::info("onSceneInfoCommit bytes={}", std::strlen(value));
+            PapyrusBindings_WebUI::DispatchManagerMethodStrOnly("WebUI_OnSceneInfoCommit", value);
+        });
+
+        PrismaUI->RegisterJSListener(g_view, "onWebUIHide", [](const char* value) {
+            bool commit = true;
+            if (value) {
+                try {
+                    auto j = nlohmann::json::parse(value);
+                    commit = j.value("commit", true);
+                } catch (...) {
+                }
+            }
+            webui_log::info("onWebUIHide commit={}", commit);
+            if (commit)
+                WebUI_Visibility_Hide();
+            else
+                WebUI_Visibility_HideWithoutCommit();
         });
 
         PrismaUI->RegisterJSListener(g_view, "onControlActorChange", [](const char* value) {
@@ -909,19 +946,6 @@ void InitWebUI()
             }
         });
 
-        PrismaUI->RegisterJSListener(g_view, "onControlPauseToggle", [](const char*) {
-            if (!PrismaUI || !PrismaUI->IsValid(g_view))
-                return;
-            // Focus() while already focused does not re-apply pauseGame — Unfocus first.
-            const bool nextPaused = !g_webuiGamePaused.load();
-            PrismaUI->Unfocus(g_view);
-            PrismaUI->Focus(g_view, nextPaused);
-            g_webuiGamePaused = nextPaused;
-            webui_log::info("onControlPauseToggle: {} (Unfocus+Focus pauseGame={})",
-                nextPaused ? "paused" : "unpaused", nextPaused);
-            WebUI_Invoke(nextPaused ? "setControlPaused(true);" : "setControlPaused(false);");
-        });
-
         PrismaUI->RegisterJSListener(g_view, "onSettingsRebuild", [](const char*) {
             webui_log::info("onSettingsRebuild");
             Call_RebuildAnimDb();
@@ -949,7 +973,7 @@ void InitWebUI()
         KeyHandler::GetSingleton()->Register(0x01 /* escape */, []() {
             if (!g_domReady.load()) {
                 webui_log::info("Escape: DomReady missing — Unfocus/Hide");
-                WebUI_Visibility_Hide();
+                WebUI_Visibility_HideWithoutCommit();
                 return;
             }
             webui_log::info("Escape key pressed.");

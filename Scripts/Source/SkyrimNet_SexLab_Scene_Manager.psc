@@ -765,6 +765,77 @@ String Function BuildSceneConnectionsJson()
     return json
 EndFunction
 
+String Function BuildAllSceneInfosJson()
+    int root = JMap.object()
+    int arr = JArray.object()
+    SkyrimNet_SexLab_Scene_Creator creator = None
+    int i = 0
+    while i < creators.length && creator == None
+        if creators[i] && creators[i].IsActive()
+            creator = creators[i]
+        endif
+        i += 1
+    endwhile
+    if creator
+        int st = JValue.objectFromPrototype(creator.BuildWebUIState())
+        if st
+            JArray.addObj(arr, st)
+        endif
+    else
+        int provisional = JMap.object()
+        JMap.setStr(provisional, "_mode", "creator")
+        JMap.setStr(provisional, "_connection", "new")
+        JMap.setInt(provisional, "_creator_sid", 0)
+        JMap.setInt(provisional, "_from_target_menu", 0)
+        JMap.setObj(provisional, "_positions", JArray.object())
+        JArray.addObj(arr, provisional)
+    endif
+    i = 0
+    while i < sl_scenes.length
+        SkyrimNet_SexLab_Scene sl_scene = sl_scenes[i]
+        if sl_scene != None && sl_scene.GetThreadActive()
+            int st = JValue.objectFromPrototype(sl_scene.BuildWebUISceneMenuState())
+            if st
+                JArray.addObj(arr, st)
+            endif
+        endif
+        i += 1
+    endwhile
+    JMap.setObj(root, "_scenes", arr)
+    String json = ObjectToLowerCaseKeyJson(root)
+    JValue.release(root)
+    return json
+EndFunction
+
+Function WebUI_OnSceneInfoCommit(String json)
+    Trace("WebUI_OnSceneInfoCommit", json)
+    int root = JValue.objectFromPrototype(json)
+    if root == 0
+        return
+    endif
+    int arr = JMap.getObj(root, "_scenes")
+    int n = JArray.count(arr)
+    int i = 0
+    while i < n
+        int info = JArray.getObj(arr, i)
+        if info > 0
+            if JMap.getInt(info, "_pending_create", 0) == 1
+                JMap.setStr(info, "_action", "start")
+                String payload = ObjectToLowerCaseKeyJson(info)
+                WebUI_OnSceneCreatorResult(JMap.getInt(info, "_creator_sid", 0), payload)
+            else
+                int scene_sid = JMap.getInt(info, "_scene_sid", -1)
+                SkyrimNet_SexLab_Scene sl_scene = GetSceneBySid(scene_sid)
+                if sl_scene && sl_scene.GetThreadActive()
+                    sl_scene.ApplyWebUICommit(info)
+                endif
+            endif
+        endif
+        i += 1
+    endwhile
+    JValue.release(root)
+EndFunction
+
 Function WebUI_OnSceneConnectionsRefresh(String unused)
     WebUI_PushSceneConnections()
 EndFunction

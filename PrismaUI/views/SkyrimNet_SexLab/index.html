@@ -1254,7 +1254,6 @@
         <div id="control-panel" class="panel" style="display:none">
             <div class="control-panel-title">SkyrimNet SexLab</div>
             <div id="control-panel-host"></div>
-            <div class="action-btn" id="control-pause-btn" onclick="controlPauseToggle()">unpause</div>
             <div id="framework-row" style="display:none"></div>
             <div id="control-actor-pulldown"></div>
         </div>
@@ -1356,6 +1355,9 @@
             <input id="am-name-filter" type="text" placeholder="filter name" oninput="amRenderAnimList()" />
         </div>
         <div id="am-anims-list" class="scroll-list"></div>
+        <div class="bottom-bar">
+            <div class="action-btn" id="am-btn-done" onclick="amApplyToSceneInfo()">Done</div>
+        </div>
     </div>
 
     <div id="settings-panel" class="panel" style="display:none">
@@ -1571,7 +1573,6 @@
         function showControlPanel() {
             const el = document.getElementById('control-panel');
             if (el) el.style.display = 'flex';
-            setControlPaused(true);
             renderControlPanelPulldown();
             if (typeof renderControlActorPulldown === 'function')
                 renderControlActorPulldown();
@@ -1580,17 +1581,6 @@
         function hideControlPanel() {
             const el = document.getElementById('control-panel');
             if (el) el.style.display = 'none';
-        }
-
-        function setControlPaused(paused) {
-            const btn = document.getElementById('control-pause-btn');
-            if (btn)
-                btn.textContent = paused ? 'unpause' : 'pause';
-        }
-
-        function controlPauseToggle() {
-            if (typeof window.onControlPauseToggle === 'function')
-                window.onControlPauseToggle('{}');
         }
 
         function selectMainPanelByLabel(label) {
@@ -2914,14 +2904,16 @@
             let speakerFid = Number(tmStopSpeakerFormId || 0);
             if (!speakerFid && speakers.length)
                 speakerFid = speakers[0].formId;
-            const targetFid = tmSceneTargetFormId();
-            firePapyrusOption(Object.assign({}, opt, {
-                executionFunctionName: fn,
-                closeWebUI: true
-            }), Object.assign({
-                speaker: tmActorParam(speakerFid),
-                target: tmActorParam(targetFid)
-            }, extra || {}));
+            let style = 'stop';
+            if (fn === 'TM_StopSilent') style = 'silent';
+            if (fn === 'TM_StopExplain') style = 'explain';
+            applySceneMenuDraftToSceneInfo({
+                pendingStop: true,
+                stopStyle: style,
+                stopNarration: (extra && extra.narration) || '',
+                stopSpeakerFormId: speakerFid
+            });
+            requestWebUIHide(true);
         }
 
         function tmRenderStopPanel(body, opt) {
@@ -2985,6 +2977,30 @@
             return '';
         }
 
+        function tmClosePapyrusPanel() {
+            papyrusSelectedOpt = null;
+            tmCastDraft = null;
+            renderTargetMenu();
+        }
+
+        function tmPapyrusConfirmBar(onDone) {
+            const bar = document.createElement('div');
+            bar.className = 'bottom-bar';
+            const cancel = document.createElement('div');
+            cancel.className = 'option-cancel';
+            cancel.textContent = 'Cancel';
+            cancel.onclick = () => tmClosePapyrusPanel();
+            const done = document.createElement('div');
+            done.className = 'action-btn';
+            done.textContent = 'Done';
+            done.onclick = () => {
+                if (onDone) onDone();
+                tmClosePapyrusPanel();
+            };
+            bar.appendChild(cancel);
+            bar.appendChild(done);
+            return bar;
+        }
         function tmRenderStagePanel(body, opt) {
             const stages = tmStageList();
             const table = document.createElement('table');
@@ -3003,9 +3019,10 @@
                 tdIdx.textContent = String(n);
                 tdIdx.onclick = (e) => {
                     e.stopPropagation();
-                    firePapyrusOption(opt, { stageStr: String(n) });
-                    papyrusSelectedOpt = null;
-                    renderTargetMenu();
+                    SC.stage = n;
+                    stages.forEach(s => { s._current = Number(s._stage) === n ? 1 : 0; });
+                    SC.stages = stages;
+                    renderPapyrusPanel();
                 };
                 const tdDesc = document.createElement('td');
                 const shown = st._preview || st._template || '';
@@ -3018,12 +3035,8 @@
                     input.style.width = '100%';
                     input.value = st._template || tmStageSeedTemplate(stages, idx);
                     const commit = () => {
-                        const val = input.value;
-                        st._template = val;
-                        firePapyrusOption(tmPapyrusFn(opt, 'TM_SetStageDescription', [
-                            { type: 'dynamic', name: 'stageStr' },
-                            { type: 'dynamic', name: 'description' }
-                        ]), { stageStr: String(n), description: val });
+                        st._template = input.value;
+                        SC.stages = stages;
                     };
                     input.onblur = commit;
                     input.onkeydown = (ev) => {
@@ -3042,6 +3055,10 @@
             });
             table.appendChild(tbody);
             body.appendChild(table);
+            body.appendChild(tmPapyrusConfirmBar(() => {
+                SC.stages = stages;
+                applySceneMenuDraftToSceneInfo({});
+            }));
         }
 
         function tmPositionFormIds() {
@@ -3050,7 +3067,24 @@
 
         function tmFirePositions(opt, ids) {
             if (!ids.length) return;
-            firePapyrusOption(opt, { formIdsCsv: ids.map(String).join(',') });
+            const byId = new Map((SC.positions || []).map(p => [tmFormId(p), p]));
+            SC.positions = ids.map(fid => {
+                if (byId.has(fid)) return byId.get(fid);
+                const a = (nearbyActors || []).find(x => Number(x.formId) === fid)
+                    || (playerActor && formIdU32(playerActor.formId) === fid ? playerActor : null)
+                    || (targetActor && formIdU32(targetActor.formId) === fid ? targetActor : null)
+                    || {};
+                return {
+                    _form_id: fid,
+                    _name: a.name || a.label || '?',
+                    _dressed: 0,
+                    _no_orgasm: 0,
+                    _deny_orgasm: 0,
+                    _victim: 0,
+                    _speaking: ''
+                };
+            });
+            renderPapyrusPanel();
         }
 
         function tmRenderPositionPanel(body, opt) {
@@ -3137,10 +3171,6 @@
                 tdDressed.querySelector('span').onclick = (e) => {
                     e.stopPropagation();
                     p._dressed = dressedOn ? 0 : 1;
-                    firePapyrusOption(tmPapyrusFn(opt, 'TM_SetClothed', [
-                        { type: 'dynamic', name: 'formIdStr' },
-                        { type: 'dynamic', name: 'clothedStr' }
-                    ]), { formIdStr: String(fid), clothedStr: dressedOn ? '0' : '1' });
                     renderPapyrusPanel();
                 };
 
@@ -3151,10 +3181,6 @@
                 tdO.querySelector('span').onclick = (e) => {
                     e.stopPropagation();
                     p._no_orgasm = noOrg ? 0 : 1;
-                    firePapyrusOption(tmPapyrusFn(opt, 'TM_SetOrgasmMode', [
-                        { type: 'dynamic', name: 'formIdStr' },
-                        { type: 'dynamic', name: 'mode' }
-                    ]), { formIdStr: String(fid), mode: noOrg ? 'expect' : 'not_expected' });
                     renderPapyrusPanel();
                 };
 
@@ -3165,10 +3191,6 @@
                 tdV.querySelector('span').onclick = (e) => {
                     e.stopPropagation();
                     p._victim = vic ? 0 : 1;
-                    firePapyrusOption(tmPapyrusFn(opt, 'TM_SetVictim', [
-                        { type: 'dynamic', name: 'formIdStr' },
-                        { type: 'dynamic', name: 'isVictimStr' }
-                    ]), { formIdStr: String(fid), isVictimStr: vic ? '0' : '1' });
                     renderPapyrusPanel();
                 };
 
@@ -3178,10 +3200,6 @@
                 list.className = 'mod-chip-list';
                 const fireSpeaking = (nextMods) => {
                     scSetMods(p, nextMods);
-                    firePapyrusOption(tmPapyrusFn(opt, 'TM_SetSpeaking', [
-                        { type: 'dynamic', name: 'formIdStr' },
-                        { type: 'dynamic', name: 'speaking' }
-                    ]), { formIdStr: String(fid), speaking: nextMods.join(',') });
                     renderPapyrusPanel();
                 };
                 mods.forEach(m => {
@@ -3245,6 +3263,7 @@
             wrap.className = 'sc-positions-scroll';
             wrap.appendChild(table);
             body.appendChild(wrap);
+            body.appendChild(tmPapyrusConfirmBar(() => applySceneMenuDraftToSceneInfo({})));
         }
 
         const SS_METHODS_GIVING = [
@@ -4643,6 +4662,8 @@
                 return;
             setTargetActor(entry.uuid, entry.name, fid);
             bondageEnsureActor(fid);
+            if (typeof selectSceneInfoForActor === 'function')
+                selectSceneInfoForActor(fid);
             if (typeof window.onControlActorChange === 'function') {
                 window.onControlActorChange(JSON.stringify({
                     formId: fid,
@@ -4859,16 +4880,325 @@
             }));
         }
 
-        // ── Shared scene connection (SceneMenu + AnimationPanel) ──
+        // ── SceneInfo store (one per live thread + one Scene Creator draft) ──
+        const sceneInfoByKey = new Map();
+        let selectedSceneInfoKey = 'new';
+        let sceneInfosSessionActive = false;
+
+        function sceneInfoClone(v) {
+            try { return JSON.parse(JSON.stringify(v)); }
+            catch (_) { return v; }
+        }
+
+        class SceneInfo {
+            constructor() {
+                this.key = 'new';
+                this.mode = 'creator';
+                this.scene_sid = -1;
+                this.creator_sid = 0;
+                this.from_target_menu = false;
+                this.intent = '';
+                this.style = 'normally';
+                this.method = '';
+                this.positions = [];
+                this.tags = [];
+                this.suppress = [];
+                this.inThreadRegistries = [];
+                this.lastAnims = [];
+                this.activeRegistry = '';
+                this.nextRegistry = '';
+                this.playedRegistries = [];
+                this.stage = 1;
+                this.stageCount = 0;
+                this.stages = [];
+                this.presets = [];
+                this.groupTags = {};
+                this.groupOrder = [];
+                this.event_hook = '';
+                this.selectedRegistries = [];
+                this.pendingStop = false;
+                this.stopStyle = 'stop';
+                this.stopNarration = '';
+                this.stopSpeakerFormId = 0;
+                this.pendingCreate = false;
+                this.dirty = false;
+                this.seeded = false;
+            }
+            static keyFromState(state) {
+                if (!state) return 'new';
+                const mode = state._mode || state.mode;
+                const sid = state._scene_sid != null ? state._scene_sid : state.scene_sid;
+                if (mode === 'active' || (sid != null && sid >= 0 && mode !== 'creator'))
+                    return 'scene:' + sid;
+                return 'new';
+            }
+            static fromState(state) {
+                const info = new SceneInfo();
+                info.mergeFromState(state);
+                info.dirty = false;
+                info.pendingCreate = false;
+                info.pendingStop = false;
+                info.seeded = true;
+                return info;
+            }
+            mergeFromState(state) {
+                if (!state) return;
+                this.key = SceneInfo.keyFromState(state);
+                this.mode = (state._mode === 'active' || this.key !== 'new') ? 'active' : 'creator';
+                this.scene_sid = state._scene_sid != null ? state._scene_sid : (this.mode === 'active' ? 0 : -1);
+                this.creator_sid = state._creator_sid != null ? state._creator_sid : 0;
+                if (state._from_target_menu != null) this.from_target_menu = !!state._from_target_menu;
+                if (state._intent != null) this.intent = state._intent || '';
+                if (state._style != null) this.style = state._style || 'normally';
+                if (state._method != null) this.method = state._method || '';
+                if (state._positions) this.positions = sceneInfoClone(state._positions);
+                if (state._tags != null) {
+                    this.tags = typeof state._tags === 'string'
+                        ? state._tags.split(',').map(s => s.trim()).filter(Boolean)
+                        : (state._tags || []).slice();
+                }
+                if (state._tags_suppress != null) {
+                    this.suppress = typeof state._tags_suppress === 'string'
+                        ? state._tags_suppress.split(',').map(s => s.trim()).filter(Boolean)
+                        : (state._tags_suppress || []).slice();
+                }
+                if (state._in_thread_registries) {
+                    this.inThreadRegistries = Array.isArray(state._in_thread_registries)
+                        ? state._in_thread_registries.slice() : [];
+                }
+                if (Array.isArray(state._in_thread_anims) && state._in_thread_anims.length)
+                    this.lastAnims = sceneInfoClone(state._in_thread_anims);
+                if (state._active_registry != null) this.activeRegistry = state._active_registry || '';
+                if (state._registry && !this.activeRegistry) this.activeRegistry = state._registry;
+                if (state._next_registry != null) this.nextRegistry = state._next_registry || '';
+                if (state._played_registries)
+                    this.playedRegistries = Array.isArray(state._played_registries) ? state._played_registries.slice() : [];
+                if (state._stage != null) this.stage = state._stage || 1;
+                if (state._stage_count != null) this.stageCount = state._stage_count || 0;
+                if (Array.isArray(state._stages)) this.stages = sceneInfoClone(state._stages);
+                if (state._event_hook != null) this.event_hook = state._event_hook || '';
+                const presetsRaw = state._scene_presets;
+                if (presetsRaw) {
+                    this.presets = Array.isArray(presetsRaw)
+                        ? presetsRaw.map(p => (typeof p === 'string' ? p : (p && p._name) || String(p)))
+                        : [];
+                }
+                if (state._group_tags) this.groupTags = state._group_tags;
+                if (state._group_order) {
+                    this.groupOrder = Array.isArray(state._group_order)
+                        ? state._group_order.map(String)
+                        : Object.keys(this.groupTags || {});
+                }
+                this.seeded = true;
+            }
+            hasActor(formId) {
+                const fid = Number(formId) || 0;
+                if (!fid) return false;
+                return (this.positions || []).some(p => Number(p._form_id != null ? p._form_id : p.formId) === fid);
+            }
+            toCommitJson() {
+                return {
+                    _key: this.key,
+                    _mode: this.mode,
+                    _scene_sid: this.scene_sid,
+                    _creator_sid: this.creator_sid,
+                    _from_target_menu: this.from_target_menu ? 1 : 0,
+                    _intent: this.intent,
+                    _style: this.style,
+                    _method: this.method,
+                    _positions: this.positions,
+                    _tags: (this.tags || []).join(','),
+                    _tags_suppress: (this.suppress || []).join(','),
+                    _in_thread_registries: this.inThreadRegistries,
+                    _active_registry: this.activeRegistry,
+                    _next_registry: this.nextRegistry || this.activeRegistry,
+                    _stage: this.stage,
+                    _stages: this.stages,
+                    _selected_registries: this.selectedRegistries,
+                    _event_hook: this.event_hook,
+                    _pending_stop: this.pendingStop ? 1 : 0,
+                    _stop_style: this.stopStyle,
+                    _stop_narration: this.stopNarration,
+                    _stop_speaker_form_id: this.stopSpeakerFormId,
+                    _pending_create: this.pendingCreate ? 1 : 0
+                };
+            }
+        }
+
+        function selectedSceneInfo() {
+            let info = sceneInfoByKey.get(selectedSceneInfoKey);
+            if (!info) {
+                info = new SceneInfo();
+                info.key = 'new';
+                sceneInfoByKey.set('new', info);
+                selectedSceneInfoKey = 'new';
+            }
+            return info;
+        }
+
+        function ensureCreatorSceneInfo() {
+            if (!sceneInfoByKey.has('new')) {
+                const neu = new SceneInfo();
+                neu.key = 'new';
+                sceneInfoByKey.set('new', neu);
+            }
+        }
+
+        function selectSceneInfoForActor(actorOrFormId) {
+            const fid = typeof actorOrFormId === 'object'
+                ? formIdU32(actorOrFormId && actorOrFormId.formId)
+                : formIdU32(actorOrFormId);
+            let found = '';
+            sceneInfoByKey.forEach((info, key) => {
+                if (!found && key !== 'new' && info.hasActor(fid))
+                    found = key;
+            });
+            selectedSceneInfoKey = found || 'new';
+            ensureCreatorSceneInfo();
+            bindVisiblePanelsFromSceneInfo();
+        }
+
+        function seedSceneInfos(payload) {
+            const list = (payload && payload._scenes) || [];
+            const replace = !sceneInfosSessionActive || sceneInfoByKey.size === 0;
+            if (replace)
+                sceneInfoByKey.clear();
+            ensureCreatorSceneInfo();
+            (Array.isArray(list) ? list : []).forEach(st => {
+                const key = SceneInfo.keyFromState(st);
+                const existing = sceneInfoByKey.get(key);
+                if (existing && !replace) {
+                    if (key === 'new' && existing.seeded && !st._from_target_menu)
+                        return;
+                    if (key !== 'new')
+                        return;
+                }
+                sceneInfoByKey.set(key, SceneInfo.fromState(st));
+            });
+            sceneInfosSessionActive = true;
+            selectSceneInfoForActor(targetActor);
+        }
+
+        function discardSceneInfos() {
+            sceneInfoByKey.clear();
+            selectedSceneInfoKey = 'new';
+            sceneInfosSessionActive = false;
+        }
+
+        function flushSceneInfos() {
+            const scenes = [];
+            sceneInfoByKey.forEach(info => {
+                if (info && (info.dirty || info.pendingCreate || info.pendingStop))
+                    scenes.push(info.toCommitJson());
+            });
+            if (scenes.length && typeof window.onSceneInfoCommit === 'function')
+                window.onSceneInfoCommit(JSON.stringify({ _scenes: scenes }));
+            discardSceneInfos();
+        }
+
+        function requestWebUIHide(commit) {
+            if (typeof window.onWebUIHide === 'function')
+                window.onWebUIHide(JSON.stringify({ commit: !!commit }));
+        }
+
+        function copySceneInfoToSC(info) {
+            if (!info) info = selectedSceneInfo();
+            SC.mode = info.mode;
+            SC.creator_sid = info.creator_sid;
+            SC.scene_sid = info.scene_sid;
+            SC.from_target_menu = !!info.from_target_menu;
+            SC.intent = info.intent;
+            SC.style = info.style || 'normally';
+            SC.method = info.method;
+            SC.positions = sceneInfoClone(info.positions || []);
+            SC.tags = (info.tags || []).slice();
+            SC.suppress = (info.suppress || []).slice();
+            SC.inThreadRegistries = (info.inThreadRegistries || []).slice();
+            SC.lastAnims = sceneInfoClone(info.lastAnims || []);
+            SC.activeRegistry = info.activeRegistry || '';
+            SC.nextRegistry = info.nextRegistry || '';
+            SC.playedRegistries = (info.playedRegistries || []).slice();
+            SC.stage = info.stage || 1;
+            SC.stageCount = info.stageCount || 0;
+            SC.stages = sceneInfoClone(info.stages || []);
+            SC.event_hook = info.event_hook || '';
+            SC.presets = (info.presets || []).slice();
+            SC.groupTags = info.groupTags || {};
+            SC.groupOrder = (info.groupOrder || []).slice();
+            applySceneConnectionFromInfo(info);
+        }
+
+        function applySceneMenuDraftToSceneInfo(extra) {
+            const info = selectedSceneInfo();
+            const intentEl = document.getElementById('sc-intent');
+            info.intent = (intentEl && intentEl.value) || SC.intent || '';
+            info.style = SC.style || 'normally';
+            info.method = SC.method || '';
+            info.positions = sceneInfoClone(SC.positions || []);
+            info.tags = (SC.tags || []).slice();
+            info.suppress = (SC.suppress || []).slice();
+            info.inThreadRegistries = (SC.inThreadRegistries || []).slice();
+            info.lastAnims = sceneInfoClone(SC.lastAnims || []);
+            info.activeRegistry = SC.activeRegistry || '';
+            info.nextRegistry = SC.nextRegistry || '';
+            info.playedRegistries = (SC.playedRegistries || []).slice();
+            info.stage = SC.stage || 1;
+            info.stageCount = SC.stageCount || 0;
+            info.stages = sceneInfoClone(SC.stages || []);
+            info.event_hook = SC.event_hook || '';
+            info.from_target_menu = !!SC.from_target_menu;
+            info.creator_sid = SC.creator_sid;
+            info.scene_sid = SC.scene_sid;
+            info.mode = SC.mode;
+            if (typeof scSelectedRegistries === 'function')
+                info.selectedRegistries = scSelectedRegistries();
+            if (extra) Object.assign(info, extra);
+            info.dirty = true;
+            return info;
+        }
+
+        function bindVisiblePanelsFromSceneInfo() {
+            const info = selectedSceneInfo();
+            copySceneInfoToSC(info);
+            const scEl = document.getElementById('scene-creator-panel');
+            if (scEl && scEl.style.display !== 'none' && typeof configureSceneCreator === 'function') {
+                const payload = info.toCommitJson();
+                payload._mode = info.mode;
+                payload._scene_presets = info.presets;
+                payload._group_tags = info.groupTags;
+                payload._group_order = info.groupOrder;
+                payload._in_thread_anims = info.lastAnims;
+                payload._played_registries = info.playedRegistries;
+                payload._stage_count = info.stageCount;
+                configureSceneCreator(payload);
+                return;
+            }
+            const amEl = document.getElementById('animation-menu-panel');
+            if (amEl && amEl.style.display !== 'none' && typeof configureAnimationMenuFromSceneInfo === 'function')
+                configureAnimationMenuFromSceneInfo(info);
+            if (typeof papyrusSelectedOpt !== 'undefined' && papyrusSelectedOpt && papyrusSelectedOpt.panel
+                && typeof renderPapyrusPanel === 'function')
+                renderPapyrusPanel();
+        }
+
+        function applySceneConnectionFromInfo(info) {
+            if (!info) info = selectedSceneInfo();
+            if (info.mode === 'active' && info.scene_sid >= 0) {
+                SCENE_CONNECTION = { kind: 'scene', sid: info.scene_sid, label: 'scene:' + info.scene_sid };
+            } else {
+                SCENE_CONNECTION = { kind: 'new', sid: 0, label: 'new' };
+            }
+        }
+
         let SCENE_CONNECTION = { kind: 'new', sid: 0, label: 'new' };
         let SCENE_CONNECTIONS = [{ id: 'new', label: 'new' }];
 
         function sceneConnectionId() {
-            return SCENE_CONNECTION.kind === 'scene' ? ('scene:' + SCENE_CONNECTION.sid) : 'new';
+            return selectedSceneInfoKey || (SCENE_CONNECTION.kind === 'scene' ? ('scene:' + SCENE_CONNECTION.sid) : 'new');
         }
 
         function isSceneConnectionActive() {
-            return SCENE_CONNECTION.kind === 'scene';
+            return selectedSceneInfo().mode === 'active';
         }
 
         function configureSceneConnections(payload) {
@@ -4879,43 +5209,26 @@
                     label: c._label != null ? String(c._label) : String(c.label || c._id || 'new')
                 }))
                 : [{ id: 'new', label: 'new' }];
-            const cur = sceneConnectionId();
-            if (!SCENE_CONNECTIONS.some(c => c.id === cur)) {
-                SCENE_CONNECTION = { kind: 'new', sid: 0, label: 'new' };
-            }
-            renderSceneConnectionPulldowns();
         }
 
-        function renderSceneConnectionPulldowns() {
-            // Scene connection UI removed from Scene Menu / AnimationPanel;
-            // focus is owned by ControlPanel actor pulldown. Keep labels in sync only.
-        }
+        function renderSceneConnectionPulldowns() {}
 
         function requestSceneConnectionChange(id) {
-            if (typeof window.onSceneConnectionChange === 'function') {
-                window.onSceneConnectionChange(JSON.stringify({ _connection: id }));
+            if (id && sceneInfoByKey.has(id)) {
+                selectedSceneInfoKey = id;
+                bindVisiblePanelsFromSceneInfo();
             }
         }
 
-        /// Called once from C++ SwitchMainPanel when selecting Scene Menu / Animation.
         function mainPanelDidOpen() {
-            // Custom already configured SC with positions; connection "new" provisional would wipe them.
-            if (SC.from_target_menu && (SC.positions || []).length) return;
-            requestSceneConnectionChange(sceneConnectionId());
+            bindVisiblePanelsFromSceneInfo();
         }
 
         function applySceneConnectionFromState(state) {
-            const mode = state && state._mode;
-            if (mode === 'active' || (state && state._scene_sid != null && state._scene_sid >= 0 && mode !== 'creator')) {
-                SCENE_CONNECTION = {
-                    kind: 'scene',
-                    sid: state._scene_sid != null ? state._scene_sid : 0,
-                    label: state._connection_label || ('scene:' + state._scene_sid)
-                };
-            } else if (state && (state._connection === 'new' || mode === 'creator' || state._creator_sid != null)) {
-                SCENE_CONNECTION = { kind: 'new', sid: 0, label: 'new' };
-            }
-            renderSceneConnectionPulldowns();
+            const key = SceneInfo.keyFromState(state);
+            if (sceneInfoByKey.has(key))
+                selectedSceneInfoKey = key;
+            applySceneConnectionFromInfo(selectedSceneInfo());
         }
 
         // ── Scene Creator / Scene Menu ────────────────────────────
@@ -5008,47 +5321,39 @@
         }
 
         function configureSceneCreator(state) {
-            applySceneConnectionFromState(Object.assign({ _mode: state._mode || 'creator' }, state));
-            SC.mode = (state._mode === 'active' || isSceneConnectionActive()) ? 'active' : 'creator';
-            SC.creator_sid = state._creator_sid != null ? state._creator_sid : 0;
-            SC.scene_sid = state._scene_sid != null ? state._scene_sid : -1;
-            SC.from_target_menu = !!state._from_target_menu;
-            SC.intent = state._intent || '';
-            SC.style = state._style || 'normally';
-            SC.method = state._method || '';
-            SC.positions = state._positions || [];
-            SC.tags = (state._tags || '').split(',').map(s => s.trim()).filter(Boolean);
-            SC.suppress = (state._tags_suppress || '').split(',').map(s => s.trim()).filter(Boolean);
+            state = state || {};
+            const key = SceneInfo.keyFromState(state);
+            let info = sceneInfoByKey.get(key);
+            const emptyNew = key === 'new' && !(state._positions && state._positions.length) && !state._from_target_menu;
+            if (!info) {
+                info = SceneInfo.fromState(state);
+                sceneInfoByKey.set(key, info);
+            } else if (!(emptyNew && info.seeded)) {
+                info.mergeFromState(state);
+            }
+            selectedSceneInfoKey = key;
+            sceneInfosSessionActive = true;
+            applySceneConnectionFromInfo(info);
+            copySceneInfoToSC(info);
+            SC.from_target_menu = !!state._from_target_menu || SC.from_target_menu;
             SC.deselectedRegistries = [];
             SC.lastAnimRegistries = [];
-            SC.lastAnims = [];
             SC.tagType = 'any';
-            SC.event_hook = state._event_hook || '';
             SC.pendingNearby = null;
-            SC.inThreadRegistries = state._in_thread_registries || [];
-            if (!Array.isArray(SC.inThreadRegistries)) SC.inThreadRegistries = [];
-            SC.activeRegistry = state._active_registry || '';
-            SC.nextRegistry = state._next_registry || '';
-            SC.playedRegistries = state._played_registries || [];
-            if (!Array.isArray(SC.playedRegistries)) SC.playedRegistries = [];
-            SC.stage = state._stage || 1;
-            SC.stageCount = state._stage_count || 0;
-            SC.stages = Array.isArray(state._stages) ? state._stages : [];
-            if (Array.isArray(state._in_thread_anims) && state._in_thread_anims.length)
-                SC.lastAnims = state._in_thread_anims;
-            if (SC.mode === 'active' && SC.inThreadRegistries.length) {
-                // Treat out-of-thread query hits as deselected for multi color; in-thread = selected.
+            if (SC.mode === 'active' && SC.inThreadRegistries.length)
                 SC.deselectedRegistries = [];
+            if (state._scene_presets) {
+                const presetsRaw = state._scene_presets;
+                SC.presets = Array.isArray(presetsRaw)
+                    ? presetsRaw.map(p => (typeof p === 'string' ? p : (p && p._name) || String(p)))
+                    : [];
             }
-            const presetsRaw = state._scene_presets || [];
-            SC.presets = Array.isArray(presetsRaw)
-                ? presetsRaw.map(p => (typeof p === 'string' ? p : (p && p._name) || String(p)))
-                : [];
-            SC.groupTags = state._group_tags || {};
-            const orderRaw = state._group_order;
-            SC.groupOrder = Array.isArray(orderRaw)
-                ? orderRaw.map(String)
-                : Object.keys(SC.groupTags);
+            if (state._group_tags) SC.groupTags = state._group_tags;
+            if (state._group_order) {
+                SC.groupOrder = Array.isArray(state._group_order)
+                    ? state._group_order.map(String)
+                    : Object.keys(SC.groupTags);
+            }
             const intentEl = document.getElementById('sc-intent');
             if (intentEl) intentEl.value = SC.intent;
             const seedPreset = SC.presets[0] || 'default';
@@ -5067,7 +5372,6 @@
                 styleHost.innerHTML = '';
                 styleHost.appendChild(createPulldown(['forcefully', 'normally', 'gently'], SC.style, v => {
                     SC.style = v;
-                    if (SC.mode === 'active') scLiveUpdate();
                 }));
             }
             scRenderRangePulldown();
@@ -5122,32 +5426,26 @@
         }
 
         function scLiveUpdate() {
-            if (SC.mode !== 'active' || typeof window.onAnimationMenuLiveUpdate !== 'function') return;
-            window.onAnimationMenuLiveUpdate(JSON.stringify({
-                _scene_sid: SC.scene_sid,
-                _style: SC.style,
-                _intent: document.getElementById('sc-intent').value,
-                _positions: SC.positions
-            }));
+            // SceneInfo apply is Start/Update/Stop/Done only.
         }
 
         function scStop() {
-            if (typeof window.onAnimationMenuStop !== 'function') return;
-            window.onAnimationMenuStop(JSON.stringify({ _scene_sid: SC.scene_sid }));
+            applySceneMenuDraftToSceneInfo({ pendingStop: true, stopStyle: 'stop' });
         }
 
         function scPrevNext(dir) {
-            if (SC.mode !== 'active' || typeof window.onAnimationMenuPrevNext !== 'function') return;
-            window.onAnimationMenuPrevNext(JSON.stringify({ _scene_sid: SC.scene_sid, _direction: dir }));
+            if (SC.mode !== 'active') return;
+            const max = SC.stageCount || 1;
+            let next = (SC.stage || 1) + (dir < 0 ? -1 : 1);
+            if (next < 1) next = 1;
+            if (next > max) next = max;
+            SC.stage = next;
+            scApplyModeChrome();
         }
 
         function scAnimUpdate() {
-            if (SC.mode !== 'active' || !SC.nextRegistry) return;
-            if (typeof window.onSceneAnimUpdate !== 'function') return;
-            window.onSceneAnimUpdate(JSON.stringify({
-                _scene_sid: SC.scene_sid,
-                _next_registry: SC.nextRegistry
-            }));
+            if (SC.mode !== 'active') return;
+            applySceneMenuDraftToSceneInfo({});
         }
 
         function requestSceneConnectionsRefresh() {
@@ -5949,18 +6247,23 @@
         }
 
         function scStart() {
-            if (typeof window.onSceneCreatorResult !== 'function') return;
-            window.onSceneCreatorResult(JSON.stringify(scBuildResult('start')));
+            applySceneMenuDraftToSceneInfo({ pendingCreate: true, mode: 'creator' });
             if (typeof hidePanel === 'function') {
                 hidePanel('scene_creator_panel');
                 hidePanel('target_menu_panel');
                 hidePanel('control_panel');
             }
+            requestWebUIHide(true);
         }
 
         function scCancel() {
-            if (typeof window.onSceneCreatorResult !== 'function') return;
-            window.onSceneCreatorResult(JSON.stringify(scBuildResult('cancel')));
+            if (typeof window.onSceneCreatorResult === 'function') {
+                window.onSceneCreatorResult(JSON.stringify({
+                    _action: 'cancel',
+                    _creator_sid: SC.creator_sid,
+                    _from_target_menu: !!SC.from_target_menu
+                }));
+            }
         }
 
         // ── Animation Menu (registry editor + live controls) ──────
@@ -6049,21 +6352,9 @@
 
         function amSelectAnim(reg) {
             AM.focusRegistry = reg;
-            const idx = (SC.inThreadRegistries || []).indexOf(reg);
-            if (idx >= 0 && isSceneConnectionActive()) {
-                firePapyrusOption({
-                    plugin: 'SkyrimNet_SexLab.esp',
-                    questFormId: '0x800',
-                    scriptName: 'SkyrimNet_SexLab_Actions',
-                    executionFunctionName: 'TM_SetAnimationIndex',
-                    parameterMapping: [
-                        { type: 'speaker', name: 'speaker' },
-                        { type: 'target', name: 'target' },
-                        { type: 'dynamic', name: 'indexStr' }
-                    ]
-                }, { indexStr: String(idx) });
-                SC.activeRegistry = reg;
-            }
+            SC.activeRegistry = reg;
+            AM.dirty = true;
+            amLoadFocusRegistry();
             amRenderAnimList();
         }
 
@@ -6075,26 +6366,51 @@
                 title.textContent = (a && (a._name || a._registry)) || 'Animation';
         }
 
-        function configureAnimationMenu(state) {
-            applySceneConnectionFromState(Object.assign({ _mode: 'active' }, state));
-            AM.scene_sid = state._scene_sid != null ? state._scene_sid : -1;
-            AM._scene_sid = AM.scene_sid;
-            AM.live = isSceneConnectionActive();
+        function configureAnimationMenuFromSceneInfo(info) {
+            if (!info) info = selectedSceneInfo();
+            AM.scene_sid = info.scene_sid;
+            AM._scene_sid = info.scene_sid;
+            AM.live = info.mode === 'active';
             AM.dirty = false;
-            AM.style = state._style || 'normally';
-            SC.activeRegistry = state._registry || state._active_registry || SC.activeRegistry;
-            SC.inThreadRegistries = state._in_thread_registries || SC.inThreadRegistries;
-            if (state._registry) AM.focusRegistry = state._registry;
-            if (state._in_thread_registries && state._in_thread_anims)
-                SC.lastAnims = state._in_thread_anims;
-            else if (Array.isArray(state._in_thread_anims) && state._in_thread_anims.length)
-                SC.lastAnims = state._in_thread_anims;
-            if (state._stages && state._stages.length)
-                SC.stages = state._stages;
+            AM.style = info.style || 'normally';
+            AM.positions = sceneInfoClone(info.positions || []);
+            AM.stages = sceneInfoClone(info.stages || []);
+            AM.focusRegistry = info.activeRegistry || AM.focusRegistry || '';
+            copySceneInfoToSC(info);
             amRenderAnimList();
             amEnsureFocus();
             amLoadFocusRegistry();
-            requestSceneConnectionsRefresh();
+        }
+
+        function configureAnimationMenu(state) {
+            state = state || {};
+            const key = SceneInfo.keyFromState(Object.assign({ _mode: 'active' }, state));
+            let info = sceneInfoByKey.get(key);
+            if (!info) {
+                info = SceneInfo.fromState(Object.assign({ _mode: 'active' }, state));
+                sceneInfoByKey.set(key, info);
+            } else {
+                info.mergeFromState(state);
+            }
+            selectedSceneInfoKey = key;
+            sceneInfosSessionActive = true;
+            configureAnimationMenuFromSceneInfo(info);
+        }
+
+        function amApplyToSceneInfo() {
+            const info = selectedSceneInfo();
+            if (AM.focusRegistry) {
+                info.activeRegistry = AM.focusRegistry;
+                SC.activeRegistry = AM.focusRegistry;
+            }
+            if (AM.positions && AM.positions.length)
+                info.positions = sceneInfoClone(AM.positions);
+            else
+                info.positions = sceneInfoClone(SC.positions || []);
+            if (AM.stages && AM.stages.length)
+                info.stages = sceneInfoClone(AM.stages);
+            info.style = AM.style || SC.style;
+            info.dirty = true;
         }
 
         function amApplyLiveChrome() {
@@ -6129,7 +6445,6 @@
                 AM.dirty = true;
             }
             amRenderPositions();
-            if (AM.live) amLiveUpdate();
         }
 
         function amCycleSpeaking(i) {
@@ -6140,17 +6455,9 @@
             p._speaking = mods[(mods.indexOf(cur) + 1) % mods.length];
             AM.dirty = true;
             amRenderPositions();
-            if (AM.live) amLiveUpdate();
         }
 
-        function amLiveUpdate() {
-            if (!AM.live || typeof window.onAnimationMenuLiveUpdate !== 'function') return;
-            window.onAnimationMenuLiveUpdate(JSON.stringify({
-                _scene_sid: AM._scene_sid || AM.scene_sid,
-                _style: AM.style,
-                _positions: AM.positions
-            }));
-        }
+        function amLiveUpdate() {}
 
         function amRenderStages() {
             const tbody = document.querySelector('#am-stages-table tbody');
@@ -6176,33 +6483,22 @@
 
         function amPrevNext(dir) {
             if (!isSceneConnectionActive()) return;
-            if (typeof window.onAnimationMenuPrevNext !== 'function') return;
-            window.onAnimationMenuPrevNext(JSON.stringify({ _scene_sid: AM._scene_sid || AM.scene_sid, _direction: dir }));
+            const max = SC.stageCount || 1;
+            let next = (SC.stage || 1) + (dir < 0 ? -1 : 1);
+            if (next < 1) next = 1;
+            if (next > max) next = max;
+            SC.stage = next;
         }
 
         function amDone(markDirty) {
-            if (markDirty === false) AM.dirty = false;
-            const payload = {
-                _scene_sid: AM._scene_sid || AM.scene_sid,
-                _dirty: !!AM.dirty,
-                _style: AM.style,
-                _positions: AM.positions,
-                _stages: AM.stages,
-                _registry: AM.focusRegistry || AM._registry || AM.registry
-            };
-            if (isSceneConnectionActive() && typeof window.onAnimationMenuClose === 'function') {
-                window.onAnimationMenuClose(JSON.stringify(payload));
-            } else if (typeof window.onAnimRegistrySave === 'function') {
-                window.onAnimRegistrySave(JSON.stringify(payload));
-            } else if (typeof window.onAnimationMenuClose === 'function') {
-                window.onAnimationMenuClose(JSON.stringify(payload));
-            }
+            if (markDirty !== false)
+                amApplyToSceneInfo();
         }
 
         function amStop() {
             if (!isSceneConnectionActive()) return;
-            if (typeof window.onAnimationMenuStop !== 'function') return;
-            window.onAnimationMenuStop(JSON.stringify({ _scene_sid: AM._scene_sid || AM.scene_sid }));
+            amApplyToSceneInfo();
+            applySceneMenuDraftToSceneInfo({ pendingStop: true, stopStyle: 'stop' });
         }
     </script>
 </body>

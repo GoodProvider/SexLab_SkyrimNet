@@ -61,6 +61,9 @@ namespace PapyrusBindings_WebUI {
     /// Push scene connection pulldown options to JS.
     void SceneConnections_Show(RE::StaticFunctionTag*, RE::BSFixedString state_json);
 
+    /// Seed JS SceneInfo map from Papyrus (all active threads + creator).
+    void SceneInfos_Seed(RE::StaticFunctionTag*, RE::BSFixedString state_json);
+
     void WebUI_HideAllPanels(RE::StaticFunctionTag*);
     /// Clear TargetMenu session, hide all panels, Unfocus overlay (Handler Done).
     void WebUI_CloseOverlay(RE::StaticFunctionTag*);

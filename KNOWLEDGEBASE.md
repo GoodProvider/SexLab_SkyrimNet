@@ -14,7 +14,7 @@
 - Control Panel → Scene Menu → connection **new** seeds a provisional session (`_creator_sid:0`, `_from_target_menu:0`) with **no pooled** `Scene_Creator`. C++ Start then dispatches `WebUI_OnSceneCreatorResult(0, json)` because only `_from_target_menu` selects `WebUI_OnSceneCreatorHandoff`.
 - `GetCreatorBySid(0)` misses → used to return with no Trace; SexLab never started. Result now Traces and falls through to Handoff (`CreateCreator` + `FinishStartScene`).
 - Do **not** set `_from_target_menu` on Control Panel new — JS disables Load/Save presets when that flag is true. TargetMenu Custom keeps the flag; sid 0 is also a valid YesNo pool slot so C++ cannot infer provisional from sid alone.
-- Same provisional seed in `Menu.SyncPanelsForActor` when focus is not SexLab-animating.
+- Same provisional seed in `Menu.WebUI_SeedSceneInfos` / `BuildAllSceneInfosJson` when there is no active `Scene_Creator` (`'new'` SceneInfo).
 
 ## Anidata schema 3.0 (2026-08-12)
 
@@ -76,14 +76,14 @@ Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / not
 - ControlPanel bottom `#control-actor-pulldown` owns focus for TargetMenu / Scene Menu / AnimationPanel. `#target-name` and Scene/Animation **scene** pulldowns removed. OStimNet framework pulldown (`#framework-row`) sits on ControlPanel above the actor row.
 - Nearby list (C++ `PopulateNearbyActors`): player first; then status `sexlab` → `ok` → ineligible (`child`/`cmbt`/`ostim`/`dead`/`load`); then distance. Labels crop name to 10 + status suffix. Soft Scene Menu pool = `selectable && status==ok`.
 - Hotkey **always toggles** overlay visibility: visible → C++ `WebUI_Visibility_Hide` (no Papyrus); hidden → `Open_WebUI_Target` (+ `WebUI_AfterTargetOpen` default pick). Close does not require the same focus actor. MultiTarget retired for this path. Animation main-panel preference persists across hide; restore via `WebUI_MaybeRestoreAnimationPanel` only when focus is SexLab-animating **and** preference true.
-- Active panels: `stop` (speaker + silent/stop/explain), `stage` (index/description table), `position` (whole-cast Scene Creator table), `animation` (AnimationPanel name picker in the main host).
+- Active panels: `stop` (speaker + silent/stop/explain → SceneInfo), `stage` / `position` (**Done** → SceneInfo), `animation` (AnimationPanel name picker; **Done** → SceneInfo).
 
 ## Active TargetMenu `type: papyrus` (2026-08-06, Actor/Scene split 2026-08-16)
 
 - Mid-scene TargetMenu options under `webui/TargetMenu/Scene/options/*.json` use **`type: papyrus`** (no `name`, no YAML / `actions_index`). JS `onAction({action:"papyrus",...})` → C++ `ExecutePapyrusOption` → `SkyrimNet_SexLab_Actions.TM_*`. Actor (not animating) options live in `webui/TargetMenu/Actor/options/`. Catalog pick is ControlPanel focus `SexLabAnimatingFaction` — no per-option faction eligibility on Scene JSON. Actor **`panel: outfit`**: sentence `position_1` / style (`forcefully|normally|gently|silently`) / undresses|dresses / `position_0`; Start → `TM_Outfit`; no Custom; silently skips SkyrimNet narration.
 - Storage: Animation JSON durable; AnimDB cache; Scene overlay this-thread only. Save (`TM_SaveAnimationSettings` / AnimationPanel Save) → SQL + JSON (`orgasm_expected`, `speaking_modifiers`, `clothed`). Victim/deny never durable; deny saves as expected=`1`. Full speaking token CSV is persisted (not token `[0]` only).
 - Anim switch: `SeedOverlayFromAnimDb` — per-registry `user_anim_defaults` win, else AnimDB, else orgasm→speaking helper (`1`→`_pleasure_`, `0`→`""`).
-- Live Scene panels (`panel` on option JSON): `stop` (speaker pulldown + silent/stop/explain), `stage` (`TM_GoToStage` / `TM_SetStageDescription`), `position` (whole-cast table → `TM_ChangeActors` / clothed / O expect vs not / V / speaking chips), `animation` (opens AnimationPanel picker; `TM_SetAnimationIndex`). LLM YAML deferred: `todo/active_action_yaml.md`.
+- Live Scene panels (`panel` on option JSON): `stop` / `stage` / `position` edit a panel draft; confirm (silent/stop/explain or **Done**) writes the selected SceneInfo. `animation` opens AnimationPanel; **Done** writes `activeRegistry`. SexLab `TM_*` / `ApplyWebUICommit` run on overlay commit, not live.
 
 ## Debug SKSE DLL + PublicGetPluginConfigValue CTD (2026-08-05, harden 2026-08-16)
 
@@ -130,7 +130,7 @@ Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / not
 - **Scene Creator anim list**: query cap is 125 (SexLab `GetList`). Do **not** embed `JSON.stringify(anim)` in each row `onclick` — with 125 rows that freezes CEF during `configureSceneCreator` and the panel never paints. Keep rows in `SC.lastAnims` and pass an index. Rendered as a 5-column table (genders / modifiers / name / num stages / description); WebUI `AnimRowToJson` includes `_stage_descriptions` so the description column can substitute `{{sl.actors.N}}` from Scene Creator positions.
 - **Scene presets**: Load/Save write `scenes/<name>.json` (no OS dialog); preserve `event_hook`. Do not `LoadSetting` on Start after UI edits — that overwrites tags.
 - **Victim mask**: After WebUI V toggles, call `RebuildVictimsFromMask` — never `SetNames`/`SetMasks` (those rebuild the mask from `victims[]` and wipe UI).
-- **AnimationMenu:** hotkey opens TargetMenu + ControlPanel focus; Animation main panel restores only if preferred-open and focus is SexLab-animating. AnimationPanel is an in-thread **name picker** (filter + scrollable list, no 10-cap); stage/position/stop live on TargetMenu Scene. Escape cancels the overlay (does not save empty AM state).
+- **AnimationMenu:** hotkey opens TargetMenu + ControlPanel focus; Animation main panel restores only if preferred-open and focus is SexLab-animating. AnimationPanel is an in-thread **name picker** (filter + scrollable list, no 10-cap); **Done** writes SceneInfo. Stage/position/stop live on TargetMenu Scene. Escape cancels the overlay without committing SceneInfo.
 - **Scene Menu dual-mode (2026-08-02 / 2026-08-07):** UI label Scene Menu; scene focus from ControlPanel actor (no duplicate scene pulldown). Active: A/N + Update (SexLab anim list cap **128** via `sslUtility.PushAnimation`). Tags stay UI filters — pool mutates only on Update.
 - **Legacy**: `SkyrimNet_SexLab_Stages` is an empty stub for save compatibility; all callers use AnimDb.
 
@@ -146,13 +146,15 @@ Caprica fails natives that declare a parameter named `scriptName` with `no viabl
 
 ## ControlPanel / MainPanels (2026-08-02, rename 2026-08-16)
 
-Left column: ControlPanel (`#control-panel`: title + main_panel pulldown + pause/unpause + OStimNet framework pulldown + **actor focus pulldown**) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/MainPanels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`. Catalog invoke: `configureControlPanel`. Actor focus → `onControlActorChange` → `ApplyControlActorFocus` / `WebUI_OnControlActorFocus`. `WebUI_Visibility_Show` pushes `setFrameworkToggle`.
+Left column: ControlPanel (`#control-panel`: title + main_panel pulldown + OStimNet framework pulldown + **actor focus pulldown**) above TargetMenu (10% top/left). Right: one main panel (10% top/bottom/right) from `webui/MainPanels/` (`builtin` or `papyrus`). Pulldown → `onMainPanelChange` → `SwitchMainPanel`. Catalog invoke: `configureControlPanel`. Actor focus → `onControlActorChange` → `ApplyControlActorFocus` / `WebUI_OnControlActorFocus` (catalog refresh only) + JS `selectSceneInfoForActor`. `WebUI_Visibility_Show` pushes `setFrameworkToggle` and `WebUI_SeedSceneInfos`.
 
-- **Pause toggle (2026-08-05):** PrismaUI `Focus(view, true)` pauses the game (default on Show). ControlPanel button toggles pause while the view stays shown. **Quirk:** calling `Focus` again while already focused does **not** change `pauseGame` — must `Unfocus` then `Focus(pauseGame)` to switch. Button label: **unpause** when paused, **pause** when running.
+- **SceneInfo (2026-08-22):** JS class + `sceneInfoByKey` (`'new'` + `scene:<sid>`). Seed on Show. Panel drafts copy SceneInfo on open. Start/Done/Update/Stop write into SceneInfo; Cancel does not. Overlay Cancel/Escape → `WebUI_Visibility_HideWithoutCommit` (drop dirty). Hotkey / Scene Start / TargetMenu Start → `flushSceneInfos` → `WebUI_OnSceneInfoCommit` then Hide. Do not live-call `TM_*` from Scene panels during the session.
+
+- **No pause toggle (2026-08-22):** Overlay always `Focus(view, true)`. Removed ControlPanel pause/unpause so live threads cannot drift from SceneInfo. Log tail is file I/O. AnimDB rebuild that needs Papyrus updates waits until close.
 
 - **ControlPanel missing after Start (2026-08-16):** Scene Creator / papyrus Start hide `#control-panel`. Same-actor `Target_Menu_Open` used to only `configureTargetMenu` + Show, skipping `showPanel`. Overlay came back with TargetMenu/ControlPanel still `display:none`. Fix: `WebUI_Visibility_Show` invokes `showControlPanel()`; same-actor open also `showPanel('target_menu_panel')`.
 
-- **Scene Menu appear/disappear loop (2026-08-03):** Do **not** call `requestSceneConnectionChange` from `revealMainPanel`. Connection reload → `SceneCreator_Open` (`showPanel` → `onMainPanelChange` → `SwitchMainPanel` → reveal) loops. Soft path: `SceneCreator_Configure` / `Animation_Menu_Configure` (no HideAll/showPanel); `WebUI_OnSceneConnectionChange` and `WebUI_OnAnimUpdate` use Configure; `SwitchMainPanel` invokes `mainPanelDidOpen()` once on **key change** only. `showPanel` for SC/AM is idempotent when already selected.
+- **Scene Menu appear/disappear loop (2026-08-03):** Do **not** call `requestSceneConnectionChange` from `revealMainPanel`. Connection reload → `SceneCreator_Open` (`showPanel` → `onMainPanelChange` → `SwitchMainPanel` → reveal) loops. Soft path: bind selected SceneInfo (`mainPanelDidOpen` / `configureSceneCreator` merge, no HideAll/showPanel). `SwitchMainPanel` invokes `mainPanelDidOpen()` once on **key change** only. `showPanel` for SC/AM is idempotent when already selected.
 
 ## SKSE native params must use engine types (2026-07-25)
 

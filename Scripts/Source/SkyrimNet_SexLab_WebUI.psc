@@ -17,6 +17,8 @@ Function Animation_Menu_Show(String state_json) global native
 ; Soft refresh Animation panel without showPanel.
 Function Animation_Menu_Configure(String state_json) global native
 Function SceneConnections_Show(String state_json) global native
+; Seed JS SceneInfo map (all active threads + Scene Creator draft).
+Function SceneInfos_Seed(String state_json) global native
 Function WebUI_HideAllPanels() global native
 ; Close overlay (clear TargetMenu session, hide panels, Unfocus). Handler Done uses this.
 Function WebUI_CloseOverlay() global native
