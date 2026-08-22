@@ -37,9 +37,13 @@ void InitWebUI();
 void WebUI_SetGameReady();
 void WebUI_Visibility_Show();
 void WebUI_Visibility_Hide();
+/// Hide overlay without applying SceneInfo drafts (Cancel / Escape).
+void WebUI_Visibility_HideWithoutCommit();
 void WebUI_Visibility_Toggle();
 /// True when PrismaUI is missing, the view is invalid, or the overlay is hidden.
 bool WebUI_IsHidden();
+/// True when the PrismaUI view exists and DomReady has fired (safe to Show/Focus).
+bool WebUI_IsReady();
 void WebUI_Invoke(const std::string& script);
 /// Push OStimNet-gated SexLab/OStim ControlPanel pulldown (setFrameworkToggle).
 void WebUI_InvokeFrameworkToggle();

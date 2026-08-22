@@ -94,11 +94,14 @@ Function Open_WebUI_Target(Actor target)
     Trace("Open_WebUI_Target", target.GetDisplayName()+" hasStripped:"+hasStripped \
         +" editTagsPlayer:"+SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.playerDialogs", true) \
         +" editTagsNonPlayer:"+SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.nonPlayerDialogs", false))
-    SkyrimNet_SexLab_WebUI.Target_Menu_Open(target, hasStripped, \
+    if !SkyrimNet_SexLab_WebUI.Target_Menu_Open(target, hasStripped, \
         SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.playerDialogs", true), \
         SkyrimNetApi.GetConfigBool("Plugin_SkyrimNet_SexLab", "sexlab.tagEdit.nonPlayerDialogs", false))
-    ; Mid-scene TargetMenu panels need active cast/anim state.
-    SyncPanelsForActor(target)
+        Trace("Open_WebUI_Target", \
+            "PrismaUI overlay missing Data/PrismaUI/views/SkyrimNet_SexLab/index.html", True)
+        return
+    endif
+    ; Mid-scene TargetMenu panels seed SceneInfo on overlay Show.
 EndFunction
 
 ; ControlPanel actor pulldown changed focus.
@@ -110,31 +113,14 @@ Function WebUI_OnControlActorFocus(Actor target)
     bool hasStripped = main.HasStrippedItems(target)
     Trace("WebUI_OnControlActorFocus", target.GetDisplayName()+" hasStripped:"+hasStripped)
     SkyrimNet_SexLab_WebUI.Target_Menu_Refresh(hasStripped)
-    SyncPanelsForActor(target)
     SkyrimNet_SexLab_WebUI.WebUI_MaybeRestoreAnimationPanel()
 EndFunction
 
-Function SyncPanelsForActor(Actor target)
-    if target == None || !main || !main.sexlab
+Function WebUI_SeedSceneInfos()
+    if !manager
         return
     endif
-    if target.IsInFaction(main.sexlab.AnimatingFaction)
-        SkyrimNet_SexLab_Scene sl = manager.GetSceneByActor(target)
-        if sl != None
-            SkyrimNet_SexLab_WebUI.SceneCreator_Configure(sl.BuildWebUISceneMenuState())
-            SkyrimNet_SexLab_WebUI.Animation_Menu_Configure(sl.BuildWebUIAnimationMenuState())
-        endif
-    else
-        int provisional = JMap.object()
-        JMap.setStr(provisional, "_mode", "creator")
-        JMap.setStr(provisional, "_connection", "new")
-        JMap.setInt(provisional, "_creator_sid", 0)
-        JMap.setInt(provisional, "_from_target_menu", 0)
-        JMap.setObj(provisional, "_positions", JArray.object())
-        String out = SkyrimNet_SexLab_Utilities.ObjectToLowerCaseKeyJson(provisional)
-        JValue.release(provisional)
-        SkyrimNet_SexLab_WebUI.SceneCreator_Configure(out)
-    endif
+    SkyrimNet_SexLab_WebUI.SceneInfos_Seed(manager.BuildAllSceneInfosJson())
 EndFunction
 
 Function Target_Menu_Selection(Actor target, Actor player)
