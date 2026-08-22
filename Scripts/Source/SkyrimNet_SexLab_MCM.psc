@@ -46,7 +46,7 @@ Function Setup()
        sexlab_ostim_options[1] = "Ostim"
     endif
 
-    if Game.GetModByName("SkyrimNetUDNG.esp") != 255
+    if Game.GetModByName("Devious Devices - Assets.esm") != 255
         udng_found = True
     else
         udng_found = False

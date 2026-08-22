@@ -1,5 +1,14 @@
 # Knowledgebase
 
+## BondagePanel / no SkyrimNet_UDNG (2026-08-21)
+
+- TargetMenu **bondage** is `panel: bondage` (`SKSE/Plugins/SkyrimNet_SexLab/webui/TargetMenu/Actor/options/0600_sexlab_bondage.json`). Catalog `requiresPlugin`: `Devious Devices - Assets.esm`. FOMOD Recommended when that ESM is active (no `SkyrimNetUDNG.esp`). `make release` moves this JSON and `bondage/group-devices.json` into `handler_udng/` — see **Optional SKSE files / FOMOD split**.
+- BondagePanel top aligns with ControlPanel (`.target-bondage-panel`). Each catalog group is a side-by-side `label: Pulldown` (`none` first). Head-to-foot: Blindfold, Gag, Collar, Piercing Nipple, Body, Arms, Belt, Piercing Vaginal, Plug Vaginal, Plug Anal, Legs.
+- **ActorBondage** (JS class + Handler JFormMap original snapshot): seed original+current from worn the first time an actor is ControlPanel-current this overlay session. Later `TM_BondageRefresh` must not clobber `current`. Pulldowns write `ActorBondage.current` only (no Papyrus). `bondagePatchPulldowns` seeds from `current`, not worn. **Done** sends `currentJson` → `TM_BondageFinish` applies `SetGroupToId` per group, narrates original vs wanted unless `silently`/`silent`, `ReleaseAll`, `WebUI_CloseOverlay`. **Cancel** closes BondagePanel only (Map kept so reopen shows pending `current`). Hide/Escape: `bondageReleaseAll()` + `TM_BondageOnWebUIClosed` **ReleaseAll only** — do not restore devices (the actor was never mutated until Done).
+- `zadLibs` / device Forms live **only** on `SkyrimNet_SexLab_Handler_UDNG` (optional ESP). Do **not** put `zadLibs` on the main quest — the VM will not bind the type when DD is absent. Runtime: `GetFormFromFile(0x00F624, "Devious Devices - Integration.esm")`.
+- Compile import: `@ModsFolder\Devious Devices for SE-AE-VR\Scripts\Source` plus `PapyrusSourcesDD\SRC_SLA` (`slautilscr` on `zadLibs`). That tree’s `zadLibs.psc` is Headliner-stubbed; shipped DD `.pex` is used at runtime. Do not clone `PapyrusSourcesDD` into this repo / `Makefile` `dd:`.
+- Groups catalog: `Data/SKSE/Plugins/SkyrimNet_SexLab/bondage/group-devices.json` (JContainers `__formData`). Pending edits until **Done**; **Cancel**/hide discard the session only. LLM lock/unlock stays in SkyrimNet_UDNG. `TM_BondageApply` can remain for other callers; BondagePanel must not use it.
+
 ## Scene Menu Start Control Panel new → Handoff (2026-08-16)
 
 - Control Panel → Scene Menu → connection **new** seeds a provisional session (`_creator_sid:0`, `_from_target_menu:0`) with **no pooled** `Scene_Creator`. C++ Start then dispatches `WebUI_OnSceneCreatorResult(0, json)` because only `_from_target_menu` selects `WebUI_OnSceneCreatorHandoff`.
@@ -56,6 +65,11 @@
 ## Scratch files `z-*.*` (standing rule)
 
 Always **ignore** files matching `z-*.*` (e.g. `z-plan.md`). Local scratch / notes only — not product docs or agent source of truth.
+
+## Optional SKSE files / FOMOD split (standing rule)
+
+- **One source of truth:** optional-handler files that the game reads at runtime live under `SKSE/Plugins/SkyrimNet_SexLab/` in the repo (Actor `options/`, `bondage/group-devices.json`, etc.). Do not keep a second copy under `optional/handler_udng/`.
+- **Split at release:** `make release` copies `SKSE` into `core`, then **moves** those files into `handler_udng/` (same Data-relative paths) so Nexus FOMOD can install them only with the handler ESP. Dev/MO2 overlay uses the repo tree as-is.
 
 ## ControlPanel actor focus + active TargetMenu (2026-08-07)
 
@@ -128,7 +142,7 @@ Caprica fails natives that declare a parameter named `scriptName` with `no viabl
 
 `SkyrimNet_SexLab_API.RegisterTargetMenuOption(Form quest, …)` appends runtime actions to the WebUI Target Menu (end of `options` + `actions` in `BuildUICatalog`). Stores the quest **FormID** (not EditorID) — EditorID lookup often fails for optional handler ESPs and `FindQuest` would fall back to the main quest. Cleared on `kPostLoadGame` / `kNewGame`; handlers must re-register in `Setup` with `self as Form`. Click dispatches via `ExecuteAction` with a single `target` Actor arg.
 
-**Preferred (2026-08-02, dest 2026-08-16):** optional handlers ship filesystem `webui/TargetMenu/Actor/options/*.json` with `plugin` + `questFormId` + `scriptName` + `executionFunctionName` (+ optional `requiresPlugin`). UDNG bondage uses this via FOMOD; `RegisterTargetMenuOption` is legacy (Actor catalog only).
+**Preferred (2026-08-02, dest 2026-08-16 / bondage 2026-08-21):** optional handlers ship filesystem `webui/TargetMenu/Actor/options/*.json` with `plugin` + `questFormId` + `scriptName` + `executionFunctionName` (+ optional `requiresPlugin`). Bondage is Actor `options/0600_sexlab_bondage.json` (`panel: bondage` → Handler_UDNG `TM_Bondage*`). Live under the repo SKSE tree; `make release` moves it into FOMOD `handler_udng/` (see **Optional SKSE files / FOMOD split**). `RegisterTargetMenuOption` is legacy (Actor catalog only).
 
 ## ControlPanel / MainPanels (2026-08-02, rename 2026-08-16)
 

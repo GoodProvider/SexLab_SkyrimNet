@@ -1,0 +1,14 @@
+{
+  "type": "papyrus",
+  "label": "bondage",
+  "panel": "bondage",
+  "closeWebUI": false,
+  "requiresPlugin": "Devious Devices - Assets.esm",
+  "plugin": "SkyrimNet_SexLab_Handler_UDNG.esp",
+  "questFormId": "0x800",
+  "scriptName": "SkyrimNet_SexLab_Handler_UDNG",
+  "executionFunctionName": "TM_BondageRefresh",
+  "parameterMapping": [
+    { "type": "target", "name": "target" }
+  ]
+}

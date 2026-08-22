@@ -10,12 +10,13 @@
 			<optionalFileGroups order="Explicit">
 				<group name="Select plugins to support" type="SelectAny">
 					<plugins order="Explicit">
-						<plugin name="SkyrimNetUDNG | github.com/naitro2010/SkyrimNet_UDNG">
-							<description> Allows SkyrimNet_SexLab's hotkey to call SkyrimNetUDNG</description>
+						<plugin name="Devious Devices bondage">
+							<description> TargetMenu bondage panel (Devious Devices). Requires Devious Devices - Assets.esm. LLM device actions remain in SkyrimNet_UDNG.</description>
 							<image path="images\sexlab_logo.png" />
 							<files>
 								<file source="handler_udng\SkyrimNet_SexLab_Handler_UDNG.esp" destination="" alwaysInstall="false" installIfUsable="false" priority="0"/>
 								<file source="handler_udng\SKSE\Plugins\SkyrimNet_SexLab\webui\TargetMenu\Actor\options\0600_sexlab_bondage.json" destination="SKSE\Plugins\SkyrimNet_SexLab\webui\TargetMenu\Actor\options\" alwaysInstall="false" installIfUsable="false" priority="0"/>
+								<file source="handler_udng\SKSE\Plugins\SkyrimNet_SexLab\bondage\group-devices.json" destination="SKSE\Plugins\SkyrimNet_SexLab\bondage\" alwaysInstall="false" installIfUsable="false" priority="0"/>
 							</files>
 							<typeDescriptor>
 								<dependencyType>
@@ -23,7 +24,7 @@
 									<patterns>
 										<pattern>
 											<dependencies operator="And">
-												<fileDependency file="SkyrimNetUDNG.esp" state="Active"/>
+												<fileDependency file="Devious Devices - Assets.esm" state="Active"/>
 											</dependencies>
 											<type name="Recommended"/>
 										</pattern>

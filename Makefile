@@ -1,4 +1,4 @@
-VERSION=0.31.4
+VERSION=0.32.0
 NAME=SkyrimNet SexLab
 
 RELEASE_FILE=versions/SkyrimNet_SexLab ${VERSION}.7z
@@ -20,10 +20,8 @@ esp:
 	if not exist "SpriggitCLI\Spriggit.CLI.exe" call updateSpriggit.bat
 	SpriggitCLI\Spriggit.CLI.exe convert-to-plugin -i "Spriggit\SkyrimNet_SexLab" -o "SkyrimNet_SexLab.esp"
 
-dd: 
-	cd headers
-	git clone https://github.com/IHateMyKite/PapyrusSourcesDD
-	python3 ./python_scripts/FOMOD-info.py -v ${VERSION} -n '${NAME}' -o FOMOD/info.xml FOMOD-source/info.xml
+# Stale: do not clone PapyrusSourcesDD. Compile DD types from
+# $(ModsFolder)/Devious Devices for SE-AE-VR/Scripts/Source (skyrimse.ppj).
 
 release: 
 	python3 ./python_scripts/info.py -v ${VERSION} -n '${NAME}' -o SKSE/Plugins/SkyrimNet_SexLab/info.json
@@ -34,11 +32,13 @@ release:
 
 	if exist "$(subst /,\\,core)" rmdir /s /q "$(subst /,\\,core)"	
 	mkdir core 
-	powershell -NoProfile -Command "Copy-Item -Path 'Scripts','SKSE','SkyrimNet_SexLab.esp' -Destination 'core/.' -Recurse -Force"
+	powershell -NoProfile -Command "Copy-Item -Path 'Scripts','SKSE','SkyrimNet_SexLab.esp','PrismaUI' -Destination 'core/.' -Recurse -Force"
 
+	# Optional SKSE files live in the repo SKSE tree (one source of truth).
+	# After copying SKSE into core, move bondage catalog + groups into handler_udng.
 	if exist "$(subst /,\\,handler_udng)" rmdir /s /q "$(subst /,\\,handler_udng)"	
 	mkdir handler_udng 
-	powershell -NoProfile -Command "Copy-Item -Path 'SkyrimNet_SexLab_Handler_UDNG.esp' -Destination 'handler_udng/.' -Recurse -Force; if (Test-Path 'optional/handler_udng') { Copy-Item -Path 'optional/handler_udng/*' -Destination 'handler_udng/.' -Recurse -Force }"
+	powershell -NoProfile -Command "Copy-Item -Path 'SkyrimNet_SexLab_Handler_UDNG.esp' -Destination 'handler_udng/.' -Force; New-Item -ItemType Directory -Force -Path 'handler_udng/SKSE/Plugins/SkyrimNet_SexLab/webui/TargetMenu/Actor/options','handler_udng/SKSE/Plugins/SkyrimNet_SexLab/bondage' | Out-Null; if (Test-Path 'core/SKSE/Plugins/SkyrimNet_SexLab/webui/TargetMenu/Actor/options/0600_sexlab_bondage.json') { Move-Item -Force 'core/SKSE/Plugins/SkyrimNet_SexLab/webui/TargetMenu/Actor/options/0600_sexlab_bondage.json' 'handler_udng/SKSE/Plugins/SkyrimNet_SexLab/webui/TargetMenu/Actor/options/' }; if (Test-Path 'core/SKSE/Plugins/SkyrimNet_SexLab/bondage/group-devices.json') { Move-Item -Force 'core/SKSE/Plugins/SkyrimNet_SexLab/bondage/group-devices.json' 'handler_udng/SKSE/Plugins/SkyrimNet_SexLab/bondage/' }"
 
 	if exist "$(subst /,\\,handler_dom)" rmdir /s /q "$(subst /,\\,handler_dom)"	
 	mkdir handler_dom 

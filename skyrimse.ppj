@@ -30,9 +30,8 @@
         <Import>@ModsFolder\Papyrus MessageBox - SKSE NG\Scripts\Source</Import>
 
 
-        <Import>@ModsFolder\SkyrimNet_UDNG\Scripts\Source</Import>
-        <Import>.\PapyrusSourcesDD\SRC_DD</Import>
-        <Import>.\PapyrusSourcesDD\SRC_SLA</Import>
+        <Import>@ModsFolder\Devious Devices for SE-AE-VR\Scripts\Source</Import>
+        <Import>@ModsFolder\Devious Devices for SE-AE-VR\PapyrusSourcesDD\SRC_SLA</Import>
 
         <Import>@ModsFolder\JContainers\scripts\source</Import>
 

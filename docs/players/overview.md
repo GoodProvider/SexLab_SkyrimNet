@@ -40,6 +40,8 @@ SkyrimNet is not seeing Actions functions.
 | punish | Spanking, nude spanking, whipping; punish-rape |
 | none | Stop; dress/undress actions (silent RegisterEvent OK) |
 
+TargetMenu **bondage** (when Devious Devices Assets + the FOMOD handler are loaded): speaker / style / target; pulldowns are pending until **Done** (then DirectNarration unless **silently**); **Cancel** / hide leave the actor unchanged.
+
 Scene files via `setting_name`: [../reference/scene-settings.md](../reference/scene-settings.md).
 
 ## Settings

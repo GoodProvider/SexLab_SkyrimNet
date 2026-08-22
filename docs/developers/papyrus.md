@@ -45,6 +45,7 @@ Scene_Creator (pooled) ──StartScene──► Scene_Manager.CreateSceneByCrea
 - Actor lock: `skyrimnet_sexlab_scene_actor_lock`.
 - Trace → `WebUI.TraceLog` → `SKSE\SkyrimNet_SexLab.log` (prefix `"---"`).
 - DOM optional: `handler_dom`; Dom orgasm → `OrgasmCustom` + `" is orgasming."`. Nonconsensual wrappers omit `style` (8-arg limit).
+- DD optional: `handler_udng` / `SkyrimNet_SexLab_Handler_UDNG` only. `zadLibs` via `GetFormFromFile(0x00F624, "Devious Devices - Integration.esm")`. Compile import `@ModsFolder\Devious Devices for SE-AE-VR\Scripts\Source` and `PapyrusSourcesDD\SRC_SLA` (`slautilscr`). Do not import SkyrimNet_UDNG or clone PapyrusSourcesDD into this repo. BondagePanel: `TM_BondageRefresh` seeds original; pulldowns do not call Papyrus; `TM_BondageFinish(speaker, target, style, currentJson)` applies then CloseOverlay; `TM_BondageOnWebUIClosed` is ReleaseAll only. `TM_BondageApply` unused by BondagePanel.
 
 ## Review
 
@@ -67,7 +68,7 @@ Do not hand-edit `.esp`. `Spriggit/` is source of truth for the main plugin.
 | `make esp` | `Spriggit/` → `.esp` |
 | `make release` | version + esp + pack `.7z` |
 
-Handler ESPs are not Spriggit-backed yet.
+Handler ESPs are not Spriggit-backed yet. Rebuild UDNG handler (drop UDNG master): `python python_scripts/rebuild_handler_udng_esp.py`.
 
 ## Content authors
 

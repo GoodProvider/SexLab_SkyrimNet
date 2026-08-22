@@ -27,6 +27,7 @@ The following and dependencies:
 **Optional**
 
 - [SkyrimNet_DOM](https://github.com/GoodProvider) — requires `SkyrimNet_DOM.esp`; Domination slave orgasm / denied narration and DOM-routed hotkey starts
+- **Devious Devices** — FOMOD **Devious Devices bondage** (Recommended when `Devious Devices - Assets.esm` is active) adds TargetMenu BondagePanel. Needs [Devious Devices](https://www.loverslab.com/files/file/5878-devious-devices-se/) (Assets + Integration). LLM lock/unlock actions remain [SkyrimNet_UDNG](https://github.com/naitro2010/SkyrimNet_UDNG).
 - [SkyrimNet_Arousal](https://github.com/GoodProvider/SkyrimNet_Arousal) — arousal in prompts / arousal actions
 - [OSL Aroused](https://www.nexusmods.com/skyrimspecialedition/mods/65454)
   - Can prevent orgasm from increasing satisfaction for tagged actors for a given animation
@@ -65,8 +66,8 @@ The following and dependencies:
 - **animations** (you might get away with less …)
   - [Billyy](https://www.loverslab.com/files/file/3999-billyys-slal-animations-2025-1-1/)
 - **Devious Devices**
-  - [SkyrimNet DDUNDNG](https://github.com/naitro2010/SkyrimNet_UDNG/releases/download/alpha2/SkyrimNetDDUDNG.zip)
-  - [Devious Devices](https://www.loverslab.com/files/file/5878-devious-devices-se/) (and its requirements)
+  - [Devious Devices](https://www.loverslab.com/files/file/5878-devious-devices-se/) (and its requirements) — TargetMenu bondage via this mod’s FOMOD handler
+  - [SkyrimNet_UDNG](https://github.com/naitro2010/SkyrimNet_UDNG) — optional LLM device lock/unlock actions (not required for BondagePanel)
   - [Papyrus Tweaks NG](https://www.nexusmods.com/skyrimspecialedition/mods/77779)
   - [Devious Devices NG](https://www.loverslab.com/files/file/29779-devious-devices-ng/)
     - [Blind people DAR](https://www.nexusmods.com/skyrimspecialedition/mods/90947)

@@ -306,6 +306,33 @@
             box-shadow: var(--shadow-lg);
         }
 
+        .target-bondage-panel {
+            position: absolute;
+            top: 0;
+            left: calc(100% + var(--space-md));
+            max-height: 80vh;
+            overflow-y: auto;
+            overflow-x: visible;
+        }
+
+        .bondage-device-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            flex-wrap: nowrap;
+            margin: var(--space-xs) 0;
+        }
+
+        .bondage-device-row .bondage-device-label {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        .bondage-device-row .pulldown {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
         /* ── Panel ────────────────────────────────────────────── */
         .panel {
             min-width: 240px;
@@ -1907,6 +1934,65 @@
         let tmStopSpeakerFormId = 0;
         let outfitUi = { pos0: 0, pos1: 0, style: 'normally' };
         const OUTFIT_STYLES = ['forcefully', 'normally', 'gently', 'silently'];
+        let bondageUi = { speaker: 0, target: 0, style: 'normally' };
+        let bondageState = { groups: [] };
+        const BONDAGE_GROUP_ORDER = [
+            'Blindfold', 'Gag', 'Collar', 'Piercing Nipple', 'Body', 'Arms',
+            'Belt', 'Piercing Vaginal', 'Plug Vaginal', 'Plug Anal', 'Legs'
+        ];
+        const actorBondageByFormId = new Map();
+
+        class ActorBondage {
+            constructor(formId) {
+                this.formId = formIdU32(formId);
+                this.original = {};
+                this.current = {};
+                this.groups = [];
+            }
+            applyState(state) {
+                const groups = Array.isArray(state && state.groups) ? state.groups : [];
+                this.groups = groups.slice();
+                for (const g of this.groups) {
+                    const name = g && g.name ? String(g.name) : '';
+                    if (!name) continue;
+                    if (this.original[name] !== undefined)
+                        continue;
+                    const worn = bondageWornInGroup(g);
+                    const id = worn && worn.id ? String(worn.id) : '';
+                    this.original[name] = id;
+                    this.current[name] = id;
+                }
+            }
+        }
+
+        function bondageGetOrCreate(formId) {
+            const fid = formIdU32(formId);
+            if (!fid) return null;
+            let ab = actorBondageByFormId.get(fid);
+            if (!ab) {
+                ab = new ActorBondage(fid);
+                actorBondageByFormId.set(fid, ab);
+            }
+            return ab;
+        }
+
+        function bondageReleaseAll() {
+            actorBondageByFormId.clear();
+        }
+
+        function bondageCatalogOpt() {
+            const opts = (TARGET_CATALOG && TARGET_CATALOG.options) || [];
+            return opts.find(o => o.panel === 'bondage') || null;
+        }
+
+        function bondageEnsureActor(formId) {
+            const opt = bondageCatalogOpt();
+            const fid = formIdU32(formId);
+            if (!opt || !fid) return;
+            bondageFire(opt, 'TM_BondageRefresh', [
+                { type: 'target', name: 'target' }
+            ], { target: tmActorParam(fid) });
+        }
 
         /// Hierarchical param remember-store (parent-linked tree → localStorage).
         let paramTreeRoot = null;
@@ -2495,6 +2581,8 @@
             selectedActionLabel = null;
             outfitUi.pos0 = 0;
             outfitUi.pos1 = 0;
+            bondageUi = { speaker: 0, target: 0, style: 'normally' };
+            bondageState = { groups: [] };
             ssUi.seededForLabel = '';
             ssCloseIntentPanel();
             const host = document.getElementById('target-cascade-host');
@@ -2666,6 +2754,19 @@
                 tmCastDraft = null;
                 if (opt.panel === 'position')
                     tmCastDraft = tmBuildCastDraft(true);
+                if (opt.panel === 'bondage') {
+                    const pool = eligibleParamActors();
+                    if (!outfitFindActor(pool, bondageUi.target))
+                        bondageUi.target = formIdU32(targetActor && targetActor.formId)
+                            || (pool[0] && pool[0].formId) || 0;
+                    if (!outfitFindActor(pool, bondageUi.speaker))
+                        bondageUi.speaker = formIdU32(playerActor && playerActor.formId)
+                            || bondageUi.target;
+                    firePapyrusOption(opt, {
+                        target: tmActorParam(bondageUi.target),
+                        closeWebUI: false
+                    });
+                }
                 renderTargetMenu();
                 return;
             }
@@ -3946,6 +4047,207 @@
             body.appendChild(bar);
         }
 
+        function bondageConfigure(state) {
+            const src = state && typeof state === 'object' ? state : { groups: [] };
+            if (!Array.isArray(src.groups))
+                src.groups = [];
+            const fid = formIdU32(src.target);
+            bondageState = src;
+            if (fid) {
+                const ab = bondageGetOrCreate(fid);
+                ab.applyState(src);
+                if (papyrusSelectedOpt && papyrusSelectedOpt.panel === 'bondage'
+                    && formIdU32(bondageUi.target) === fid) {
+                    const panel = document.querySelector('.target-bondage-panel');
+                    if (!panel || !panel.querySelector('.bondage-device-row'))
+                        renderPapyrusPanel();
+                    else
+                        bondagePatchPulldowns(ab);
+                    return;
+                }
+            }
+            if (papyrusSelectedOpt && papyrusSelectedOpt.panel === 'bondage'
+                && !document.querySelector('.bondage-device-row'))
+                renderPapyrusPanel();
+        }
+
+        function bondageCurrentId(ab, group) {
+            const name = group && group.name ? String(group.name) : '';
+            if (!ab || !name || ab.current[name] == null)
+                return '';
+            return String(ab.current[name]);
+        }
+
+        function bondageCurrentLabel(ab, group) {
+            const curId = bondageCurrentId(ab, group);
+            if (!curId) return 'none';
+            const devices = (group && group.devices) || [];
+            const d = devices.find(dev => String(dev.id || '') === curId);
+            return d ? bondageDeviceName(d) : 'none';
+        }
+
+        function bondagePatchPulldowns(ab) {
+            if (!ab) return;
+            const panel = document.querySelector('.target-bondage-panel');
+            if (!panel) return;
+            panel.querySelectorAll('.bondage-device-row[data-group]').forEach((row) => {
+                const gname = row.getAttribute('data-group') || '';
+                const g = (ab.groups || []).find(x => String(x.name || '') === gname);
+                const seed = g ? bondageCurrentLabel(ab, g) : 'none';
+                const val = row.querySelector('.pulldown-value');
+                if (val) val.textContent = seed;
+                row.querySelectorAll('.pulldown-option').forEach((optEl) => {
+                    optEl.classList.toggle('selected', optEl.textContent === seed);
+                });
+            });
+        }
+
+        function bondageFire(opt, fn, extraMapping, extraParams) {
+            firePapyrusOption(opt, Object.assign({
+                executionFunctionName: fn,
+                parameterMapping: extraMapping,
+                closeWebUI: false
+            }, extraParams || {}));
+        }
+
+        function bondageDeviceName(d) {
+            return (d && (d.name || d.id)) ? String(d.name || d.id) : '?';
+        }
+
+        function bondageWornInGroup(g) {
+            const devices = (g && g.devices) || [];
+            const equipped = g && (g.equippedid || g.equippedId);
+            return devices.find(d => d.wearing)
+                || (equipped ? devices.find(d => d.id === equipped) : null)
+                || null;
+        }
+
+        function bondageSortedGroups() {
+            const fid = formIdU32(bondageUi.target);
+            const ab = fid ? actorBondageByFormId.get(fid) : null;
+            const groups = ((ab && ab.groups) || bondageState.groups || []).slice();
+            const rank = new Map(BONDAGE_GROUP_ORDER.map((n, i) => [n.toLowerCase(), i]));
+            groups.sort((a, b) => {
+                const ia = rank.has((a.name || '').toLowerCase())
+                    ? rank.get((a.name || '').toLowerCase()) : 1000;
+                const ib = rank.has((b.name || '').toLowerCase())
+                    ? rank.get((b.name || '').toLowerCase()) : 1000;
+                if (ia !== ib) return ia - ib;
+                return String(a.name || '').localeCompare(String(b.name || ''));
+            });
+            return groups;
+        }
+
+        function bondageApplyPick(opt, group, pickedLabel) {
+            if (!bondageUi.target || !group) return;
+            const ab = bondageGetOrCreate(bondageUi.target);
+            const name = group.name ? String(group.name) : '';
+            if (!ab || !name) return;
+            if (pickedLabel === 'none') {
+                ab.current[name] = '';
+                return;
+            }
+            const devices = group.devices || [];
+            const d = devices.find(dev => bondageDeviceName(dev) === pickedLabel);
+            if (!d || !d.id) return;
+            ab.current[name] = String(d.id);
+        }
+
+        function renderBondagePanelBody(body, opt) {
+            const pool = eligibleParamActors();
+            let target = outfitFindActor(pool, bondageUi.target)
+                || outfitFindActor(pool, targetActor && targetActor.formId)
+                || pool[0]
+                || null;
+            let speaker = outfitFindActor(pool, bondageUi.speaker)
+                || outfitFindActor(pool, playerActor && playerActor.formId)
+                || target
+                || null;
+            if (target) bondageUi.target = formIdU32(target.formId);
+            if (speaker) bondageUi.speaker = formIdU32(speaker.formId);
+            if (!OUTFIT_STYLES.includes(bondageUi.style))
+                bondageUi.style = 'normally';
+
+            const row = document.createElement('div');
+            row.className = 'compact-row';
+            row.appendChild(outfitActorPulldown(pool, speaker, (entry) => {
+                bondageUi.speaker = formIdU32(entry.formId);
+            }));
+            row.appendChild(createPulldown(OUTFIT_STYLES, bondageUi.style, (v) => {
+                bondageUi.style = v;
+            }));
+            const verbEl = document.createElement('span');
+            verbEl.textContent = 'changes devices on';
+            row.appendChild(verbEl);
+            row.appendChild(outfitActorPulldown(pool, target, (entry) => {
+                const fid = formIdU32(entry.formId);
+                bondageUi.target = fid;
+                bondageFire(opt, 'TM_BondageRefresh', [
+                    { type: 'target', name: 'target' }
+                ], { target: tmActorParam(fid) });
+            }));
+            body.appendChild(row);
+
+            const groups = bondageSortedGroups();
+            if (!groups.length) {
+                const empty = document.createElement('div');
+                empty.className = 'compact-row';
+                empty.textContent = 'loading…';
+                body.appendChild(empty);
+            }
+            const ab = bondageGetOrCreate(bondageUi.target);
+            groups.forEach((g) => {
+                const devices = g.devices || [];
+                const labels = ['none'].concat(devices.map(bondageDeviceName));
+                const seed = bondageCurrentLabel(ab, g);
+                const field = document.createElement('div');
+                field.className = 'bondage-device-row';
+                field.setAttribute('data-group', g.name || '');
+                const lab = document.createElement('span');
+                lab.className = 'bondage-device-label';
+                lab.textContent = (g.name || 'group') + ':';
+                field.appendChild(lab);
+                field.appendChild(createPulldown(labels, seed, (picked) => {
+                    bondageApplyPick(opt, g, picked);
+                }));
+                body.appendChild(field);
+            });
+
+            const bar = document.createElement('div');
+            bar.className = 'bottom-bar';
+            const cancelBtn = document.createElement('div');
+            cancelBtn.className = 'action-btn option-cancel';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.onclick = () => {
+                papyrusSelectedOpt = null;
+                leftSelectedOpt = null;
+                renderTargetMenu();
+            };
+            const doneBtn = document.createElement('div');
+            doneBtn.className = 'action-btn';
+            doneBtn.textContent = 'Done';
+            if (!bondageUi.target) doneBtn.classList.add('disabled');
+            doneBtn.onclick = () => {
+                if (doneBtn.classList.contains('disabled')) return;
+                const session = actorBondageByFormId.get(formIdU32(bondageUi.target));
+                const currentJson = JSON.stringify((session && session.current) || {});
+                bondageFire(opt, 'TM_BondageFinish', [
+                    { type: 'speaker', name: 'speaker' },
+                    { type: 'target', name: 'target' },
+                    { type: 'dynamic', name: 'style' },
+                    { type: 'dynamic', name: 'currentJson' }
+                ], {
+                    speaker: tmActorParam(bondageUi.speaker),
+                    target: tmActorParam(bondageUi.target),
+                    style: bondageUi.style,
+                    currentJson: currentJson
+                });
+            };
+            bar.appendChild(cancelBtn);
+            bar.appendChild(doneBtn);
+            body.appendChild(bar);
+        }
+
         function renderPapyrusPanel() {
             const host = document.getElementById('target-cascade-host');
             if (!host) return;
@@ -3978,6 +4280,9 @@
                 tmRenderPositionPanel(body, opt);
             } else if (kind === 'outfit') {
                 renderOutfitPanelBody(body, opt);
+            } else if (kind === 'bondage') {
+                panel.classList.add('target-bondage-panel');
+                renderBondagePanelBody(body, opt);
             } else {
                 body.textContent = 'Unknown panel: ' + kind;
             }
@@ -4337,6 +4642,7 @@
             if (!force && targetActor && formIdU32(targetActor.formId) === fid)
                 return;
             setTargetActor(entry.uuid, entry.name, fid);
+            bondageEnsureActor(fid);
             if (typeof window.onControlActorChange === 'function') {
                 window.onControlActorChange(JSON.stringify({
                     formId: fid,
