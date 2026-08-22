@@ -165,6 +165,21 @@ namespace PapyrusBindings_WebUI
         WebUI_Invoke("hidePanel('log_panel');");
     }
 
+    void WebUI_CloseOverlay(RE::StaticFunctionTag*)
+    {
+        ClearTargetMenuSession();
+        ActionCatalog::ClearMainPanelSelection();
+        WebUI_Invoke("hidePanel('control_panel');");
+        WebUI_Invoke("hidePanel('target_menu_panel');");
+        WebUI_Invoke("hidePanel('sex_menu_panel');");
+        WebUI_Invoke("hidePanel('yesno_panel');");
+        WebUI_Invoke("hidePanel('scene_creator_panel');");
+        WebUI_Invoke("hidePanel('animation_menu_panel');");
+        WebUI_Invoke("hidePanel('settings_panel');");
+        WebUI_Invoke("hidePanel('log_panel');");
+        WebUI_Visibility_Hide();
+    }
+
     /// Escapes backslash and single quote so actor names are safe inside JS string literals.
     static std::string EscapeJsString(std::string_view s)
     {
@@ -192,12 +207,19 @@ namespace PapyrusBindings_WebUI
 
     /// Opens the target menu for the given actor and focuses the PrismaUI view.
     /// Overlay already visible → hide (hotkey toggle), any focus actor.
-    void Target_Menu_Open(RE::StaticFunctionTag*, RE::Actor* Target_Input, bool hasStrippedItems,
+    /// Returns false when the overlay cannot show (no DomReady / invalid view).
+    bool Target_Menu_Open(RE::StaticFunctionTag*, RE::Actor* Target_Input, bool hasStrippedItems,
         bool editTagsPlayer, bool editTagsNonPlayer)
     {
         if (!Target_Input) {
             webui_log::warn("Target_Menu_Open called with null Actor.");
-            return;
+            return false;
+        }
+
+        if (!WebUI_IsReady()) {
+            webui_log::critical(
+                "Target_Menu_Open: overlay not ready (missing PrismaUI/views/SkyrimNet_SexLab/index.html?).");
+            return false;
         }
 
         EditTagsPlayer = editTagsPlayer;
@@ -206,7 +228,7 @@ namespace PapyrusBindings_WebUI
         if (!WebUI_IsHidden()) {
             webui_log::info("Target_Menu_Open: overlay visible — hide");
             WebUI_Visibility_Hide();
-            return;
+            return true;
         }
 
         if (Target_Current == Target_Input) {
@@ -218,7 +240,7 @@ namespace PapyrusBindings_WebUI
             WebUI_Invoke("configureControlPanel(" + ActionCatalog::BuildMainPanelsCatalog().dump() + ");");
             WebUI_Invoke("showPanel('target_menu_panel');");
             WebUI_Visibility_Show();
-            return;
+            return true;
         }
 
         Reset_To_Default();
@@ -253,6 +275,7 @@ namespace PapyrusBindings_WebUI
 
         WebUI_Invoke("showPanel('target_menu_panel');");
         WebUI_Visibility_Show();
+        return true;
     }
 
     /// Re-resolve actionSwitch while the target menu stays open on Target_Current.
@@ -325,6 +348,20 @@ namespace PapyrusBindings_WebUI
             webui_log::error("SceneCreator_Configure: bad state_json; using {{}}");
         }
         WebUI_Invoke(std::string("configureSceneCreator(") + dumped + ");");
+    }
+
+    void Bondage_Configure(RE::StaticFunctionTag*, RE::BSFixedString state_json)
+    {
+        const char* raw = state_json.c_str() ? state_json.c_str() : "{}";
+        std::string dumped = "{}";
+        try {
+            dumped = nlohmann::json::parse(raw).dump();
+        } catch (const std::exception& e) {
+            webui_log::error("Bondage_Configure: bad state_json ({}); using {{}}", e.what());
+        } catch (...) {
+            webui_log::error("Bondage_Configure: bad state_json; using {{}}");
+        }
+        WebUI_Invoke(std::string("bondageConfigure(") + dumped + ");");
     }
 
     void ActorAnimMeta_Result(RE::StaticFunctionTag*, RE::BSFixedString json)
@@ -1194,11 +1231,13 @@ namespace PapyrusBindings_WebUI
         a_vm->RegisterFunction("YesNo_Open", scriptName, YesNo_Open);
         a_vm->RegisterFunction("SceneCreator_Open", scriptName, SceneCreator_Open);
         a_vm->RegisterFunction("SceneCreator_Configure", scriptName, SceneCreator_Configure);
+        a_vm->RegisterFunction("Bondage_Configure", scriptName, Bondage_Configure);
         a_vm->RegisterFunction("Animation_Menu_Open", scriptName, Animation_Menu_Open);
         a_vm->RegisterFunction("Animation_Menu_Show", scriptName, Animation_Menu_Show);
         a_vm->RegisterFunction("Animation_Menu_Configure", scriptName, Animation_Menu_Configure);
         a_vm->RegisterFunction("SceneConnections_Show", scriptName, SceneConnections_Show);
         a_vm->RegisterFunction("WebUI_HideAllPanels", scriptName, WebUI_HideAllPanels);
+        a_vm->RegisterFunction("WebUI_CloseOverlay", scriptName, WebUI_CloseOverlay);
         a_vm->RegisterFunction("WebUI_SetHotkey", scriptName, WebUI_SetHotkey);
         a_vm->RegisterFunction("WebUI_AfterTargetOpen", scriptName, WebUI_AfterTargetOpen);
         a_vm->RegisterFunction("WebUI_MaybeRestoreAnimationPanel", scriptName, WebUI_MaybeRestoreAnimationPanel);

@@ -153,6 +153,35 @@ void DispatchMenuNoArg(const char* functionName)
     });
 }
 
+void DispatchHandlerBondageClosed()
+{
+    SKSE::GetTaskInterface()->AddTask([]() {
+        auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+        if (!vm) {
+            webui_log::error("DispatchHandlerBondageClosed: no VM");
+            return;
+        }
+        auto* quest = RE::TESDataHandler::GetSingleton()
+            ->LookupForm<RE::TESQuest>(0x800, "SkyrimNet_SexLab_Handler_UDNG.esp");
+        if (!quest) {
+            webui_log::info("DispatchHandlerBondageClosed: handler ESP not loaded");
+            return;
+        }
+        auto handle = vm->GetObjectHandlePolicy()->GetHandleForObject(
+            static_cast<RE::VMTypeID>(quest->GetFormType()), quest);
+        RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
+        vm->FindBoundObject(handle, "SkyrimNet_SexLab_Handler_UDNG", scriptObject);
+        if (!scriptObject) {
+            webui_log::warn("DispatchHandlerBondageClosed: Handler script not bound");
+            return;
+        }
+        auto* raw = new EmptyArgs();
+        RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
+        vm->DispatchMethodCall(scriptObject, RE::BSFixedString("TM_BondageOnWebUIClosed"), raw, callback);
+        webui_log::info("DispatchHandlerBondageClosed: dispatched");
+    });
+}
+
 void Call_RebuildAnimDb()
 {
     SKSE::GetTaskInterface()->AddTask([]() {
@@ -359,8 +388,16 @@ void WebUI_InvokeFrameworkToggle()
     WebUI_Invoke(std::string("setFrameworkToggle(") + (ostimnet ? "true" : "false") + ", '" + fw + "');");
 }
 
+/// True when the PrismaUI view exists and DomReady has fired (safe to Show/Focus).
+bool WebUI_IsReady()
+{
+    if (!PrismaUI || !g_domReady.load())
+        return false;
+    return PrismaUI->IsValid(g_view);
+}
+
 /// Shows and focuses the PrismaUI overlay after refreshing nearby actors for the menu.
-/// No-ops if PrismaUI is missing, no game is loaded, or the view path is invalid.
+/// No-ops if PrismaUI is missing, no game is loaded, DomReady has not fired, or the view is invalid.
 void WebUI_Visibility_Show()
 {
     if (!PrismaUI) return;
@@ -368,8 +405,9 @@ void WebUI_Visibility_Show()
         webui_log::info("WebUI blocked — no game loaded.");
         return;
     }
-    if (!PrismaUI->IsValid(g_view)) {
-        webui_log::critical("WebUI_Visibility_Show: view invalid (missing PrismaUI/views/SkyrimNet_SexLab/index.html?).");
+    if (!WebUI_IsReady()) {
+        webui_log::critical(
+            "WebUI_Visibility_Show: DomReady not reached (missing PrismaUI/views/SkyrimNet_SexLab/index.html?).");
         return;
     }
 
@@ -387,8 +425,11 @@ void WebUI_Visibility_Show()
 }
 
 /// Unfocuses and hides the PrismaUI overlay without clearing Target_Current.
+/// Restores uncommitted ActorBondage on the handler, then drops the JS map.
 void WebUI_Visibility_Hide()
 {
+    WebUI_Invoke("bondageReleaseAll();");
+    DispatchHandlerBondageClosed();
     if (!PrismaUI) return;
     PrismaUI->Unfocus(g_view);
     PrismaUI->Hide(g_view);
@@ -906,6 +947,11 @@ void InitWebUI()
 
         KeyHandler::RegisterSink();
         KeyHandler::GetSingleton()->Register(0x01 /* escape */, []() {
+            if (!g_domReady.load()) {
+                webui_log::info("Escape: DomReady missing — Unfocus/Hide");
+                WebUI_Visibility_Hide();
+                return;
+            }
             webui_log::info("Escape key pressed.");
             WebUI_Invoke("handleGlobalEscape();");
         });
@@ -937,6 +983,11 @@ void WebUI_SetMenuHotkey(uint32_t dxScanCode, bool enabled)
             webui_log::info("WebUI hotkey: hide overlay");
             WebUI_Visibility_Hide();
             return;
+        }
+        if (!WebUI_IsReady()) {
+            webui_log::critical(
+                "WebUI hotkey: overlay not ready (missing PrismaUI/views/SkyrimNet_SexLab/index.html?).");
+            WebUI_Visibility_Hide();
         }
         PapyrusBindings_WebUI::Call_ProcessHotkey(static_cast<std::int32_t>(dxScanCode));
     });

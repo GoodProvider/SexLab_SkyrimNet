@@ -12,7 +12,8 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 | `SKSE/Plugins/SkyrimNet_SexLab.dll` | Built plugin |
 | `PrismaUI/views/SkyrimNet_SexLab/index.html` | Overlay HTML under `Data/PrismaUI/views/` |
 | `SKSE/Plugins/SkyrimNet_SexLab/webui/` | `actions_index.json`, `TargetMenu/Actor/`, `TargetMenu/Scene/`, `MainPanels/` |
-| `optional/handler_udng/` | FOMOD-only UDNG TargetMenu JSON (co-installed with handler ESP) |
+| `SKSE/Plugins/SkyrimNet_SexLab/webui/TargetMenu/Actor/options/0600_sexlab_bondage.json` | Bondage TargetMenu option (live catalog; `make release` moves it into FOMOD `handler_udng/`) |
+| `SKSE/Plugins/SkyrimNet_SexLab/bondage/group-devices.json` | Handler device groups (live; same release split) |
 | `SKSE/Plugins/SkyrimNet/config/plugins/SkyrimNet_SexLab/manifest.yaml` | SkyrimNet plugin settings schema (control store) |
 | `Scripts/Source/SkyrimNet_SexLab_WebUI.psc` | Target/Sex/YesNo/SceneCreator/Animation natives + `SceneConnections_Show` |
 
@@ -38,7 +39,7 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 - **Filter-by downgrade:** each Scene Creator / Scene Menu open arms `gender → none` (`scArmFilterDowngrade`; default `gender`). A query returning zero anims steps to the next looser mode and re-queries, so the pulldown shows the mode actually used. Re-armed once actor meta resolves (genders arrive after the first query). Picking a mode manually pins it for that open (`positions` remains a pulldown option). Callers wanting a different start set `SC.filterByOnce` before `configureSceneCreator` (SceneStartPanel **Custom** uses `none` for nonsexual/affection methods, which leaves no fallbacks; other Custom uses `gender`).
 - **AnimationPanel**: in-thread name picker (no 10-cap). Filter input matches substring on name/registry; list scrolls inside `#main-panel-host`. Click a name → `TM_SetAnimationIndex`. Stage/position/stop editing lives on TargetMenu Scene panels.
 - **Animation open preference:** C++ remembers whether Animation was the selected main panel across hide. Hotkey restores Animation only when the focus actor is in SexLab **and** that preference is true.
-- **Hotkey toggle:** if the overlay is visible, the menu hotkey hides it immediately (any ControlPanel focus actor) and does **not** dispatch `ProcessHotkey`. Hidden → `Menu.ProcessHotkey` → `Target_Menu_Open` (rebuild if same actor, else full open). Close does not clear `Target_Current`. Escape still goes through `handleGlobalEscape`.
+- **Hotkey toggle:** if the overlay is visible, the menu hotkey hides it immediately (any ControlPanel focus actor) and does **not** dispatch `ProcessHotkey`. Hidden → `Menu.ProcessHotkey` → `Target_Menu_Open` (rebuild if same actor, else full open). Close does not clear `Target_Current`. Show/Focus only after DomReady; missing overlay HTML does not pause the game. Escape uses JS `handleGlobalEscape` when ready; C++ Unfocus/Hide if DomReady never fired.
 
 ## Lifecycle
 
@@ -75,7 +76,7 @@ C++ loads **both** trees at `Load()` and `BuildUICatalog` picks one from Control
 |------|--------|------|
 | `parameter` | `name`, `default`, `values` | Global param pulldown |
 | `action` | `name`, `label`, optional `parameters`, optional `disabled`, optional dispatch fields | Selects action + Parameters panel; confirm with Start/Custom; `disabled` = greyed non-clickable |
-| `papyrus` | `label` (no `name`), `plugin`, `questFormId`, `scriptName`, `executionFunctionName`, `parameterMapping`, optional `eligibilityRules`, optional `closeWebUI` / `confirmSave` / `explainPrompt` / `panel`, optional `panelDefaults` | TargetMenu-only Papyrus call via `onAction({action:"papyrus",...})` — no YAML / `actions_index`. Actor **`panel: scene_start`** is the shared sentence UI. Scene panels: **`stop`** (speaker pulldown + silent/stop/explain), **`stage`** (index jumps; description edits `TM_SetStageDescription`), **`position`** (whole-cast Scene Creator table → `TM_ChangeActors` / clothed / O / V / speaking chips), **`animation`** (opens AnimationPanel in the main host). `panelDefaults` seeds SceneStartPanel (Subject, `andThird` none/and, Object `with`/`to victim`/`none`, intent, direction, method, style, setting). Intent **custom** opens IntentPanel (text, Cancel, Ok). Hug/cuddle/kiss giver is SexLab pos1 when intent is `show affection` / `comfort` (or the long Papyrus labels) or method is `cuddling|kissing|hug`. |
+| `papyrus` | `label` (no `name`), `plugin`, `questFormId`, `scriptName`, `executionFunctionName`, `parameterMapping`, optional `eligibilityRules`, optional `closeWebUI` / `confirmSave` / `explainPrompt` / `panel`, optional `panelDefaults` | TargetMenu-only Papyrus call via `onAction({action:"papyrus",...})` — no YAML / `actions_index`. Actor **`panel: scene_start`** is the shared sentence UI. Actor **`panel: outfit`**: sentence `position_1` / style (`forcefully|normally|gently|silently`) / undresses|dresses / `position_0`; **Start** only (no Custom); `TM_Outfit`; style `silently` skips SkyrimNet narration. Actor **`panel: bondage`**: speaker / style / `changes devices on` / target; per-group `label: Pulldown`; pulldowns edit JS `ActorBondage.current` only (no live apply); **Cancel** / hide discard the session; **Done** applies `currentJson` (`TM_BondageFinish`) then narrates unless `silently` and `WebUI_CloseOverlay`; no Custom; FOMOD + `requiresPlugin: Devious Devices - Assets.esm`. Scene panels: **`stop`** (speaker pulldown + silent/stop/explain), **`stage`** (index jumps; description edits `TM_SetStageDescription`), **`position`** (whole-cast Scene Creator table → `TM_ChangeActors` / clothed / O / V / speaking chips), **`animation`** (opens AnimationPanel in the main host). `panelDefaults` seeds SceneStartPanel (Subject, `andThird` none/and, Object `with`/`to victim`/`none`, intent, direction, method, style, setting). Intent **custom** opens IntentPanel (text, Cancel, Ok). Hug/cuddle/kiss giver is SexLab pos1 when intent is `show affection` / `comfort` (or the long Papyrus labels) or method is `cuddling|kissing|hug`. |
 
 | `pulldown` | `label`, `options[]`, optional `parameters`, optional `eligibilityRules` | Group; children are `action` and/or nested `pulldown`. Optional `eligibilityRules` evaluated at catalog build against `currentActor`; fail → option omitted |
 | `actionSwitch` | `label`, `options[]` of `action` + `eligibilityRules` | C++ picks first eligible child (or disabled fallback label) |
@@ -86,7 +87,9 @@ Optional on any option node: `requiresPlugin` (ESP/ESL name) — omitted from th
 
 Actor sources: `playerActor` / `currentActor` (aliases `player` / `target` / `focus` still work).
 
-Outfit: TargetMenu closes on **Start** (session cleared); `outfit_dress` / `outfit_undress` still call `Target_Menu_Refresh` after storage updates (no-ops when menu is closed). **Custom** keeps TargetMenu open until Cancel.
+Outfit: Actor catalog `panel: outfit` (undress/dress via FormListCount eligibility) → `TM_Outfit(speaker, target, style)`. Sentence UI; **Start** closes WebUI (no Custom). Style `silently` skips DirectNarration and RegisterEvent. `Outfit_Dress` / `Outfit_Undress` still call `Target_Menu_Refresh` after storage updates (no-ops when menu is closed). LLM YAML `outfit_dress` / `outfit_undress` is unchanged.
+
+Bondage: Actor catalog `SKSE/Plugins/SkyrimNet_SexLab/webui/TargetMenu/Actor/options/0600_sexlab_bondage.json` (`panel: bondage`, `requiresPlugin: Devious Devices - Assets.esm`). Click opens BondagePanel (speaker / style / target), top-aligned with ControlPanel. Each group is `label: Pulldown` (`none` + devices, head-to-foot including Body and Legs). Per-actor **ActorBondage** seeds original+current from worn on first current-actor select; later Refresh must not clobber `current`. Pulldown change writes `current` only (no Papyrus). `bondagePatchPulldowns` seeds from `current`. **Cancel** closes the panel only (Map kept until overlay hide). **Done** → `TM_BondageFinish(speaker, target, style, currentJson)` applies `SetGroupToId` per group, narrates unless `silently`, `ReleaseAll`, `WebUI_CloseOverlay` (`closeWebUI: false` so C++ does not Hide first). Hotkey/Escape hide: `bondageReleaseAll()` + `TM_BondageOnWebUIClosed` ReleaseAll only (no device restore). LLM lock/unlock actions stay in SkyrimNet_UDNG. `zadLibs` is Handler-only so the main ESP loads without DD. Repo/MO2 sees the SKSE tree; `make release` moves this JSON and `bondage/group-devices.json` into FOMOD `handler_udng/` with the handler ESP (see KNOWLEDGEBASE **Optional SKSE files / FOMOD split**).
 
 Menu labels for the target panel come from `TargetMenu/Actor` or `TargetMenu/Scene`. Nested pulldowns open as separate panels in a row (`‹` header pops).
 
@@ -113,9 +116,9 @@ Starters in core: `0900_log_panel.json` (Log), `1000_settings.json` (Settings), 
 
 Drink your own champagne: official optional packages use the same filesystem JSON contract as third parties. Ship JSON under `Data/SKSE/Plugins/SkyrimNet_SexLab/webui/…` next to the handler ESP. Load order can overwrite files.
 
-**Reference: UDNG** — FOMOD `handler_udng` installs `0600_sexlab_bondage.json` under `webui/TargetMenu/Actor/options/` (TargetMenu `bondage` → `SkyrimNet_SexLab_Handler_UDNG.OpenMenu`) plus the handler ESP. Source tree: `optional/handler_udng/…`. Handler `Setup` still registers ModEvents / links; it no longer calls `RegisterTargetMenuOption`.
+**Reference: bondage / DD** — live files are `webui/TargetMenu/Actor/options/0600_sexlab_bondage.json` (TargetMenu `bondage` → BondagePanel `label: Pulldown` rows → `Handler_UDNG.TM_Bondage*`) and `bondage/group-devices.json` (head-to-foot groups including Body / Legs). Recommended when `Devious Devices - Assets.esm` is active. `make release` moves both into FOMOD `handler_udng/` with the handler ESP (KNOWLEDGEBASE **Optional SKSE files / FOMOD split**). Handler `Setup` registers ModEvents / loads `zadLibs`; it does not call `RegisterTargetMenuOption` and does not depend on `SkyrimNetUDNG.esp`.
 
-`RegisterTargetMenuOption` remains in the API for legacy callers but is not used by UDNG.
+`RegisterTargetMenuOption` remains in the API for legacy callers but is not used by the bondage handler.
 
 ## Build
 
@@ -128,9 +131,9 @@ CMake tasks in `.vscode/tasks.json` with `cwd` = `SKSE_Source`. Needs VS 2022, `
 
 ## PrismaUI
 
-Hard dependency ([Nexus](https://www.nexusmods.com/skyrimspecialedition/mods/148718)); not shipped here.
+Hard dependency ([Nexus](https://www.nexusmods.com/skyrimspecialedition/mods/148718)); the PrismaUI **plugin** is not shipped here.
 
-**View path:** `CreateView("SkyrimNet_SexLab/index.html")` resolves under **`Data/PrismaUI/views/`**, not `SKSE/Plugins/`. Missing file → open path looks fine, no visible UI.
+**View path:** `CreateView("SkyrimNet_SexLab/index.html")` resolves under **`Data/PrismaUI/views/`**, not `SKSE/Plugins/`. This mod’s overlay HTML **is** shipped: `make release` copies `PrismaUI/` into FOMOD `core`. Missing file → open path looks fine; do not `Focus` until DomReady or the game pauses with a blank overlay (Escape is JS-only unless C++ Hide runs).
 
 **Display scale:** Overlay matches SkyrimNet’s system — px design tokens (~15px base), `body.style.zoom` × Dashboard `ui_scale` × up-only 1080p baseline, scrollable left-column / panel shells. See [KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md).
 

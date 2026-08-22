@@ -8,7 +8,8 @@ namespace PapyrusBindings_WebUI {
     /// Papyrus native: open/toggle the WebUI target menu for an actor.
     /// hasStrippedItems: focus actor has skyrimnet_sexlab_storage_items (for actionSwitch).
     /// editTagsPlayer / editTagsNonPlayer: MCM Tag Edit (cached for TargetMenu → Scene Creator).
-    void Target_Menu_Open(RE::StaticFunctionTag*, RE::Actor* Target_Input, bool hasStrippedItems,
+    /// Returns false when the overlay cannot show (no DomReady / invalid view).
+    bool Target_Menu_Open(RE::StaticFunctionTag*, RE::Actor* Target_Input, bool hasStrippedItems,
         bool editTagsPlayer, bool editTagsNonPlayer);
 
     /// Re-resolve actionSwitch / refresh catalog while menu stays open.
@@ -42,6 +43,9 @@ namespace PapyrusBindings_WebUI {
     /// Soft configure Scene Menu without HideAllPanels / showPanel (connection refresh).
     void SceneCreator_Configure(RE::StaticFunctionTag*, RE::BSFixedString state_json);
 
+    /// Push BondagePanel wearing/catalog JSON to JS (bondageConfigure).
+    void Bondage_Configure(RE::StaticFunctionTag*, RE::BSFixedString state_json);
+
     /// Push SexLab gender + race_key enrich result to Scene Creator JS.
     void ActorAnimMeta_Result(RE::StaticFunctionTag*, RE::BSFixedString json);
 
@@ -58,6 +62,8 @@ namespace PapyrusBindings_WebUI {
     void SceneConnections_Show(RE::StaticFunctionTag*, RE::BSFixedString state_json);
 
     void WebUI_HideAllPanels(RE::StaticFunctionTag*);
+    /// Clear TargetMenu session, hide all panels, Unfocus overlay (Handler Done).
+    void WebUI_CloseOverlay(RE::StaticFunctionTag*);
 
     /// MCM: enable/disable C++ menu hotkey and set DX scancode (Escape unchanged).
     void WebUI_SetHotkey(RE::StaticFunctionTag*, std::int32_t dxScanCode, bool enabled);
