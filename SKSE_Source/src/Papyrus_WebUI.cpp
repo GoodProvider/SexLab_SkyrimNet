@@ -2,9 +2,15 @@
 #include "SKSE/SKSE.h"
 #include "WebUI_Log.h"
 #include "WebUI.h"
-#include "PublicAPI.h"
 #include "ActionCatalog.h"
 #include <nlohmann/json.hpp>
+
+extern "C" {
+extern uint64_t (*PublicFormIDToUUID)(uint32_t formId);
+extern std::string (*PublicGetActorNameByUUID)(uint64_t uuid);
+extern std::string (*PublicGetActorEngagement)(int maxCount, bool excludePlayer, bool playerEventsOnly,
+    double shortWindowSeconds, double mediumWindowSeconds);
+}
 
 namespace PapyrusBindings_WebUI
 {
