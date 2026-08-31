@@ -83,9 +83,9 @@ Match your feelings of desire, vulnerability, playfulness, intensity, connection
 - Your mouth is blocked, you can only communictate 1 to 3 vocalizations ahh, hahh, hoooh, huh, ahh!, or similair
                {% else if contains(speaker.speaking_modifiers,"_pleasure_") or contains(speaker.speaking_modifiers, "_pain_") %}
                       {% if contains(speaker.speaking_modifiers,"_pleasure_") %}
-    - Your dialog contain at least one to two vocalizations ( hahh!, huuhh, hooh, ahh ) every random 1,2,or 3 words
+    - Your dialog contain one to two vocalizations ( hahh!, huuhh, hooh, ahh )
                       {% else %} 
-    - Your dialog contain at least one to two vocalizations ( hahh!, ow!, iyaa!, huh!, hooohh, ouch! ) every random 1,2,or 3 words
+    - Your dialog contain one to two vocalizations ( hahh!, ow!, iyaa!, huh!, hooohh, ouch! )
                       {% endif %} 
 - You are distracted, you can only speak 8 words or less (vocalizations don't count).
                {% else if contains(speaker.speaking_modifiers, "_kissing_") %} 
@@ -108,8 +108,9 @@ After your first acknowledgment, either act on it, dismiss it, or let it color y
 
 ** Length Remember Reminder
 {% if is_narration_enabled() and speaker.active %}
-- The final response can include only 2 sentences. One narration (no more then 12 words) and  dialoge sentence (it can be only vocalizations).
+- The final response can include only 2 sentences. One narration (no more then 20 words) and  dialoge sentence (it can be only vocalizations).
 - Never more then 2 vocalizations in a row, never the same vocalization in a row.
+- Narration should move the action forward
 {% endif %} 
 - If dialog has nothing new to say, replace with non-verbals.
 - Your dialog must NEVER use dots ".", only commas "," , the Text-To-Speech fails to pronounce them correctly
