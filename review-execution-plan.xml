@@ -1,41 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SkyrimNet_SexLab — review-execution-plan.xml
-  Pass: 2026-07-26-03 deferred M5 / M7 / L2 applied.
-  Prior 2026-07-26-02 findings remain applied (see reviews/2026-07-26-02.review.md).
+  Pass: 2026-08-31-01 review since tag 0.31.4 (ecbb8f1)..HEAD.
+  Author: leave PublicAPI (d197679) and 0050 prompt as HEAD — skip H2/M1/L1.
 -->
 <execution_plan>
   <metadata>
     <project_name>SkyrimNet_SexLab</project_name>
     <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
-    <created>2026-07-26</created>
+    <created>2026-08-31</created>
     <phase>applied</phase>
     <status>applied</status>
-    <pass>2026-07-26-03</pass>
-    <review_doc>reviews/2026-07-26-03.review.md</review_doc>
+    <pass>2026-08-31-01</pass>
+    <base_tag>0.31.4</base_tag>
+    <review_doc>reviews/2026-08-31-01.review.md</review_doc>
   </metadata>
 
   <findings>
-    <finding id="M5" severity="medium" status="applied">
-      <file>Scripts/Source/SkyrimNet_SexLab_Scene_Creator.psc</file>
-      <line>201</line>
-      <problem>LLM kissing used nonsexual_male_position_1; missed _kissing_ modifiers.</problem>
-      <fix>Setup: if method kissing, setting_name = nonsexual_kissing before LoadSetting.</fix>
-      <confidence>95</confidence>
-    </finding>
-    <finding id="M7" severity="medium" status="applied">
+    <finding id="H1" severity="high" status="applied">
       <file>Scripts/Source/SkyrimNet_SexLab_Scene_Manager.psc</file>
-      <line>970</line>
-      <problem>Dom EnrichActorObjForJson omitted speaking_modifiers[].</problem>
-      <fix>Set empty JArray when key missing.</fix>
+      <line>243</line>
+      <problem>GetSceneByThread keep/rebind required IsActive(). Setup only sets STATUS_SETUP at the end, so create_if_missing=True (EnsureSceneForThread) could Release() mid-Setup.</problem>
+      <fix>Keep/rebind when bound == None or bound.tid == thread.tid without requiring IsActive(). Release only on tid mismatch.</fix>
+      <confidence>90</confidence>
+    </finding>
+    <finding id="H2" severity="high" status="skipped">
+      <file>SKSE_Source/src/Papyrus_WebUI.cpp</file>
+      <line>8</line>
+      <problem>PublicAPI.h replaced with extern pointers (d197679). FindFunctions not called.</problem>
+      <fix>Author: leave as HEAD.</fix>
       <confidence>92</confidence>
     </finding>
-    <finding id="L2" severity="low" status="applied">
-      <file>Scripts/Source/SkyrimNet_SexLab_Stages.psc</file>
-      <line>117</line>
-      <problem>Trace(func_as_msg, true) — notifications never fired.</problem>
-      <fix>Trace(func, msg, true) at GetStageDescription / GetAnim_Info / UpdateAnimInfo.</fix>
+    <finding id="M1" severity="medium" status="skipped">
+      <file>SKSE/Plugins/SkyrimNet/prompts/submodules/user_final_instructions/0050_sexlab_activity.prompt</file>
+      <line>111</line>
+      <problem>0050 vocalization/word-cap working tree vs HEAD.</problem>
+      <fix>Author: leave 0050 as HEAD.</fix>
+      <confidence>85</confidence>
+    </finding>
+    <finding id="L1" severity="low" status="skipped">
+      <file>SKSE/Plugins/SkyrimNet/prompts/submodules/user_final_instructions/0050_sexlab_activity.prompt</file>
+      <line>111</line>
+      <problem>0050 typos in prompt hunks.</problem>
+      <fix>Author: leave 0050 as HEAD.</fix>
       <confidence>98</confidence>
+    </finding>
+    <finding id="L2" severity="low" status="applied">
+      <file>Scripts/Source/SkyrimNet_SexLab_Scene.psc</file>
+      <line>228</line>
+      <problem>Duplicate initiator Trace in Setup before and after PickNonVictimInitiator.</problem>
+      <fix>Keep only the post-PickNonVictimInitiator Trace.</fix>
+      <confidence>95</confidence>
     </finding>
   </findings>
 

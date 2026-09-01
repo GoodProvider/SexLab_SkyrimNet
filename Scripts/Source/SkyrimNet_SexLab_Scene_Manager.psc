@@ -238,9 +238,10 @@ SkyrimNet_SexLab_Scene Function GetSceneByThread(sslThreadController thread, Boo
     int tid = thread.tid
     if tid < thread_scene.length && thread_scene[tid] != None 
         SkyrimNet_SexLab_Scene sl_scene = thread_scene[tid] as SkyrimNet_SexLab_Scene
-        ; thread_scene[tid] is authoritative — return or rebind; never Release solely because
-        ; GetThread() is temporarily None (reentrant bind race during GetSceneInactive Setup).
-        if sl_scene != None && sl_scene.IsActive()
+        ; thread_scene[tid] is authoritative during Setup (status still INACTIVE until
+        ; Setup ends). Keep/rebind on tid match or bound None; never Release solely for
+        ; INACTIVE or transient GetThread() == None. Release only on tid mismatch.
+        if sl_scene != None
             sslThreadController bound = sl_scene.GetThread()
             if bound == None || bound.tid == thread.tid
                 if bound != thread
@@ -249,11 +250,9 @@ SkyrimNet_SexLab_Scene Function GetSceneByThread(sslThreadController thread, Boo
                 return sl_scene
             endif
             Trace("GetSceneByThread", "stale thread_scene["+tid+"] bound to tid:"+bound.tid+", releasing sid:"+sl_scene.sid)
-        endif
-        if !create_if_missing
-            return None
-        endif
-        if sl_scene != None
+            if !create_if_missing
+                return None
+            endif
             thread_scene[tid] = None
             sl_scene.Release()
         endif

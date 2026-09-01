@@ -225,7 +225,6 @@ Bool Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
         if receiver == None && num_actors >= 2
             receiver = positions[0]
         endif
-        Trace("Setup", "initiator:"+GetDisplayName(initiator)+" sender:"+GetDisplayName(sender)+" receiver:"+GetDisplayName(receiver))
         i = 0 
         while i < num_actors 
             if i < creator.num_actors
