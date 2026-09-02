@@ -16,6 +16,7 @@ Hotkeys: [hotkeys.md](hotkeys.md). Authoring: [../authors/actions.md](../authors
 
 - Tune [arousal prompts](https://github.com/GoodProvider/SkyrimNet_SexLab/blob/main/SKSE/Plugins/SkyrimNet/prompts/submodules/character_bio/0005_sexlab_variables.prompt#L12).
 - Check social-world settings.
+- Review your other mods, they can also start sex animations
 
 ### Memory errors when actions fire
 
