@@ -5,7 +5,8 @@
   Copy this file into another existing repository and run an agent against it.
   The agent recreates a documentation *system* (audience docs, contracts,
   llms.txt, release-guide + checkpoint). Keep or omit this file in the target
-  after the pass; day-to-day releases use release-guide.xml only.
+  after the pass; day-to-day releases use release-guide.md and the
+  project release skill (.cursor/skills/release/SKILL.md).
 
   Identity: no repository, org, user, game, or engine names in this file.
   Use placeholders only in examples (Acme, v1.2.0, docs/<audience>/, …).
@@ -32,7 +33,7 @@
     5. docs/examples/ — synthetic stubs only when no short in-tree sample exists
     6. Thinned AGENTS.md (and CLAUDE.md / .cursorrules if present): pointers +
        agent-only policy — no duplicated contracts
-    7. release-guide.xml — per-release freshness matrix + workflow
+    7. release-guide.md (human) + .cursor/skills/release/SKILL.md (agent) — per-release freshness matrix + workflow
     8. release-checkpoint.xml — durable base_tag / next_version / doc inventory
     9. CHANGELOG.md (+ CHANGELOG-user.md if the maintainer wants a plain summary)
     10. .gitignore updates aligned with the llms.txt denylist
@@ -66,7 +67,8 @@
     <item>Pure Markdown; one H1 per file; sequential H2/H3; tables over narrative</item>
     <item>Examples: snippet + link to full in-tree file; else short stub under docs/examples/</item>
     <item>Do not duplicate entire config trees under docs/examples/</item>
-    <item>Root stays for: README, llms.txt, CHANGELOG*, AGENTS, optional quirks log, *-guide.xml</item>
+    <item>Root stays for: README, llms.txt, CHANGELOG*, AGENTS, optional quirks log, release-guide.md, *-guide.xml</item>
+    <item>Agent release procedure lives in .cursor/skills/release/SKILL.md — not in XML</item>
   </design_locked>
 
   <!-- ========== GENERIC EXAMPLES (copy shapes; replace placeholders) ========== -->
@@ -78,8 +80,9 @@ llms.txt
 AGENTS.md
 CHANGELOG.md
 CHANGELOG-user.md            # if maintainer wants plain-language notes
-release-guide.xml
+release-guide.md
 release-checkpoint.xml
+.cursor/skills/release/SKILL.md
 # documentation-guide.xml    # optional in target after copy
 
 docs/
@@ -159,7 +162,7 @@ enabled: true
 | Content / config author | docs/<audience>/… + docs/reference/… |
 | Developer / build | docs/<audience>/… |
 | Agent policy | AGENTS.md |
-| Release docs | release-guide.xml, release-checkpoint.xml |
+| Release docs | release-guide.md, .cursor/skills/release/SKILL.md, release-checkpoint.xml |
 | Changelog | CHANGELOG.md |
 
 ## Do not ingest (unless debugging that area)
@@ -196,34 +199,40 @@ enabled: true
 
   <example name="release_guide_skeleton">
     <![CDATA[
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- release-guide.xml — per-release doc alignment for this repository. -->
-<system_prompt>
-  <role>Domain expert preparing a public release. No invented features.</role>
-  <goal>
-    Align docs + version metadata for next_version. Packaging is maintainer-owned.
-  </goal>
-  <cold_start>
-    Read release-guide.xml, release-checkpoint.xml, llms.txt.
-    Reconcile base_tag / next_version with version files; ask if they disagree.
-    Diff base_tag...HEAD plus shipping working-tree changes.
-  </cold_start>
-  <freshness_matrix>
-    <!-- paste customized rows from documentation-guide freshness examples -->
-    <row when="public config / content files">docs/…; CHANGELOG.md; CHANGELOG-user.md if user-visible</row>
-    <row when="protocol / schema / gate strings">exactly one docs/reference/…; how-to; changelogs</row>
-    <row when="runtime code behavior">docs/<dev>/…; changelogs</row>
-  </freshness_matrix>
-  <workflow>
-    <step id="1" name="establish_delta">Collect shipping delta since base_tag.</step>
-    <step id="2" name="clarify_before_writing">Ask maintainer before drafting.</step>
-    <step id="3" name="rewrite_changelog">CHANGELOG.md then CHANGELOG-user.md if used.</step>
-    <!-- continue: align_docs → version_prep → checkpoint → hand_off -->
-  </workflow>
-  <quality_bar>
-    <rule>Verifiable bullets only. No commit/push unless asked.</rule>
-  </quality_bar>
-</system_prompt>
+# Release guide
+
+Align docs and version metadata with next_version. Packaging is maintainer-owned.
+
+Agents: .cursor/skills/release/SKILL.md. Session state: release-checkpoint.xml.
+
+## Who does what
+
+| Actor | Owns | Does not do unless asked |
+|-------|------|--------------------------|
+| Agent | Changelogs, freshness-matrix docs, version file if missing, checkpoint | packaging, tag, GitHub Release, feature work |
+| Maintainer | Compile, package, tag, publish | Inventing unverified changelog bullets |
+
+## Version sources
+
+Reconcile discovered version files with checkpoint base_tag / next_version and git tags. Ask if they disagree.
+
+## Freshness matrix
+
+<!-- paste customized rows from documentation-guide freshness examples as a markdown table -->
+
+| When the delta includes | Update |
+|-------------------------|--------|
+| Public config / content files | docs/…; CHANGELOG.md; CHANGELOG-user.md if user-visible |
+| Protocol / schema / gate strings | exactly one docs/reference/…; how-to; changelogs |
+| Runtime code behavior | docs/<dev>/…; changelogs |
+
+## Changelog rules
+
+Verifiable bullets only. One-line pointer to docs/reference/… — never paste a full contract.
+
+## Packaging (maintainer)
+
+Document the discovered pack command. Do not run it unless asked.
     ]]>
   </example>
 
@@ -238,7 +247,8 @@ enabled: true
     <next_version>v1.2.0</next_version>
     <version_status>reconcile with Makefile / package.json / tags — ask if disagree</version_status>
     <related_artifacts>
-      <artifact role="release rules">release-guide.xml</artifact>
+      <artifact role="release rules (human)">release-guide.md</artifact>
+      <artifact role="release skill (agent)">.cursor/skills/release/SKILL.md</artifact>
       <artifact role="agent router">llms.txt</artifact>
       <artifact role="changelog">CHANGELOG.md</artifact>
     </related_artifacts>
@@ -249,7 +259,8 @@ enabled: true
     <file>CHANGELOG.md</file>
     <file>docs/reference/…</file>
     <file>docs/&lt;audience&gt;/…</file>
-    <file>release-guide.xml</file>
+    <file>release-guide.md</file>
+    <file>.cursor/skills/release/SKILL.md</file>
     <file>release-checkpoint.xml</file>
   </doc_files>
   <status>
@@ -291,40 +302,42 @@ enabled: true
     <step id="5" name="readme_and_llms">
       README.md: what / why, quick start pointer, doc index — no long dumps.
       llms.txt: follow example llms_txt_skeleton; point release work at
-      release-guide.xml + release-checkpoint.xml.
+      release-guide.md, .cursor/skills/release/SKILL.md, and release-checkpoint.xml.
     </step>
     <step id="6" name="create_release_guide">
-      Author release-guide.xml from example release_guide_skeleton + required
-      sections: role, goal, cold_start, scope, doc_inventory (exact paths created),
-      freshness_matrix (customize example freshness_matrix_rows), version_sources
-      (discovered files), writing_bar, full workflow, packaging_reference
-      (document only; do not run unless asked), quality_bar, output.
+      Author release-guide.md from example release_guide_skeleton: who-does-what,
+      version_sources (discovered files), freshness_matrix (customize example
+      freshness_matrix_rows as a markdown table), doc inventory (exact paths
+      created), changelog rules, packaging_reference (document only; do not run
+      unless asked).
+      Author .cursor/skills/release/SKILL.md: cold start reads release-guide.md +
+      checkpoint + llms.txt; hard stops; numbered workflow ending in checkpoint
+      update + hand_off; changelog templates; done-when. Skill must not depend
+      on release-guide.xml.
       Author release-checkpoint.xml from example release_checkpoint_skeleton;
       seed base_tag/next_version from git tags + version files; ask if they disagree.
     </step>
     <step id="7" name="gitignore_and_links">
       Extend .gitignore for denylist noise without ignoring docs/.
-      Sweep old paths. AGENTS map: release-guide.xml for releases; this portable
-      file is only relevant if the target keeps a copy for future restructures.
+      Sweep old paths. AGENTS map: release-guide.md + release skill for releases;
+      this portable file is only relevant if the target keeps a copy for future restructures.
     </step>
     <step id="8" name="hand_off">
       Report tree created, files deleted/moved, open questions. Further release
-      alignment uses release-guide.xml. Commit only if the maintainer asks.
+      alignment uses release-guide.md and the release skill. Commit only if the maintainer asks.
     </step>
   </workflow>
 
   <release_guide_required_sections>
-    <section name="role">Domain expert; no cheerleading; no invented features.</section>
-    <section name="goal">Align docs + version metadata for next_version; packaging maintainer-owned.</section>
-    <section name="cold_start">Read release-guide + checkpoint + llms.txt; reconcile versions; diff base_tag.</section>
-    <section name="doc_inventory">Enumerate every release-facing path actually created.</section>
+    <section name="who_does_what">Agent aligns docs + version metadata; maintainer owns packaging/tag.</section>
+    <section name="version_sources">Discovered version files; ask if they disagree with checkpoint/tags.</section>
+    <section name="doc_inventory">Enumerate every release-facing path actually created, including the skill.</section>
     <section name="freshness_matrix">
       Rows by change type. Protocol changes edit exactly one docs/reference file;
       changelogs get a one-line pointer.
     </section>
-    <section name="writing_bar">Short technical; ground truth; examples policy; ask before drafting.</section>
-    <section name="workflow">Numbered steps ending in checkpoint update + hand_off.</section>
-    <section name="quality_bar">Verifiable bullets; no commit/push unless asked.</section>
+    <section name="changelog_rules">Short technical; ground truth; examples policy; ask before drafting.</section>
+    <section name="packaging">Document pack command; do not run unless asked.</section>
   </release_guide_required_sections>
 
   <writing_bar>
@@ -339,7 +352,7 @@ enabled: true
 
   <scope>
     <in_scope>
-      <item>Creating/rewriting documentation and agent guide XML as listed in goal</item>
+      <item>Creating/rewriting documentation, release-guide.md, and the release skill as listed in goal</item>
       <item>Moving/deleting obsolete doc paths after content is rewritten</item>
       <item>.gitignore denylist alignment</item>
       <item>Link sweeps for old paths</item>
@@ -356,7 +369,7 @@ enabled: true
     <rule>Every factual claim must be verifiable in the target tree or git history.</rule>
     <rule>No empty audience folders; no fake parallel sample trees.</rule>
     <rule>AGENTS must not restate docs/reference contracts after extraction.</rule>
-    <rule>release-guide.xml must list actual paths created for that repo.</rule>
+    <rule>release-guide.md must list actual paths created for that repo.</rule>
     <rule>llms.txt denylist and .gitignore should agree on noise paths.</rule>
     <rule>No repository, org, user, game, or engine names copied from this template’s comments into target docs as if they were facts.</rule>
   </quality_bar>
@@ -365,15 +378,15 @@ enabled: true
     <artifact>docs/** audience + reference + examples as needed</artifact>
     <artifact>README.md (short) and llms.txt</artifact>
     <artifact>Thinned AGENTS.md (+ CLAUDE/.cursorrules if used)</artifact>
-    <artifact>release-guide.xml and release-checkpoint.xml</artifact>
+    <artifact>release-guide.md, .cursor/skills/release/SKILL.md, and release-checkpoint.xml</artifact>
     <artifact>CHANGELOG.md / CHANGELOG-user.md if missing or structurally obsolete</artifact>
     <artifact>.gitignore updates + link sweep</artifact>
-    <artifact>Hand-off: tree summary, open questions; next use release-guide.xml for releases</artifact>
+    <artifact>Hand-off: tree summary, open questions; next use release-guide.md + release skill for releases</artifact>
   </output>
 
   <relationship_to_other_guides>
     <item>documentation-guide.xml — portable template: major doc-system create/restructure on an existing repo</item>
-    <item>release-guide.xml — align docs + changelogs for a specific next_version (generated for the target)</item>
+    <item>release-guide.md + .cursor/skills/release/SKILL.md — align docs + changelogs for a specific next_version (generated for the target)</item>
     <item>Other *-guide.xml files (e.g. review) — do not conflate</item>
   </relationship_to_other_guides>
 </system_prompt>

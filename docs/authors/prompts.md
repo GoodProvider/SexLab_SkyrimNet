@@ -43,6 +43,8 @@ Keep literals character-for-character or matching breaks.
 
 `contains(speaker.speaking_modifiers, "_pain_")` is case-sensitive.
 
+v0.31.5+ length rules in `0050_sexlab_activity.prompt` when `_pain_` / `_pleasure_` (not `_gagged_`): one to two vocalizations (not every N words); 9-word dialogue cap (vocalizations do not count); if narration is enabled and the speaker is active, one narration sentence ≤ 20 words that should move the action forward. Edit that file; do not copy the full prompt here.
+
 ## Orgasm gate (`0550`)
 
 See [../reference/orgasm-narration.md](../reference/orgasm-narration.md). Gate:

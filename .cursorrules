@@ -29,7 +29,7 @@ SkyrimNet ↔ SexLab bridge.
 | Orgasm narration | [docs/reference/orgasm-narration.md](docs/reference/orgasm-narration.md) |
 | Scene settings | [docs/reference/scene-settings.md](docs/reference/scene-settings.md) |
 | Quirks | [KNOWLEDGEBASE.md](KNOWLEDGEBASE.md) |
-| Release | [release-guide.xml](release-guide.xml) |
+| Release | [release-guide.md](release-guide.md), [.cursor/skills/release/SKILL.md](.cursor/skills/release/SKILL.md) |
 | Portable doc template | [documentation-guide.xml](documentation-guide.xml) |
 
 Do not duplicate contract text here — edit the canonical `docs/reference/` file.

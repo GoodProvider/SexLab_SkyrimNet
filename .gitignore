@@ -14,7 +14,7 @@ Headers
 handler_udng
 handler_dom
 handler_ostimnet
-z-ignored
+z-*
 
 # SKSE plugin CMake / MSBuild artifacts
 SKSE_Source/build/

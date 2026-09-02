@@ -15,7 +15,7 @@
 | Agent policy | AGENTS.md (safety, confidence, commits) |
 | Quirks | KNOWLEDGEBASE.md |
 | Portable doc-system template (copy to other repos) | documentation-guide.xml |
-| Release documentation | release-guide.xml, release-checkpoint.xml |
+| Release documentation | release-guide.md, .cursor/skills/release/SKILL.md, release-checkpoint.xml |
 | Changelog | CHANGELOG.md, CHANGELOG-user.md |
 | Short examples | docs/examples/ (stubs); prefer snippets pointing at SKSE/Plugins/... shipped files |
 
@@ -31,7 +31,7 @@
 - reviews/ (historical review notes; use review-checkpoint.xml for current constraints)
 - Source/*.pex and other loose .pex copies under Source/
 - crash-*.log, Papyrus.0.log at repo root
-- versions/, dist/, z-ignored/, handler_* unpack dirs if present
+- versions/, dist/, z-* files and directories (user scratch), handler_* unpack dirs if present
 - SKSE_Source/build/, SKSE_Source/lib/CommonLibSSE-NG/ (vendored; huge)
 
 ## Compile reminders

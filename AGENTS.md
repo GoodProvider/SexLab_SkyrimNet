@@ -28,7 +28,7 @@ Repo root: `c:\Skyrim\dev\mods\SkyrimNet_SexLab`.
 | Animations | [docs/authors/animations.md](docs/authors/animations.md) |
 | Papyrus / ESP | [docs/developers/papyrus.md](docs/developers/papyrus.md) |
 | WebUI / SKSE | [docs/developers/webui.md](docs/developers/webui.md) |
-| Release docs | [release-guide.xml](release-guide.xml) + [release-checkpoint.xml](release-checkpoint.xml) |
+| Release docs | [release-guide.md](release-guide.md) + [.cursor/skills/release/SKILL.md](.cursor/skills/release/SKILL.md) + [release-checkpoint.xml](release-checkpoint.xml) |
 | Portable doc template (other repos) | [documentation-guide.xml](documentation-guide.xml) |
 
 ### Canonical contracts (do not restate elsewhere)
@@ -56,6 +56,7 @@ First ~72 characters summarize the commit. Prefer multi-line body with concrete 
 
 - **Nexus first:** search the mod’s Nexus page before investigating blind.
 - **Knowledgebase:** consult [KNOWLEDGEBASE.md](KNOWLEDGEBASE.md) before changes; append new quirks after sessions.
+- **User scratch:** `z-*` files and directories (repo root) are local scratch. Never ingest, treat as ship set, changelog, or commit.
 - **INI load order:** Skyrim.ini then SkyrimPrefs.ini (last wins).
 - **SE ≠ VR** — never assume parity.
 
