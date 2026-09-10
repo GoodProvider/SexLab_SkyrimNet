@@ -620,6 +620,31 @@ String Function ObjectToLowerCaseKeyJson(int obj) global
     return json
 EndFunction
 
+; Render a helpers/sexlab/*.prompt with the Stages ParseString namespace ("sl" + JSON).
+; Releases obj (JMap.object() handle). Empty or error-looking render -> fallback so
+; SkyrimNet error text is never DirectNarrated.
+String Function RenderSlPrompt(String template_name, int obj, String fallback="") global
+    String json = "{}"
+    if obj > 0
+        json = ObjectToLowerCaseKeyJson(obj)
+        JValue.release(obj)
+    endif
+    String result = SkyrimNetApi.RenderTemplate(template_name, "sl", json)
+    if result == ""
+        return fallback
+    endif
+    String head = StringUtil.Substring(result, 0, 5)
+    if head == "Error" || head == "error" || head == "ERROR"
+        Trace("RenderSlPrompt", "--- render failed template:"+template_name+" result:"+result)
+        return fallback
+    endif
+    if StringUtil.Find(result, "inja.exception") >= 0
+        Trace("RenderSlPrompt", "--- inja error template:"+template_name+" result:"+result)
+        return fallback
+    endif
+    return result
+EndFunction
+
 ; ------------------------------------------------------------
 ; Ensure Functions 
 ; ------------------------------------------------------------

@@ -143,3 +143,7 @@ Upstream schema: [WORKFLOW_ACTIONS.md](https://github.com/MinLL/SkyrimNet-GamePl
 **Cause**: `GetSceneInactive` published `thread_scene[tid]` before `SetThread(thread)`. A reentrant `GetSceneByThread` (from `SaveThreadsJson` / decorators during first-frame Setup) saw `GetThread() == None`, failed reference equality, and `Release()`'d the scene mid-Setup. `SetPosition` could still finish; later `GetDescription` ran with `thread == None`.
 
 **Fixes**: `SetThread` before `thread_scene[tid]` in `GetSceneInactive`; `GetSceneByThread` treats `thread_scene[tid]` as authoritative (rebind when `bound == None` or `bound.tid` matches — do **not** require `IsActive()`, because Setup only sets `STATUS_SETUP` at the end); `EnsureSceneForThread` on `HookAnimationStart` / `HookStageStart`; thread guards in `Scene.AnimationStart` / `GetDescription` / `GetThreadObj`. Release only on tid mismatch.
+
+## Scene narration prompts (2026-09-09)
+
+Player-facing Scene DirectNarration strings render `SKSE/Plugins/SkyrimNet/prompts/helpers/sexlab/*.prompt` via `RenderSlPrompt` (`SkyrimNetApi.RenderTemplate` + `sl` JSON, same namespace as Stages `ParseString`). Empty or error-looking renders fall back to the previous Papyrus sentence. `orgasming.prompt` must still emit `" is orgasming."` (0550 gate); `GetIsOrgasming` still bumps totals before wording.

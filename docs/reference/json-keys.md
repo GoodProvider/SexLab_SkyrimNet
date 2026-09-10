@@ -31,4 +31,4 @@ String Function ObjectToLowerCaseKeyJson(int obj) global
 EndFunction
 ```
 
-Call sites include scene/thread export in `SkyrimNet_SexLab_Scene.psc` / `SkyrimNet_SexLab_Scene_Manager.psc` and stages export in `SkyrimNet_SexLab_Stages.psc`.
+Call sites include scene/thread export in `SkyrimNet_SexLab_Scene.psc` / `SkyrimNet_SexLab_Scene_Manager.psc`, stages export in `SkyrimNet_SexLab_Stages.psc`, and `RenderSlPrompt` in `SkyrimNet_SexLab_Utilities.psc`.
