@@ -7,6 +7,26 @@ Function Trace(String func, String msg, Bool notification=False) global
     endif 
 EndFunction
 
+; Vanilla SexLabUtil SKSE versions are ~16000–17000 (1.62–1.66).
+; P+ registers the same plugin name with a packed 2.x.x.x version in the high bits.
+bool Function IsSexLabPPlus() global
+    int v = SKSE.GetPluginVersion("SexLabUtil")
+    if v <= 0
+        v = SexLabUtil.GetVersion()
+    endif
+    return v > 20000
+EndFunction
+
+; P+ FindSimilarSceneStage hops every animation in SetAnimations; pass one only.
+sslBaseAnimation[] Function PickOneAnimation(sslBaseAnimation[] animations) global
+    if !animations || animations.length <= 1
+        return animations
+    endif
+    sslBaseAnimation[] one = new sslBaseAnimation[1]
+    one[0] = animations[Utility.RandomInt(0, animations.length - 1)]
+    return one
+EndFunction
+
 String Function GetDisplayName(Actor akActor) global
     if akActor == None 
         return "none"

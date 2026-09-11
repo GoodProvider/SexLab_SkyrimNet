@@ -1139,16 +1139,19 @@ sslBaseAnimation[] Function SelectAnimations()
     endif
 
     ; YES without tag editor, YES_RANDOM, or dialog returned empty:
-    ; look up by tags when we do not already have a non-empty list from the dialog.
+    ; look up by tags only when the caller actually supplied tags.
+    ; Empty tags + GetAnimationsByTags(require=false) returns every N-actor anim;
+    ; on P+ that list becomes GetPlayingScenes() and enjoyment-wait hops forever.
     if animations == manager.empty || !animations || animations.length == 0
+        if num_tags == 0 && num_tags_suppress == 0
+            Trace("SelectAnimations", "no tags; skip GetAnimationsByTags so SexLab picks")
+            DbgReturn("SelectAnimations", "manager.empty")
+            return manager.empty
+        endif
         String tags_string = JoinStrings(tags, num_tags)
         String tags_suppress_string = JoinStrings(tags_suppress, num_tags_suppress)
-        bool require = false 
-        if num_tags > 0 || num_tags_suppress > 0
-            require = true 
-        endif 
-        DbgMsg("SelectAnimations", "sexlab.GetAnimationsByTags actors="+num_actors+" tags="+tags_string+" suppress="+tags_suppress_string+" require="+require)
-        animations = sexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, require)
+        DbgMsg("SelectAnimations", "sexlab.GetAnimationsByTags actors="+num_actors+" tags="+tags_string+" suppress="+tags_suppress_string+" require=true")
+        animations = sexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, true)
         DbgMsg("SelectAnimations", "sexlab.GetAnimationsByTags returned count="+animations.length)
     endif
 
@@ -1156,6 +1159,11 @@ sslBaseAnimation[] Function SelectAnimations()
     if animations == manager.empty || !animations || animations.length == 0
         DbgReturn("SelectAnimations", "manager.empty")
         return manager.empty
+    endif
+    if IsSexLabPPlus() && animations.length > 1
+        int n = animations.length
+        animations = PickOneAnimation(animations)
+        Trace("SelectAnimations", "P+ playing set capped to 1 of "+n)
     endif
     DbgReturn("SelectAnimations", "animations")
     return animations  
