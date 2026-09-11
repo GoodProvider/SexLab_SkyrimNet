@@ -1,9 +1,11 @@
 #include "ActionCatalog.h"
 #include "WebUI_Log.h"
+#include "RE/Skyrim.h"
 
 #include <Windows.h>
 #include <filesystem>
 #include <fstream>
+#include <string_view>
 
 namespace ActionCatalog
 {
@@ -41,6 +43,18 @@ namespace ActionCatalog
             if (!in)
                 return {};
             return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+        }
+
+        /// True when plugin is in the load order (compile index 0xFF means missing).
+        bool PluginLoaded(std::string_view name)
+        {
+            if (name.empty())
+                return true;
+            auto* dh = RE::TESDataHandler::GetSingleton();
+            if (!dh)
+                return false;
+            const auto* plugin = dh->LookupModByName(name);
+            return plugin && plugin->GetCompileIndex() != 0xFF;
         }
     }
 
@@ -174,7 +188,16 @@ namespace ActionCatalog
 
         nlohmann::json catalog;
         catalog["defaults"] = g_targetOptions.value("defaults", nlohmann::json::object());
-        catalog["options"] = g_targetOptions.value("options", nlohmann::json::array());
+        catalog["options"] = nlohmann::json::array();
+        for (auto& opt : g_targetOptions.value("options", nlohmann::json::array())) {
+            const auto req = opt.value("requiresPlugin", std::string{});
+            if (!req.empty() && !PluginLoaded(req)) {
+                webui_log::info("ActionCatalog: omitting option '{}' (requiresPlugin {})",
+                    opt.value("name", opt.value("label", std::string{})), req);
+                continue;
+            }
+            catalog["options"].push_back(opt);
+        }
 
         nlohmann::json actionsObj = nlohmann::json::object();
         nlohmann::json byCat = nlohmann::json::object();

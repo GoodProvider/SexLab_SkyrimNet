@@ -1121,11 +1121,12 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
                     if orgasm_expected.length > j && orgasm_expected[j] == 1
                         afterglow += name+" failed to orgasm. "
                     endif
-                elseif total_orgasms < 2
-                    afterglow += name+" orgasmed. "
-                else 
-                    afterglow += name+" orgasmed "+total_orgasms+" times. "
-                endif 
+                endif
+                ;elseif total_orgasms < 2
+                    ;afterglow += name+" orgasmed. "
+                ;else 
+                    ;afterglow += name+" orgasmed "+total_orgasms+" times. "
+                ;endif 
                 j -= 1 
             endwhile
         endif 

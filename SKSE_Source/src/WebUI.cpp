@@ -229,6 +229,12 @@ void InitWebUI()
             }
 
             const std::string action = payload.value("action", "");
+            if (action == "handoff") {
+                webui_log::info("onAction handoff name={}", payload.value("name", ""));
+                Reset_To_Default();
+                PapyrusBindings_WebUI::Call_EventSend_LeashedOpen();
+                return;
+            }
             if (action != "start") {
                 webui_log::info("onAction: ignoring action={}", action);
                 return;

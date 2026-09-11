@@ -1,6 +1,6 @@
 name: change_outfit
 label: Change outfit
-description: "{{render_template(\"helpers/sexlab_none_change_outfit\")}}"
+description: "{{render_template(\"helpers/sexlab/none_change_outfit\")}}"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
 executionFunctionName: Change_Outfit

@@ -2,14 +2,15 @@
 #include "SKSE/SKSE.h"
 #include "WebUI_Log.h"
 #include "WebUI.h"
+#include "Papyrus_WebUI.h"
 #include "ActionCatalog.h"
 #include <nlohmann/json.hpp>
 
 extern "C" {
-extern uint64_t (*PublicFormIDToUUID)(uint32_t formId);
-extern std::string (*PublicGetActorNameByUUID)(uint64_t uuid);
-extern std::string (*PublicGetActorEngagement)(int maxCount, bool excludePlayer, bool playerEventsOnly,
-    double shortWindowSeconds, double mediumWindowSeconds);
+uint64_t (*PublicFormIDToUUID)(uint32_t formId) = nullptr;
+std::string (*PublicGetActorNameByUUID)(uint64_t uuid) = nullptr;
+std::string (*PublicGetActorEngagement)(int maxCount, bool excludePlayer, bool playerEventsOnly,
+    double shortWindowSeconds, double mediumWindowSeconds) = nullptr;
 }
 
 namespace PapyrusBindings_WebUI
@@ -163,7 +164,62 @@ namespace PapyrusBindings_WebUI
         });
     }
 
-    /// Binds Target_Menu_Open, Sex_Menu_Open, and TraceLog on SkyrimNet_SexLab_WebUI.
+    /// Looks up the bound SkyrimNet_SexLab_Menu script on the main quest.
+    static RE::BSTSmartPointer<RE::BSScript::Object> FindMenuScript(RE::BSScript::Internal::VirtualMachine* vm)
+    {
+        RE::TESQuest* quest = RE::TESForm::LookupByEditorID<RE::TESQuest>("SkyrimNet_SexLab");
+        if (!quest) {
+            quest = RE::TESDataHandler::GetSingleton()
+                ->LookupForm<RE::TESQuest>(0x800, "SkyrimNet_SexLab.esp");
+        }
+        if (!quest) {
+            webui_log::error("FindMenuScript: quest SkyrimNet_SexLab not found");
+            return {};
+        }
+
+        auto handle = vm->GetObjectHandlePolicy()->GetHandleForObject(
+            static_cast<RE::VMTypeID>(quest->GetFormType()), quest);
+        RE::BSTSmartPointer<RE::BSScript::Object> scriptObject;
+        vm->FindBoundObject(handle, "SkyrimNet_SexLab_Menu", scriptObject);
+        if (!scriptObject) {
+            webui_log::error("FindMenuScript: bound script SkyrimNet_SexLab_Menu not found");
+            return {};
+        }
+        return scriptObject;
+    }
+
+    /// Main-thread Papyrus call into SkyrimNet_SexLab_Menu.EventSend_LeashedOpen.
+    /// Overlay is already hidden by C++ handoff; Papyrus Hide is a no-op if already hidden.
+    void Call_EventSend_LeashedOpen()
+    {
+        webui_log::info("Call_EventSend_LeashedOpen: dispatching Papyrus EventSend_LeashedOpen");
+
+        SKSE::GetTaskInterface()->AddTask([]() {
+            auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+            if (!vm) {
+                webui_log::error("Call_EventSend_LeashedOpen: no VM");
+                return;
+            }
+
+            auto scriptObject = FindMenuScript(vm);
+            if (!scriptObject) {
+                return;
+            }
+
+            auto* args = RE::MakeFunctionArguments();
+            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
+            vm->DispatchMethodCall(scriptObject, RE::BSFixedString("EventSend_LeashedOpen"), args, callback);
+            webui_log::info("Call_EventSend_LeashedOpen: dispatched");
+        });
+    }
+
+    /// Papyrus native: hide panels and overlay, clear Target_Current.
+    void Hide(RE::StaticFunctionTag*)
+    {
+        Reset_To_Default();
+    }
+
+    /// Binds Target_Menu_Open, Sex_Menu_Open, TraceLog, and Hide on SkyrimNet_SexLab_WebUI.
     bool Register_WebUI_Functions(RE::BSScript::IVirtualMachine* a_vm)
     {
         if (!a_vm) {
@@ -176,6 +232,7 @@ namespace PapyrusBindings_WebUI
         a_vm->RegisterFunction("Target_Menu_Open", scriptName, Target_Menu_Open);
         a_vm->RegisterFunction("Sex_Menu_Open", scriptName, Sex_Menu_Open);
         a_vm->RegisterFunction("TraceLog", scriptName, TraceLog);
+        a_vm->RegisterFunction("Hide", scriptName, Hide);
 
         webui_log::info("Successfully registered Papyrus functions for {}", scriptName);
         return true;

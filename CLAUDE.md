@@ -30,6 +30,7 @@ SkyrimNet ↔ SexLab bridge.
 | Scene settings | [docs/reference/scene-settings.md](docs/reference/scene-settings.md) |
 | Quirks | [KNOWLEDGEBASE.md](KNOWLEDGEBASE.md) |
 | Release | [release-guide.md](release-guide.md), [.cursor/skills/release/SKILL.md](.cursor/skills/release/SKILL.md) |
+| Dependency API drift | [.cursor/skills/dependancy-drift/SKILL.md](.cursor/skills/dependancy-drift/SKILL.md) |
 | Portable doc template | [documentation-guide.xml](documentation-guide.xml) |
 
 Do not duplicate contract text here — edit the canonical `docs/reference/` file.

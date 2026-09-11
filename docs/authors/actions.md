@@ -16,7 +16,7 @@ SkyrimNet allows **at most 8** `parameterMapping` entries. Threesome actions alr
 |------|---------|
 | `SKSE/Plugins/SkyrimNet/config/actions/` | Action YAML |
 | `SKSE/Plugins/SkyrimNet_SexLab/scenes/` | Scene JSON via `setting_name` |
-| `SKSE/Plugins/SkyrimNet/prompts/helpers/` | Optional helpers |
+| `SKSE/Plugins/SkyrimNet/prompts/helpers/sexlab/` | Optional helpers |
 | `Scripts/Source/SkyrimNet_SexLab_Actions.psc` | `executionFunctionName` targets |
 
 Categories (prefix / `customCategory`): `sexlab_sex1` / `sexlab_sex2` / `sexlab_sex3`, `sexlab_nonsexual` / `sexlab_comfort`, `sexlab_punish`, `sexlab_none`.
