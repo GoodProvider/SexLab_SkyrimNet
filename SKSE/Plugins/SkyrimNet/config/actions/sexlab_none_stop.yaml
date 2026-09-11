@@ -1,6 +1,6 @@
 name: SEXLAB_STOP
 label: Stop
-description: "{{render_template(\"helpers/sexlab_none_stop\")}}"
+description: "{{render_template(\"helpers/sexlab/none_stop\")}}"
 questEditorId: SkyrimNet_SexLab
 scriptName: SkyrimNet_SexLab_Actions
 executionFunctionName: SceneStop

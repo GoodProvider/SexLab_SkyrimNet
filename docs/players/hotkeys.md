@@ -11,6 +11,7 @@ Enable the optional hot key in the MCM (**Sex Description Editor** / related bin
 - **Player rapes** / **rapes player**
 - OstimNet installed: swap SexLab vs OStim framework
 - Domination slave (`SkyrimNet_DOM.esp`): starts route through DOM handler APIs
+- **Leash** (`SkyrimNet_Leashed.esp`): opens the SkyrimNet_Leashed PrismaUI leash panel (same as that mod’s panel hotkey). Shown only when Leashed is loaded. Does not require Leashed’s own hotkey to be enabled. On the PrismaUI Target Menu, **leash** closes this overlay first, then opens Leashed.
 
 ## In SexLab animation
 
@@ -22,4 +23,4 @@ Stage JSON format: [../authors/animations.md](../authors/animations.md).
 
 ## WebUI menus
 
-In-game PrismaUI target / sex menus (SKSE DLL). Build and paths: [../developers/webui.md](../developers/webui.md).
+In-game PrismaUI target / sex menus (SKSE DLL). Build and paths: [../developers/webui.md](../developers/webui.md). Target Menu **leash** (when `SkyrimNet_Leashed.esp` is loaded) hides this overlay and opens Leashed’s bar.

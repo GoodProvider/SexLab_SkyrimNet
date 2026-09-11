@@ -15,6 +15,9 @@ namespace PapyrusBindings_WebUI {
     RE::BSFixedString TraceLog(RE::StaticFunctionTag*, RE::BSFixedString script_name,
         RE::BSFixedString func, RE::BSFixedString msg);
 
+    /// Papyrus native: hide the overlay and clear Target_Current.
+    void Hide(RE::StaticFunctionTag*);
+
     /// Registers SkyrimNet_SexLab_WebUI natives on the Papyrus VM.
     bool Register_WebUI_Functions(RE::BSScript::IVirtualMachine* a_vm);
 
@@ -23,4 +26,7 @@ namespace PapyrusBindings_WebUI {
 
     /// No crosshair actor: dispatch Papyrus MultiTarget_Menu_Selection picker.
     void Call_MultiTarget_Menu_Selection();
+
+    /// Dispatch SkyrimNet_SexLab_Menu.EventSend_LeashedOpen (opens Leashed overlay).
+    void Call_EventSend_LeashedOpen();
 }

@@ -37,6 +37,10 @@ int Property INTENT_STAGE_ONGOING = 1 AutoReadOnly
 int Property INTENT_STAGE_END = 2 AutoReadOnly
 
 float Property orgasm_delay = 5.0 Auto
+; Vanilla default stage timers sum to ~89s. P+ enjoyment-wait can hop/restart
+; instead of ending; cap LLM scenes so they still finish.
+float Property DURATION_CAP_SECONDS = 120.0 AutoReadOnly
+float animating_started_at = 0.0
 
 ; -------------------------------------------
 ; Who send the messages to SkyrimNet 
@@ -140,6 +144,7 @@ Function Initialize(int _sid, SkyrimNet_SexLab_Scene_Manager _manager, bool _is_
     is_generic = _is_generic
     ; Drop stale thread from prior save/session — status was reset by parent.Initialize.
     thread = None
+    animating_started_at = 0.0
     StorageUtil.ClearAllPrefix(storage_prefix)
 
     if thread_obj < 1
@@ -275,6 +280,9 @@ Bool Function Setup(SkyrimNet_SexLab_Scene_Creator creator)
     else 
         status = STATUS_ACTIVE 
     endif 
+    if animating_started_at <= 0.0
+        animating_started_at = Utility.GetCurrentRealTime()
+    endif
     SetNames()
     DbgEnd("Setup")
     return True
@@ -484,6 +492,7 @@ Function Release()
         endwhile
     endif
     orgasm_messages_set = false
+    animating_started_at = 0.0
 
     sender = None 
     receiver = None 
@@ -987,6 +996,9 @@ Function AnimationStart()
     ; slots (flush skips; Combined will not refill). Only reset orgasm stash on first start.
     if status != STATUS_ACTIVE
         status = STATUS_SETUP
+        if animating_started_at <= 0.0
+            animating_started_at = Utility.GetCurrentRealTime()
+        endif
         if orgasm_messages
             int m = 0
             while m < orgasm_messages.length
@@ -1022,6 +1034,15 @@ Function StageStart()
         Trace("StageStart","thread is None | actors:"+actor_names)
         DbgReturn("StageStart", "void")
         return 
+    endif
+    if IsSexLabPPlus() && animating_started_at > 0.0
+        float elapsed = Utility.GetCurrentRealTime() - animating_started_at
+        if elapsed >= DURATION_CAP_SECONDS
+            Trace("StageStart", "P+/duration cap ending thread elapsed:"+elapsed)
+            thread.EndAnimation()
+            DbgReturn("StageStart", "duration cap")
+            return
+        endif
     endif
 
     String orgasm_narration = OrgasmMessagesToNarration()
@@ -1146,9 +1167,7 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
                     if expected == 1
                         glow_fallback = name+" failed to orgasm. "
                     endif
-                elseif total_orgasms < 2
-                    glow_fallback = name+"'s body glows in post orgasm. "
-                else
+                elseif total_orgasms >= 1
                     glow_fallback = name+"'s body is recovering from "+total_orgasms+" orgasms. "
                 endif
                 if glow_fallback != "" || total_orgasms >= 1
@@ -1157,7 +1176,7 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
                     JMap.setInt(glow_obj, "total_orgasms", total_orgasms)
                     JMap.setInt(glow_obj, "expected", expected)
                     afterglow += RenderSlPrompt("helpers/sexlab/afterglow", glow_obj, glow_fallback)
-                endif 
+                endif
                 j -= 1 
             endwhile
         endif 

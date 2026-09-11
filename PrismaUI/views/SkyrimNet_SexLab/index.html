@@ -709,6 +709,16 @@
         }
 
         function selectLeftOption(opt) {
+            if (opt && opt.type === 'handoff') {
+                if (typeof window.onAction === 'function') {
+                    window.onAction(JSON.stringify({
+                        action: 'handoff',
+                        name: opt.name || '',
+                        modEvent: opt.modEvent || ''
+                    }));
+                }
+                return;
+            }
             selectedCategory = opt;
             selectedActionName = null;
             // Merge option-level parameters into dict

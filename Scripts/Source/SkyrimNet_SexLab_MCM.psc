@@ -49,6 +49,9 @@ int Property sexlab_ostim_player_menu Auto  ; menu id
 
 ; UDNG Support 
 bool Property udng_found = false Auto
+
+; SkyrimNet_Leashed.esp — Start Sex SkyMessage leash button
+bool Property leashed_found = false Auto
      
 ; Formating 
 string newline = ""
@@ -77,6 +80,9 @@ Function Setup()
     else 
         udng_found = False 
     endif 
+
+    leashed_found = Game.GetFormFromFile(0x800, "SkyrimNet_Leashed.esp") != None
+    Trace("Setup", "leashed_found: "+leashed_found)
 
     Trace("Setup", "complete")
 EndFunction 

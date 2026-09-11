@@ -1,0 +1,4 @@
+{%- if sl.total_orgasms < 1 -%}
+{%- if sl.expected == 1 %}{{ sl.name }} failed to orgasm. {% endif -%}
+{%- else %}{{ sl.name }}'s body is recovering from {{ sl.total_orgasms }} orgasms. 
+{%- endif -%}

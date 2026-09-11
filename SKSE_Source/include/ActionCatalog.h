@@ -34,7 +34,7 @@ namespace ActionCatalog
     const ActionDef* FindByName(const std::string& name);
     std::vector<const ActionDef*> ChildrenOfCategory(const std::string& category);
 
-    // Full catalog for JS configureTargetMenu(...)
+    // Full catalog for JS configureTargetMenu(...). Drops options whose requiresPlugin is unloaded.
     nlohmann::json BuildUICatalog();
 
     // target_options.json defaults + options

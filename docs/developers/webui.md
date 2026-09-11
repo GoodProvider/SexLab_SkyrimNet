@@ -11,9 +11,9 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 | `SKSE_Source/` | C++ → `SkyrimNet_SexLab.dll` |
 | `SKSE/Plugins/SkyrimNet_SexLab.dll` | Built plugin |
 | `PrismaUI/views/SkyrimNet_SexLab/index.html` | Overlay HTML under `Data/PrismaUI/views/` |
-| `SKSE/Plugins/SkyrimNet_SexLab/webui/` | `target_options.json`, `actions_index.json` |
+| `SKSE/Plugins/SkyrimNet_SexLab/webui/` | `target_options.json`, `actions_index.json`, `TargetMenu/Actor/options/` |
 | `SKSE/Plugins/SkyrimNet/config/plugins/SkyrimNet_SexLab/manifest.yaml` | SkyrimNet plugin schema (e.g. `sexlab.orgasm.delay`) |
-| `Scripts/Source/SkyrimNet_SexLab_WebUI.psc` | `Target_Menu_Open` / `Sex_Menu_Open` natives |
+| `Scripts/Source/SkyrimNet_SexLab_WebUI.psc` | `Target_Menu_Open` / `Sex_Menu_Open` / `Hide` natives |
 
 ## Lifecycle
 
@@ -21,6 +21,8 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 - `kPostLoadGame` / `kNewGame`: `WebUI_SetGameReady()`.
 - Papyrus → C++ open; C++ → JS panels `target_menu_panel` / `sex_menu_panel`.
 - Catalog: `target_options.json` + `actions_index.json`; Start merges params onto YAML and dispatches via SkyrimNet.
+- Options with `requiresPlugin` are omitted from the catalog when that ESP is not loaded.
+- `type: handoff` (e.g. `leash` → `SkyrimNet_Leashed.esp`): click hides this overlay (`Hide` / `Reset_To_Default`) and fires `modEvent` via `EventSend_LeashedOpen`. JSON also lives at `webui/TargetMenu/Actor/options/0700_leash.json`.
 
 ## Build
 
