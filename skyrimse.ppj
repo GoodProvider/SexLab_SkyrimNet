@@ -38,7 +38,7 @@
 
         <Import>@ModsFolder\MfgFix\Source\Scripts</Import>
         <Import>@ModsFolder\FNIS Creature Pack SE\scripts\source</Import>
-        <Import>@ModsFolder\RaceMenu\scripts\source</Import>
+        <Import>@ModsFolder\PAPYRUS\SRC_RM</Import>
         <Import>@ModsFolder\JContainers\scripts\source</Import>
         <Import>@ModsFolder\SkyUI\scripts\Source</Import>
         <Import>@ModsFolder\UIExtensions\scripts\Source</Import>

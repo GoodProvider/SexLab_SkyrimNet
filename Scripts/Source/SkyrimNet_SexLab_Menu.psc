@@ -115,7 +115,13 @@ Function Target_Menu_Selection(Actor target, Actor player)
     if mcm.udng_found
         bondage = cancel
         cancel += 1 
-    endif  
+    endif
+
+    int leash = -1
+    if mcm.leashed_found
+        leash = cancel
+        cancel += 1
+    endif
     
     String[] buttons = Utility.CreateStringArray(cancel+1)
 
@@ -131,7 +137,11 @@ Function Target_Menu_Selection(Actor target, Actor player)
     buttons[clothing] = clothing_string
     if bondage != -1 
         buttons[bondage] = "bondage"
-    endif 
+    endif
+    if leash != -1
+        buttons[leash] = "leash"
+    endif
+    Trace("Target_Menu_Selection", "leashed_found: "+mcm.leashed_found+ "leash index: "+leash)
     buttons[cancel] = "cancel"
 
     String msg = "Should "+target.getDisplayName()+":"
@@ -270,6 +280,8 @@ Function Target_Menu_Selection(Actor target, Actor player)
 
     elseif button == bondage 
         EventSend_UDNG("MenuOpen", target)
+    elseif button == leash
+        EventSend_LeashedOpen()
     endif 
 EndFunction
 
@@ -284,6 +296,12 @@ EndFunction
 Function EventSend_UDNG(String type, Actor target)
     int handle = ModEvent.Create("SkyrimNet_SexLab_UDNG_"+type)
     ModEvent.PushForm(handle, target)
+    ModEvent.Send(handle)
+EndFunction
+
+Function EventSend_LeashedOpen()
+    SkyrimNet_SexLab_WebUI.Hide()
+    int handle = ModEvent.Create("SkyrimNet_Leashed_OpenPanel")
     ModEvent.Send(handle)
 EndFunction
 
