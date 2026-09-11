@@ -871,36 +871,14 @@ String Function GetIsOrgasming(Actor akActor, int total_orgasms = -1)
     int recorded = GetTotalOrgasms(akActor)
     DbgMsg("GetIsOrgasming", GetDisplayName(akActor)+" total_orgasms:"+recorded) ; debug-total_orgasms
     String name = akActor.GetDisplayName()
-    int again = 0
+    String msg = name+" is orgasming. "
     if recorded > 1
-        again = 1
+        msg = name+" is orgasming. again. "
     endif
-    int tentacles = 0
     if thread != None && thread.Animation != None && thread.Animation.HasTag("tentacles")
-        tentacles = 1
+        msg += "The tentacles is orgasming and flooding cum both inside and outside. "
     endif
-    String msg = RenderOrgasmingClause(name, again, tentacles)
     DbgReturn("GetIsOrgasming", msg)
-    return msg
-EndFunction
-
-; helpers/sexlab/orgasming.prompt — output MUST contain " is orgasming." (0550 gate).
-String Function RenderOrgasmingClause(String name, int again, int tentacles)
-    String fallback = name+" is orgasming. "
-    if again == 1
-        fallback = name+" is orgasming. again. "
-    endif
-    if tentacles == 1
-        fallback += "The tentacles is orgasming and flooding cum both inside and outside. "
-    endif
-    int obj = JMap.object()
-    JMap.setStr(obj, "name", name)
-    JMap.setInt(obj, "again", again)
-    JMap.setInt(obj, "tentacles", tentacles)
-    String msg = RenderSlPrompt("helpers/sexlab/orgasming", obj, fallback)
-    if StringUtil.Find(msg, " is orgasming.") < 0
-        return fallback
-    endif
     return msg
 EndFunction
 
@@ -946,20 +924,12 @@ String Function GetIntentMessage(int intent_stage = -1)
     if num_victims > 0
         fallback = assailant_names+" "+verb+" "+intent+" "+victim_names+"."
     endif
-    int obj = JMap.object()
-    JMap.setStr(obj, "verb", verb)
-    JMap.setStr(obj, "intent", intent)
-    JMap.setStr(obj, "actors", actor_names)
-    JMap.setStr(obj, "assailants", assailant_names)
-    JMap.setStr(obj, "victims", victim_names)
-    JMap.setInt(obj, "num_victims", num_victims)
-    String msg = RenderSlPrompt("helpers/sexlab/intent", obj, fallback)
     if num_victims > 0
         DbgReturn("GetIntentMessage", "with victims")
     else
         DbgReturn("GetIntentMessage", "actors only")
     endif
-    return msg
+    return fallback
 EndFunction 
     
 bool Function GetThreadActive() 
@@ -1055,11 +1025,7 @@ Function StageStart()
         status = STATUS_ACTIVE
         String narration = desc + orgasm_narration
         if initiator != None
-            String init_fallback = initiator.GetDisplayName()+" initiates: "+desc
-            int init_obj = JMap.object()
-            JMap.setStr(init_obj, "initiator", initiator.GetDisplayName())
-            JMap.setStr(init_obj, "description", desc)
-            narration = RenderSlPrompt("helpers/sexlab/initiates", init_obj, init_fallback)
+            narration = initiator.GetDisplayName()+" initiates: "+desc
             narration += orgasm_narration
         endif
         if orgasm_narration != ""
@@ -1078,10 +1044,7 @@ Function StageStart()
         if desc != "" && description_last != ""
             if desc != description_last
                 ; Scene-change is prefixed; orgasm block is appended from orgasm_narration below.
-                String change_fallback = "Scene changes to "+desc
-                int change_obj = JMap.object()
-                JMap.setStr(change_obj, "description", desc)
-                narration = RenderSlPrompt("helpers/sexlab/scene_changes", change_obj, change_fallback)
+                narration = "Scene changes to "+desc
                 change_scene = true
             else 
                 desc = ""
@@ -1172,7 +1135,7 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
                 endif
                 if glow_fallback != "" || total_orgasms >= 1
                     int glow_obj = JMap.object()
-                    JMap.setStr(glow_obj, "name", name)
+                    JMap.setStr(glow_obj, "actors", name)
                     JMap.setInt(glow_obj, "total_orgasms", total_orgasms)
                     JMap.setInt(glow_obj, "expected", expected)
                     afterglow += RenderSlPrompt("helpers/sexlab/afterglow", glow_obj, glow_fallback)
@@ -1268,9 +1231,7 @@ Function OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
     int i = 0
     while i < num_actors
         if thread.positions[i] != akActor
-            int not_obj = JMap.object()
-            JMap.setStr(not_obj, "name", thread.positions[i].GetDisplayName())
-            msg += " "+RenderSlPrompt("helpers/sexlab/not_orgasming", not_obj, thread.positions[i].GetDisplayName()+" is not orgasming.")
+            msg += " "+thread.positions[i].GetDisplayName()+" is not orgasming."
         endif 
         i += 1 
     endwhile 
@@ -1370,7 +1331,7 @@ String Function OrgasmMessagesToNarration()
                     if JMap.getInt(obj, "has_penis") == 1
                         ejaculation_happened = true
                     endif
-                    narration += RenderOrgasmingClause(name, 0, 0)
+                    narration += name+" is orgasming. "
                 else
                     narration += main.handler_dom.HandleOrgasmDenied(thread.positions[k])
                 endif
@@ -1378,7 +1339,7 @@ String Function OrgasmMessagesToNarration()
             k += 1
         endwhile
         if num_orgasmers > 0 && num_orgasmers < num_actors
-            narration += RenderSlPrompt("helpers/sexlab/orgasm_partial", 0, "Only listed actors started orgasming right now. ")
+            narration += "Only listed actors started orgasming right now. "
         endif
     endif 
 
@@ -1468,7 +1429,7 @@ String Function AddCum(int position, Actor akActor, String name)
         DbgReturn("AddCum", "cum message")
         String cum_fallback = name+"'s "+places+" is dripping with warm sticky cum. "
         int cum_obj = JMap.object()
-        JMap.setStr(cum_obj, "name", name)
+        JMap.setStr(cum_obj, "actors", name)
         JMap.setStr(cum_obj, "places", places)
         return RenderSlPrompt("helpers/sexlab/cum", cum_obj, cum_fallback)
     endif 
@@ -1800,36 +1761,7 @@ String Function GetDescriptionFromTags()
         buffer += " " + dom_name
     EndIf
     buffer += ".\n\n"
-
-    int tags_arr = JArray.object()
-    String[] raw = anim.GetRawTags()
-    int t = 0
-    if raw
-        int num_tags = raw.length
-        while t < num_tags
-            String tag = raw[t]
-            String tag_l = ""
-            int c = 0
-            int clen = StringUtil.GetLength(tag)
-            while c < clen
-                int o = StringUtil.AsOrd(StringUtil.GetNthChar(tag, c))
-                if o >= 65 && o <= 90
-                    tag_l += StringUtil.AsChar(o + 32)
-                else
-                    tag_l += StringUtil.GetNthChar(tag, c)
-                endif
-                c += 1
-            endwhile
-            JArray.addStr(tags_arr, tag_l)
-            t += 1
-        endwhile
-    endif
-    int desc_obj = JMap.object()
-    JMap.setStr(desc_obj, "sub", sub_name)
-    JMap.setStr(desc_obj, "dom", dom_name)
-    JMap.setObj(desc_obj, "tags", tags_arr)
-    JMap.setInt(desc_obj, "num_actors", num_actors)
-    return RenderSlPrompt("helpers/sexlab/tag_description", desc_obj, buffer)
+    return buffer
 endFunction
 
 Function SetStyleDialog()
@@ -1842,12 +1774,7 @@ Function SetStyleDialog()
         if has_player
             name = GetDisplayName(game.GetPlayer())
         endif
-        String style_fallback = name+" changes from '"+style_old+"' to '"+style+"'"
-        int style_obj = JMap.object()
-        JMap.setStr(style_obj, "name", name)
-        JMap.setStr(style_obj, "style_old", style_old)
-        JMap.setStr(style_obj, "style", style)
-        DirectNarration(RenderSlPrompt("helpers/sexlab/style_change", style_obj, style_fallback), sender, receiver)
+        DirectNarration(name+" changes from '"+style_old+"' to '"+style+"'", sender, receiver)
     endif 
     DbgReturn("SetStyleDialog")
 endFunction

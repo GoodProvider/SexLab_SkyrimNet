@@ -154,4 +154,4 @@ Upstream schema: [WORKFLOW_ACTIONS.md](https://github.com/MinLL/SkyrimNet-GamePl
 
 ## Scene narration prompts (2026-09-09)
 
-Player-facing Scene DirectNarration strings render `SKSE/Plugins/SkyrimNet/prompts/helpers/sexlab/*.prompt` via `RenderSlPrompt` (`SkyrimNetApi.RenderTemplate` + `sl` JSON, same namespace as Stages `ParseString`). Empty or error-looking renders fall back to the previous Papyrus sentence. `orgasming.prompt` must still emit `" is orgasming."` (0550 gate); `GetIsOrgasming` still bumps totals before wording.
+Only afterglow and cum go through `RenderSlPrompt` (`helpers/sexlab/afterglow.prompt`, `helpers/sexlab/cum.prompt`). That helper is `SkyrimNetApi.RenderTemplate` then `ParseString` with namespace `sl` JSON (same as Stages `ParseString`). Empty, error-looking, or leftover-`{{` renders fall back to the previous Papyrus sentence. A single name is string `sl.actors` (`{{sl.actors}}`), not a one-element array. All other scene DirectNarration strings are inline Papyrus. The `" is orgasming."` 0550 gate is still emitted by `GetIsOrgasming`; that function still bumps totals before wording.

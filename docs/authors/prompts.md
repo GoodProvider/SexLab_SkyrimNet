@@ -23,12 +23,15 @@ SKSE/Plugins/SkyrimNet/prompts/
 | `system_head/0020_sexlab_setting.prompt` | System-head settings |
 | `user_final_instructions/0050_sexlab_activity.prompt` | Scene + speaking rules |
 | `user_final_instructions/0550_sexlab_narration.prompt` | Direct narration / orgasm gate |
-| `helpers/sexlab_*.prompt` | Per-action helpers (`render_template` from YAML) |
-| `helpers/sexlab/*.prompt` | Scene narration (`RenderSlPrompt` / `RenderTemplate`, namespace `sl`) |
+| `helpers/sexlab/action_orgy.prompt` | Orgy action helper |
+| `helpers/sexlab/none_change_outfit.prompt` | Outfit action helper (`[style] [how]`) |
+| `helpers/sexlab/none_stop.prompt` | Stop action helper |
+| `helpers/sexlab/afterglow.prompt` | Scene afterglow (`RenderSlPrompt`) |
+| `helpers/sexlab/cum.prompt` | Scene cum clause (`RenderSlPrompt`) |
 
-Outfit guidance: `helpers/sexlab_none_change_outfit.prompt` (`[style] [how]`). No `0520_sexlab_dressing_instructions.prompt`.
+No `0520_sexlab_dressing_instructions.prompt`.
 
-Scene narration templates are Papyrus-rendered sentences, not LLM system prompts. Bind `{{sl.*}}` only. Papyrus builds lowercase JSON via `ObjectToLowerCaseKeyJson` and falls back to the previous hardcoded sentence if render is empty or looks like an engine error. `orgasming.prompt` must keep the `" is orgasming."` substring — see [../reference/orgasm-narration.md](../reference/orgasm-narration.md).
+Scene afterglow and cum are Papyrus-rendered sentences, not LLM system prompts. Bind `{{sl.*}}` only. A single actor name is a string (`{{sl.actors}}`), not a one-element array. Papyrus builds lowercase JSON via `ObjectToLowerCaseKeyJson`, then `RenderTemplate` + `ParseString`. Empty, error-looking, or leftover-`{{` renders fall back to the previous Papyrus sentence. The `" is orgasming."` gate is Papyrus (`GetIsOrgasming`) — see [../reference/orgasm-narration.md](../reference/orgasm-narration.md).
 
 ## Keys vs values
 
@@ -64,7 +67,7 @@ contains(_direct_narration, " is orgasming.")
 | Scene `speaking_modifiers` | `0050_sexlab_activity.prompt` |
 | `threads` / `actors` JSON | activity + narration |
 | DirectNarration + `" is orgasming."` | `0550_sexlab_narration.prompt` |
-| Scene `RenderSlPrompt` (`helpers/sexlab/*.prompt`) | DirectNarration / RegisterEvent |
+| Scene `RenderSlPrompt` (`afterglow.prompt`, `cum.prompt`) | DirectNarration / RegisterEvent |
 
 ## Checklist
 

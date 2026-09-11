@@ -640,9 +640,9 @@ String Function ObjectToLowerCaseKeyJson(int obj) global
     return json
 EndFunction
 
-; Render a helpers/sexlab/*.prompt with the Stages ParseString namespace ("sl" + JSON).
-; Releases obj (JMap.object() handle). Empty or error-looking render -> fallback so
-; SkyrimNet error text is never DirectNarrated.
+; Load helpers/sexlab/*.prompt via RenderTemplate, then bind sl JSON with ParseString
+; (same namespace as Stages AddActorDescriptionActors). Releases obj. Empty, error,
+; leftover "{{", or inja text -> fallback so SkyrimNet errors are never DirectNarrated.
 String Function RenderSlPrompt(String template_name, int obj, String fallback="") global
     String json = "{}"
     if obj > 0
@@ -651,17 +651,30 @@ String Function RenderSlPrompt(String template_name, int obj, String fallback=""
     endif
     String result = SkyrimNetApi.RenderTemplate(template_name, "sl", json)
     if result == ""
+        Trace("RenderSlPrompt", "--- empty template:"+template_name+" json:"+json)
         return fallback
     endif
     String head = StringUtil.Substring(result, 0, 5)
     if head == "Error" || head == "error" || head == "ERROR"
-        Trace("RenderSlPrompt", "--- render failed template:"+template_name+" result:"+result)
+        Trace("RenderSlPrompt", "--- render failed template:"+template_name+" json:"+json+" result:"+result)
         return fallback
     endif
     if StringUtil.Find(result, "inja.exception") >= 0
-        Trace("RenderSlPrompt", "--- inja error template:"+template_name+" result:"+result)
+        Trace("RenderSlPrompt", "--- inja error template:"+template_name+" json:"+json+" result:"+result)
         return fallback
     endif
+    String parsed = SkyrimNetApi.ParseString(result, "sl", json)
+    if parsed != "" && StringUtil.Find(parsed, "inja.exception") < 0
+        String parsed_head = StringUtil.Substring(parsed, 0, 5)
+        if parsed_head != "Error" && parsed_head != "error" && parsed_head != "ERROR"
+            result = parsed
+        endif
+    endif
+    if StringUtil.Find(result, "{{") >= 0
+        Trace("RenderSlPrompt", "--- leftover braces template:"+template_name+" json:"+json+" result:"+result)
+        return fallback
+    endif
+    Trace("RenderSlPrompt", "--- template:"+template_name+" json:"+json+" result:"+result)
     return result
 EndFunction
 

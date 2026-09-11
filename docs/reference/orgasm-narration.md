@@ -18,9 +18,9 @@ The substring `" is orgasming."` must stay exact on the whole direct-narration s
 | Denied / non-orgasming | **No** (use denied / “did not orgasm” wording only) |
 
 - Dom: `Handler_DOM.DOMSlave_Orgasmed` → `Scene_Manager.OrgasmCustom` appends `". "+name+" is orgasming."` on purpose — do not strip without updating the prompt.
-- Combined / `GetIsOrgasming`: `helpers/sexlab/orgasming.prompt` (`RenderOrgasmingClause`) must emit `" is orgasming."`. Papyrus falls back to `name+" is orgasming. "` if the substring is missing.
-- Dom Combined fallback: if orgasm expected and totals > 0 but custom text raced empty, still append via `RenderOrgasmingClause` (same gate).
-- `OrgasmIndividual` may append `" is not orgasming."` (`helpers/sexlab/not_orgasming.prompt`) for other actors — that must **not** match the orgasm gate.
+- Combined / `GetIsOrgasming`: Papyrus emits `name+" is orgasming. "` (and `. again.` / tentacles append). Do not strip that substring without updating the prompt.
+- Dom Combined fallback: if orgasm expected and totals > 0 but custom text raced empty, still append `name+" is orgasming. "` (same gate).
+- `OrgasmIndividual` may append `" is not orgasming."` for other actors — that must **not** match the orgasm gate.
 
 If you change the gate in the prompt, update every Papyrus narration site that appends it.
 
@@ -38,4 +38,4 @@ Function OrgasmCustom(Actor akActor, String msg)
 EndFunction
 ```
 
-Combined path also builds clauses in [`Scripts/Source/SkyrimNet_SexLab_Scene.psc`](../../Scripts/Source/SkyrimNet_SexLab_Scene.psc) (`RenderOrgasmingClause` / `helpers/sexlab/orgasming.prompt`).
+Combined path also builds clauses in [`Scripts/Source/SkyrimNet_SexLab_Scene.psc`](../../Scripts/Source/SkyrimNet_SexLab_Scene.psc) (`GetIsOrgasming`).
