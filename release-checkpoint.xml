@@ -12,10 +12,10 @@
     <project>SkyrimNet_SexLab</project>
     <summary>Bridge mod between SkyrimNet (LLM) and SexLab Framework.</summary>
     <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
-    <updated>2026-09-01</updated>
-    <base_tag>0.31.4</base_tag>
-    <next_version>0.31.5</next_version>
-    <version_status>Makefile VERSION=0.31.5 (authoritative, working tree); info.json / FOMOD still 0.31.4 until make release; git tag and package pending</version_status>
+    <updated>2026-09-12</updated>
+    <base_tag>0.31.5</base_tag>
+    <next_version>0.33.0</next_version>
+    <version_status>Makefile VERSION=0.33.0 (authoritative, working tree); info.json / FOMOD still 0.31.5 until make release; git tag and package pending</version_status>
     <related_artifacts>
       <artifact role="release rules (human)">release-guide.md</artifact>
       <artifact role="release skill (agent)">.cursor/skills/release/SKILL.md</artifact>
@@ -60,9 +60,9 @@
   </doc_files>
 
   <status>
+    <note>2026-09-12: Release docs for 0.33.0 since tagged 0.31.5 (7fad407). Branch better-ending. Delta: RenderSlPrompt afterglow/cum, P+ PickOneAnimation + 120s duration cap + empty-tag skip (SelectAnimations and SelectAnimationsDialog), leash MCM/menu/WebUI handoff, orgasm "is not orgasming right now", helper path helpers/sexlab/. Uncommitted Menu.psc / Scene_Creator.psc / afterglow+0050+0550 prompts included as shipping. Handler ESPs unchanged. Omitted from changelog: OStimNet gitlink, webui/MainPanels stubs, TargetMenu split JSON (ActionCatalog loads target_options.json only), bondage/group-devices.json, Scripts.zip, reviews/, y-MIGRATING_TO_BETA25.md.</note>
     <note>2026-09-01: Replaced release-guide.xml with release-guide.md (human) + .cursor/skills/release/SKILL.md (agent). Checkpoint is session state only.</note>
-    <note>2026-09-01: Release docs for 0.31.5 since tagged 0.31.4 (ecbb8f1). Delta: PickNonVictimInitiator, GetSceneByThread/SetThread-before-publish/EnsureSceneForThread, 0050 vocalization and length caps, WebUI PublicAPI externs. Handler ESPs unchanged (DOM benefit via main plugin). Untracked MainPanels/TargetMenu/bondage/OStimNet omitted. z-* is user scratch (AGENTS.md / llms.txt / .gitignore).</note>
-    <note>Open: fetch tags (local 0.31.4 missing), confirm Spriggit scene/creator JSON before make esp, compile: pyro if .pex stale, commit shipping tree (Makefile + docs), make release, git tag 0.31.5, GitHub Release. Branch review is 1 commit ahead of main.</note>
+    <note>Open: commit shipping tree (Makefile + docs + papyrus/prompts), compile: pyro if .pex drift, make release (writes info.json / FOMOD 0.33.0), git tag 0.33.0, GitHub Release. Branch better-ending, not main.</note>
   </status>
 
   <conventions>

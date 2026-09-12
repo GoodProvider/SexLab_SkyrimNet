@@ -40,6 +40,8 @@ Scene_Creator (pooled) ──StartScene──► Scene_Manager.CreateSceneByCrea
 ```
 
 - Creator: `CreateCreator()` → ACTIVE; always `Release()` after cancel or after Setup copies state.
+- `SelectAnimations()` / `SelectAnimationsDialog()`: empty tags (`num_tags == 0 && num_tags_suppress == 0`) skip `GetAnimationsByTags` and return `manager.empty` so SexLab picks. On P+, tagged hits go through `PickOneAnimation` (one random). `Scene.StageStart` `EndAnimation()` after `DURATION_CAP_SECONDS` (120s real-time). Do not `UpdateTimer` to end a P+ thread.
+- Afterglow / cum: `RenderSlPrompt` with `helpers/sexlab/afterglow` or `helpers/sexlab/cum` — empty / `Error*` / inja / leftover `{{` → fallback. See [prompts.md](../authors/prompts.md).
 - `SelectAnimations()` before `sexlab.NewThread()`; abort → `model.Initialize()` then `Release()`.
 - `Scene.Setup` returns `Bool`; failure → Release, no half-init slot.
 - `Scene.initiator` is the speaker by default. If `num_victims > 0`, `PickNonVictimInitiator()` keeps initiator only when they are not a victim; otherwise first non-victim from positions 1…n then 0 (or None). First-stage `"X initiates: …"` only; do not recompute on AlignActors / live SetVictim.
@@ -47,7 +49,8 @@ Scene_Creator (pooled) ──StartScene──► Scene_Manager.CreateSceneByCrea
 - Actor lock: `skyrimnet_sexlab_scene_actor_lock`.
 - Trace → `WebUI.TraceLog` → `SKSE\SkyrimNet_SexLab.log` (prefix `"---"`).
 - DOM optional: `handler_dom`; Dom orgasm → `OrgasmCustom` + `" is orgasming."`. Nonconsensual wrappers omit `style` (8-arg limit).
-- Quirks (initiator vs victim, DOM bind race): [KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md).
+- Leash: `MCM.leashed_found` (`GetFormFromFile(0x800, "SkyrimNet_Leashed.esp")`); `Menu.EventSend_LeashedOpen` hides WebUI then `SkyrimNet_Leashed_OpenPanel`. Bondage/leash SkyMessage buttons skipped when their index is `-1`.
+- Quirks (initiator vs victim, P+ hop vs end, DOM bind race): [KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md).
 
 ## Review
 

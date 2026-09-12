@@ -31,10 +31,10 @@ Don't describe yourself to yourself.
 **RIGHT** {% if is_narration_enabled()  %}*{{decnpc(npc.UUID).name}}{% endif %} lays on the grass.* Hah, this grass is cold!
    {% if is_narration_enabled()  %}
       {% if contains(speaker.speaking_modifiers,"_pleasure_") or contains(speaker.speaking_modifiers, "_pain_") %} 
-While experiencing these strong emotional and physical feelsings, Always include a strong emotional and physical narration with each response.
+While experiencing these strong emotional and physical feelings, Always include a strong emotional and physical narration with each response.
       {% endif %} 
    {% endif %}
-Don't repeat the same vocalizations more then three times in a row.
+Don't repeat the same vocalizations more than three times in a row.
 Change the words and meaning each time.
 {% endif %} 
 {# ---------------------------------- #} 

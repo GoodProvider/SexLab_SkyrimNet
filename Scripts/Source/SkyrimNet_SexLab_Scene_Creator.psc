@@ -1299,6 +1299,16 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
             endif 
         endwhile 
 
+        tags_string = JoinStrings(tags, num_tags)
+        tags_suppress_string = JoinStrings(tags_suppress, num_tags_suppress)
+        if num_tags == 0 && num_tags_suppress == 0
+            if groups_owned
+                JValue.release(groups)
+            endif
+            Trace("SelectAnimationsDialog", "no tags; skip GetAnimationsByTags so SexLab picks")
+            DbgReturn("SelectAnimationsDialog", "manager.empty")
+            return manager.empty
+        endif
         DbgMsg("SelectAnimationsDialog", "sexlab.GetAnimationsByTags final tags="+tags_string)
         sslBaseAnimation[] anims =  SexLab.GetAnimationsByTags(num_actors, tags_string, tags_suppress_string, true)
         DbgMsg("SelectAnimationsDialog", "sexlab.GetAnimationsByTags final returned count="+anims.length)
@@ -1307,12 +1317,19 @@ sslBaseAnimation[] Function SelectAnimationsDialog()
                 JValue.release(groups)
             endif
             DbgReturn("SelectAnimationsDialog", "anims")
-            return anims 
-        else
-            Trace("SelectAnimationsDialog","No animations found for: "+tags_string, True )
-            if num_tags > 0
-               num_tags -= 1 
-            endif 
+            return anims
+        endif
+        Trace("SelectAnimationsDialog","No animations found for: "+tags_string, True )
+        if num_tags > 0
+           num_tags -= 1
+        endif
+        if num_tags == 0 && num_tags_suppress == 0
+            if groups_owned
+                JValue.release(groups)
+            endif
+            Trace("SelectAnimationsDialog", "no tags after strip; skip GetAnimationsByTags so SexLab picks")
+            DbgReturn("SelectAnimationsDialog", "manager.empty")
+            return manager.empty
         endif 
     endwhile 
     if groups_owned

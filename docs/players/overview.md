@@ -48,6 +48,7 @@ Scene files via `setting_name`: [../reference/scene-settings.md](../reference/sc
 - Tag Edit dialogs; Sex Description Editor hot key
 - Direct Narration Blocking: cooldown, max distance
 - OstimNet (if present): which framework starts sex for the player
+- Leash (`SkyrimNet_Leashed.esp`): SkyMessage / Target Menu opens the Leashed panel
 
 ## Requirements
 

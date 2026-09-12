@@ -20,9 +20,9 @@ Quirks: [../../KNOWLEDGEBASE.md](../../KNOWLEDGEBASE.md) (PrismaUI view path, ac
 - `kDataLoaded`: PrismaUI API, `CreateView("SkyrimNet_SexLab/index.html")`, JS listeners.
 - `kPostLoadGame` / `kNewGame`: `WebUI_SetGameReady()`.
 - Papyrus → C++ open; C++ → JS panels `target_menu_panel` / `sex_menu_panel`.
-- Catalog: `target_options.json` + `actions_index.json`; Start merges params onto YAML and dispatches via SkyrimNet.
+- Catalog: `target_options.json` + `actions_index.json` (ActionCatalog does not load `webui/TargetMenu/` or `MainPanels/`). Start merges params onto YAML and dispatches via SkyrimNet.
 - Options with `requiresPlugin` are omitted from the catalog when that ESP is not loaded.
-- `type: handoff` (e.g. `leash` → `SkyrimNet_Leashed.esp`): click hides this overlay (`Hide` / `Reset_To_Default`) and fires `modEvent` via `EventSend_LeashedOpen`. JSON also lives at `webui/TargetMenu/Actor/options/0700_leash.json`.
+- `type: handoff` (e.g. `leash` → `SkyrimNet_Leashed.esp`): click hides this overlay (`Hide` / `Reset_To_Default`) and `DispatchMethodCall` `EventSend_LeashedOpen` (`SkyrimNet_Leashed_OpenPanel`).
 
 ## Build
 

@@ -79,7 +79,7 @@ parameterMapping:
   # ... speaker, target, style, method, direction (≤ 8 total)
 ```
 
-Copy patterns: `sexlab_sex2_sex_fucking.yaml`, `sexlab_punish_spanking.yaml`, `sexlab_none_change_outfit.yaml`, `sexlab_none_stop.yaml`.
+Copy patterns: `sexlab_sex2_sex_fucking.yaml`, `sexlab_punish_spanking.yaml`, `sexlab_none_change_outfit.yaml`, `sexlab_none_stop.yaml`. Outfit/stop `description` templates: `helpers/sexlab/none_change_outfit` and `helpers/sexlab/none_stop`.
 
 ## Eligibility
 

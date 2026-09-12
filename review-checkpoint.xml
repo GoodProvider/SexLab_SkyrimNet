@@ -16,7 +16,7 @@
     <summary>Bridge mod between SkyrimNet (LLM) and SexLab Framework.</summary>
     <language>Papyrus (Skyrim SE/AE)</language>
     <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
-    <updated>2026-08-31</updated>
+    <updated>2026-09-12</updated>
     <key_paths>
       <scripts_source>Scripts/Source</scripts_source>
       <action_yamls>SKSE/Plugins/SkyrimNet/config/actions</action_yamls>
@@ -77,10 +77,15 @@
     <decision id="YAML-Names">Action YAML name values must be unique; static mappings use value; dynamic mappings use description; prefer Papyrus slot names (method, how).</decision>
     <decision id="Direction-Tokens">Actions.psc accepts fucking|fuck a|fucking a|fucked in|getting|get|giving|give for consensual speaker_position (victim wrappers override).</decision>
     <decision id="2026-07-26-02">SelectAnimations before NewThread; Initialize only on post-NewThread abort. sex3 giving setting_name "". LLM cuddle/outfit dresses|undresses with Papyrus/tag remap. MultiTarget blank intent → sexual activities.</decision>
-    <decision id="2026-08-31-01">GetSceneByThread keep/rebind on tid match or bound None without IsActive(); Release only on tid mismatch. PublicAPI (d197679) and 0050 prompt left as HEAD.</decision>
+    <decision id="2026-08-31-01">GetSceneByThread keep/rebind on tid match or bound None without IsActive(); Release only on tid mismatch. PublicAPI (d197679) left as HEAD.</decision>
+    <decision id="2026-09-12-01">0050 word-cap / vocalization-count policy left as HEAD. 0050/0550 spelling applied. Target menu unused -1 slots must not match SkyMessage ESC. SelectAnimationsDialog empty tags return manager.empty (SexLab picks), same as non-dialog SelectAnimations.</decision>
   </locked_decisions>
 
   <pass_history note="Newest first. Detailed findings are in the linked review docs.">
+    <pass date="2026-09-12" scope="0.31.4..HEAD better-ending: leash cancel, P+ empty-tag dialog, afterglow, 0050/0550 spelling" status="applied" compile="clean">
+      <review_doc>reviews/2026-09-12-01.review.md</review_doc>
+      <headline>H1 Target_Menu ESC/cancel vs unused -1 bondage/leash; H2 SelectAnimationsDialog empty tags → manager.empty; M1/M2 afterglow orgasmed + trailing space; L1 0050/0550 spelling. PublicAPI and 0050 word-cap left as HEAD.</headline>
+    </pass>
     <pass date="2026-08-31" scope="Since tag 0.31.4: bind-race IsActive gate + Setup Trace" status="applied" compile="clean">
       <review_doc>reviews/2026-08-31-01.review.md</review_doc>
       <headline>GetSceneByThread keep/rebind without IsActive(); Setup initiator Trace once after PickNonVictimInitiator. PublicAPI and 0050 left as HEAD.</headline>
@@ -135,7 +140,7 @@
     </pass>
   </pass_history>
 
-  <open_backlog note="Deferred / not yet scheduled. 2026-08-31-01 applied H1/L2; skipped H2/M1/L1 (HEAD).">
+  <open_backlog note="Deferred / not yet scheduled. 2026-09-12-01 applied H1/H2/M1/M2/L1 spelling; PublicAPI and 0050 word-cap still HEAD.">
     <deferred id="H6-arousal">Populate actor arousal or remove 0550 gates (author Q2: leave for future).</deferred>
     <deferred id="M8">orgasm_expected vs description-walk mismatch (confirm per-stage vs per-animation semantics with author before changing).</deferred>
     <deferred id="M9-M16">Remaining: orgasm editor UX polish; OStim affection path (Menu affection branch is a no-op notification under OStim).</deferred>
@@ -151,13 +156,15 @@
     <resolved id="2026-07-26-H1-H5-H7">Outfit tokens, UpdateActor notice_level, generic refuse, 0050 dumps/clobber, none_rape removed — reviews/2026-07-26-01.review.md.</resolved>
     <resolved id="2026-07-26-02">H1–H6 M1–M9 applied — reviews/2026-07-26-02.review.md.</resolved>
     <resolved id="2026-07-26-03">M5 kissing setting, M7 Dom speaking_modifiers, L2 Trace — reviews/2026-07-26-03.review.md.</resolved>
-    <resolved id="2026-08-31-01">GetSceneByThread keep without IsActive(); Setup Trace after PickNonVictimInitiator. H2/M1/L1 skipped (HEAD). reviews/2026-08-31-01.review.md.</resolved>
+    <resolved id="2026-08-31-01">GetSceneByThread keep without IsActive(); Setup Trace after PickNonVictimInitiator. PublicAPI skipped (HEAD). reviews/2026-08-31-01.review.md.</resolved>
+    <resolved id="2026-09-12-01">Menu cancel/leash -1; SelectAnimationsDialog empty tags; afterglow orgasmed+space; 0050/0550 spelling. reviews/2026-09-12-01.review.md.</resolved>
   </open_backlog>
 
   <current_status>
-    <state>2026-08-31-01 applied: GetSceneByThread keep/rebind without IsActive(); Setup initiator Trace once. pyro clean. PublicAPI (d197679) and 0050 left as HEAD.</state>
+    <state>2026-09-12-01 applied: Target_Menu ESC/cancel vs unused -1; SelectAnimationsDialog empty tags → manager.empty; afterglow orgasmed+trailing space; 0050/0550 spelling. pyro clean (Menu, Scene_Creator). PublicAPI (d197679) and 0050 word-cap left as HEAD.</state>
     <pending>
-      <item>In-game smoke tests from reviews/2026-08-31-01.review.md (DOM first-frame Setup, victim initiator).</item>
+      <item>In-game smoke tests from reviews/2026-09-12-01.review.md (target ESC without Leashed, empty-tag Start, afterglow, 0050 copy).</item>
+      <item>Release-doc pass: CHANGELOG.md 0.31.5 is stale vs P+/leash/afterglow/orgasm wording.</item>
       <item>Schedule deferred: H6 arousal, M8-legacy, notice schema, PARAMS, L3, S10b, M9-M16.</item>
     </pending>
   </current_status>

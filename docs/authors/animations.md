@@ -12,6 +12,10 @@ Orgasm narration when a stage climaxes: [../reference/orgasm-narration.md](../re
 | `SKSE/Plugins/SkyrimNet_SexLab/animations/(author)/` | Shared packs |
 | `animations/GoodProvider/` | Example pack |
 
+## SexLab P+ playing set
+
+Empty tags: skip `GetAnimationsByTags` so SexLab picks. Tagged matches: `PickOneAnimation` keeps one random anim (P+ `GetPlayingScenes` hops otherwise). `Scene.StageStart` ends the thread after 120s real-time. Papyrus: [../developers/papyrus.md](../developers/papyrus.md).
+
 ## In-game editor
 
 MCM **Sex Description Editor** hot key while in a SexLab animation: add/replace stage description, set `orgasm_expected`, change sex style (if Tag Editor dialogs on).

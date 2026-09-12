@@ -1,58 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SkyrimNet_SexLab — review-execution-plan.xml
-  Pass: 2026-08-31-01 review since tag 0.31.4 (ecbb8f1)..HEAD.
-  Author: leave PublicAPI (d197679) and 0050 prompt as HEAD — skip H2/M1/L1.
+  Pass: 2026-09-12-01 review 0.31.4 (ecbb8f1)..HEAD on better-ending.
+  Apply High+Medium+0050/0550 spelling. PublicAPI (d197679) and 0050 word-cap policy left as HEAD.
 -->
 <execution_plan>
   <metadata>
     <project_name>SkyrimNet_SexLab</project_name>
     <repository_root>c:\Skyrim\dev\mods\SkyrimNet_SexLab</repository_root>
-    <created>2026-08-31</created>
+    <created>2026-09-12</created>
     <phase>applied</phase>
     <status>applied</status>
-    <pass>2026-08-31-01</pass>
+    <pass>2026-09-12-01</pass>
     <base_tag>0.31.4</base_tag>
-    <review_doc>reviews/2026-08-31-01.review.md</review_doc>
+    <review_doc>reviews/2026-09-12-01.review.md</review_doc>
   </metadata>
 
   <findings>
     <finding id="H1" severity="high" status="applied">
-      <file>Scripts/Source/SkyrimNet_SexLab_Scene_Manager.psc</file>
-      <line>243</line>
-      <problem>GetSceneByThread keep/rebind required IsActive(). Setup only sets STATUS_SETUP at the end, so create_if_missing=True (EnsureSceneForThread) could Release() mid-Setup.</problem>
-      <fix>Keep/rebind when bound == None or bound.tid == thread.tid without requiring IsActive(). Release only on tid mismatch.</fix>
-      <confidence>90</confidence>
-    </finding>
-    <finding id="H2" severity="high" status="skipped">
-      <file>SKSE_Source/src/Papyrus_WebUI.cpp</file>
-      <line>8</line>
-      <problem>PublicAPI.h replaced with extern pointers (d197679). FindFunctions not called.</problem>
-      <fix>Author: leave as HEAD.</fix>
-      <confidence>92</confidence>
-    </finding>
-    <finding id="M1" severity="medium" status="skipped">
-      <file>SKSE/Plugins/SkyrimNet/prompts/submodules/user_final_instructions/0050_sexlab_activity.prompt</file>
-      <line>111</line>
-      <problem>0050 vocalization/word-cap working tree vs HEAD.</problem>
-      <fix>Author: leave 0050 as HEAD.</fix>
-      <confidence>85</confidence>
-    </finding>
-    <finding id="L1" severity="low" status="skipped">
-      <file>SKSE/Plugins/SkyrimNet/prompts/submodules/user_final_instructions/0050_sexlab_activity.prompt</file>
-      <line>111</line>
-      <problem>0050 typos in prompt hunks.</problem>
-      <fix>Author: leave 0050 as HEAD.</fix>
-      <confidence>98</confidence>
-    </finding>
-    <finding id="L2" severity="low" status="applied">
-      <file>Scripts/Source/SkyrimNet_SexLab_Scene.psc</file>
-      <line>228</line>
-      <problem>Duplicate initiator Trace in Setup before and after PickNonVictimInitiator.</problem>
-      <fix>Keep only the post-PickNonVictimInitiator Trace.</fix>
+      <file>Scripts/Source/SkyrimNet_SexLab_Menu.psc</file>
+      <line>281</line>
+      <problem>Target_Menu_Selection: bondage/leash stay -1 when ESP missing. SkyMessage ESC is -1, so cancel matches elseif button == bondage or == leash (same class as 2026-07-16 H-B OStim). Leash path calls EventSend_LeashedOpen → WebUI.Hide().</problem>
+      <fix>Return when button &lt; 0 or button == cancel. Guard bondage != -1 &amp;&amp; button == bondage and leash != -1 &amp;&amp; button == leash.</fix>
       <confidence>95</confidence>
     </finding>
+    <finding id="H2" severity="high" status="applied">
+      <file>Scripts/Source/SkyrimNet_SexLab_Scene_Creator.psc</file>
+      <line>1302</line>
+      <problem>SelectAnimationsDialog always GetAnimationsByTags(..., require=true). Empty tags (user cleared, or probe dropped) return 0 hits; non-dialog SelectAnimations already skips empty tags so SexLab picks. Dialog loops the tag UI / cannot start a no-tag scene (P+ hop-safe empty list).</problem>
+      <fix>If num_tags == 0 and num_tags_suppress == 0, return manager.empty (SexLab picks). After a 0-hit strip that exhausts tags, return manager.empty instead of another menu cycle.</fix>
+      <confidence>92</confidence>
+    </finding>
+    <finding id="M1" severity="medium" status="applied">
+      <file>SKSE/Plugins/SkyrimNet/prompts/helpers/sexlab/afterglow.prompt</file>
+      <line>3</line>
+      <problem>Success branch says orgasemd.</problem>
+      <fix>orgasemd → orgasmed.</fix>
+      <confidence>98</confidence>
+    </finding>
+    <finding id="M2" severity="medium" status="applied">
+      <file>SKSE/Plugins/SkyrimNet/prompts/helpers/sexlab/afterglow.prompt</file>
+      <line>4</line>
+      <problem>{%- endif -%} left-strips the space after times. Multi-actor afterglow concatenates without a separator.</problem>
+      <fix>Keep a trailing space the endif cannot strip (no left-strip on the closing endif of the success branch).</fix>
+      <confidence>95</confidence>
+    </finding>
+    <finding id="L1" severity="low" status="applied">
+      <file>SKSE/Plugins/SkyrimNet/prompts/submodules/user_final_instructions/0050_sexlab_activity.prompt</file>
+      <line>80</line>
+      <problem>Spelling in 0050 (skipped 2026-08-31) and 0550: overwelmed, communictate, similair, dialog contain, truely, hierarch, then/dailogue; 0550 feelsings and more then.</problem>
+      <fix>Spelling only. Do not change vocalization onomatopoeia or 0050 word-cap / vocalization-count policy.</fix>
+      <confidence>98</confidence>
+    </finding>
   </findings>
+
+  <skipped>
+    <item>PublicAPI extern function pointers (2026-08-31 H2) — author leave as HEAD.</item>
+    <item>0050 word-cap / vocalization-count policy (2026-08-31 M1) — author leave as HEAD.</item>
+  </skipped>
 
   <deferred>
     <item>H6-arousal (author leave-for-future)</item>

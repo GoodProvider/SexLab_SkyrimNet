@@ -147,9 +147,11 @@ Function Target_Menu_Selection(Actor target, Actor player)
     String msg = "Should "+target.getDisplayName()+":"
     int button = SkyMessage.ShowArray(msg, buttons, getIndex = true) as int  
 
-    if button >= 0 && button <= cancel
-        Trace("Target_Menu_Selection","button:" +buttons[button])
-    endif 
+    if button < 0 || button == cancel
+        Trace("Target_Menu_Selection","cancelled")
+        return
+    endif
+    Trace("Target_Menu_Selection","button:" +buttons[button]) 
     
     if button == masturbate
         if mcm.sexlab_ostim_player == 1 && main.ostimnet_found
@@ -278,9 +280,9 @@ Function Target_Menu_Selection(Actor target, Actor player)
         Trace("Target_Menu_Selection","style:"+style+" clothing_string:"+clothing_string)
         actions.Change_Outfit(player, target, style, clothing_string, narration)
 
-    elseif button == bondage 
+    elseif bondage != -1 && button == bondage
         EventSend_UDNG("MenuOpen", target)
-    elseif button == leash
+    elseif leash != -1 && button == leash
         EventSend_LeashedOpen()
     endif 
 EndFunction
