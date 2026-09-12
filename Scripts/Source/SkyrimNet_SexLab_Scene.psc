@@ -1135,7 +1135,7 @@ Function AnimationEnd(Actor speaker=None, String style="silently")
                 endif
                 if glow_fallback != "" || total_orgasms >= 1
                     int glow_obj = JMap.object()
-                    JMap.setStr(glow_obj, "actors", name)
+                    JMap.setStr(glow_obj, "name", name)
                     JMap.setInt(glow_obj, "total_orgasms", total_orgasms)
                     JMap.setInt(glow_obj, "expected", expected)
                     afterglow += RenderSlPrompt("helpers/sexlab/afterglow", glow_obj, glow_fallback)
@@ -1231,7 +1231,7 @@ Function OrgasmIndividual(Actor akActor, int full_enjoyment, int num_orgasms)
     int i = 0
     while i < num_actors
         if thread.positions[i] != akActor
-            msg += " "+thread.positions[i].GetDisplayName()+" is not orgasming."
+            msg += " "+thread.positions[i].GetDisplayName()+" is not orgasming right now. "
         endif 
         i += 1 
     endwhile 
@@ -1310,12 +1310,10 @@ String Function OrgasmMessagesToNarration()
         orgasm_messages_set = false
         int k = 0
         int[] orgasm_expected = stages.GetOrgasmExpected(thread)
-        int num_orgasmers = 0 
         while k < num_actors && k < orgasm_messages.length
             int obj = JArray.getObj(actors_objs, k)
             String name = JMap.getStr(obj, "name")
             if orgasm_messages[k] != ""
-                num_orgasmers += 1
                 orgasm_happened = true
                 ; Totals already bumped when GetIsOrgasming built the stashed clause.
                 if JMap.getInt(obj, "has_penis") == 1 
@@ -1326,7 +1324,6 @@ String Function OrgasmMessagesToNarration()
             elseif orgasm_expected.length > k && orgasm_expected[k] == 1 && JMap.getInt(obj, "dom_slave") == 1
                 ; Dom Combined fallback: custom raced past stash but totals already bumped.
                 if GetTotalOrgasms(thread.positions[k]) > 0 || JMap.getInt(obj, "total_orgasm") > 0
-                    num_orgasmers += 1
                     orgasm_happened = true
                     if JMap.getInt(obj, "has_penis") == 1
                         ejaculation_happened = true
@@ -1335,12 +1332,11 @@ String Function OrgasmMessagesToNarration()
                 else
                     narration += main.handler_dom.HandleOrgasmDenied(thread.positions[k])
                 endif
+            else
+                narration += name+" is not orgasming right now. "
             endif 
             k += 1
         endwhile
-        if num_orgasmers > 0 && num_orgasmers < num_actors
-            narration += "Only listed actors started orgasming right now. "
-        endif
     endif 
 
     if ejaculation_happened
@@ -1429,7 +1425,7 @@ String Function AddCum(int position, Actor akActor, String name)
         DbgReturn("AddCum", "cum message")
         String cum_fallback = name+"'s "+places+" is dripping with warm sticky cum. "
         int cum_obj = JMap.object()
-        JMap.setStr(cum_obj, "actors", name)
+        JMap.setStr(cum_obj, "name", name)
         JMap.setStr(cum_obj, "places", places)
         return RenderSlPrompt("helpers/sexlab/cum", cum_obj, cum_fallback)
     endif 

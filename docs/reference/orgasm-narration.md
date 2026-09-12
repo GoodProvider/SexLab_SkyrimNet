@@ -15,12 +15,12 @@ The substring `" is orgasming."` must stay exact on the whole direct-narration s
 | Clause type | Must include `" is orgasming."`? |
 |-------------|----------------------------------|
 | Orgasming actor | **Yes** |
-| Denied / non-orgasming | **No** (use denied / “did not orgasm” wording only) |
+| Denied / non-orgasming | **No** — Combined and Separate: `name+" is not orgasming right now. "`; Dom denied / afterglow: “did not orgasm” / “failed to orgasm” |
 
 - Dom: `Handler_DOM.DOMSlave_Orgasmed` → `Scene_Manager.OrgasmCustom` appends `". "+name+" is orgasming."` on purpose — do not strip without updating the prompt.
 - Combined / `GetIsOrgasming`: Papyrus emits `name+" is orgasming. "` (and `. again.` / tentacles append). Do not strip that substring without updating the prompt.
 - Dom Combined fallback: if orgasm expected and totals > 0 but custom text raced empty, still append `name+" is orgasming. "` (same gate).
-- `OrgasmIndividual` may append `" is not orgasming."` for other actors — that must **not** match the orgasm gate.
+- Combined flush (`OrgasmMessagesToNarration`) and `OrgasmIndividual` name every non-orgasming actor with `" is not orgasming right now."` instead of a generic “only listed” sentence. That substring must **not** match the orgasm gate.
 
 If you change the gate in the prompt, update every Papyrus narration site that appends it.
 
