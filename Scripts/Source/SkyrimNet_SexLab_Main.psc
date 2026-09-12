@@ -65,11 +65,6 @@ String Property storage_thread_ejaculated = "skyrimnet_sexlab_thread_ejaculated"
 
 
 ; -----------------------------
-; enable virgin blood
-; -----------------------------
-Bool Property virgin_blood_enabled = True Auto
-
-; -----------------------------
 ; Time since last dirrect narration
 ; needed, sine there appears to be a race condition on when things hit the audio queue
 ; -----------------------------

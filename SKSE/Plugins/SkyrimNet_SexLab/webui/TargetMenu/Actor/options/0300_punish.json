@@ -1,0 +1,107 @@
+{
+  "type": "papyrus",
+  "label": "punish",
+  "panel": "scene_start",
+  "plugin": "SkyrimNet_SexLab.esp",
+  "questFormId": "0x800",
+  "scriptName": "SkyrimNet_SexLab_Actions",
+  "executionFunctionName": "StartScene_Nonconsensual_Two_TargetVictim",
+  "panelDefaults": {
+    "subject": "player",
+    "object": "currentActor",
+    "objectRelation": "to victim",
+    "andThird": "none",
+    "intent": "punish",
+    "direction": "giving",
+    "method": "spanking",
+    "style": "forcefully",
+    "settingName": "punish_spanking"
+  },
+  "parameterMapping": [
+    {
+      "type": "dynamic",
+      "name": "intent",
+      "description": "punish"
+    },
+    {
+      "type": "speaker",
+      "name": "speaker"
+    },
+    {
+      "type": "target",
+      "name": "target"
+    },
+    {
+      "type": "dynamic",
+      "name": "style",
+      "description": "forcefully|normally|gently"
+    },
+    {
+      "type": "dynamic",
+      "name": "tags",
+      "description": "comma-separated tags"
+    },
+    {
+      "type": "dynamic",
+      "name": "direction",
+      "description": "giving|getting"
+    },
+    {
+      "type": "dynamic",
+      "name": "setting_name",
+      "description": "scene setting json name"
+    }
+  ],
+  "eligibilityRules": [
+    {
+      "conditions": [
+        {
+          "decoratorName": "get_global_value",
+          "arguments": [
+            "SkyrimNet_SexLab_ostim_player"
+          ],
+          "comparisonOperator": "==",
+          "expectedValue": 0
+        },
+        {
+          "decoratorName": "is_in_faction",
+          "arguments": [
+            "currentActor",
+            "dse_dm_FactionActorUsingDevice"
+          ],
+          "comparisonOperator": "==",
+          "expectedValue": false
+        },
+        {
+          "decoratorName": "is_in_faction",
+          "arguments": [
+            "currentActor",
+            "OStimActorCountFaction"
+          ],
+          "comparisonOperator": "==",
+          "expectedValue": false
+        },
+        {
+          "decoratorName": "is_in_combat",
+          "arguments": [
+            "currentActor"
+          ],
+          "comparisonOperator": "==",
+          "expectedValue": false
+        },
+        {
+          "decoratorName": "papyrus_util",
+          "arguments": [
+            "HasIntValue",
+            "currentActor",
+            "skyrimnet_sexlab_scene_actor_lock"
+          ],
+          "comparisonOperator": "==",
+          "expectedValue": false
+        }
+      ],
+      "logicalOperator": "AND",
+      "required": true
+    }
+  ]
+}

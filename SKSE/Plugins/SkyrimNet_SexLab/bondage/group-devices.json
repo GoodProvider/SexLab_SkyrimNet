@@ -1,0 +1,327 @@
+[
+    {
+        "name": "Blindfold",
+        "devices": [
+            {
+                "description": "A leather blindfold that covers the eyes and plunges the wearer into darkness.",
+                "formId": 318970991,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x31c6f",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x11b1e",
+                "id": "blindfold",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x11b1a",
+                "Name": "Black Leather Blindfold"
+            }
+        ]
+    },
+    {
+        "name": "Gag",
+        "devices": [
+            {
+                "description": "A lockable head harness that forces a wooden ball between the wearer's lips and makes speaking impossible.",
+                "formId": 318943347,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x2b073",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0xf564",
+                "id": "gagBall",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x7eb8",
+                "Name": "Black Leather Gag (Ball) (Harness)"
+            },
+            {
+                "description": "A lockable head harness that forces a metal ring between the wearer's teeth and makes speaking impossible.",
+                "formId": 318943350,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x2b076",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0xf565",
+                "id": "gagRing",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x7eb8",
+                "Name": "Black Leather Gag (Ring) (Harness)"
+            }
+        ]
+    },
+    {
+        "name": "Collar",
+        "devices": [
+            {
+                "description": "A sturdy leather collar with a metal ring attached at the front.",
+                "formId": 318970997,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x31c75",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x16155",
+                "id": "harnessCollar",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3df7",
+                "Name": "Black Leather Collar (Harness)"
+            },
+            {
+                "description": "A metal collar with soft leather padding.",
+                "formId": 318863196,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x1775c",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x48c6",
+                "id": "cuffsPaddedCollar",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3df7",
+                "Name": "Steel Collar (Padded)"
+            },
+            {
+                "description": "A steel collar meant to ensure proper posture by covering the whole neck.",
+                "formId": 318863193,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x17759",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x48c1",
+                "id": "collarPosture",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3df7",
+                "Name": "Steel Collar (Padded) (Posture)"
+            },
+            {
+                "description": "A leather collar with metal studs and rings.",
+                "formId": 318973765,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x32745",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x1c7f1",
+                "id": "cuffsLeatherCollar",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3df7",
+                "Name": "Black Leather Collar"
+            },
+            {
+                "description": "A stiff and rigid leather collar intended to severely restrict head movement once secured around the wearer's neck.",
+                "formId": 319085551,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x4dbef",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x2afa5",
+                "id": "collarRestrictive",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3df7",
+                "Name": "Black Leather Restrictive Collar"
+            }
+        ]
+    },
+    {
+        "name": "Piercing Nipple",
+        "devices": [
+            {
+                "description": "A pair of delicate nipple piercings with soul gem fragments attached.",
+                "formId": 319031714,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x409a2",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x23e71",
+                "id": "piercingNSoul",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0xca39",
+                "Name": "Jeweled Piercings (Nipples) (Soulgem)"
+            }
+        ]
+    },
+    {
+        "name": "Body",
+        "devices": [
+            {
+                "description": "A lockable chastity bra made out of metal with a soft inner padding.",
+                "formId": 318863194,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x1775a",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x48c2",
+                "id": "braPadded",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3dfa",
+                "Name": "Steel Chastity Bra (Padded)"
+            },
+            {
+                "description": "An intricate harness made up of multiple metal rings and leather straps. This variant leaves the subject's private areas exposed for display and ease of access.",
+                "formId": 318970996,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x31c74",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x17c44",
+                "id": "harnessBody",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x17c43",
+                "Name": "Black Leather Slave Harness"
+            },
+            {
+                "description": "A tight leather corset that hugs the wearer's waist while leaving the breasts exposed.",
+                "formId": 319085552,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x4dbf0",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x28f53",
+                "id": "corset",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x27f28",
+                "Name": "Black Leather Restrictive Corset"
+            }
+        ]
+    },
+    {
+        "name": "Arms",
+        "devices": [
+            {
+                "description": "A set of metal arm and wrist cuffs with soft leather padding.",
+                "formId": 318863195,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x1775b",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x48c3",
+                "id": "cuffsPaddedArms",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3df9",
+                "Name": "Steel Cuffs (Padded) (Arms)"
+            },
+            {
+                "description": "A set of leather arm cuffs.",
+                "formId": 318973764,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x32744",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x1c7f0",
+                "id": "cuffsLeatherArms",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3df9",
+                "Name": "Black Leather Cuffs (Arms)"
+            },
+            {
+                "description": "A lockable armbinder made out of leather, with sturdy reinforcing straps.",
+                "formId": 318933594,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x28a5a",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0xca38",
+                "id": "armbinder",
+                "Keyword": "__formData|Devious Devices - Integration.esm|0x5226c",
+                "Name": "Black Leather Armbinder"
+            },
+            {
+                "description": "A metal yoke that spreads the wearer's arms and holds them securely in place.",
+                "formId": 319091084,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x4f18c",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x26991",
+                "id": "yoke",
+                "Keyword": "__formData|Devious Devices - Integration.esm|0x5226c",
+                "Name": "Iron Yoke"
+            }
+        ]
+    },
+    {
+        "name": "Belt",
+        "devices": [
+            {
+                "description": "A lockable chastity belt made out of metal with a soft inner padding.",
+                "formId": 318806651,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x9a7b",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x435d",
+                "id": "beltPadded",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3330",
+                "Name": "Steel Chastity Belt (Padded)"
+            },
+            {
+                "description": "A lockable chastity belt made out of sturdy iron.",
+                "formId": 318827357,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0xeb5d",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x435e",
+                "id": "beltIron",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3330",
+                "Name": "Iron Chastity Belt"
+            }
+        ]
+    },
+    {
+        "name": "Piercing Vaginal",
+        "devices": [
+            {
+                "description": "A delicate piercing with a soul gem fragment attached.",
+                "formId": 319059302,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x47566",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x243d6",
+                "id": "piercingVSoul",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x23e70",
+                "Name": "Genital Piercing (Soul Gem)"
+            }
+        ]
+    },
+    {
+        "name": "Plug Vaginal",
+        "devices": [
+            {
+                "description": "An iron vaginal plug capable of providing a moderate amount of sexual stimulation to the wearer.",
+                "formId": 318969603,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x31703",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x18c7c",
+                "id": "plugIronVag",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x1dd7c",
+                "Name": "Plug (Iron) (Vaginal)"
+            },
+            {
+                "description": "A set of inflatable plugs for female orifices meant to be used with a chastity belt to hold them in.",
+                "formId": 318872855,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x19d17",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x48c9",
+                "id": "plugInflatable",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3331",
+                "Name": "Plug (Inflatable) (Set)"
+            },
+            {
+                "description": "A primitive vaginal plug capable of providing a decent amount of sexual stimulation to the wearer.",
+                "formId": 318970984,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x31c68",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x18c7e",
+                "id": "plugPrimitiveVag",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x1dd7c",
+                "Name": "Plug (Primitive) (Vaginal)"
+            },
+            {
+                "description": "A soul gem vaginal plug capable of providing a great amount of sexual stimulation to the wearer.",
+                "formId": 318970988,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x31c6c",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x18c83",
+                "id": "plugSoulgemVag",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x1dd7c",
+                "Name": "Plug (Soulgem) (Vaginal)"
+            },
+            {
+                "description": "An inflatable vaginal plug capable of providing a great amount of sexual stimulation to the wearer.",
+                "formId": 318979310,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x33cee",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x18c81",
+                "id": "plugInflatableVag",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x1dd7c",
+                "Name": "Plug (Inflatable) (Vaginal)"
+            }
+        ]
+    },
+    {
+        "name": "Plug Anal",
+        "devices": [
+            {
+                "description": "An iron anal plug that fills the wearer with a profound sense of fullness.",
+                "formId": 318969604,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x31704",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x18c7b",
+                "id": "plugIronAn",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x1dd7d",
+                "Name": "Plug (Iron) (Anal)"
+            },
+            {
+                "description": "A primitive anal plug that fills the wearer with a profound sense of fullness.",
+                "formId": 318970985,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x31c69",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x18c7d",
+                "id": "plugPrimitiveAn",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x1dd7d",
+                "Name": "Plug (Primitive) (Anal)"
+            },
+            {
+                "description": "A soul gem anal plug that fills the wearer with a profound sense of fullness.",
+                "formId": 318970987,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x31c6b",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x18c82",
+                "id": "plugSoulgemAn",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x1dd7d",
+                "Name": "Plug (Soulgem) (Anal)"
+            },
+            {
+                "description": "An inflatable anal plug that fills the wearer with a profound sense of fullness.",
+                "formId": 318979309,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x33ced",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x18c80",
+                "id": "plugInflatableAn",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x1dd7d",
+                "Name": "Plug (Inflatable) (Anal)"
+            }
+        ]
+    },
+    {
+        "name": "Legs",
+        "devices": [
+            {
+                "description": "A set of metal leg and ankle cuffs with soft leather padding.",
+                "formId": 318863197,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x1775d",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x48c5",
+                "id": "cuffsPaddedLegs",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3df8",
+                "Name": "Steel Cuffs (Padded) (Legs)"
+            },
+            {
+                "description": "A set of leather leg cuffs.",
+                "formId": 318973763,
+                "formInventory": "__formData|Devious Devices - Integration.esm|0x32743",
+                "formRendered": "__formData|Devious Devices - Assets.esm|0x1c7f3",
+                "id": "cuffsLeatherLegs",
+                "Keyword": "__formData|Devious Devices - Assets.esm|0x3df8",
+                "Name": "Black Leather Cuffs (Legs)"
+            }
+        ]
+    }
+]

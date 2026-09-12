@@ -1,0 +1,38 @@
+<checkpoint>
+  <metadata>
+    <project_name>SkyrimNet_SexLab Framework</project_name>
+    <context_type>Papyrus Code Review Checkpoint</context_type>
+    <target_language>Papyrus Script (Skyrim SE/AE)</target_language>
+    <review_date>2026-06-06</review_date>
+    <review_id>01</review_id>
+    <files_reviewed>
+      <file>Scripts/Source/SkyrimNet_SexLab_Scene_Manager.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Scene.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Actions.psc</file>
+      <file>Scripts/Source/SkyrimNet_Sexlab_Creatures.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Decorators.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Handler_DOM.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Handler_DOM_Interface.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Handler_UDNG.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Handler_UDNG_PR.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Main.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_MCM.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_PlayerRef.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Stages.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_Utilities.psc</file>
+      <file>Scripts/Source/SkyrimNet_SexLab_WebUI.psc</file>
+    </files_reviewed>
+
+    <summary>
+      Quick scan found multiple high-severity issues concentrated in the new Scene manager and Scene classes (typos, undefined identifiers, inconsistent function names). Several medium issues in action wrappers and MCM property bindings. Numerous commented legacy blocks flagged as dead code.
+    </summary>
+  </metadata>
+
+  <review_state>
+    <status>Findings captured; fixes required</status>
+    <next_steps>
+      <step>Confirm whether to produce automated patches for high-severity fixes</step>
+      <step>Optionally run static symbol checks and a compilation attempt after fixes</step>
+    </next_steps>
+  </review_state>
+</checkpoint>

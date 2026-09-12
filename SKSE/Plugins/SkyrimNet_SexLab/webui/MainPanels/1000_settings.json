@@ -1,0 +1,5 @@
+{
+  "type": "builtin",
+  "label": "Settings",
+  "panel": "settings_panel"
+}

@@ -31,7 +31,7 @@ SKSE/Plugins/SkyrimNet/prompts/
 
 No `0520_sexlab_dressing_instructions.prompt`.
 
-Scene afterglow and cum are Papyrus-rendered sentences, not LLM system prompts. Bind `{{sl.*}}` only. A single actor name is a string (`{{sl.actors}}`), not a one-element array. Papyrus builds lowercase JSON via `ObjectToLowerCaseKeyJson`, then `RenderTemplate` + `ParseString`. Empty, error-looking, or leftover-`{{` renders fall back to the previous Papyrus sentence. The `" is orgasming."` gate is Papyrus (`GetIsOrgasming`) — see [../reference/orgasm-narration.md](../reference/orgasm-narration.md).
+Scene afterglow and cum are Papyrus-rendered sentences, not LLM system prompts. Bind `{{sl.*}}` only. A single actor name is a string (`{{sl.name}}`), not a one-element array. Papyrus builds lowercase JSON via `ObjectToLowerCaseKeyJson`, then `RenderTemplate` + `ParseString`. Empty, error-looking, or leftover-`{{` renders fall back to the previous Papyrus sentence. The `" is orgasming."` gate is Papyrus (`GetIsOrgasming`) — see [../reference/orgasm-narration.md](../reference/orgasm-narration.md).
 
 ## Keys vs values
 

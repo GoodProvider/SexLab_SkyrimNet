@@ -1,0 +1,26 @@
+{
+  "FormKey": "000811:SkyrimNet_Sexlab.esp",
+  "EditorID": "SkyrimNet_SexLab_Scene_09",
+  "VirtualMachineAdapter": {
+    "Scripts": [
+      {
+        "Name": "SkyrimNet_SexLab_Scene"
+      }
+    ],
+    "Versioning": [
+      "Break0"
+    ],
+    "ExtraBindDataVersion": 0,
+    "FileName": ""
+  },
+  "Name": {
+    "TargetLanguage": "English",
+    "Value": "SkyrimNet_SexLab_Scene_09"
+  },
+  "Flags": [
+    "StartGameEnabled",
+    "0x10",
+    "RunOnce"
+  ],
+  "NextAliasID": 0
+}

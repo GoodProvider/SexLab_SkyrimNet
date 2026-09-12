@@ -149,7 +149,6 @@ Function PageOptions()
 
     AddToggleOptionST("HideHermaphroditesToggle","Hide hermaphrodite from prompt",skyrimNet_sexlab_hide_hermaphrodites.GetValue() == 1.0)
     AddToggleOptionST("PublicSexAcceptedToggle","Public sex accepted",sexlab_public_sex_accepted.GetValue() == 1.0)
-    AddToggleOptionST("VirginBloodEnabled","Enable virgin blood message.",main.virgin_blood_enabled)
     
     SetCursorPosition(6)
     AddHeaderOption("Rape Options")
@@ -258,16 +257,6 @@ State SexEditTagsNonPlayer
     EndEvent
     Event OnHighlightST()
         SetInfoText("Opens dialogs for events that do not include the player.")
-    EndEvent
-EndState
-
-State VirginBloodEnabled
-    Event OnSelectST()
-        main.virgin_blood_enabled = !main.virgin_blood_enabled
-        SetToggleOptionValueST(main.virgin_blood_enabled)
-    EndEvent
-    Event OnHighlightST()
-        SetInfoText("Add virgin blood to the first time pussy or anal sex.")
     EndEvent
 EndState
 

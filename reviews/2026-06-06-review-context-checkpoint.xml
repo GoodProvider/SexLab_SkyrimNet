@@ -1,0 +1,37 @@
+<checkpoint>
+  <metadata>
+    <project_name>SkyrimNet_SexLab Framework</project_name>
+    <context_type>Papyrus Coding Expert Review Code Checkpoint</context_type>
+    <target_language>Papyrus Script (Skyrim SE/AE)</target_language>
+    <dependencies>SexLabFramework, JContainers, PO3_SKSEFunctions, UIExtensions, StorageUtil, SKI_ConfigBase</dependencies>
+    <last_updated>2026-06-06</last_updated>
+  </metadata>
+
+  <referenced_files>
+    <file_name>SkyrimNet_SexLab_Actions.txt</file_name>
+    <file_name>SkyrimNet_Sexlab_Creatures.txt</file_name>
+    <file_name>SkyrimNet_SexLab_Decorators.txt</file_name>
+    <file_name>SkyrimNet_SexLab_Handler_DOM.txt</file_name>
+    <file_name>SkyrimNet_SexLab_Handler_DOM_Interface.txt</file_name>
+    <file_name>SkyrimNet_SexLab_Handler_UDNG.txt</file_name>
+    <file_name>SkyrimNet_SexLab_Handler_UDNG_PR.txt</file_name>
+    <file_name>SkyrimNet_SexLab_Main.txt</file_name>
+    <file_name>SkyrimNet_SexLab_MCM.txt</file_name>
+    <file_name>SkyrimNet_SexLab_PlayerRef.txt</file_name>
+  </referenced_files>
+
+  <review_state>
+    <status>In-Progress / Transition State</status>
+    <completed_phases>
+      <phase>Initial Code parsing and syntax validation across 10 referenced files</phase>
+      <phase>Identification and profiling of Critical High-Severity compilation blocks</phase>
+      <phase>Categorization of Medium/Low architectural issues (Leaks, Form Lookups, JSON parsing)</phase>
+      <phase>Generation of detailed external Markdown report (SkyrimNet_Code_Review.md)</phase>
+    </completed_phases>
+    <pending_phases>
+      <phase>Validation of structural interface mechanics across Handler_DOM and Handler_DOM_Interface</phase>
+      <phase>Deep-dive review of Event definitions and multi-threading scene synchronization logic inside Handler_UDNG and Scene_Manager hooks</phase>
+      <phase>Review optimization of the dynamic crosshair and array-scanning loops in MCM tracking blocks</phase>
+    </pending_phases>
+  </review_state>
+</checkpoint>

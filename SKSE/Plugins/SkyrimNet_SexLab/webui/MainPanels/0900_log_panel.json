@@ -1,0 +1,5 @@
+{
+  "type": "builtin",
+  "label": "Log",
+  "panel": "log_panel"
+}

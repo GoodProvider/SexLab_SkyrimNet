@@ -43,7 +43,7 @@ Scene files via `setting_name`: [../reference/scene-settings.md](../reference/sc
 
 ## MCM (summary)
 
-- Prompt: hide hermaphrodites; public sex accepted; virgin blood message
+- Prompt: hide hermaphrodites; public sex accepted
 - Rape: add rape actions (toggle / save / reload)
 - Tag Edit dialogs; Sex Description Editor hot key
 - Direct Narration Blocking: cooldown, max distance

@@ -1,0 +1,82 @@
+Scriptname phhshDisplayModel extends Quest  
+
+Function DMReleaseActor(actor slave)
+	if (Game.GetModByname("dcc-dm2.esp") != 255)
+		; LE Function / DM2
+		dcc_dm_QuestController DM = dcc_dm_QuestController.Get()
+		DM.ActorUsingSet(slave,None,true)
+		DM.BehaviourClear(slave)
+	else
+		; SE Function / DM3
+		dse_dm_QuestController dmm = dse_dm_QuestController.GetAPI()
+		dse_dm_ActiPlaceableBase Device = dmm.Devices.GetActorDevice(slave)
+		If(Device != None)
+			Device.ReleaseActor(slave)
+			dmm.Util.BehaviourSet(slave,None)		; DM applies a player follow package for some reason, remove it
+		endif
+	endif
+EndFunction
+
+
+Function AddDM3Furniture()
+	if (!PHHSH.DisplayModelFurniture.HasForm(Game.GetFormFromFile(0x0000cb2f, "dse-display-model.esp")))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000cb2f, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000d096, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000d097, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000d095, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000fbe2, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000fbe5, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000fbe1, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000fbe4, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000fbde, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000fbdf, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000fbe0, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000fbe3, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000e0cd, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000eba4, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x000053a3, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000538f, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x00005395, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x00005396, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x00005913, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x00007455, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x000053a4, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x000063f4, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000a52f, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x000053a5, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000182a, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x00002dc0, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000db67, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000c5bf, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000746c, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x000063ef, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000b010, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000f67a, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000b00f, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000d5ff, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000affe, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x000106ae, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000748c, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000748d, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000748e, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000748f, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x00007490, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x00007491, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000749a, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000c5a1, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x00002dc5, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x00002dc6, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000c5a9, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x00005e79, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000a536, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x000053a6, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000c5b8, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000eba9, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000ebb5, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x0000eba2, "dse-display-model.esp"))
+		PHHSH.DisplayModelFurniture.AddForm(Game.GetFormFromFile(0x000053a7, "dse-display-model.esp"))
+		debug.notification("Added Display Model furniture to Home Sweet Home")
+	endif
+EndFunction
+
+phhshStorageFunctions Property PHHSH Auto
